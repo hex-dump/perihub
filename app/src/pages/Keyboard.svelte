@@ -7,10 +7,12 @@
   interface Props {
     info: KeyboardInfo | null;
     error: string | null;
+    /** A keyboard PeriHub recognizes but does not support yet, such as the Apex 3. */
+    unsupported: string | null;
     initialTab?: string;
   }
 
-  let { info, error, initialTab }: Props = $props();
+  let { info, error, unsupported, initialTab }: Props = $props();
   let tab = $state<"lighting" | "keys">(untrack(() => initialTab) === "keys" ? "keys" : "lighting");
 </script>
 
@@ -25,6 +27,12 @@
 
 {#if error && !info}
   <div class="notice error">{error}</div>
+{/if}
+{#if unsupported && !info}
+  <div class="notice info">
+    <b>{unsupported} connected.</b> PeriHub supports only the Apex 3 TKL for now, and it sends nothing to this keyboard
+    until someone has tested it. If you can help, see issue #9 on PeriHub's GitHub page.
+  </div>
 {/if}
 
 <div class="tabs">

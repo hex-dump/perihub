@@ -22,6 +22,16 @@ body:
       placeholder: e.g. 046d:c099
     validations:
       required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection
+      description: "Through a LIGHTSPEED receiver, give the receiver's USB ID above. PeriHub's log (Settings → Problems) names the receiver, the slot and the mouse's wireless ID."
+      options:
+        - USB cable
+        - LIGHTSPEED receiver
+    validations:
+      required: true
   - type: input
     id: version
     attributes:

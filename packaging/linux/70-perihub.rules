@@ -65,3 +65,16 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c086", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c091", TAG+="uaccess"
 # Logitech MX518
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c08e", TAG+="uaccess"
+
+# LIGHTSPEED receivers, for wireless Logitech mice (read-only until they are tested): only the
+# receiver's own HID++ interface (02). Movements and typing arrive on its other interfaces, which
+# stay closed, and so do the devices that Linux creates for the mice paired with it.
+KERNEL=="hidraw*", KERNELS=="0003:046D:C539.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="0003:046D:C53A.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="0003:046D:C53D.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="0003:046D:C53F.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="0003:046D:C541.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="0003:046D:C543.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="0003:046D:C545.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="0003:046D:C547.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="0003:046D:C54D.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"

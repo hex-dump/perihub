@@ -8,6 +8,9 @@ pub enum Error {
     Hidpp(HidppErrorCode),
     #[error("the device did not respond in time")]
     Timeout,
+    /// A mouse behind a LIGHTSPEED receiver that is turned off or asleep.
+    #[error("the mouse is turned off or asleep")]
+    Unreachable,
     #[error("feature {0:#06x} is not available on this device")]
     FeatureMissing(u16),
     #[error("unexpected response from the device: {0}")]

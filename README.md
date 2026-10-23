@@ -69,6 +69,8 @@ PeriHub only reads the app's identifier (the executable name on Windows, the win
 
 27 more Logitech mice are recognized when connected with a USB cable (see [Supported hardware](#supported-hardware)). They have not been tested with PeriHub yet, so it only reads them: you can see their profiles, DPI levels, buttons and lighting, but nothing can be changed until someone confirms that the model works.
 
+From version 0.5.0, not released yet, the 15 wireless models are also recognized through their LIGHTSPEED receiver, read-only too: three of them, the G305, G603 and G604, have no data cable. PeriHub also shows their battery, and when the mouse is turned off or asleep it says so and finds it again once it wakes up.
+
 <table>
   <tr>
     <td><img src="docs/screenshots/keyboard-keys.png" alt="Key remapping"></td>
@@ -86,54 +88,58 @@ PeriHub only reads the app's identifier (the executable name on Windows, the win
 |---|---|---|
 | SteelSeries Apex 3 TKL | `1038:1622` (firmware 3.0.4) | ✅ Supported, tested on real hardware |
 | Logitech G502 HERO | `046d:c08b` | ✅ Supported, tested on real hardware |
-| Other Logitech G mice, over a USB cable | listed below | 🧪 Experimental, read-only |
+| Other Logitech G mice, with a USB cable (from 0.5.0 also with a LIGHTSPEED receiver) | listed below | 🧪 Experimental, read-only |
+| SteelSeries Apex 3 | `1038:161a` | From 0.5.0 recognized, not supported yet: PeriHub sends nothing to it ([issue #9](https://github.com/hex-dump/perihub/issues/9)) |
 
 <details>
 <summary>Experimental Logitech mice</summary>
 
-The list comes from [libratbag](https://github.com/libratbag/libratbag). Wireless models are recognized only when connected with their USB cable: LIGHTSPEED receivers are not supported yet.
+The list comes from [libratbag](https://github.com/libratbag/libratbag). Wireless models are recognized with their USB cable. From version 0.5.0, not released yet, they are also recognized through a LIGHTSPEED receiver (`046d:c539`, `c53a`, `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`), where they report the wireless ID in the last column. The receiver support has not been tried on real hardware yet: reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4).
 
-| Mouse | USB ID |
-|---|---|
-| Logitech G502 Proteus Core | `046d:c07d` |
-| Logitech G502 Proteus Spectrum | `046d:c332` |
-| Logitech G502 HERO Wireless | `046d:c08d` |
-| Logitech G502 X | `046d:c099` |
-| Logitech G502 X Wireless | `046d:c098` |
-| Logitech G502 X PLUS | `046d:c095` |
-| Logitech G Pro | `046d:c085` |
-| Logitech G Pro | `046d:c08c` |
-| Logitech G Pro Wireless | `046d:c088` |
-| Logitech G Pro X Superlight | `046d:c094` |
-| Logitech G102/G103/G203 | `046d:c084` |
-| Logitech G102/G103/G203 | `046d:c092` |
-| Logitech G102/G103/G203 | `046d:c09d` |
-| Logitech G302 | `046d:c07f` |
-| Logitech G303 | `046d:c080` |
-| Logitech G303 Shroud Edition | `046d:c097` |
-| Logitech G402 | `046d:c07e` |
-| Logitech G403 | `046d:c083` |
-| Logitech G403 HERO | `046d:c08f` |
-| Logitech G403 Wireless | `046d:c082` |
-| Logitech G703 | `046d:c087` |
-| Logitech G703 HERO | `046d:c090` |
-| Logitech G705 | `046d:c096` |
-| Logitech G900 | `046d:c081` |
-| Logitech G903 | `046d:c086` |
-| Logitech G903 HERO | `046d:c091` |
-| Logitech MX518 | `046d:c08e` |
+| Mouse | USB ID | Through a receiver |
+|---|---|---|
+| Logitech G502 Proteus Core | `046d:c07d` | |
+| Logitech G502 Proteus Spectrum | `046d:c332` | |
+| Logitech G502 HERO Wireless | `046d:c08d` | `407f` |
+| Logitech G502 X | `046d:c099` | |
+| Logitech G502 X Wireless | `046d:c098` | `409f` |
+| Logitech G502 X PLUS | `046d:c095` | `4099` |
+| Logitech G Pro | `046d:c085` | |
+| Logitech G Pro | `046d:c08c` | |
+| Logitech G Pro Wireless | `046d:c088` | `4079` |
+| Logitech G Pro X Superlight | `046d:c094` | `4093` |
+| Logitech G102/G103/G203 | `046d:c084` | |
+| Logitech G102/G103/G203 | `046d:c092` | |
+| Logitech G102/G103/G203 | `046d:c09d` | |
+| Logitech G302 | `046d:c07f` | |
+| Logitech G303 | `046d:c080` | |
+| Logitech G303 Shroud Edition | `046d:c097` | |
+| Logitech G402 | `046d:c07e` | |
+| Logitech G403 | `046d:c083` | |
+| Logitech G403 HERO | `046d:c08f` | |
+| Logitech G403 Wireless | `046d:c082` | `405d` |
+| Logitech G703 | `046d:c087` | `4070` |
+| Logitech G703 HERO | `046d:c090` | `4086` |
+| Logitech G705 | `046d:c096` | `409d` |
+| Logitech G900 | `046d:c081` | `4053` |
+| Logitech G903 | `046d:c086` | `4067` |
+| Logitech G903 HERO | `046d:c091` | `4087` |
+| Logitech MX518 | `046d:c08e` | |
+| Logitech G305 (from 0.5.0) | wireless only | `4074` |
+| Logitech G603 (from 0.5.0) | wireless only | `406c` |
+| Logitech G604 (from 0.5.0) | wireless only | `4085` |
 
 If you own one of these, please fill in a [mouse test report](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml) with what PeriHub shows: it takes a few minutes, and a model becomes fully supported once someone confirms it works.
 
 </details>
 
-PeriHub only talks to the devices listed here. It never sends commands to anything it does not recognize.
+PeriHub only talks to the devices listed here. It never sends commands to anything it does not recognize. From 0.5.0, behind a LIGHTSPEED receiver it first asks each device which model it is, with read commands only.
 
 ## Hardware roadmap
 
 PeriHub is meant to support much more than these two devices. The plan is to add hardware over time, starting with devices that share protocols PeriHub already speaks:
 
-- **Logitech G mice using HID++ 2.0.** 27 more models are already recognized in read-only mode. Next: enable editing as owners confirm them, and support LIGHTSPEED wireless receivers.
+- **Logitech G mice using HID++ 2.0.** 27 more models are already recognized in read-only mode. Version 0.5.0 adds LIGHTSPEED receivers, read-only too. Next: enable editing as owners confirm them.
 - **Other SteelSeries keyboards**, such as the rest of the Apex range.
 - **SteelSeries mice.**
 - **Headsets and other peripherals**, where the hardware exposes useful settings.
@@ -162,7 +168,7 @@ scoop bucket add perihub-scoop https://github.com/Kissshot-2003/perihub-scoop
 scoop install perihub-scoop/perihub
 ```
 
-Update it with `scoop update perihub`, not from **Settings → Updates**: PeriHub's installer would add a second copy outside Scoop. From 0.4.3, PeriHub recognizes a Scoop install and leaves updates to Scoop.
+Update it with `scoop update perihub`, not from **Settings → Updates**: PeriHub's installer would add a second copy outside Scoop. From 0.5.0, PeriHub recognizes a Scoop install and leaves updates to Scoop.
 
 ### Linux
 
@@ -193,7 +199,9 @@ sudo curl -o /etc/udev/rules.d/70-perihub.rules \
 sudo udevadm control --reload && sudo udevadm trigger
 ```
 
-The rule grants access only to the HID interfaces of the supported devices, and only to the user with the active session. On the Apex 3 TKL it opens only the configuration interface: the interfaces that report what you type stay closed. If you already use OpenRGB with its udev rules, you probably don't need it.
+The rule grants access only to the HID interfaces of the supported devices, and only to the user with the active session. On the Apex 3 TKL it opens only the configuration interface: the interfaces that report what you type stay closed. On a LIGHTSPEED receiver it opens only the HID++ interface, which carries settings: mouse movements and typing arrive on the receiver's other interfaces, which stay closed. If you already use OpenRGB with its udev rules, you probably don't need it.
+
+From version 0.5.0 the rule includes the LIGHTSPEED receivers: if you installed it by hand for the AppImage, install it again with the commands above. The packages update it on their own.
 
 <a id="optional-reactive-lighting"></a>
 
@@ -240,7 +248,8 @@ PeriHub does not modify firmware. It uses the same configuration commands as the
 
 - **Restricted commands.** The code can only send commands that have been verified.
   - The command that reboots the Apex into its bootloader cannot even be expressed.
-  - On the G502, only HID++ features `0x0000`, `0x0001`, `0x0003`, `0x0005`, `0x2201`, `0x8060`, `0x8070` and `0x8100` are used.
+  - On Logitech mice, only HID++ features `0x0000`, `0x0001`, `0x0003`, `0x0005`, `0x2201`, `0x8060`, `0x8070` and `0x8100` are used. From 0.5.0 also `0x1000`, `0x1001` and `0x1004`, only to read the battery.
+  - From 0.5.0, through a LIGHTSPEED receiver PeriHub only talks to the mouse, with the same rules. It never sends the receiver's own commands, which pair and unpair devices.
 - **Verified writes.**
   - Mouse: profiles are edited on top of the original sector bytes, so fields PeriHub does not manage stay intact. Every written sector is read back and compared byte by byte.
   - Keyboard: the key mapping is written to RAM first and only saved to memory if the read-back matches; otherwise it is rolled back.
@@ -310,7 +319,7 @@ The UI is in English. More languages are on the roadmap.
 ## Known limitations
 
 - **Windows**: tested on a real Windows 11 PC: keyboard lighting, reactive lighting, key remapping, mouse profiles and their macros, app profiles, tray icon, autostart with a real login, the update from 0.3.0 to 0.4.1, the G HUB warning, software macros started by mouse buttons and by keyboard keys, and the log file. Creating software macros with the editor and from the Keys page has been tried on Linux only. Reports are welcome in [issue #3](https://github.com/hex-dump/perihub/issues/3).
-- **Logitech wireless mice** work only over their USB cable: LIGHTSPEED receivers are not supported yet.
+- **Logitech wireless mice** work only over their USB cable. From 0.5.0, not released yet, also through their LIGHTSPEED receiver: read-only, and not tried on real hardware yet, so reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4). A button of a mouse behind a receiver does not start software macros.
 - **App profiles** detect the app in focus on Windows and on Hyprland only. They switch lighting and mouse profiles, not key mappings, because changing those writes the keyboard's memory.
 - **Not yet available**: GameSense compatibility.
 - **Software macros** type text through the keyboard layout on Linux, so characters the layout cannot type (with Shift, AltGr or a dead key) are skipped. On Windows many games ignore typed text, but not keys.
@@ -363,7 +372,7 @@ cargo run -p perihub-cli -- keyboard light '{"type":"wave","period_ms":3000,"rev
 ```
 crates/perihub-core     Rust library: protocols, effects, device detection, configuration
   src/apex/             SteelSeries Apex 3 TKL: RGB (output reports) and key mapping (feature reports)
-  src/hidpp/            Logitech HID++ 2.0, the onboard profile format (CRC-CCITT) and the list of mice
+  src/hidpp/            Logitech HID++ 2.0, LIGHTSPEED receivers, the onboard profile format (CRC-CCITT) and the list of mice
   src/effects.rs        lighting effects rendered on the PC
   src/manager.rs        device hotplug
   src/worker.rs         one thread per device, so requests never interleave
@@ -374,7 +383,7 @@ packaging/linux         udev rule
 ```
 
 - Device communication goes through [hidapi](https://github.com/libusb/hidapi). On Linux the hidraw backend is used, so the keyboard and mouse keep working normally while PeriHub is open.
-- On Windows the mouse's short and long HID++ collections are separate devices; PeriHub uses the long one (report `0x11`).
+- On Windows the mouse's short and long HID++ collections are separate devices; PeriHub uses the long one (report `0x11`). Behind a LIGHTSPEED receiver it also uses the short one, where the receiver answers for a mouse that is asleep.
 - Each device family is a separate module in `perihub-core`, which is where new hardware will be added.
 
 ## Contributing

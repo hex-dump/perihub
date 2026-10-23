@@ -13,7 +13,7 @@ use crate::error::{Error, HidppErrorCode, Result};
 use crate::hidpp::macros::{self, Macro, Packer};
 use crate::hidpp::models::MouseModel;
 use crate::hidpp::profile::{self, ButtonAction, LedEffect, ProfileSettings};
-use crate::hidpp::{DpiCapabilities, FirmwareEntity, HidppDevice, LedZone, OnboardInfo, ROM_SECTOR_BASE};
+use crate::hidpp::{Battery, DpiCapabilities, FirmwareEntity, HidppDevice, LedZone, OnboardInfo, ROM_SECTOR_BASE};
 use crate::worker::DeviceTask;
 
 /// Profile formats verified byte by byte on a real device. Others can be read
@@ -32,6 +32,8 @@ pub struct MouseInfo {
     pub name: String,
     /// Tested with PeriHub: unverified models are read-only.
     pub verified: bool,
+    /// Connected through a LIGHTSPEED receiver instead of its cable.
+    pub receiver: bool,
     /// Another program left the mouse under software control, so its onboard profiles are not in use.
     pub host_mode: bool,
     pub firmware: Vec<FirmwareEntity>,
@@ -59,12 +61,14 @@ pub struct MouseState {
     pub macro_space: u32,
 }
 
-/// What the mouse's own buttons can change at any time: the active profile and DPI.
+/// What changes without PeriHub: the active profile and DPI, which the mouse's own buttons
+/// change, and the battery of a wireless mouse.
 #[derive(Debug, Clone, Serialize)]
 pub struct MouseLive {
     pub active_profile: u8,
     pub active_dpi_index: u8,
     pub current_dpi: u16,
+    pub battery: Option<Battery>,
 }
 
 pub struct MouseTask {
@@ -122,6 +126,7 @@ impl MouseTask {
             model: model.name.into(),
             name: dev.device_name()?,
             verified: model.verified,
+            receiver: dev.is_behind_receiver(),
             host_mode: false,
             firmware: dev.firmware()?,
             dpi: dev.dpi_capabilities(0)?,
@@ -493,12 +498,22 @@ impl MouseTask {
         self.read_active_profile()
     }
 
-    /// Active profile and DPI, which the mouse's buttons change without PeriHub.
+    /// Active profile and DPI, which the mouse's buttons change without PeriHub, and the battery.
     pub fn live(&mut self) -> Result<MouseLive> {
+        let battery = match self.dev.battery() {
+            Ok(battery) => battery,
+            Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
+            // An odd battery report must not hide the DPI.
+            Err(e) => {
+                log::debug!("mouse battery: {e}");
+                None
+            }
+        };
         Ok(MouseLive {
             active_profile: self.read_active_profile()?,
             active_dpi_index: self.dev.active_dpi_index()?,
             current_dpi: self.dev.sensor_dpi(0)?.0,
+            battery,
         })
     }
 
@@ -562,8 +577,9 @@ impl DeviceTask for MouseTask {
         if self.last_mode_check.elapsed() >= MODE_CHECK {
             match self.check_mode() {
                 Ok(()) => {}
-                // The mouse is gone: the manager opens it again when it is back.
-                Err(e @ Error::Hid(_)) => return Err(e),
+                // The mouse is gone, or asleep behind its receiver: the manager opens it again
+                // when it is back.
+                Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
                 // Anything else (a busy mouse, a refused command) must not close the connection.
                 Err(e) => log::debug!("mouse mode check: {e}"),
             }

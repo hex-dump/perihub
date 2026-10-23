@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
-  import { api, errorText, type MouseInfo, type MouseState, type ProfileSettings } from "../lib/api";
+  import { api, errorText, type Battery, type MouseInfo, type MouseState, type ProfileSettings } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
   import ConfirmButton from "../components/ConfirmButton.svelte";
   import MousePerformance from "./MousePerformance.svelte";
@@ -10,10 +10,12 @@
   interface Props {
     info: MouseInfo | null;
     error: string | null;
+    /** A wireless mouse that is turned off or asleep behind its receiver. */
+    asleep: string | null;
     initialTab?: string;
   }
 
-  let { info, error: connectError, initialTab }: Props = $props();
+  let { info, error: connectError, asleep, initialTab }: Props = $props();
 
   let mouse = $state<MouseState | null>(null);
   let selected = $state(1);
@@ -26,6 +28,12 @@
   let message = $state<string | null>(null);
   /** A preview (DPI or LED) is active on the mouse and must be reverted. */
   let previewing = $state(false);
+  let battery = $state<Battery | null>(null);
+
+  function batteryText(b: Battery): string {
+    if (b.state === "full") return "Charged";
+    return `${b.estimated ? "About " : ""}${b.percent}%`;
+  }
 
   const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
   const savedSettings = $derived(mouse?.profiles.find((p) => p.number === selected)?.settings ?? null);
@@ -136,6 +144,7 @@
       mouse.active_profile = live.active_profile;
       mouse.active_dpi_index = live.active_dpi_index;
       mouse.current_dpi = live.current_dpi;
+      battery = live.battery;
       if (follow && next) {
         selected = next.number;
         draft = clone(next.settings);
@@ -154,29 +163,46 @@
 
 <header class="row">
   <div class="col tight grow">
-    <h1>{info ? `Logitech ${info.model}` : "Logitech mouse"}</h1>
+    <h1>Logitech {info?.model ?? asleep ?? "mouse"}</h1>
     <span class="muted small">
       {#if info}
         Firmware {info.firmware.map((f) => `${f.name} ${f.version}`).join(" · ")}
+        {#if info.receiver}· through its LIGHTSPEED receiver{/if}
+      {:else if asleep}
+        Turned off or asleep
       {:else}
         Not connected
       {/if}
     </span>
   </div>
+  {#if info && mouse && battery}
+    <div class="now battery" class:low={battery.percent <= 15 && battery.state === "discharging"} title="The mouse's battery">
+      <strong>{batteryText(battery)}</strong>
+      <span class="small muted">{battery.state === "charging" ? "Battery, charging" : "Battery"}</span>
+    </div>
+  {/if}
   {#if info && mouse}
-    <div class="dpi-now" title="The DPI the mouse is using right now">
+    <div class="now" title="The DPI the mouse is using right now">
       <strong>{mouse.current_dpi}</strong>
       <span class="small muted">DPI now</span>
     </div>
   {/if}
 </header>
 
+{#if asleep && !info}
+  <div class="notice info">
+    <b>{asleep === "Wireless mouse" ? "The wireless mouse" : `The ${asleep}`} is turned off or asleep.</b> Turn it on
+    or move it: PeriHub finds it again within a few seconds.
+  </div>
+{/if}
 {#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
 {#if info && !info.verified}
   <div class="notice info">
-    <b>Experimental support.</b> PeriHub has not been tested on the {info.model} yet, so it only reads the mouse:
-    you can look at its profiles, but nothing can be changed. A mouse test report on PeriHub's GitHub page helps get
-    it fully supported.
+    <b>Experimental support.</b> PeriHub has not been tested on the {info.model}
+    {info.receiver ? "through its LIGHTSPEED receiver" : ""} yet, so it only reads the mouse: you can look at its
+    profiles, but nothing can be changed. A mouse test report on PeriHub's GitHub page{info.receiver
+      ? " (issue #4)"
+      : ""} helps get it fully supported.
   </div>
   {#if info.host_mode}
     <div class="notice info">
@@ -280,7 +306,7 @@
     gap: 4px;
   }
 
-  .dpi-now {
+  .now {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -291,10 +317,23 @@
     line-height: 1.15;
   }
 
-  .dpi-now strong {
+  .now strong {
     font-size: 24px;
     font-variant-numeric: tabular-nums;
     color: var(--accent);
+  }
+
+  .now + .now {
+    margin-left: 10px;
+  }
+
+  /* Orange stays for the DPI in use; the battery turns red only when it is low. */
+  .now.battery strong {
+    color: var(--text);
+  }
+
+  .now.battery.low strong {
+    color: var(--bad);
   }
 
   .profiles {

@@ -26,7 +26,15 @@
     tab = undefined;
     history.replaceState(null, "", `#${next}`);
   }
-  let status = $state<DeviceStatus>({ keyboard: null, mouse: null, keyboard_error: null, mouse_error: null, conflicts: [] });
+  let status = $state<DeviceStatus>({
+    keyboard: null,
+    mouse: null,
+    keyboard_error: null,
+    mouse_error: null,
+    mouse_asleep: null,
+    unsupported_keyboard: null,
+    conflicts: [],
+  });
 
   onMount(() => {
     api.status().then((s) => (status = s));
@@ -62,8 +70,10 @@
     <button class:active={page === "mouse"} onclick={() => go("mouse")}>
       <Icon name="mouse" />
       <span class="col tight">
-        <span class="name">{status.mouse?.model ?? "Logitech mouse"}</span>
-        <span class="state" class:on={!!status.mouse}>{status.mouse ? "Connected" : "Not connected"}</span>
+        <span class="name">{status.mouse?.model ?? status.mouse_asleep ?? "Logitech mouse"}</span>
+        <span class="state" class:on={!!status.mouse}>
+          {status.mouse ? "Connected" : status.mouse_asleep ? "Asleep" : "Not connected"}
+        </span>
       </span>
     </button>
 
@@ -89,9 +99,14 @@
         </div>
       {/each}
       {#if page === "keyboard"}
-        {#key tab}<Keyboard info={status.keyboard} error={status.keyboard_error} initialTab={tab} />{/key}
+        {#key tab}<Keyboard
+            info={status.keyboard}
+            error={status.keyboard_error}
+            unsupported={status.unsupported_keyboard}
+            initialTab={tab}
+          />{/key}
       {:else if page === "mouse"}
-        {#key tab}<Mouse info={status.mouse} error={status.mouse_error} initialTab={tab} />{/key}
+        {#key tab}<Mouse info={status.mouse} error={status.mouse_error} asleep={status.mouse_asleep} initialTab={tab} />{/key}
       {:else if page === "profiles"}
         <AppProfiles {status} />
       {:else}

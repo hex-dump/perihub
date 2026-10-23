@@ -186,11 +186,19 @@ export interface MouseProfile {
   settings: ProfileSettings;
 }
 
-/** What the mouse's own buttons change: active profile and DPI. */
+export interface Battery {
+  percent: number;
+  /** Worked out from the voltage or a coarse level: the mouse reports no percentage. */
+  estimated: boolean;
+  state: "discharging" | "charging" | "full";
+}
+
+/** What changes without PeriHub: active profile and DPI (the mouse's buttons), the battery. */
 export interface MouseLive {
   active_profile: number;
   active_dpi_index: number;
   current_dpi: number;
+  battery: Battery | null;
 }
 
 export interface MouseState {
@@ -216,6 +224,8 @@ export interface MouseInfo {
   name: string;
   /** Tested with PeriHub: unverified models are read-only. */
   verified: boolean;
+  /** Connected through a LIGHTSPEED receiver instead of its cable. */
+  receiver: boolean;
   /** Another program left the mouse under software control. */
   host_mode: boolean;
   firmware: { kind: number; name: string; version: string }[];
@@ -236,6 +246,10 @@ export interface DeviceStatus {
   mouse: MouseInfo | null;
   keyboard_error: string | null;
   mouse_error: string | null;
+  /** A wireless mouse paired with a connected receiver but turned off or asleep. */
+  mouse_asleep: string | null;
+  /** A keyboard PeriHub recognizes but does not support yet, such as "SteelSeries Apex 3". */
+  unsupported_keyboard: string | null;
   /** Running programs that take control of the devices, such as "Logitech G HUB". */
   conflicts: string[];
 }

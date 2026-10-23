@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+- Logitech wireless mice through their LIGHTSPEED receiver, experimental and read-only like the other mice not tested yet: the 12 wireless models already recognized with their cable, plus the G305, G603 and G604. PeriHub only talks to the mouse through the receiver, and never sends the receiver's own commands, which pair and unpair devices. A mouse that is turned off or asleep is shown as such, and PeriHub finds it again when it wakes up.
+- The battery of wireless mice, on the mouse page: charge, charging and charged.
+- The SteelSeries Apex 3 (full size) is recognized: PeriHub says that it is not supported yet and sends nothing to it.
+- Linux: the udev rule includes the LIGHTSPEED receivers, only their HID++ interface. With the AppImage, install the rule again.
+
 ### Changed
 - Windows: installed with Scoop, PeriHub leaves updates to Scoop (`scoop update perihub`). It does not look for new versions or offer to install them: its installer would add a second copy outside Scoop.
 
