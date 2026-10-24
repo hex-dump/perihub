@@ -11,7 +11,6 @@ use perihub_core::mouse::{MouseLive, MouseState};
 use perihub_core::{DeviceStatus, Error};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, State};
-use tauri_plugin_autostart::ManagerExt;
 
 use crate::AppState;
 
@@ -291,7 +290,7 @@ pub fn app_get_settings(app: AppHandle, state: State<'_, AppState>) -> AppSettin
     let config = state.config.lock().unwrap();
     AppSettings {
         start_hidden: config.start_hidden,
-        autostart: app.autolaunch().is_enabled().unwrap_or(false),
+        autostart: crate::autostart::is_enabled(&app),
         check_updates: config.check_updates,
         updates_supported: crate::updates::supported(),
         package_manager: crate::updates::package_manager().map(String::from),
@@ -301,12 +300,7 @@ pub fn app_get_settings(app: AppHandle, state: State<'_, AppState>) -> AppSettin
 
 #[tauri::command]
 pub fn app_set_settings(app: AppHandle, state: State<'_, AppState>, settings: AppSettings) -> CmdResult<AppSettings> {
-    let launcher = app.autolaunch();
-    let result = if settings.autostart { launcher.enable() } else { launcher.disable() };
-    result.map_err(|e| format!("autostart: {e}"))?;
-    if settings.autostart {
-        crate::autostart::quote_entry(&app);
-    }
+    crate::autostart::set_enabled(&app, settings.autostart).map_err(|e| format!("autostart: {e}"))?;
     let mut config = state.config.lock().unwrap();
     config.start_hidden = settings.start_hidden;
     config.check_updates = settings.check_updates;

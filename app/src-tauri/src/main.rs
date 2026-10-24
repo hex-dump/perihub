@@ -59,14 +59,8 @@ fn main() {
             Some(vec![HIDDEN_ARG]),
         ))
         .setup(move |app| {
-            // Entries written by 0.3.0 and earlier are not quoted (see autostart.rs).
-            #[cfg(windows)]
-            {
-                use tauri_plugin_autostart::ManagerExt;
-                if app.autolaunch().is_enabled().unwrap_or(false) {
-                    autostart::quote_entry(app.handle());
-                }
-            }
+            // Autostart: the HKLM entry goes to HKCU, old entries get quoted (see autostart.rs).
+            autostart::startup(app.handle());
             autostart::restart_hidden();
             let config = AppConfig::load();
             let handle = app.handle().clone();
