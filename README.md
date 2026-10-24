@@ -69,7 +69,7 @@ PeriHub only reads the app's identifier (the executable name on Windows, the win
 
 27 more Logitech mice are recognized when connected with a USB cable (see [Supported hardware](#supported-hardware)). They have not been tested with PeriHub yet, so it only reads them: you can see their profiles, DPI levels, buttons and lighting, but nothing can be changed until someone confirms that the model works.
 
-From version 0.5.0, not released yet, the 15 wireless models are also recognized through their LIGHTSPEED receiver, read-only too: three of them, the G305, G603 and G604, have no data cable. PeriHub also shows their battery, and when the mouse is turned off or asleep it says so and finds it again once it wakes up.
+From version 0.5.0 the 15 wireless models are also recognized through their LIGHTSPEED receiver, read-only too: three of them, the G305, G603 and G604, have no data cable. PeriHub also shows their battery, and when the mouse is turned off or asleep it says so and finds it again once it wakes up.
 
 <table>
   <tr>
@@ -94,7 +94,7 @@ From version 0.5.0, not released yet, the 15 wireless models are also recognized
 <details>
 <summary>Experimental Logitech mice</summary>
 
-The list comes from [libratbag](https://github.com/libratbag/libratbag). Wireless models are recognized with their USB cable. From version 0.5.0, not released yet, they are also recognized through a LIGHTSPEED receiver (`046d:c539`, `c53a`, `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`), where they report the wireless ID in the last column. The receiver support has not been tried on real hardware yet: reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4).
+The list comes from [libratbag](https://github.com/libratbag/libratbag). Wireless models are recognized with their USB cable. From version 0.5.0 they are also recognized through a LIGHTSPEED receiver (`046d:c539`, `c53a`, `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`), where they report the wireless ID in the last column. The receiver support has not been tried on real hardware yet: reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4).
 
 | Mouse | USB ID | Through a receiver |
 |---|---|---|
@@ -319,7 +319,7 @@ The UI is in English. More languages are on the roadmap.
 ## Known limitations
 
 - **Windows**: tested on a real Windows 11 PC: keyboard lighting, reactive lighting, key remapping, mouse profiles and their macros, app profiles, tray icon, autostart with a real login, the update from 0.3.0 to 0.4.1, the G HUB warning, software macros started by mouse buttons and by keyboard keys, and the log file. Creating software macros with the editor and from the Keys page has been tried on Linux only. Reports are welcome in [issue #3](https://github.com/hex-dump/perihub/issues/3).
-- **Logitech wireless mice** work only over their USB cable. From 0.5.0, not released yet, also through their LIGHTSPEED receiver: read-only, and not tried on real hardware yet, so reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4). A button of a mouse behind a receiver does not start software macros.
+- **Logitech wireless mice** through their LIGHTSPEED receiver (from 0.5.0) are read-only and not tried on real hardware yet, so reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4). A button of a mouse behind a receiver does not start software macros.
 - **App profiles** detect the app in focus on Windows and on Hyprland only. They switch lighting and mouse profiles, not key mappings, because changing those writes the keyboard's memory.
 - **Not yet available**: GameSense compatibility.
 - **Software macros** type text through the keyboard layout on Linux, so characters the layout cannot type (with Shift, AltGr or a dead key) are skipped. On Windows many games ignore typed text, but not keys.

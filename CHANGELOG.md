@@ -1,8 +1,10 @@
 # Changelog
 
-## 0.5.0 — 2026-10-23
+## 0.5.0 — 2026-10-24
 
 Wireless Logitech mice through their LIGHTSPEED receiver, read-only until someone tests them, and their battery. Not tried on a real receiver yet: reports are welcome in issue #4.
+
+Tested on a real Windows PC, where the sign-in fix of 0.4.2 is now verified too: with PeriHub open at sign-out, it comes back in the tray without its window.
 
 ### Added
 - Logitech wireless mice through their LIGHTSPEED receiver, experimental and read-only like the other mice not tested yet: the 12 wireless models already recognized with their cable, plus the G305, G603 and G604. PeriHub only talks to the mouse through the receiver, and never sends the receiver's own commands, which pair and unpair devices. A mouse that is turned off or asleep is shown as such, and PeriHub finds it again when it wakes up.
