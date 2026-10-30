@@ -3,8 +3,8 @@
 ## Unreleased
 
 ### Fixed
-- Windows: the autostart entry goes to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` instead of `HKLM`, where 0.4.2 and earlier could write it machine-wide: it would also start PeriHub for the other accounts on the PC with a path to this user's folder. Entries left in HKLM are moved to HKCU when PeriHub starts, or deleted when Task Manager had turned them off. When Windows does not let us delete the HKLM entry, it stays and still starts PeriHub, so Settings shows autostart as on, and turning it off says to quit PeriHub from the tray and start it once as administrator.
-- The mouse page: **Discard** goes back to the saved values at once, without waiting for the mouse, and a change made just before Discard, or before choosing another profile, no longer stays on the mouse as a preview.
+- Windows: the autostart entry goes to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` instead of `HKLM`, where 0.4.2 and earlier could write it machine-wide: it would also start PeriHub for the other accounts on the PC with a path to this user's folder. Entries left in HKLM are moved to HKCU when PeriHub starts, or deleted when Task Manager had turned them off. When Windows does not let us delete the HKLM entry, it stays and still starts PeriHub, so Settings shows autostart as on, and turning it off says to quit PeriHub from the tray and start it once as administrator, or to disable it in Task Manager. Disabled there, Settings shows autostart as off.
+- The mouse page: **Discard** goes back to the saved values at once, without waiting for the mouse, and a change made just before Discard, or before choosing or activating another profile, saving or restoring factory settings, no longer stays on the mouse as a preview.
 
 ## 0.5.0 — 2026-10-24
 

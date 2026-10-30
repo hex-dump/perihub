@@ -18,13 +18,15 @@
     settings = await api.appSettings();
   });
 
-  async function update(change: Partial<AppSettings>) {
+  async function update(change: Partial<AppSettings>, box: HTMLInputElement) {
     if (!settings) return;
     try {
       settings = await api.setAppSettings({ ...settings, ...change });
       error = null;
     } catch (e) {
       error = errorText(e);
+      // Nothing changed, so the box goes back: `checked` alone would not redo it.
+      box.checked = !box.checked;
     }
   }
 </script>
@@ -39,12 +41,12 @@
     {#if settings}
       <label class="row">
         <input type="checkbox" checked={settings.autostart}
-          onchange={(e) => update({ autostart: (e.target as HTMLInputElement).checked })} />
+          onchange={(e) => update({ autostart: e.currentTarget.checked }, e.currentTarget)} />
         Start PeriHub when I log in (hidden in the system tray)
       </label>
       <label class="row">
         <input type="checkbox" checked={settings.start_hidden}
-          onchange={(e) => update({ start_hidden: (e.target as HTMLInputElement).checked })} />
+          onchange={(e) => update({ start_hidden: e.currentTarget.checked }, e.currentTarget)} />
         Always start hidden
       </label>
     {/if}
@@ -64,7 +66,7 @@
       <h2>Updates</h2>
       <label class="row">
         <input type="checkbox" checked={settings.check_updates}
-          onchange={(e) => update({ check_updates: (e.target as HTMLInputElement).checked })} />
+          onchange={(e) => update({ check_updates: e.currentTarget.checked }, e.currentTarget)} />
         Look for a new version when PeriHub starts and once a day
       </label>
       <div class="row wrap">

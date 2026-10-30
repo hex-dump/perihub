@@ -110,7 +110,17 @@ pub fn is_enabled(app: &AppHandle) -> bool {
     }
     // An HKLM entry that Windows does not let this user delete still starts PeriHub, so it counts
     // as enabled; `disable` then says how to remove it.
+    machine_entry_starts(app)
+}
+
+/// Whether an entry under `HKLM` starts this copy of PeriHub: it is there and Task Manager did not
+/// turn it off. Reading needs no rights, unlike deleting it.
+#[cfg(windows)]
+fn machine_entry_starts(app: &AppHandle) -> bool {
+    use windows_registry::LOCAL_MACHINE;
+
     machine_entry(app).is_some()
+        && !LOCAL_MACHINE.open(TASK_MANAGER_PATH).is_ok_and(|key| task_manager_disabled(&key, &app.package_info().name))
 }
 
 /// The Run entry under `HKLM` when it points at this copy of PeriHub: 0.4.2 and earlier wrote it
@@ -242,6 +252,11 @@ fn enable(app: &AppHandle) -> Result<(), String> {
     use windows_registry::{CURRENT_USER, Type};
 
     let name = &app.package_info().name;
+    // The HKLM entry already starts PeriHub: a copy here would start it twice, and would stay
+    // behind once that one is gone.
+    if machine_entry_starts(app) {
+        return Ok(());
+    }
     let Some(value) = command_line() else { return Err("could not find PeriHub's own path".to_string()) };
     // create opens the key when it already exists.
     CURRENT_USER.create(RUN_PATH).and_then(|key| key.set_string(name, &value)).map_err(|error| format!("{error}"))?;
@@ -274,9 +289,11 @@ fn disable(app: &AppHandle) -> Result<(), String> {
     match LOCAL_MACHINE.options().read().write().open(RUN_PATH).and_then(|key| key.remove_value(name)) {
         Ok(_) => {}
         Err(error) if error.code() == E_FILENOTFOUND => return Ok(()),
+        // Turned off in Task Manager it does not start PeriHub, so autostart is off as asked.
+        Err(error) if error.code() == E_ACCESSDENIED && !machine_entry_starts(app) => return Ok(()),
         Err(error) if error.code() == E_ACCESSDENIED => {
             return Err(
-                "autostart is set for all accounts in HKEY_LOCAL_MACHINE and Windows does not let this account remove it. Quit PeriHub from the tray, then start it once as administrator, signed in as this same account, which moves the entry here. Otherwise remove it in Task Manager."
+                "it is set for all accounts in HKEY_LOCAL_MACHINE and Windows does not let this account remove it. Quit PeriHub from the tray, then start it once as administrator, signed in as this same account, which moves the entry here. Otherwise disable it in Task Manager."
                     .to_string(),
             );
         }
