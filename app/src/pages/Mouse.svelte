@@ -93,6 +93,7 @@
 
   async function save() {
     if (!draft) return;
+    previewEpoch++;
     const settings = clone(draft);
     const next = await run(`Saving profile ${selected} to the mouse…`, () => api.saveProfile(selected, settings));
     if (next) {
@@ -110,6 +111,7 @@
   }
 
   async function factory() {
+    previewEpoch++;
     const next = await run(`Restoring profile ${selected}…`, () => api.restoreFactory(selected));
     if (next) {
       previewing = false;
@@ -119,6 +121,7 @@
   }
 
   async function activate(number: number) {
+    previewEpoch++;
     const next = await run("Switching profile…", () => api.setActiveProfile(number));
     if (next) {
       previewing = false;
