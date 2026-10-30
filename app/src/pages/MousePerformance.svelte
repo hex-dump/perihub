@@ -23,7 +23,9 @@
   };
 
   const preview = debounce((dpi: number) => {
-    api.previewDpi(dpi).then(onpreview, () => {});
+    // Marked before sending, so that reverting also covers a preview on its way.
+    onpreview();
+    api.previewDpi(dpi).catch(() => {});
   }, 150);
 
   function setLevel(i: number, value: number) {

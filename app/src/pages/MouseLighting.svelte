@@ -22,11 +22,16 @@
   ];
 
   // Zones are sent one after the other, so animated effects start together and stay in step.
+  let destroyed = false;
   const preview = debounce(async (zones: number[], effect: LedEffect) => {
+    // Marked before sending, so that reverting also covers a preview on its way.
+    onpreview();
     try {
-      for (const zone of zones) await api.previewLed(zone, effect);
+      for (const zone of zones) {
+        if (destroyed) return;
+        await api.previewLed(zone, effect);
+      }
       error = null;
-      onpreview();
     } catch (e) {
       error = errorText(e);
     }
@@ -99,7 +104,10 @@
   }
 
   const num = (e: Event) => Number((e.target as HTMLInputElement).value);
-  onDestroy(() => preview.cancel());
+  onDestroy(() => {
+    destroyed = true;
+    preview.cancel();
+  });
 </script>
 
 <div class="col gap">

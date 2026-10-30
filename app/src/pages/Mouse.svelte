@@ -28,6 +28,8 @@
   let message = $state<string | null>(null);
   /** A preview (DPI or LED) is active on the mouse and must be reverted. */
   let previewing = $state(false);
+  /** Changing it recreates the editors that preview, which drops the previews they have not sent. */
+  let previewEpoch = $state(0);
   let battery = $state<Battery | null>(null);
 
   function batteryText(b: Battery): string {
@@ -82,6 +84,7 @@
 
   async function selectProfile(number: number) {
     if (number === selected) return;
+    previewEpoch++;
     await revertPreview();
     selected = number;
     draft = clone(mouse!.profiles.find((p) => p.number === number)!.settings);
@@ -100,8 +103,10 @@
   }
 
   async function discard() {
-    await revertPreview();
+    // The page goes back at once, whatever the mouse answers.
+    previewEpoch++;
     draft = clone(savedSettings!);
+    await revertPreview();
   }
 
   async function factory() {
@@ -267,13 +272,17 @@
   <!-- Unverified models are read-only: every control in the editor is disabled. -->
   <fieldset disabled={!info.verified}>
     {#if tab === "performance"}
-      <MousePerformance {info} bind:settings={draft} onpreview={() => (previewing = true)}
-        activeLevel={selected === mouse.active_profile ? mouse.active_dpi_index : null} />
+      {#key previewEpoch}
+        <MousePerformance {info} bind:settings={draft} onpreview={() => (previewing = true)}
+          activeLevel={selected === mouse.active_profile ? mouse.active_dpi_index : null} />
+      {/key}
     {:else if tab === "buttons"}
       <MouseButtons {info} bind:settings={draft} profiles={mouse.profiles} profileNumber={selected}
         macroSpace={mouse.macro_space} />
     {:else}
-      <MouseLighting {info} bind:settings={draft} onpreview={() => (previewing = true)} />
+      {#key previewEpoch}
+        <MouseLighting {info} bind:settings={draft} onpreview={() => (previewing = true)} />
+      {/key}
     {/if}
   </fieldset>
 
