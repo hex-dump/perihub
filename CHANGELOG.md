@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Windows: the autostart entry goes to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` instead of `HKLM`, where 0.4.2 and earlier could write it machine-wide: it would also start PeriHub for the other accounts on the PC with a path to this user's folder. Entries left in HKLM are moved to HKCU when PeriHub starts, or deleted when Task Manager had turned them off. When Windows does not let us delete the HKLM entry, it stays and still starts PeriHub, so Settings shows autostart as on, and turning it off says to quit PeriHub from the tray and start it once as administrator.
+- The mouse page: **Discard** goes back to the saved values at once, without waiting for the mouse, and a change made just before Discard, or before choosing another profile, no longer stays on the mouse as a preview.
+
 ## 0.5.0 — 2026-10-24
 
 Wireless Logitech mice through their LIGHTSPEED receiver, read-only until someone tests them, and their battery. Not tried on a real receiver yet: reports are welcome in issue #4.
@@ -11,9 +17,6 @@ Tested on a real Windows PC, where the sign-in fix of 0.4.2 is now verified too:
 - The battery of wireless mice, on the mouse page: charge, charging and charged.
 - The SteelSeries Apex 3 (full size) is recognized: PeriHub says that it is not supported yet and sends nothing to it.
 - Linux: the udev rule includes the LIGHTSPEED receivers, only their HID++ interface. With the AppImage, install the rule again.
-
-### Fixed
-- Windows: the autostart entry goes to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` instead of `HKLM`, where 0.4.2 and earlier could write it machine-wide: it would also start PeriHub for the other accounts on the PC with a path to this user's folder. Entries left in HKLM are moved to HKCU when PeriHub starts, or deleted when Task Manager had turned them off. When Windows does not let us delete the HKLM entry, it stays and still starts PeriHub, so Settings shows autostart as on, and turning it off says to start PeriHub once as administrator.
 
 ### Changed
 - Windows: installed with Scoop, PeriHub leaves updates to Scoop (`scoop update perihub`). It does not look for new versions or offer to install them: its installer would add a second copy outside Scoop.

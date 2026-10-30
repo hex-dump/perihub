@@ -188,7 +188,7 @@ fn move_from_local_machine(app: &AppHandle) {
     let Some(value) = command_line() else { return };
     let mut options = LOCAL_MACHINE.options();
     let machine = options.read().write();
-    // A Task Manager value that holds a time turns the entry off: moving it would turn it on.
+    // Task Manager can have turned the entry off: moving it would turn it on.
     let disabled = machine.open(TASK_MANAGER_PATH).is_ok_and(|key| task_manager_disabled(&key, name));
     match machine.open(RUN_PATH).and_then(|key| key.remove_value(name)) {
         Ok(_) => {
