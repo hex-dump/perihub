@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.5.1 — 2026-10-31
+
+Where Windows keeps the autostart entry, thanks to @Kissshot-2003, and the Discard button on the mouse page. Both tested on a real Windows 11 PC.
 
 ### Fixed
 - Windows: the autostart entry goes to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` instead of `HKLM`, where 0.4.2 and earlier could write it machine-wide: it would also start PeriHub for the other accounts on the PC with a path to this user's folder. Entries left in HKLM are moved to HKCU when PeriHub starts, or deleted when Task Manager had turned them off. When Windows does not let us delete the HKLM entry, it stays and still starts PeriHub, so Settings shows autostart as on, and turning it off says to quit PeriHub from the tray and start it once as administrator, or to disable it in Task Manager. Disabled there, Settings shows autostart as off.

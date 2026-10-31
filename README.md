@@ -318,7 +318,7 @@ The UI is in English. More languages are on the roadmap.
 
 ## Known limitations
 
-- **Windows**: tested on a real Windows 11 PC: keyboard lighting, reactive lighting, key remapping, mouse profiles and their macros, app profiles, tray icon, autostart with a real login, the update from 0.3.0 to 0.4.1, the G HUB warning, software macros started by mouse buttons and by keyboard keys, and the log file. Creating software macros with the editor and from the Keys page has been tried on Linux only. Reports are welcome in [issue #3](https://github.com/hex-dump/perihub/issues/3).
+- **Windows**: tested on a real Windows 11 PC: keyboard lighting, reactive lighting, key remapping, mouse profiles and their macros, app profiles, tray icon, autostart with a real login, the updates from 0.3.0 to 0.4.1 and from 0.4.2 to 0.5.0, the G HUB warning, software macros started by mouse buttons and by keyboard keys, and the log file. Creating software macros with the editor and from the Keys page has been tried on Linux only. Reports are welcome in [issue #3](https://github.com/hex-dump/perihub/issues/3).
 - **Logitech wireless mice** through their LIGHTSPEED receiver (from 0.5.0) are read-only and not tried on real hardware yet, so reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4). A button of a mouse behind a receiver does not start software macros.
 - **App profiles** detect the app in focus on Windows and on Hyprland only. They switch lighting and mouse profiles, not key mappings, because changing those writes the keyboard's memory.
 - **Not yet available**: GameSense compatibility.
