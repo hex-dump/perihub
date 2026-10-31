@@ -355,6 +355,8 @@ mod tests {
         fn with_machine(test: &str) -> Option<Self> {
             let keys = Self::new(test);
             let created = LOCAL_MACHINE.create(&keys.run).and_then(|_| LOCAL_MACHINE.create(&keys.task_manager));
+            // In CI a skipped test would look like a passed one.
+            assert!(created.is_ok() || std::env::var_os("CI").is_none(), "cannot write HKLM: {created:?}");
             created.is_ok().then_some(keys)
         }
 
