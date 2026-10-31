@@ -148,6 +148,7 @@ fn main() {
             commands::app_set_settings,
             commands::app_quit,
             commands::app_open_log_folder,
+            commands::app_open_test_form,
             soft_macros::soft_get,
             soft_macros::soft_save,
             soft_macros::soft_delete,

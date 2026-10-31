@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Copy test report** and **Open test form**, in Settings → Problems and in the notice of the experimental mice. The report has the version, the system, the model, the USB ID, the connection, the firmware, the profiles, the DPI range and the LED zones, with no key presses, apps or log lines. Through a LIGHTSPEED receiver it also names the receiver, the slot and the wireless ID, which until now had to be looked up in the log.
+
+### Changed
+- The mouse page: "Profile saved" and the other messages appear next to the Save button and go away after a few seconds, so the page does not move under the pointer.
+
+### Fixed
+- Settings reads the autostart state again when the window comes back, so a change made in Task Manager shows at once.
+
 ## 0.5.1 — 2026-10-31
 
 Where Windows keeps the autostart entry, thanks to @Kissshot-2003, and the Discard button on the mouse page. Both tested on a real Windows 11 PC.

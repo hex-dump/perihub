@@ -216,6 +216,14 @@ export interface LedZone {
   effects: number[];
 }
 
+export interface ReceiverLink {
+  /** USB product id of the receiver. */
+  receiver_id: number;
+  slot: number;
+  /** Id the mouse reports through the receiver. */
+  wireless_id: number;
+}
+
 export interface MouseInfo {
   product_id: number;
   /** Model name from PeriHub's list, e.g. "G502 HERO". */
@@ -226,6 +234,8 @@ export interface MouseInfo {
   verified: boolean;
   /** Connected through a LIGHTSPEED receiver instead of its cable. */
   receiver: boolean;
+  /** Which receiver and slot, for test reports. */
+  link: ReceiverLink | null;
   /** Another program left the mouse under software control. */
   host_mode: boolean;
   firmware: { kind: number; name: string; version: string }[];
@@ -265,6 +275,8 @@ export interface AppSettings {
   package_manager: string | null;
   /** Folder of the log file. */
   log_dir: string;
+  /** Operating system and architecture, for test reports. */
+  system: string;
 }
 
 export interface UpdateInfo {
@@ -321,6 +333,7 @@ export const api = {
   setAppSettings: (settings: AppSettings) => invoke<AppSettings>("app_set_settings", { settings }),
   quit: () => invoke<void>("app_quit"),
   openLogFolder: () => invoke<void>("app_open_log_folder"),
+  openTestForm: (url: string) => invoke<void>("app_open_test_form", { url }),
   softMacros: () => invoke<SoftMacrosInfo>("soft_get"),
   /** Saves a macro run by PeriHub; a new one (key 0) gets its trigger key. */
   saveSoftMacro: (item: SoftwareMacro) => invoke<SoftwareMacro>("soft_save", { item }),

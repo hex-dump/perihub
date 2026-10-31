@@ -3,6 +3,7 @@
   import { api, errorText, type Battery, type MouseInfo, type MouseState, type ProfileSettings } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
   import ConfirmButton from "../components/ConfirmButton.svelte";
+  import TestReport from "../components/TestReport.svelte";
   import MousePerformance from "./MousePerformance.svelte";
   import MouseButtons from "./MouseButtons.svelte";
   import MouseLighting from "./MouseLighting.svelte";
@@ -16,6 +17,8 @@
   }
 
   let { info, error: connectError, asleep, initialTab }: Props = $props();
+
+  const MESSAGE_MS = 4000;
 
   let mouse = $state<MouseState | null>(null);
   let selected = $state(1);
@@ -41,6 +44,13 @@
   const savedSettings = $derived(mouse?.profiles.find((p) => p.number === selected)?.settings ?? null);
   const dirty = $derived(!!draft && JSON.stringify(draft) !== JSON.stringify(savedSettings));
   const leftClickMissing = $derived(!!draft && !draft.buttons.some((b) => b.type === "mouse" && b.button === 1));
+
+  // Shown next to Save, where it does not move the page, and only for a few seconds.
+  $effect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => (message = null), MESSAGE_MS);
+    return () => clearTimeout(timer);
+  });
 
   async function run<T>(label: string, task: () => Promise<T>): Promise<T | undefined> {
     busy = label;
@@ -211,6 +221,7 @@
     profiles, but nothing can be changed. A mouse test report on PeriHub's GitHub page{info.receiver
       ? " (issue #4)"
       : ""} helps get it fully supported.
+    <div class="report"><TestReport mouse={info} /></div>
   </div>
   {#if info.host_mode}
     <div class="notice info">
@@ -263,8 +274,6 @@
   </div>
 
   {#if error}<div class="notice error">{error}</div>{/if}
-  {#if message}<div class="notice ok">{message}</div>{/if}
-  {#if busy}<div class="notice info">{busy}</div>{/if}
 
   <div class="tabs">
     <button class:active={tab === "performance"} onclick={() => changeTab("performance")}>DPI and polling</button>
@@ -294,7 +303,11 @@
       Factory settings
     </ConfirmButton>
     <div class="grow"></div>
-    {#if leftClickMissing}
+    {#if busy}
+      <span class="muted small" role="status">{busy}</span>
+    {:else if message}
+      <span class="saved small" role="status">{message}</span>
+    {:else if leftClickMissing}
       <span class="warn small">No button does a left click any more: assign one before saving.</span>
     {:else if dirty}
       <span class="unsaved">Unsaved changes</span>
@@ -447,5 +460,13 @@
 
   .warn {
     color: var(--warn);
+  }
+
+  .saved {
+    color: var(--ok);
+  }
+
+  .report {
+    margin-top: 10px;
   }
 </style>

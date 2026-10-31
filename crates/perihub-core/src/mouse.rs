@@ -34,6 +34,8 @@ pub struct MouseInfo {
     pub verified: bool,
     /// Connected through a LIGHTSPEED receiver instead of its cable.
     pub receiver: bool,
+    /// Which receiver and slot, for test reports.
+    pub link: Option<ReceiverLink>,
     /// Another program left the mouse under software control, so its onboard profiles are not in use.
     pub host_mode: bool,
     pub firmware: Vec<FirmwareEntity>,
@@ -42,6 +44,16 @@ pub struct MouseInfo {
     pub led_zones: Vec<LedZone>,
     pub onboard: OnboardInfo,
     pub writable: bool,
+}
+
+/// Where a mouse behind a LIGHTSPEED receiver is.
+#[derive(Debug, Clone, Serialize)]
+pub struct ReceiverLink {
+    /// USB product id of the receiver.
+    pub receiver_id: u16,
+    pub slot: u8,
+    /// Id the mouse reports through the receiver.
+    pub wireless_id: u16,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -127,6 +139,7 @@ impl MouseTask {
             name: dev.device_name()?,
             verified: model.verified,
             receiver: dev.is_behind_receiver(),
+            link: None,
             host_mode: false,
             firmware: dev.firmware()?,
             dpi: dev.dpi_capabilities(0)?,

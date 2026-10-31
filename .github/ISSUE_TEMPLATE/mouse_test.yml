@@ -22,14 +22,12 @@ body:
       placeholder: e.g. 046d:c099
     validations:
       required: true
-  - type: dropdown
+  - type: input
     id: connection
     attributes:
       label: Connection
-      description: "Through a LIGHTSPEED receiver, give the receiver's USB ID above. PeriHub's log (Settings → Problems) names the receiver, the slot and the mouse's wireless ID."
-      options:
-        - USB cable
-        - LIGHTSPEED receiver
+      description: "Through a LIGHTSPEED receiver, give the receiver's USB ID above."
+      placeholder: USB cable or LIGHTSPEED receiver
     validations:
       required: true
   - type: input
@@ -39,15 +37,19 @@ body:
       placeholder: e.g. 0.2.0
     validations:
       required: true
-  - type: dropdown
+  - type: input
     id: os
     attributes:
       label: Operating system
-      options:
-        - Windows
-        - Linux
+      placeholder: Windows or Linux
     validations:
       required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Test report
+      description: "**Open test form** in PeriHub fills this in, and **Copy test report** copies it (Settings → Problems, or the notice on the mouse page). It has no key presses, apps or log lines. Through a LIGHTSPEED receiver it names the receiver, the slot and the mouse's wireless ID."
+      render: text
   - type: checkboxes
     id: matches
     attributes:

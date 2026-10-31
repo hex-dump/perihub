@@ -3,6 +3,7 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type AppSettings, type DeviceStatus } from "../lib/api";
   import { checkForUpdate, installUpdate, updates } from "../lib/updates.svelte";
+  import TestReport from "../components/TestReport.svelte";
 
   interface Props {
     status: DeviceStatus;
@@ -13,9 +14,16 @@
   let error = $state<string | null>(null);
   let version = $state("");
 
-  onMount(async () => {
-    version = await getVersion();
+  // Autostart can also change outside PeriHub, for example in Task Manager.
+  async function refresh() {
     settings = await api.appSettings();
+  }
+
+  onMount(() => {
+    getVersion().then((v) => (version = v));
+    refresh();
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
   });
 
   async function update(change: Partial<AppSettings>, box: HTMLInputElement) {
@@ -121,6 +129,12 @@
         <code class="small">{settings.log_dir}</code>
         <button onclick={() => api.openLogFolder().catch((e) => (error = errorText(e)))}>Open log folder</button>
       </div>
+    {/if}
+    {#if status.mouse}
+      <p class="small">
+        Testing a mouse? The report below has what the test form asks about it: no key presses, apps or log lines.
+      </p>
+      <TestReport mouse={status.mouse} />
     {/if}
   </div>
 

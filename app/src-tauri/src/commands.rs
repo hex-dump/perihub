@@ -16,6 +16,9 @@ use crate::AppState;
 
 type CmdResult<T> = Result<T, String>;
 
+/// The mouse test form on GitHub; the interface adds the fields it fills in.
+const TEST_FORM_URL: &str = "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml";
+
 async fn blocking<T: Send + 'static>(f: impl FnOnce() -> perihub_core::Result<T> + Send + 'static) -> CmdResult<T> {
     tauri::async_runtime::spawn_blocking(f).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())
 }
@@ -283,6 +286,9 @@ pub struct AppSettings {
     /// Folder of the log file: read only.
     #[serde(default)]
     log_dir: String,
+    /// Operating system and architecture, for test reports: read only.
+    #[serde(default)]
+    system: String,
 }
 
 #[tauri::command]
@@ -295,6 +301,7 @@ pub fn app_get_settings(app: AppHandle, state: State<'_, AppState>) -> AppSettin
         updates_supported: crate::updates::supported(),
         package_manager: crate::updates::package_manager().map(String::from),
         log_dir: crate::logfile::dir().display().to_string(),
+        system: format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
     }
 }
 
@@ -319,6 +326,16 @@ pub fn app_open_log_folder() -> CmdResult<()> {
         .spawn()
         .map(|_| ())
         .map_err(|e| format!("cannot open {}: {e}", dir.display()))
+}
+
+/// Opens PeriHub's mouse test form in the browser. Only that address: the page cannot ask for
+/// any other website or a program, and the fields it fills in are in the query.
+#[tauri::command]
+pub fn app_open_test_form(url: String) -> CmdResult<()> {
+    if !url.starts_with(TEST_FORM_URL) {
+        return Err("not PeriHub's test form".to_string());
+    }
+    perihub_core::softmacro::inject::open_target(&url).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

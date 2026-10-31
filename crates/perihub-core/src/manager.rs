@@ -18,7 +18,7 @@ use crate::hidpp::models::{self, MouseModel};
 use crate::hidpp::receiver::{self, Presence};
 use crate::hidpp::{HidppDevice, Transport};
 use crate::keyboard::{KeyInterfaces, KeyboardInfo, KeyboardTask};
-use crate::mouse::{MouseInfo, MouseTask};
+use crate::mouse::{MouseInfo, MouseTask, ReceiverLink};
 use crate::softmacro::KeyboardTriggers;
 use crate::worker::Worker;
 
@@ -433,8 +433,14 @@ impl Manager {
                         continue;
                     }
                 };
-                let result = open_behind(api, paths, slot, !model.verified).and_then(|dev| MouseTask::open(dev, model));
                 let wireless_id = model.wireless_id.unwrap_or_default();
+                let link = ReceiverLink { receiver_id: paths.0.product_id(), slot, wireless_id };
+                let result = open_behind(api, paths, slot, !model.verified)
+                    .and_then(|dev| MouseTask::open(dev, model))
+                    .map(|mut task| {
+                        task.info.link = Some(link);
+                        task
+                    });
                 let via = format!("{receiver}, slot {slot}, wireless id {wireless_id:04x}");
                 return self.install_mouse(result, &path, model, Some(via));
             }
