@@ -2,7 +2,7 @@
 
 pkgname=perihub-bin
 _pkgname=perihub
-pkgver=0.5.0
+pkgver=0.5.1
 pkgrel=1
 pkgdesc='Configure the SteelSeries Apex 3 TKL and Logitech G mice without SteelSeries GG or Logitech G HUB'
 arch=('x86_64')
@@ -15,7 +15,7 @@ conflicts=("$_pkgname")
 options=('!strip' '!debug')
 source=("https://github.com/hex-dump/perihub/releases/download/v$pkgver/PeriHub_${pkgver}_amd64.deb"
         "LICENSE-$pkgver::https://raw.githubusercontent.com/hex-dump/perihub/v$pkgver/LICENSE")
-sha256sums=('8af71d41820912fa002582a31cf7f7644d6f3192ba506eb440819de82378389f'
+sha256sums=('ea2f4ede82d53fb076aa0bb85c84455b3b5ab2847ff80a14f38d3d9094323c3a'
             '440e353d7bb443f50c947eacbc5a437d4707c6f0595b7fa509d530bab1aef67f')
 
 package() {
