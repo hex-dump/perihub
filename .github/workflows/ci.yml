@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "test/**"]
   pull_request:
 
 jobs:
@@ -34,11 +34,12 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Frontend (type check and build)
+      - name: Frontend (type check, tests and build)
         working-directory: app
         run: |
           npm ci
           npm run check
+          npm test
           npm run build
 
       - name: Format
