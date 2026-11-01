@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.5.2 — 2026-11-01
+
+An easier way to report how a mouse works, and two small changes to the interface. The test report buttons and Settings were tried on Linux and on Windows 11 in a virtual machine, with a G502 HERO. The messages next to Save have automated tests only.
 
 ### Added
 - **Copy test report** and **Open test form**, in Settings → Problems and in the notice of the experimental mice. The report has the version, the system, the model, the USB ID, the connection, the firmware, the profiles, the DPI range and the LED zones, with no key presses, apps or log lines. Through a LIGHTSPEED receiver it also names the receiver, the slot and the wireless ID, which until now had to be looked up in the log.
