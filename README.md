@@ -154,7 +154,7 @@ Get the file for your system from the [releases page](https://github.com/hex-dum
 ### Windows
 
 1. Download `PeriHub_…_x64-setup.exe` (or the `.msi`) and run it.
-2. The installer is not code-signed. If SmartScreen blocks it, click **More info → Run anyway**.
+2. The installer is not code-signed yet ([code signing policy](CODE_SIGNING.md)). If SmartScreen blocks it, click **More info → Run anyway**.
 3. **Quit SteelSeries GG and Logitech G HUB** and turn off their autostart: two programs talking to the same device get in each other's way.
 
 No drivers are needed: PeriHub uses the standard Windows HID interfaces.
@@ -261,6 +261,8 @@ PeriHub does not modify firmware. It uses the same configuration commands as the
 - **Backups.** Before every write to a device's memory, PeriHub saves the previous state in
   - Linux: `~/.config/perihub/backups/`
   - Windows: `%APPDATA%\perihub\backups\`
+
+How the release files are signed, and what PeriHub sends over the network: [CODE_SIGNING.md](CODE_SIGNING.md).
 
 To report a security issue, see [SECURITY.md](SECURITY.md).
 
