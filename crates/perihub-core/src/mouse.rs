@@ -20,6 +20,7 @@ use crate::worker::DeviceTask;
 /// but not written.
 const WRITABLE_PROFILE_FORMATS: &[u8] = &[2];
 const ONBOARD_MODE: u8 = 1;
+const HOST_MODE: u8 = 2;
 /// How often the mouse is checked for another program having taken control of it.
 const MODE_CHECK: Duration = Duration::from_secs(5);
 
@@ -116,6 +117,28 @@ fn mode_action(mode: u8, verified: bool, conflict_running: bool) -> ModeAction {
         ModeAction::SwitchBack
     } else {
         ModeAction::Report
+    }
+}
+
+/// How to go back to the saved settings of the active profile.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Reload {
+    /// Switch to this other profile and back. Selecting the same profile again keeps a preview
+    /// (verified on the G502 HERO).
+    Through(u8),
+    /// Host mode, then onboard mode again: drops a DPI preview on the G502 HERO and keeps the
+    /// profile and DPI level (verified on 2026-11-05). For mice with a single profile, such as
+    /// the G403 HERO, where there is no other profile to go through.
+    ModeSwitch,
+}
+
+/// Mice with more profiles keep the way verified since 0.1.0. Better to go through an enabled
+/// profile: the behavior with disabled ones is not verified.
+fn reload_method(active: u8, enabled: &[bool]) -> Reload {
+    let others = || (1..=enabled.len() as u8).filter(|&n| n != active);
+    match others().find(|&n| enabled[n as usize - 1]).or_else(|| others().next()) {
+        Some(other) => Reload::Through(other),
+        None => Reload::ModeSwitch,
     }
 }
 
@@ -416,8 +439,8 @@ impl MouseTask {
         Ok(())
     }
 
-    /// Reloads the active profile so changes take effect immediately. Reselecting the same
-    /// profile is not enough (verified on the G502 HERO): you have to switch to another one and back.
+    /// Reloads the active profile after it was written. On the G502 HERO a written profile already
+    /// takes effect (DPI and polling, verified on 2026-11-05); the reload also drops any preview.
     fn reload_if_active(&mut self, number: u8) -> Result<()> {
         if self.dev.active_profile()? == number {
             self.reload_active()?;
@@ -425,6 +448,7 @@ impl MouseTask {
         Ok(())
     }
 
+    /// Goes back to the saved settings of the active profile, dropping DPI and LED previews (RAM only).
     fn reload_active(&mut self) -> Result<()> {
         let active = self.dev.active_profile()?;
         let directory = self.dev.read_sector(0, self.sector_size())?;
@@ -433,15 +457,18 @@ impl MouseTask {
         } else {
             vec![true; self.profile_count() as usize]
         };
-        // Better to go through an enabled profile: the behavior with disabled ones is not verified.
-        let others = || (1..=self.profile_count()).filter(|&n| n != active);
-        let other = others()
-            .find(|&n| enabled[n as usize - 1])
-            .or_else(|| others().next())
-            .ok_or_else(|| Error::Invalid("a second profile is needed to reload settings".into()))?;
-        self.dev.set_active_profile(other)?;
-        self.dev.set_active_profile(active)?;
-        // Reloading the profile also drops any DPI or LED preview.
+        match reload_method(active, &enabled) {
+            Reload::Through(other) => {
+                self.dev.set_active_profile(other)?;
+                self.dev.set_active_profile(active)?;
+            }
+            Reload::ModeSwitch => {
+                let level = self.dev.active_dpi_index()?;
+                self.dev.set_onboard_mode(HOST_MODE)?;
+                self.dev.set_onboard_mode(ONBOARD_MODE)?;
+                self.dev.set_active_dpi_index(level)?;
+            }
+        }
         self.previewing = false;
         Ok(())
     }
@@ -611,5 +638,16 @@ mod tests {
         assert_eq!(mode_action(2, true, false), ModeAction::SwitchBack);
         assert_eq!(mode_action(2, true, true), ModeAction::Report);
         assert_eq!(mode_action(2, false, false), ModeAction::Report);
+    }
+
+    #[test]
+    fn reload_goes_through_another_profile_when_there_is_one() {
+        // As before: the first other enabled profile, or else the first other one.
+        assert_eq!(reload_method(4, &[true; 5]), Reload::Through(1));
+        assert_eq!(reload_method(1, &[true; 5]), Reload::Through(2));
+        assert_eq!(reload_method(1, &[true, false, true, true, true]), Reload::Through(3));
+        assert_eq!(reload_method(1, &[true, false]), Reload::Through(2));
+        // A single profile (G403 HERO): host mode and back.
+        assert_eq!(reload_method(1, &[true]), Reload::ModeSwitch);
     }
 }
