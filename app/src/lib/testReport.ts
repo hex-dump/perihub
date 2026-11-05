@@ -33,6 +33,7 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
     `Software control: ${mouse.host_mode ? "yes" : "no"}`,
     `Firmware: ${mouse.firmware.map((f) => `${f.name} ${f.version}`).join(", ")}`,
     `Profiles: ${onboard.profile_count}, buttons: ${onboard.button_count}`,
+    `Memory: model ${onboard.memory_model}, profile format ${onboard.profile_format}, macro format ${onboard.macro_format}, ${onboard.sector_count} sectors of ${onboard.sector_size} bytes, ${onboard.rom_profile_count} factory profiles`,
     `G-Shift: ${onboard.has_gshift ? "yes" : "no"}, DPI shift: ${onboard.has_dpi_shift ? "yes" : "no"}`,
     `DPI: ${dpiRange(mouse)}`,
     `Polling (ms): ${mouse.report_rates_ms.join(", ") || "none reported"}`,

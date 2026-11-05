@@ -21,7 +21,11 @@ const LED_LEN: usize = 11;
 pub const DPI_SLOTS: usize = 5;
 pub const BUTTON_SLOTS: usize = 16;
 pub const LED_SLOTS: usize = 2;
-const MIN_SECTOR_SIZE: usize = 256;
+/// Sector size of the profiles PeriHub writes, verified on the G502 HERO.
+const WRITE_SECTOR_SIZE: usize = 256;
+/// Smallest sector that holds every field PeriHub reads, and the CRC after them. Some mice
+/// (the G502 X) report sectors smaller than 256 bytes: they can be read, not written.
+const READ_SECTOR_SIZE: usize = OFF_LEDS + LED_LEN * LED_SLOTS + 2;
 
 pub fn crc_ccitt(data: &[u8]) -> u16 {
     let mut crc: u16 = 0xFFFF;
@@ -137,7 +141,9 @@ impl ButtonAction {
             }
             [0x80, 0x02, modifiers, key] => return Self::Key { modifiers, key },
             [0x80, 0x03, hi, lo] => return Self::Consumer { usage: u16::from_be_bytes([hi, lo]) },
-            [0x90, code, 0xFF, 0xFF] => {
+            // The last two bytes carry no data for these functions: the G502 HERO has FF FF there,
+            // libratbag ignores them and Solaar writes FF 00. They are kept when saving (see `put_button`).
+            [0x90, code, _, _] => {
                 if let Some(function) = SpecialFunction::from_code(code) {
                     return Self::Special { function };
                 }
@@ -265,7 +271,7 @@ pub struct ProfileSettings {
 
 impl ProfileSettings {
     pub fn parse(sector: &[u8], button_count: usize) -> Result<Self> {
-        check_layout(sector, button_count)?;
+        check_layout(sector, button_count, READ_SECTOR_SIZE)?;
         let dpi_levels: Vec<u16> = (0..DPI_SLOTS)
             .map(|i| u16::from_le_bytes([sector[OFF_DPI + 2 * i], sector[OFF_DPI + 2 * i + 1]]))
             .take_while(|&dpi| dpi != 0 && dpi != 0xFFFF)
@@ -325,7 +331,7 @@ impl ProfileSettings {
     /// Writes the settings on top of an existing sector and recomputes the CRC.
     pub fn apply(&self, sector: &mut [u8]) -> Result<()> {
         let button_count = self.buttons.len();
-        check_layout(sector, button_count)?;
+        check_layout(sector, button_count, WRITE_SECTOR_SIZE)?;
         if self.dpi_levels.len() > DPI_SLOTS
             || self.gshift_buttons.len() != button_count
             || self.leds.len() != LED_SLOTS
@@ -340,10 +346,10 @@ impl ProfileSettings {
             sector[OFF_DPI + 2 * i..OFF_DPI + 2 * i + 2].copy_from_slice(&dpi.to_le_bytes());
         }
         for (i, action) in self.buttons.iter().enumerate() {
-            sector[OFF_BUTTONS + 4 * i..OFF_BUTTONS + 4 * i + 4].copy_from_slice(&action.encode()?);
+            put_button(&mut sector[OFF_BUTTONS + 4 * i..OFF_BUTTONS + 4 * i + 4], action)?;
         }
         for (i, action) in self.gshift_buttons.iter().enumerate() {
-            sector[OFF_GSHIFT_BUTTONS + 4 * i..OFF_GSHIFT_BUTTONS + 4 * i + 4].copy_from_slice(&action.encode()?);
+            put_button(&mut sector[OFF_GSHIFT_BUTTONS + 4 * i..OFF_GSHIFT_BUTTONS + 4 * i + 4], action)?;
         }
         for (i, led) in self.leds.iter().enumerate() {
             sector[OFF_LEDS + LED_LEN * i..OFF_LEDS + LED_LEN * (i + 1)].copy_from_slice(&led.encode());
@@ -353,9 +359,24 @@ impl ProfileSettings {
     }
 }
 
-fn check_layout(sector: &[u8], button_count: usize) -> Result<()> {
-    if sector.len() < MIN_SECTOR_SIZE || button_count > BUTTON_SLOTS {
-        return Err(Error::Invalid("unsupported profile format".into()));
+/// Writes a button binding. A special function that is already there keeps its last two bytes.
+fn put_button(slot: &mut [u8], action: &ButtonAction) -> Result<()> {
+    let current = ButtonAction::decode(slot[..4].try_into().unwrap());
+    if let (ButtonAction::Special { function: old }, ButtonAction::Special { function: new }) = (&current, action)
+        && old == new
+    {
+        return Ok(());
+    }
+    slot.copy_from_slice(&action.encode()?);
+    Ok(())
+}
+
+fn check_layout(sector: &[u8], button_count: usize, min_size: usize) -> Result<()> {
+    if button_count > BUTTON_SLOTS {
+        return Err(Error::Invalid(format!("unsupported profile format: {button_count} buttons")));
+    }
+    if sector.len() < min_size {
+        return Err(Error::Invalid(format!("unsupported profile format: {}-byte sectors", sector.len())));
     }
     Ok(())
 }
@@ -397,4 +418,67 @@ pub fn build_directory(enabled: &[bool], sector_size: usize) -> Vec<u8> {
     data[at..at + 4].copy_from_slice(&[0xFF, 0xFF, 0x00, 0x00]);
     write_crc(&mut data);
     data
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A 256-byte profile with valid CRC, every button disabled.
+    fn blank_sector() -> Vec<u8> {
+        let mut sector = vec![0xFF; WRITE_SECTOR_SIZE];
+        sector[OFF_REPORT_RATE] = 1;
+        sector[OFF_DEFAULT_DPI] = 0;
+        sector[OFF_SHIFT_DPI] = 0;
+        sector[OFF_DPI..OFF_DPI + 2].copy_from_slice(&800u16.to_le_bytes());
+        sector[OFF_DPI + 2..OFF_DPI + 10].fill(0);
+        sector[OFF_LEDS..OFF_LEDS + LED_LEN * LED_SLOTS].fill(0);
+        write_crc(&mut sector);
+        sector
+    }
+
+    #[test]
+    fn special_functions_ignore_their_last_two_bytes() {
+        for tail in [[0xFF, 0xFF], [0xFF, 0x00], [0x00, 0x00], [0x00, 0x01]] {
+            let action = ButtonAction::decode([0x90, 0x05, tail[0], tail[1]]);
+            assert_eq!(action, ButtonAction::Special { function: SpecialFunction::DpiCycle }, "{tail:02x?}");
+        }
+        // Codes past G-Shift (battery, profile select…) stay raw: some of them use the last byte.
+        assert!(matches!(ButtonAction::decode([0x90, 0x0D, 0xFF, 0x02]), ButtonAction::Raw { .. }));
+        assert!(matches!(ButtonAction::decode([0x90, 0x00, 0xFF, 0xFF]), ButtonAction::Raw { .. }));
+    }
+
+    #[test]
+    fn saving_keeps_the_bytes_of_an_unchanged_special_function() {
+        let mut original = blank_sector();
+        original[OFF_BUTTONS + 4 * 5..OFF_BUTTONS + 4 * 6].copy_from_slice(&[0x90, 0x05, 0xFF, 0x00]);
+        write_crc(&mut original);
+        let mut settings = ProfileSettings::parse(&original, 6).unwrap();
+        assert_eq!(settings.buttons[5], ButtonAction::Special { function: SpecialFunction::DpiCycle });
+
+        let mut copy = original.clone();
+        settings.apply(&mut copy).unwrap();
+        assert_eq!(copy, original);
+
+        // A different function is written the usual way.
+        settings.buttons[5] = ButtonAction::Special { function: SpecialFunction::DpiUp };
+        settings.apply(&mut copy).unwrap();
+        assert_eq!(copy[OFF_BUTTONS + 20..OFF_BUTTONS + 24], [0x90, 0x03, 0xFF, 0xFF]);
+    }
+
+    #[test]
+    fn smaller_sectors_are_read_but_not_written() {
+        let full = blank_sector();
+        let mut small = full[..READ_SECTOR_SIZE].to_vec();
+        write_crc(&mut small);
+        let settings = ProfileSettings::parse(&small, 11).unwrap();
+        assert_eq!(settings.dpi_levels, [800]);
+        let err = settings.apply(&mut small).unwrap_err().to_string();
+        assert!(err.contains("232-byte sectors"), "{err}");
+
+        let too_small = &full[..READ_SECTOR_SIZE - 1];
+        let err = ProfileSettings::parse(too_small, 11).unwrap_err().to_string();
+        assert!(err.contains("231-byte sectors"), "{err}");
+        assert!(ProfileSettings::parse(&full, 17).unwrap_err().to_string().contains("17 buttons"));
+    }
 }

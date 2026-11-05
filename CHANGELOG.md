@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Mice whose onboard memory has sectors smaller than 256 bytes, like the G502 X, showed only "unsupported profile format" (#15). PeriHub now reads their profiles when the sectors hold every field it shows, and they stay read-only. Otherwise the message gives the sector size.
+- Special button functions, such as DPI cycle, showed as "Custom value" when the mouse stores them with other values in their last two bytes. This is most likely the DPI button of the G403 HERO in #14. When a profile is saved, an unchanged special function keeps its bytes as they were.
+- The firmware line no longer lists the empty entries that some mice report (00.00.0000).
+
+### Changed
+- The test report also gives the format of the onboard memory: profile and macro format, number and size of its sectors, factory profiles.
+
 ## 0.5.2 — 2026-11-01
 
 An easier way to report how a mouse works, and two small changes to the interface. The test report buttons and Settings were tried on Linux and on Windows 11 in a virtual machine, with a G502 HERO. The messages next to Save have automated tests only.

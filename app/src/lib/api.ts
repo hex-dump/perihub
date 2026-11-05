@@ -242,7 +242,18 @@ export interface MouseInfo {
   dpi: { min: number; max: number; step: number; list: number[] };
   report_rates_ms: number[];
   led_zones: LedZone[];
-  onboard: { profile_count: number; button_count: number; has_gshift: boolean; has_dpi_shift: boolean };
+  onboard: {
+    memory_model: number;
+    profile_format: number;
+    macro_format: number;
+    profile_count: number;
+    rom_profile_count: number;
+    button_count: number;
+    sector_count: number;
+    sector_size: number;
+    has_gshift: boolean;
+    has_dpi_shift: boolean;
+  };
   writable: boolean;
 }
 

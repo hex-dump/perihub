@@ -175,6 +175,16 @@ const VOLTAGE_CURVE: &[(u16, u8)] = &[
     (3500, 0),
 ];
 
+/// One entry of the 0x0003 firmware list. The G502 X lists ten empty entries (no name,
+/// version 00.00.0000) after its real ones: those are left out.
+fn firmware_entity(r: &[u8]) -> Option<FirmwareEntity> {
+    let name = String::from_utf8_lossy(&r[1..4]).trim_matches(|c: char| c == '\0' || c.is_whitespace()).to_string();
+    if name.is_empty() && r[4..8].iter().all(|&b| b == 0) {
+        return None;
+    }
+    Some(FirmwareEntity { kind: r[0], name, version: format!("{:02x}.{:02x}.{:02x}{:02x}", r[4], r[5], r[6], r[7]) })
+}
+
 fn percent_from_voltage(millivolts: u16) -> u8 {
     let (top, bottom) = (VOLTAGE_CURVE[0], VOLTAGE_CURVE[VOLTAGE_CURVE.len() - 1]);
     if millivolts >= top.0 {
@@ -444,11 +454,9 @@ impl HidppDevice {
         let mut out = Vec::new();
         for entity in 0..count {
             let r = self.call(feature::DEVICE_INFO, 1, &[entity])?;
-            out.push(FirmwareEntity {
-                kind: r[0],
-                name: String::from_utf8_lossy(&r[1..4]).trim().to_string(),
-                version: format!("{:02x}.{:02x}.{:02x}{:02x}", r[4], r[5], r[6], r[7]),
-            });
+            if let Some(entity) = firmware_entity(&r) {
+                out.push(entity);
+            }
         }
         Ok(out)
     }
@@ -596,6 +604,10 @@ impl HidppDevice {
 
     pub fn read_sector(&mut self, sector: u16, size: u16) -> Result<Vec<u8>> {
         let size = size as usize;
+        // Reads come in blocks of 16 bytes: a smaller sector cannot be read this way.
+        if size < 16 {
+            return Err(Error::Protocol(format!("the mouse reports {size}-byte sectors")));
+        }
         let mut data = vec![0u8; size];
         let mut offset = 0usize;
         while offset < size {
@@ -723,6 +735,21 @@ pub(crate) mod tests {
         dev.battery().unwrap();
         // The missing features are not asked for again: only the voltage is read.
         assert_eq!(written.lock().unwrap().len(), lookups + 1);
+    }
+
+    #[test]
+    fn empty_firmware_entries_are_left_out() {
+        let mut r = [0u8; 16];
+        r[..8].copy_from_slice(&[0x01, b'B', b'L', b'1', 0x48, 0x00, 0x00, 0x14]);
+        let entity = firmware_entity(&r).unwrap();
+        assert_eq!((entity.kind, entity.name.as_str(), entity.version.as_str()), (1, "BL1", "48.00.0014"));
+        // A name padded with zeros instead of spaces.
+        r[..8].copy_from_slice(&[0x02, b'U', 0, 0, 0x01, 0x02, 0x00, 0x03]);
+        assert_eq!(firmware_entity(&r).unwrap().name, "U");
+        r[..8].copy_from_slice(&[0x02, 0, 0, 0, 0, 0, 0, 0]);
+        assert!(firmware_entity(&r).is_none());
+        r[..8].copy_from_slice(&[0x02, b' ', b' ', b' ', 0, 0, 0, 0]);
+        assert!(firmware_entity(&r).is_none());
     }
 
     #[test]

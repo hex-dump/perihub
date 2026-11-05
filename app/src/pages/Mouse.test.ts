@@ -33,7 +33,18 @@ const info: MouseInfo = {
   dpi: { min: 100, max: 25600, step: 50, list: [] },
   report_rates_ms: [1, 2, 4, 8],
   led_zones: [],
-  onboard: { profile_count: 2, button_count: 11, has_gshift: true, has_dpi_shift: true },
+  onboard: {
+    memory_model: 1,
+    profile_format: 2,
+    macro_format: 1,
+    profile_count: 2,
+    rom_profile_count: 2,
+    button_count: 11,
+    sector_count: 16,
+    sector_size: 256,
+    has_gshift: true,
+    has_dpi_shift: true,
+  },
   writable: true,
 };
 

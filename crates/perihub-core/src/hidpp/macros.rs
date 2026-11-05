@@ -384,6 +384,30 @@ mod tests {
         data
     }
 
+    /// Sectors smaller than 256 bytes (the G502 X) are read too: a macro must stay inside them.
+    #[test]
+    fn small_sectors_end_in_an_error_not_a_panic() {
+        const SMALL: usize = 240;
+        let small = |offset: usize, bytes: &[u8]| {
+            let mut data = vec![0xFF; SMALL];
+            data[offset..offset + bytes.len()].copy_from_slice(bytes);
+            data
+        };
+        // A key press whose arguments would go past the CRC.
+        let sectors = vec![(6, small(SMALL - 3, &[OP_KEY_DOWN, 0x00]))];
+        assert!(parse(reader(sectors.clone()), 6, (SMALL - 3) as u16).is_err());
+        assert!(sectors_used(reader(sectors), 6, (SMALL - 3) as u16).is_err());
+        // A jump to an offset past the end of the next sector.
+        let sectors = vec![(6, small(0, &[OP_JUMP, 0, 7, 0x01, 0x00])), (7, small(0, &[OP_END]))];
+        assert!(parse(reader(sectors.clone()), 6, 0).is_err());
+        assert!(sectors_used(reader(sectors), 6, 0).is_err());
+        // A macro that starts past the end.
+        assert!(parse(reader(vec![(6, small(0, &[OP_END]))]), 6, 0x0300).is_err());
+        // The same macro inside the small sector is read.
+        let sectors = vec![(6, small(SMALL - 6, &[OP_KEY_DOWN, 0x00, 0x04, OP_END]))];
+        assert!(parse(reader(sectors), 6, (SMALL - 6) as u16).is_ok());
+    }
+
     fn reader(sectors: Vec<(u16, Vec<u8>)>) -> impl FnMut(u16) -> Result<Vec<u8>> {
         move |id| {
             sectors

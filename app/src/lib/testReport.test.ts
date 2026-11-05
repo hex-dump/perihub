@@ -17,7 +17,18 @@ const cable: MouseInfo = {
   dpi: { min: 100, max: 25600, step: 50, list: [] },
   report_rates_ms: [1, 2, 4, 8],
   led_zones: [{ index: 0, location: 1, effects: [0, 1, 3] }],
-  onboard: { profile_count: 5, button_count: 11, has_gshift: true, has_dpi_shift: true },
+  onboard: {
+    memory_model: 1,
+    profile_format: 2,
+    macro_format: 1,
+    profile_count: 5,
+    rom_profile_count: 5,
+    button_count: 11,
+    sector_count: 16,
+    sector_size: 256,
+    has_gshift: true,
+    has_dpi_shift: true,
+  },
   writable: true,
 };
 
@@ -39,6 +50,9 @@ describe("testReport", () => {
     expect(report).toContain("Support: tested");
     expect(report).toContain("Firmware: U1 27.2.1");
     expect(report).toContain("Profiles: 5, buttons: 11");
+    expect(report).toContain(
+      "Memory: model 1, profile format 2, macro format 1, 16 sectors of 256 bytes, 5 factory profiles",
+    );
     expect(report).toContain("DPI: 100-25600, step 50");
     expect(report).toContain("LEDs: zone 0 at 1, effects 0 1 3");
   });
