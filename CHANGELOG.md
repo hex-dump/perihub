@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.5.3 — 2026-11-05
+
+Fixes from the first test reports of other mice, the G502 X and the G403 HERO. They have tests with bytes like the ones these mice use, but have not been tried on the mice themselves yet: their owners are asked in #14 and #15. On a G502 HERO and an Apex 3 TKL, PeriHub reads exactly what 0.5.2 read.
 
 ### Fixed
 - Mice whose onboard memory has sectors smaller than 256 bytes, like the G502 X, showed only "unsupported profile format" (#15). PeriHub now reads their profiles when the sectors hold every field it shows, and they stay read-only. Otherwise the message gives the sector size.
