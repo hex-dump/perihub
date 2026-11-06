@@ -15,10 +15,12 @@
 
 use tauri::AppHandle;
 
+// ERROR_ACCESS_DENIED (5) as an HRESULT, 0x80070005.
 #[cfg(windows)]
-const E_ACCESSDENIED: windows_result::HRESULT = windows_result::HRESULT::from_win32(0x80070005_u32);
+const E_ACCESSDENIED: windows_result::HRESULT = windows_result::WIN32_ERROR(5).to_hresult();
+// ERROR_FILE_NOT_FOUND (2) as an HRESULT, 0x80070002.
 #[cfg(windows)]
-const E_FILENOTFOUND: windows_result::HRESULT = windows_result::HRESULT::from_win32(0x80070002_u32);
+const E_FILENOTFOUND: windows_result::HRESULT = windows_result::WIN32_ERROR(2).to_hresult();
 
 #[cfg(windows)]
 const RUN_PATH: &str = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
