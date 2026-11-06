@@ -12,16 +12,32 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: ${{ github.event_name == 'release' && 'pages-release' || 'pages' }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  # A release event runs on its tag, and the github-pages environment only deploys from main:
+  # start this workflow again on main instead. A workflow_dispatch made with GITHUB_TOKEN
+  # does start a new run, unlike most events.
+  on-release:
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main
+
+  deploy:
+    if: github.event_name != 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
