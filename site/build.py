@@ -42,13 +42,12 @@ def main() -> None:
         values[f"{key}_URL"] = found[0]["url"]
         values[f"{key}_SIZE"] = size(found[0]["size"])
 
-    html = (SITE / "index.html").read_text()
-    html = re.sub(r"%%(\w+)%%", lambda m: values[m.group(1)], html)
-
     if out.exists():
         shutil.rmtree(out)
     (out / "screenshots").mkdir(parents=True)
-    (out / "index.html").write_text(html)
+    for page in SITE.glob("*.html"):
+        html = re.sub(r"%%(\w+)%%", lambda m: values[m.group(1)], page.read_text())
+        (out / page.name).write_text(html)
     for name in ("style.css", "main.js"):
         shutil.copy(SITE / name, out / name)
     for shot in (ROOT / "docs" / "screenshots").glob("*.png"):

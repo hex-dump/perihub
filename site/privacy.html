@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy policy · PeriHub</title>
+  <meta name="description" content="What data the PeriHub website and app handle: no cookies, no analytics, no telemetry.">
+  <meta name="theme-color" content="#0e0f13">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-row">
+      <a class="brand" href="./"><img src="icon.png" width="32" height="32" alt=""> PeriHub</a>
+      <nav>
+        <a href="./#features">Features</a>
+        <a href="./#devices">Devices</a>
+        <a href="./#download">Download</a>
+        <a href="https://github.com/hex-dump/perihub">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap prose">
+    <h1>Privacy policy</h1>
+    <p class="meta">Last updated: 6 November 2026</p>
+
+    <p class="summary">In short: <b>no cookies, no analytics, no tracking, no telemetry, no account.</b> The website is a static page and the PeriHub app works offline. Neither collects personal data for the maintainer, who never sees who visits the site or uses the app.</p>
+
+    <p>This policy covers the website at <code>hex-dump.github.io/perihub</code> and the PeriHub app. It is written to meet the EU General Data Protection Regulation (GDPR, Regulation (EU) 2016/679) and the Italian Personal Data Protection Code (Legislative Decree 196/2003, as amended by Legislative Decree 101/2018).</p>
+
+    <h2>1. Who is responsible</h2>
+    <p>PeriHub is a free, non-commercial, open-source project maintained by a private individual, <a href="https://github.com/hex-dump">hex-dump</a>, based in Italy. It is not a company and does not sell anything. For any question about this policy or your data, see <a href="#contact">Contact</a>.</p>
+
+    <h2>2. The website</h2>
+    <h3>2.1. What the website does not do</h3>
+    <ul>
+      <li>It sets <b>no cookies</b> and stores nothing in your browser (no local storage either), so there is no cookie banner.</li>
+      <li>It uses <b>no analytics, trackers, advertising or social media plugins</b>.</li>
+      <li>It loads <b>nothing from other websites</b>: no external fonts, scripts or content delivery networks. All files come from GitHub Pages.</li>
+      <li>It has <b>no forms</b> and asks you for nothing.</li>
+    </ul>
+    <p>The page runs one small script, which you can read in <a href="https://github.com/hex-dump/perihub/blob/main/site/main.js">the repository</a>. It reads your browser's user agent to show the download for your system, and copies the page link when you press <b>Copy link</b>. Both happen only in your browser: nothing is sent or saved.</p>
+
+    <h3>2.2. Hosting: GitHub Pages</h3>
+    <p>The website is hosted by <b>GitHub Pages</b>, a service of GitHub, Inc. (United States), part of Microsoft. As with any web server, your browser sends GitHub technical data such as your IP address and user agent when it loads the page. GitHub states that it may log visitors' IP addresses to keep its service secure and to comply with the law, and it handles this data as an independent controller, under the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a>, which also explains its transfers of data outside the EU. The maintainer has no access to these logs and gets no visitor statistics.</p>
+
+    <h3>2.3. Downloads</h3>
+    <p>The download buttons point to the files of the latest release on GitHub. Downloading a file is a request to GitHub, as above. The maintainer can only see the total number of downloads of each file, as GitHub shows it to every project, with nothing that identifies who downloaded it.</p>
+
+    <h3>2.4. Links to other websites</h3>
+    <p>The website links to GitHub (repository, issues, discussions), to Buy Me a Coffee and to a community-maintained Scoop bucket. Those websites have their own privacy policies, which apply once you open them.</p>
+
+    <h2>3. The PeriHub app</h2>
+    <h3>3.1. Data that stays on your PC</h3>
+    <p>PeriHub keeps your settings, saved lightings, app profiles, macros, the backups it makes before writing to a device, and a log file (under 1 MB, which records devices connecting, errors and updates, never your key presses or the apps you use) on your PC only. None of it is sent anywhere. You can delete it at any time, by removing these folders:</p>
+    <ul>
+      <li>Linux: <code>~/.config/perihub/</code>, <code>~/.local/state/perihub/</code> and <code>~/.local/share/io.github.hexdump.perihub/</code></li>
+      <li>Windows: <code>%APPDATA%\perihub\</code> and <code>%LOCALAPPDATA%\io.github.hexdump.perihub\</code></li>
+    </ul>
+
+    <h3>3.2. Key presses and apps in focus</h3>
+    <p>Reactive lighting and software macros read key presses, and app profiles read which app is in focus (its executable name or window class, never window titles or contents). This happens only on your PC, only while you use those features, and nothing of it is stored, logged or sent. The <a href="https://github.com/hex-dump/perihub#safety">Safety</a> section of the README explains exactly what is read and when.</p>
+
+    <h3>3.3. The only automatic connection: update checks on Windows</h3>
+    <p>On Windows, when PeriHub starts and then once a day, it asks GitHub for a small file describing the latest release. Like any request, it shows GitHub your IP address. No identifier, setting or device information is sent, and the maintainer receives nothing. You can turn it off in <b>Settings → Updates</b>. An update is downloaded only when you click <b>Update and restart</b>. On Linux, and on Windows when PeriHub was installed with Scoop, the app makes no connections at all.</p>
+
+    <h3>3.4. Things that happen only when you ask</h3>
+    <ul>
+      <li><b>Test reports and bug reports.</b> <b>Open test form</b> opens a GitHub issue form in your browser, filled in with your mouse model and what PeriHub read from it. Nothing is sent until you submit it yourself. Issues and discussions on GitHub are public and governed by GitHub's privacy statement, so do not include personal data you do not want to publish.</li>
+      <li><b>Macros that open a website</b> start your browser, which connects on its own.</li>
+    </ul>
+
+    <h2>4. Donations</h2>
+    <p>Donations go through <b>Buy Me a Coffee</b>, which handles payments with its own partners under <a href="https://www.buymeacoffee.com/privacy-policy">its privacy policy</a>. The maintainer receives only what Buy Me a Coffee passes on to creators, such as the name and message you choose to leave, and uses it only to see and thank supporters. It is not shared with anyone. Donations are optional and unlock nothing.</p>
+
+    <h2>5. Your rights</h2>
+    <p>Under the GDPR you have the right to access, correct and delete your personal data, to restrict or object to its processing, and to data portability. Since the maintainer collects no personal data through the website or the app, there is normally nothing to access or delete. For data held by GitHub or Buy Me a Coffee, they are the ones who can act on your request, and their policies explain how.</p>
+    <p>You also have the right to lodge a complaint with a supervisory authority: in Italy, the <a href="https://www.garanteprivacy.it/">Garante per la protezione dei dati personali</a>, or the authority of the EU country where you live or work.</p>
+
+    <h2>6. Children</h2>
+    <p>PeriHub is not aimed at children and, since it collects no personal data, collects none from children either.</p>
+
+    <h2>7. Changes to this policy</h2>
+    <p>If PeriHub or the website changes how it handles data, this page will be updated first, with a new date at the top. Every change is visible in the <a href="https://github.com/hex-dump/perihub/commits/main/site/privacy.html">history of this file</a>.</p>
+
+    <h2 id="contact">8. Contact</h2>
+    <p>For questions about this policy or your data, open a discussion on <a href="https://github.com/hex-dump/perihub/discussions">GitHub Discussions</a>. For something you do not want to discuss in public, use GitHub's <a href="https://github.com/hex-dump/perihub/security/advisories/new">private report</a> form.</p>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <p>
+        <a href="./">Home</a> ·
+        <a href="https://github.com/hex-dump/perihub">GitHub</a> ·
+        <a href="https://github.com/hex-dump/perihub/discussions">Discussions</a> ·
+        <a href="privacy.html">Privacy policy</a>
+      </p>
+      <p class="small">PeriHub is not affiliated with SteelSeries or Logitech. SteelSeries GG, Logitech G HUB and the product names belong to their respective owners and are used only to describe compatibility.</p>
+    </div>
+  </footer>
+</body>
+</html>
