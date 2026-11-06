@@ -3,7 +3,10 @@ name: CI
 on:
   push:
     branches: [main, "test/**"]
+    # The website has its own workflow (pages.yml): no need to build the app for it.
+    paths-ignore: ["site/**", ".github/workflows/pages.yml"]
   pull_request:
+    paths-ignore: ["site/**", ".github/workflows/pages.yml"]
 
 jobs:
   test:
