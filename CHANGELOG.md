@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.4 — 2026-11-06
+
+A small update: every dependency is at its latest version, and PeriHub has a website, https://hex-dump.github.io/perihub/.
+
+### Fixed
+- Windows: starting PeriHub while another copy was still starting could leave the second copy open instead of handing over to the first (tauri-plugin-single-instance 2.5.5).
+
+### Changed
+- All Rust and npm dependencies updated, among them Tauri 2.12.5, tauri-plugin-updater 2.14, windows-registry 0.100 and dirs 7. Settings, backups and logs stay in the same folders. TypeScript stays at 6, which svelte-check still needs.
+- Mice with a single onboard profile, like the G403 HERO (#14), go back to their saved settings after a preview through host mode, since they have no other profile to switch to. Nothing changes for users yet: those mice are still read-only.
+
 ## 0.5.3 — 2026-11-05
 
 Fixes from the first test reports of other mice, the G502 X and the G403 HERO. They have tests with bytes like the ones these mice use, but have not been tried on the mice themselves yet: their owners are asked in #14 and #15. On a G502 HERO and an Apex 3 TKL, PeriHub reads exactly what 0.5.2 read.
