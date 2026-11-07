@@ -263,7 +263,7 @@ PeriHub does not modify firmware. It uses the same configuration commands as the
   - Linux: `~/.config/perihub/backups/`
   - Windows: `%APPDATA%\perihub\backups\`
 
-  **Backups…** on the mouse page and on the keyboard's Keys page puts one back (from the next version). Only what differs is written, each part is read back and compared, and the current state is backed up first. A backup that does not fit the mouse's memory, or whose profiles are damaged, is refused.
+  **Backups…** on the mouse page and on the keyboard's Keys page puts one back. Only what differs is written, each part is read back and compared, and the current state is backed up first. A backup that does not fit the mouse's memory, or whose profiles are damaged, is refused.
 
 How the release files are signed, and what PeriHub sends over the network: [CODE_SIGNING.md](CODE_SIGNING.md).
 
@@ -319,7 +319,7 @@ The log file: **Settings → Problems → Open log folder** (`~/.local/state/per
 Keyboard: **Keys → Reset all to factory**. Mouse: **Factory settings** on each profile. Backups are kept as well.
 
 **How do I undo a change I saved?**
-From the next version: **Backups…** on the mouse page, or on the keyboard's Keys page, then **Restore** on the newest backup. Each backup is the memory just before PeriHub wrote to the device.
+**Backups…** on the mouse page, or on the keyboard's Keys page, then **Restore** on the newest backup. Each backup is the memory just before PeriHub wrote to the device.
 
 **Is the UI available in other languages?**
 The UI is in English. More languages are on the roadmap.
@@ -366,7 +366,7 @@ cd app && npm run check         # frontend type check
 
 ### Command-line tool
 
-Useful for diagnostics and scripting. Don't run it while the app is open, since both would compete for the same devices. From the next version it refuses to start while the app is open, and the app waits for it to finish.
+Useful for diagnostics and scripting. It refuses to start while the app is open, since both would compete for the same devices, and the app waits for it to finish.
 
 ```sh
 cargo run -p perihub-cli -- status
