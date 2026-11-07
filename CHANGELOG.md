@@ -6,6 +6,9 @@
 - **Restore a backup.** PeriHub has always saved a backup before writing to a device; now you can put one back. **Backups…** next to **Factory settings** on the mouse page, and next to **Reset all to factory** on the keyboard's Keys page, lists them with the date and what was about to change. Restoring writes back only what differs, reads it back to check it, and backs up the current state first, so a restore can be undone too. G502 HERO (profiles, macros, enabled profiles) and Apex 3 TKL (key mapping). Suggested on Reddit.
 - `perihub-cli mouse backups`, `mouse restore <id>`, `keyboard backups` and `keyboard restore <id>`.
 
+### Fixed
+- perihub-cli and the app could talk to the same device at once, which mixes their requests and can make a save fail halfway. perihub-cli now refuses to start while the app is open, and the app waits for a running perihub-cli to finish before opening the devices.
+
 ## 0.5.4 — 2026-11-06
 
 A small update: every dependency is at its latest version, and PeriHub has a website, https://hex-dump.github.io/perihub/.

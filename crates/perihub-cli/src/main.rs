@@ -73,6 +73,9 @@ fn run(args: &[&str]) -> Result<()> {
         ["focus", seconds] => return watch_focus(seconds.parse().map_err(|_| invalid("seconds"))?),
         _ => {}
     }
+    let Some(_devices) = perihub_core::config::try_lock_devices()? else {
+        return Err(invalid("PeriHub is open: quit it from the tray first, since both would talk to the same devices"));
+    };
     let config = AppConfig::load();
     let manager = Manager::start(config.keyboard, Box::new(|_| {}));
     wait_for_devices(&manager);

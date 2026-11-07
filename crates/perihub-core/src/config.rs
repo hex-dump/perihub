@@ -116,6 +116,39 @@ pub fn write_backup(device: &str, label: &str, files: &[(&str, &[u8])]) -> Resul
     Ok(dir)
 }
 
+/// Held while a PeriHub process, the app or perihub-cli, talks to the devices. Two of them at once
+/// would mix their requests to the same device, and a write could be read back wrong. The operating
+/// system releases the lock when the process ends, also if it crashes.
+pub struct DeviceLock {
+    _file: fs::File,
+}
+
+fn lock_file(root: &Path) -> Result<fs::File> {
+    fs::create_dir_all(root)?;
+    Ok(fs::OpenOptions::new().create(true).truncate(false).write(true).open(root.join("devices.lock"))?)
+}
+
+/// Takes the device lock, or returns `None` if another PeriHub process holds it.
+pub fn try_lock_devices() -> Result<Option<DeviceLock>> {
+    try_lock_in(&config_dir())
+}
+
+fn try_lock_in(root: &Path) -> Result<Option<DeviceLock>> {
+    let file = lock_file(root)?;
+    match file.try_lock() {
+        Ok(()) => Ok(Some(DeviceLock { _file: file })),
+        Err(fs::TryLockError::WouldBlock) => Ok(None),
+        Err(fs::TryLockError::Error(e)) => Err(e.into()),
+    }
+}
+
+/// Takes the device lock, waiting for another PeriHub process to let it go.
+pub fn lock_devices() -> Result<DeviceLock> {
+    let file = lock_file(&config_dir())?;
+    file.lock()?;
+    Ok(DeviceLock { _file: file })
+}
+
 /// A backup saved by [`write_backup`], identified by its folder name: `<unix seconds>-<label>`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct BackupEntry {
@@ -187,6 +220,18 @@ mod tests {
         assert_eq!(ids, ["1793902939-reload-probe", "1792438882-profile5", "1792247177-keymap"]);
         let entry = BackupEntry::parse("1792438882-profile5").unwrap();
         assert_eq!((entry.created, entry.label.as_str()), (1792438882, "profile5"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn only_one_process_at_a_time_holds_the_device_lock() {
+        let root = temp_root("lock");
+        let first = try_lock_in(&root).unwrap();
+        assert!(first.is_some());
+        // A second open file description stands for a second process.
+        assert!(try_lock_in(&root).unwrap().is_none());
+        drop(first);
+        assert!(try_lock_in(&root).unwrap().is_some());
         fs::remove_dir_all(root).unwrap();
     }
 

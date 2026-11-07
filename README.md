@@ -366,12 +366,13 @@ cd app && npm run check         # frontend type check
 
 ### Command-line tool
 
-Useful for diagnostics and scripting. Don't run it while the app is open, since both would compete for the same devices.
+Useful for diagnostics and scripting. Don't run it while the app is open, since both would compete for the same devices. From the next version it refuses to start while the app is open, and the app waits for it to finish.
 
 ```sh
 cargo run -p perihub-cli -- status
 cargo run -p perihub-cli -- mouse state
 cargo run -p perihub-cli -- keyboard keymap
+cargo run -p perihub-cli -- mouse backups
 cargo run -p perihub-cli -- keyboard light '{"type":"wave","period_ms":3000,"reverse":false}' 10
 ```
 

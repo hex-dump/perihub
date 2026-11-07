@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use perihub_core::Manager;
 use perihub_core::app_profiles::AppProfileEngine;
-use perihub_core::config::AppConfig;
+use perihub_core::config::{self, AppConfig, DeviceLock};
 use perihub_core::softmacro::SoftMacroEngine;
 use tauri::{AppHandle, Emitter, Manager as _, RunEvent, WindowEvent};
 
@@ -23,6 +23,8 @@ pub struct AppState {
     pub config: Mutex<AppConfig>,
     pub profiles: Arc<AppProfileEngine>,
     pub soft: Arc<SoftMacroEngine>,
+    /// Keeps perihub-cli away from the devices while the app runs.
+    _devices: Option<DeviceLock>,
 }
 
 /// Starts following the focused app; the interface gets an event at every change.
@@ -63,6 +65,18 @@ fn main() {
             autostart::startup(app.handle());
             autostart::restart_hidden();
             let config = AppConfig::load();
+            let devices = match config::try_lock_devices() {
+                Ok(Some(lock)) => Some(lock),
+                // perihub-cli is running: its commands take a few seconds.
+                Ok(None) => {
+                    log::info!("waiting for perihub-cli to finish before opening the devices");
+                    config::lock_devices().map_err(|e| log::warn!("device lock: {e}")).ok()
+                }
+                Err(e) => {
+                    log::warn!("device lock: {e}");
+                    None
+                }
+            };
             let handle = app.handle().clone();
             // The device listener starts before the app profiles exist: they are set right after.
             let profiles_slot = Arc::new(OnceLock::<Arc<AppProfileEngine>>::new());
@@ -93,7 +107,7 @@ fn main() {
                 watch_focus(app.handle(), &profiles);
             }
             let start_hidden = hidden_requested || config.start_hidden;
-            app.manage(AppState { manager, config: Mutex::new(config), profiles, soft });
+            app.manage(AppState { manager, config: Mutex::new(config), profiles, soft, _devices: devices });
 
             app.manage(updates::Available::default());
             window::build_tray(app.handle())?;
