@@ -154,17 +154,64 @@
         <div class="device-group test">
           <h3><span class="chip test">Not yet</span> Not supported yet</h3>
           <p>30 more <b>Logitech G mice</b> are recognized: 27 with a USB cable, and 15 wireless models through their LIGHTSPEED receiver. PeriHub shows their profiles, DPI, buttons, lighting and battery, but changes nothing until someone confirms that the model works.</p>
-          <details>
-            <summary>See the list</summary>
-            <p class="model-list">G502 Proteus Core, G502 Proteus Spectrum, G502 HERO Wireless, G502 X, G502 X Wireless, G502 X PLUS, G Pro, G Pro Wireless, G Pro X Superlight, G102/G103/G203, G302, G303, G303 Shroud Edition, G402, G403, G403 HERO, G403 Wireless, G703, G703 HERO, G705, G900, G903, G903 HERO, MX518, and the wireless-only G305, G603 and G604.</p>
-          </details>
-          <p>The <b>SteelSeries Apex 3</b> (not TKL) is recognized, but PeriHub sends nothing to it yet.</p>
+          <h4 class="models-title">With a USB cable</h4>
+          <ul class="models">
+              <li>Logitech G502 Proteus Core</li>
+              <li>Logitech G502 Proteus Spectrum</li>
+              <li>Logitech G502 HERO Wireless</li>
+              <li>Logitech G502 X</li>
+              <li>Logitech G502 X Wireless</li>
+              <li>Logitech G502 X PLUS</li>
+              <li>Logitech G Pro</li>
+              <li>Logitech G Pro Wireless</li>
+              <li>Logitech G Pro X Superlight</li>
+              <li>Logitech G102 / G103 / G203</li>
+              <li>Logitech G302</li>
+              <li>Logitech G303</li>
+              <li>Logitech G303 Shroud Edition</li>
+              <li>Logitech G402</li>
+              <li>Logitech G403</li>
+              <li>Logitech G403 HERO</li>
+              <li>Logitech G403 Wireless</li>
+              <li>Logitech G703</li>
+              <li>Logitech G703 HERO</li>
+              <li>Logitech G705</li>
+              <li>Logitech G900</li>
+              <li>Logitech G903</li>
+              <li>Logitech G903 HERO</li>
+              <li>Logitech MX518</li>
+          </ul>
+          <h4 class="models-title">Wireless, through a LIGHTSPEED receiver (not tried with a real receiver yet)</h4>
+          <ul class="models">
+              <li>Logitech G502 HERO Wireless</li>
+              <li>Logitech G502 X Wireless</li>
+              <li>Logitech G502 X PLUS</li>
+              <li>Logitech G Pro Wireless</li>
+              <li>Logitech G Pro X Superlight</li>
+              <li>Logitech G403 Wireless</li>
+              <li>Logitech G703</li>
+              <li>Logitech G703 HERO</li>
+              <li>Logitech G705</li>
+              <li>Logitech G900</li>
+              <li>Logitech G903</li>
+              <li>Logitech G903 HERO</li>
+              <li>Logitech G305</li>
+              <li>Logitech G603</li>
+              <li>Logitech G604</li>
+          </ul>
+          <p class="after-models">The <b>SteelSeries Apex 3</b> (not TKL) is recognized, but PeriHub sends nothing to it yet.</p>
         </div>
       </div>
-      <div class="help">
+      <div class="help" id="test-report">
         <div>
-          <h3>Have one of these mice?</h3>
-          <p>A short test report takes a few minutes, and it is how a model becomes fully supported. PeriHub fills in most of it for you: <b>Open test form</b> on the mouse page.</p>
+          <h3>Is your mouse on the list? Help make it fully supported</h3>
+          <ol class="steps">
+            <li>Install PeriHub and quit Logitech G HUB.</li>
+            <li>Connect the mouse with its USB cable, or turn it on with its LIGHTSPEED receiver plugged in.</li>
+            <li>Open PeriHub, go to the mouse page and press <b>Open test form</b>. It opens the report on GitHub with what PeriHub read already filled in.</li>
+            <li>Check that profiles, DPI and buttons match your mouse, and send it. You need a free GitHub account.</li>
+          </ol>
+          <p>It takes a few minutes and it is safe: PeriHub only reads an untested mouse, it never writes to it.</p>
         </div>
         <a class="btn" href="https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml"><span class="btn-title">Send a test report</span></a>
       </div>
