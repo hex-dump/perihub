@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PeriHub: one app for your gaming keyboard and mouse</title>
-  <meta name="description" content="Free, open-source app to configure the SteelSeries Apex 3 TKL and the Logitech G502 HERO on Windows and Linux, without SteelSeries GG or Logitech G HUB.">
+  <title>PeriHub: G502 HERO and Apex 3 TKL software without G HUB or GG</title>
+  <meta name="description" content="Free, open-source alternative to Logitech G HUB and SteelSeries GG for Windows and Linux. Configure the Logitech G502 HERO and the SteelSeries Apex 3 TKL: lighting, DPI, buttons, key remapping and macros.">
+  <link rel="canonical" href="https://hex-dump.github.io/perihub/">
   <meta name="theme-color" content="#0e0f13">
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="stylesheet" href="style.css">
@@ -15,6 +16,23 @@
   <meta property="og:image" content="https://hex-dump.github.io/perihub/social-preview.png">
   <meta name="twitter:card" content="summary_large_image">
   <script src="main.js" defer></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "PeriHub",
+    "description": "Free, open-source app to configure gaming keyboards and mice on Windows and Linux, without SteelSeries GG or Logitech G HUB.",
+    "url": "https://hex-dump.github.io/perihub/",
+    "image": "https://hex-dump.github.io/perihub/social-preview.png",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Windows 10, Windows 11, Linux",
+    "softwareVersion": "%%VERSION%%",
+    "downloadUrl": "https://github.com/hex-dump/perihub/releases/latest",
+    "license": "https://opensource.org/licenses/MIT",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
 </head>
 <body>
   <header class="top">
@@ -24,7 +42,8 @@
         <a href="#features">Features</a>
         <a href="#devices">Devices</a>
         <a href="#download">Download</a>
-        <a href="https://github.com/hex-dump/perihub">GitHub</a>
+        <a href="#support">Support</a>
+        <a class="star-link" href="https://github.com/hex-dump/perihub"><span aria-hidden="true">★</span> Star on GitHub</a>
       </nav>
     </div>
   </header>
@@ -188,6 +207,22 @@
         <li><b>Open source.</b> The code is on <a href="https://github.com/hex-dump/perihub">GitHub</a> under the MIT license. Details in the <a href="https://github.com/hex-dump/perihub#safety">README</a>.</li>
       </ul>
     </section>
+    <section id="support" class="wrap section">
+      <h2>Help PeriHub grow</h2>
+      <p class="lead">PeriHub is free, and one person makes it in their spare time. If it saved you from installing G HUB or GG, two things help a lot.</p>
+      <div class="support">
+        <article class="support-card star">
+          <h3><span class="support-icon" aria-hidden="true">★</span> Give it a star on GitHub</h3>
+          <p>It is free and takes a second: open the page and press <b>Star</b> at the top. Stars are how people find a project on GitHub, and more users mean more mice tested and supported.</p>
+          <a class="btn primary" href="https://github.com/hex-dump/perihub"><span class="btn-title">★ Star on GitHub</span><span class="btn-sub">Needs a free GitHub account</span></a>
+        </article>
+        <article class="support-card">
+          <h3><span class="support-icon" aria-hidden="true">☕</span> Buy me a coffee</h3>
+          <p>If you want to say thanks, a small donation keeps the project going. It is never required: every feature of PeriHub stays free.</p>
+          <a class="btn" href="https://buymeacoffee.com/hexdump1"><span class="btn-title">☕ Buy me a coffee</span><span class="btn-sub">buymeacoffee.com</span></a>
+        </article>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -197,6 +232,7 @@
         <a href="https://github.com/hex-dump/perihub/discussions">Discussions</a> ·
         <a href="https://github.com/hex-dump/perihub/issues">Report a problem</a> ·
         <a href="https://buymeacoffee.com/hexdump1">Buy me a coffee</a> ·
+        <a href="https://github.com/hex-dump/perihub/blob/main/CODE_SIGNING.md">Code signing policy</a> ·
         <a href="privacy.html">Privacy policy</a>
       </p>
       <p class="small">PeriHub is not affiliated with SteelSeries or Logitech. SteelSeries GG, Logitech G HUB and the product names belong to their respective owners and are used only to describe compatibility.</p>

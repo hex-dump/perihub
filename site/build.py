@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
+BASE_URL = "https://hex-dump.github.io/perihub/"
 
 # Placeholder → end of the asset name. File names contain the version, so the
 # releases/latest/download/<name> links cannot be written by hand.
@@ -54,6 +55,12 @@ def main() -> None:
         shutil.copy(shot, out / "screenshots" / shot.name)
     shutil.copy(ROOT / "docs" / "social-preview.png", out / "social-preview.png")
     shutil.copy(ROOT / "app" / "src-tauri" / "icons" / "64x64.png", out / "icon.png")
+    # robots.txt is read only at the root of hex-dump.github.io, outside this site, so there is none here.
+    # The sitemap is submitted by hand in Google Search Console and Bing Webmaster Tools.
+    urls = "".join(f"  <url><loc>{BASE_URL}{'' if page == 'index.html' else page}</loc></url>\n" for page in sorted(p.name for p in SITE.glob("*.html")))
+    (out / "sitemap.xml").write_text(
+        f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{urls}</urlset>\n'
+    )
     print(f"PeriHub {values['VERSION']} → {out}")
 
 

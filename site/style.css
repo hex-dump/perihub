@@ -47,6 +47,11 @@ code { font-family: "Cascadia Mono", "JetBrains Mono", ui-monospace, Consolas, m
 nav { display: flex; gap: 20px; }
 nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
 nav a:hover { color: var(--text); }
+.star-link { color: var(--text) !important; font-weight: 650; padding: 6px 12px; border: 1px solid var(--accent); border-radius: 999px; background: var(--accent-soft); white-space: nowrap; }
+.star-link span { color: var(--warn); }
+.star-link:hover { background: var(--accent); color: var(--on-accent) !important; }
+.star-link:hover span { color: inherit; }
+nav { align-items: center; }
 
 /* Hero */
 .hero { display: grid; grid-template-columns: 1fr 1.15fr; gap: 48px; align-items: center; padding: 64px 0 48px; }
@@ -113,13 +118,21 @@ details summary { cursor: pointer; color: var(--accent-2); }
 .safety li { color: var(--muted); }
 .safety b { color: var(--text); }
 
+/* Support */
+.support { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+.support-card { display: flex; flex-direction: column; align-items: flex-start; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+.support-card.star { border-color: rgba(255, 106, 43, 0.55); background: var(--accent-soft); }
+.support-card p { color: var(--muted); flex: 1; }
+.support-card p b { color: var(--text); }
+.support-icon { color: var(--warn); }
+
 footer { border-top: 1px solid var(--line); padding: 32px 0 48px; }
 .foot p:first-child { margin-bottom: 8px; }
 
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; padding-top: 36px; gap: 32px; }
   .cards { grid-template-columns: 1fr 1fr; }
-  .devices, .platforms, .safety { grid-template-columns: 1fr; }
+  .devices, .platforms, .safety, .support { grid-template-columns: 1fr; }
   .help { flex-direction: column; align-items: flex-start; }
 }
 @media (max-width: 560px) {
