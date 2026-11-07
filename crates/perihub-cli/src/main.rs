@@ -22,9 +22,13 @@ const USAGE: &str = "usage:
   perihub-cli mouse get-profile <number>
   perihub-cli mouse save-profile <number> '<json ProfileSettings>'
   perihub-cli mouse factory <number>
+  perihub-cli mouse backups
+  perihub-cli mouse restore <backup id>
   perihub-cli mouse sector <hex number>
   perihub-cli keyboard remap <layer> <hex usage> '<json KeyBinding>'
-  perihub-cli keyboard reset-keymap";
+  perihub-cli keyboard reset-keymap
+  perihub-cli keyboard backups
+  perihub-cli keyboard restore <backup id>";
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -124,6 +128,14 @@ fn run(args: &[&str]) -> Result<()> {
             let number: u8 = number.parse().map_err(|_| invalid("profile"))?;
             manager.mouse()?.call(move |m| m.restore_factory_profile(number)).map(|_| ())
         }
+        ["mouse", "backups"] => print_json(&manager.mouse()?.call(|m| Ok(m.backups()))?),
+        ["mouse", "restore", id] => {
+            let id = id.to_string();
+            let restore = manager.mouse()?.call(move |m| m.restore_backup(&id))?;
+            print_json(
+                &serde_json::json!({"profiles": restore.profiles, "macros": restore.macros, "directory": restore.directory}),
+            )
+        }
         ["mouse", "sector", sector] => {
             let sector = u16::from_str_radix(sector, 16).map_err(|_| invalid("sector"))?;
             let data = manager.mouse()?.call(move |m| m.read_raw_sector(sector))?;
@@ -139,6 +151,12 @@ fn run(args: &[&str]) -> Result<()> {
             print_json(&layer_map[&source])
         }
         ["keyboard", "reset-keymap"] => manager.keyboard()?.call(|k| k.reset_keymap()).map(|_| ()),
+        ["keyboard", "backups"] => print_json(&manager.keyboard()?.call(|k| Ok(k.backups()))?),
+        ["keyboard", "restore", id] => {
+            let id = id.to_string();
+            let restore = manager.keyboard()?.call(move |k| k.restore_backup(&id))?;
+            print_json(&serde_json::json!({"keys": restore.keys}))
+        }
         _ => {
             eprintln!("{USAGE}");
             std::process::exit(2);

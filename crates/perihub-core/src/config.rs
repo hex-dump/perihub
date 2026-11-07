@@ -1,13 +1,13 @@
 //! Settings saved to disk, and backups.
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
 use crate::effects::KeyboardLighting;
-use crate::error::Result;
+use crate::error::{Error, Result};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -114,4 +114,99 @@ pub fn write_backup(device: &str, label: &str, files: &[(&str, &[u8])]) -> Resul
         fs::write(dir.join(name), data)?;
     }
     Ok(dir)
+}
+
+/// A backup saved by [`write_backup`], identified by its folder name: `<unix seconds>-<label>`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct BackupEntry {
+    pub id: String,
+    /// Unix time in seconds.
+    pub created: u64,
+    /// What was about to be written, such as `profile3`, `factory2`, `directory`, `keymap` or `restore`.
+    pub label: String,
+}
+
+impl BackupEntry {
+    fn parse(id: &str) -> Option<Self> {
+        let (stamp, label) = id.split_once('-')?;
+        let created = stamp.parse().ok()?;
+        let valid = !label.is_empty() && label.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-');
+        valid.then(|| Self { id: id.to_string(), created, label: label.to_string() })
+    }
+}
+
+/// The backups of a device, newest first.
+pub fn list_backups(device: &str) -> Vec<BackupEntry> {
+    list_backups_in(&config_dir().join("backups").join(device))
+}
+
+fn list_backups_in(root: &Path) -> Vec<BackupEntry> {
+    let Ok(dirs) = fs::read_dir(root) else { return Vec::new() };
+    let mut entries: Vec<BackupEntry> = dirs
+        .flatten()
+        .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+        .filter_map(|e| BackupEntry::parse(&e.file_name().to_string_lossy()))
+        .collect();
+    entries.sort_by(|a, b| b.created.cmp(&a.created).then_with(|| b.id.cmp(&a.id)));
+    entries
+}
+
+/// Reads one file of a backup. The id must be one that [`list_backups`] returns: it cannot point
+/// outside the device's backup folder.
+pub fn read_backup_file(device: &str, id: &str, name: &str) -> Result<Vec<u8>> {
+    read_backup_file_in(&config_dir().join("backups").join(device), id, name)
+}
+
+fn read_backup_file_in(root: &Path, id: &str, name: &str) -> Result<Vec<u8>> {
+    if BackupEntry::parse(id).is_none() || name.contains(['/', '\\']) || name.starts_with('.') {
+        return Err(Error::Invalid(format!("invalid backup {id:?}")));
+    }
+    fs::read(root.join(id).join(name)).map_err(|e| Error::Invalid(format!("backup {id}: cannot read {name}: {e}")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn temp_root(name: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!("perihub-test-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        root
+    }
+
+    #[test]
+    fn backups_are_listed_newest_first_and_odd_folders_are_skipped() {
+        let root = temp_root("list");
+        for dir in ["1792438882-profile5", "1793902939-reload-probe", "1792247177-keymap", "notes", "12-", "x-profile1"]
+        {
+            fs::create_dir_all(root.join(dir)).unwrap();
+        }
+        fs::write(root.join("1799999999-file"), b"not a folder").unwrap();
+        let ids: Vec<_> = list_backups_in(&root).into_iter().map(|e| e.id).collect();
+        assert_eq!(ids, ["1793902939-reload-probe", "1792438882-profile5", "1792247177-keymap"]);
+        let entry = BackupEntry::parse("1792438882-profile5").unwrap();
+        assert_eq!((entry.created, entry.label.as_str()), (1792438882, "profile5"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn missing_folder_has_no_backups() {
+        assert!(list_backups_in(Path::new("/nonexistent/perihub/backups")).is_empty());
+    }
+
+    #[test]
+    fn backup_files_cannot_be_read_outside_the_backup() {
+        let root = temp_root("read");
+        fs::create_dir_all(root.join("1792438882-profile5")).unwrap();
+        fs::write(root.join("1792438882-profile5/sector_0000.bin"), [1, 2, 3]).unwrap();
+        assert_eq!(read_backup_file_in(&root, "1792438882-profile5", "sector_0000.bin").unwrap(), [1, 2, 3]);
+        for (id, name) in
+            [("../g502", "sector_0000.bin"), ("1792438882-profile5", "../x"), ("1-a", "..\\x"), ("a", "b")]
+        {
+            assert!(read_backup_file_in(&root, id, name).is_err(), "{id} {name}");
+        }
+        assert!(read_backup_file_in(&root, "1792438882-profile5", "missing.bin").is_err());
+        fs::remove_dir_all(root).unwrap();
+    }
 }

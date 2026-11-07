@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
-use crate::config::write_backup;
+use crate::config::{self, BackupEntry, write_backup};
 use crate::conflicts;
 use crate::error::{Error, HidppErrorCode, Result};
 use crate::hidpp::macros::{self, Macro, Packer};
@@ -134,6 +134,19 @@ enum Reload {
 
 /// Mice with more profiles keep the way verified since 0.1.0. Better to go through an enabled
 /// profile: the behavior with disabled ones is not verified.
+/// The profile to switch to after a restore, if the backup disabled the active one. With no active
+/// profile (0, another program controls the mouse) the mouse is left as it is.
+fn profile_after_restore(active: u8, enabled: &[bool]) -> Option<u8> {
+    if active == 0 {
+        return None;
+    }
+    let active_enabled = enabled.get((active as usize).wrapping_sub(1)).copied().unwrap_or(false);
+    if active_enabled {
+        return None;
+    }
+    enabled.iter().position(|&on| on).map(|i| i as u8 + 1)
+}
+
 fn reload_method(active: u8, enabled: &[bool]) -> Reload {
     let others = || (1..=enabled.len() as u8).filter(|&n| n != active);
     match others().find(|&n| enabled[n as usize - 1]).or_else(|| others().next()) {
@@ -520,6 +533,50 @@ impl MouseTask {
         self.state()
     }
 
+    /// The backups saved for this mouse model, newest first.
+    pub fn backups(&self) -> Vec<BackupEntry> {
+        config::list_backups(&self.model.backup_dir())
+    }
+
+    /// Writes back the memory saved in a backup, after backing up the current one. Only sectors that
+    /// differ are written, each one read back and compared.
+    pub fn restore_backup(&mut self, id: &str) -> Result<MouseRestore> {
+        self.check_writable()?;
+        let onboard = self.info.onboard.clone();
+        let device = self.model.backup_dir();
+        let backup = (0..onboard.sector_count as u16)
+            .map(|sector| config::read_backup_file(&device, id, &format!("sector_{sector:04x}.bin")))
+            .collect::<Result<Vec<_>>>()?;
+        check_backup(&backup, &onboard)?;
+        let current = (0..onboard.sector_count as u16)
+            .map(|sector| self.dev.read_sector(sector, onboard.sector_size))
+            .collect::<Result<Vec<_>>>()?;
+        let order = restore_order(&current, &backup, onboard.profile_count as usize);
+        if !order.is_empty() {
+            self.backup_all("restore")?;
+            for &sector in &order {
+                self.write_verified(sector, &backup[sector as usize])?;
+            }
+            let enabled = profile::parse_directory(&backup[0], onboard.profile_count as usize);
+            match profile_after_restore(self.dev.active_profile()?, &enabled) {
+                Some(other) => {
+                    self.dev.set_active_profile(other)?;
+                    self.previewing = false;
+                }
+                None => self.reload_active()?,
+            }
+            log::info!("mouse backup restored: {id}, sectors {order:?}");
+        }
+        let profiles =
+            order.iter().filter(|&&s| (1..=onboard.profile_count as u16).contains(&s)).map(|&s| s as u8).collect();
+        Ok(MouseRestore {
+            state: self.state()?,
+            profiles,
+            macros: order.iter().any(|&s| s > onboard.profile_count as u16),
+            directory: order.contains(&0),
+        })
+    }
+
     pub fn set_profile_enabled(&mut self, number: u8, enabled: bool) -> Result<MouseState> {
         self.check_writable()?;
         self.check_number(number)?;
@@ -628,6 +685,61 @@ impl DeviceTask for MouseTask {
     }
 }
 
+/// What restoring a backup changed in the mouse's memory.
+#[derive(Debug, Clone, Serialize)]
+pub struct MouseRestore {
+    pub state: MouseState,
+    /// Profiles whose settings changed.
+    pub profiles: Vec<u8>,
+    /// Whether the macros stored in the mouse changed.
+    pub macros: bool,
+    /// Whether the list of enabled profiles changed.
+    pub directory: bool,
+}
+
+/// Checks that a backup's sectors fit this mouse and hold a valid profile list, so restoring them
+/// cannot leave the mouse with a broken memory.
+fn check_backup(backup: &[Vec<u8>], onboard: &OnboardInfo) -> Result<()> {
+    let size = onboard.sector_size as usize;
+    if backup.len() != onboard.sector_count as usize || backup.iter().any(|s| s.len() != size) {
+        return Err(Error::Invalid("this backup does not match the memory of this mouse".into()));
+    }
+    let directory = &backup[0];
+    if !profile::crc_is_valid(directory) {
+        return Err(Error::Invalid("the profile list in this backup is damaged".into()));
+    }
+    for address in profile::directory_sectors(directory, onboard.profile_count as usize) {
+        let sector = backup.get(address as usize).filter(|_| address != 0);
+        if !sector.is_some_and(|s| profile::crc_is_valid(s)) {
+            return Err(Error::Invalid(format!("profile sector {address:#06x} in this backup is damaged")));
+        }
+    }
+    Ok(())
+}
+
+/// Sectors that differ from the backup, in the order they are written: macros first, then the
+/// profiles, then the profile list, so a profile never points to macros that are not there yet.
+///
+/// A macro sector that is blank in the backup is left as it is: no profile of the backup points to
+/// it, so what it holds now is unused memory, and writing a blank sector has never been tried on a
+/// real mouse.
+fn restore_order(current: &[Vec<u8>], backup: &[Vec<u8>], profile_count: usize) -> Vec<u16> {
+    let mut profiles = profile::directory_sectors(&backup[0], profile_count);
+    profiles.extend(profile::directory_sectors(&current[0], profile_count));
+    let rank = |sector: u16| match sector {
+        0 => 2,
+        s if profiles.contains(&s) => 1,
+        _ => 0,
+    };
+    let blank = |data: &[u8]| data.iter().all(|&b| b == 0x00) || data.iter().all(|&b| b == 0xFF);
+    let mut changed: Vec<u16> = (0..backup.len() as u16)
+        .filter(|&s| current[s as usize] != backup[s as usize])
+        .filter(|&s| rank(s) > 0 || !blank(&backup[s as usize]))
+        .collect();
+    changed.sort_by_key(|&s| (rank(s), s));
+    changed
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -649,5 +761,83 @@ mod tests {
         assert_eq!(reload_method(1, &[true, false]), Reload::Through(2));
         // A single profile (G403 HERO): host mode and back.
         assert_eq!(reload_method(1, &[true]), Reload::ModeSwitch);
+    }
+
+    /// The real G502 HERO memory of the fixtures (sectors 0–5), with empty macro sectors 6–15.
+    fn g502_memory() -> (Vec<Vec<u8>>, OnboardInfo) {
+        let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/g502");
+        let mut sectors: Vec<Vec<u8>> =
+            (0..6).map(|s| std::fs::read(format!("{dir}/sector_{s:04x}.bin")).unwrap()).collect();
+        let size = sectors[0].len();
+        sectors.resize(16, vec![0; size]);
+        let onboard = OnboardInfo {
+            memory_model: 1,
+            profile_format: 2,
+            macro_format: 1,
+            profile_count: 5,
+            rom_profile_count: 5,
+            button_count: 11,
+            sector_count: 16,
+            sector_size: size as u16,
+            has_gshift: true,
+            has_dpi_shift: true,
+        };
+        (sectors, onboard)
+    }
+
+    #[test]
+    fn a_real_backup_passes_the_checks() {
+        let (backup, onboard) = g502_memory();
+        check_backup(&backup, &onboard).unwrap();
+    }
+
+    #[test]
+    fn damaged_or_foreign_backups_are_refused() {
+        let (backup, onboard) = g502_memory();
+        let mut short = backup.clone();
+        short.pop();
+        assert!(check_backup(&short, &onboard).is_err(), "missing sector");
+        let mut small = backup.clone();
+        small[7].truncate(240);
+        assert!(check_backup(&small, &onboard).is_err(), "sector of another size");
+        let mut directory = backup.clone();
+        directory[0][1] ^= 0xFF;
+        assert!(check_backup(&directory, &onboard).is_err(), "damaged profile list");
+        let mut profile = backup.clone();
+        profile[3][10] ^= 0x01;
+        assert!(check_backup(&profile, &onboard).is_err(), "damaged profile");
+    }
+
+    #[test]
+    fn restore_writes_only_what_changed_macros_first_and_the_list_last() {
+        let (backup, _) = g502_memory();
+        assert!(restore_order(&backup, &backup, 5).is_empty());
+        let mut current = backup.clone();
+        current[0][4] ^= 1; // a profile was disabled
+        current[4][20] ^= 1; // profile 4 was edited
+        current[2][7] ^= 1; // profile 2 was edited
+        assert_eq!(restore_order(&current, &backup, 5), [2, 4, 0]);
+
+        let mut backup = backup;
+        backup[7][..4].copy_from_slice(&[0x43, 0x00, 0x1B, 0xFF]); // a macro the backup had
+        current[7] = vec![0; backup[7].len()];
+        assert_eq!(restore_order(&current, &backup, 5), [7, 2, 4, 0]);
+    }
+
+    #[test]
+    fn restore_leaves_sectors_that_are_blank_in_the_backup() {
+        let (backup, _) = g502_memory();
+        let mut current = backup.clone();
+        current[9][0] = 0x43; // a macro added after the backup, in a sector the backup had empty
+        assert!(restore_order(&current, &backup, 5).is_empty());
+    }
+
+    #[test]
+    fn a_restore_that_disables_the_active_profile_switches_to_an_enabled_one() {
+        assert_eq!(profile_after_restore(4, &[true; 5]), None);
+        assert_eq!(profile_after_restore(4, &[false, true, true, false, true]), Some(2));
+        assert_eq!(profile_after_restore(1, &[false, false, true, true, true]), Some(3));
+        // While another program controls the mouse no profile is active (0).
+        assert_eq!(profile_after_restore(0, &[true; 5]), None);
     }
 }

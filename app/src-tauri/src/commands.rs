@@ -2,12 +2,12 @@
 //! so they run off the main thread to avoid freezing the window.
 
 use perihub_core::apex::{KeyBinding, keys};
-use perihub_core::config::{AppProfiles, KeyboardConfig, LightingPreset};
+use perihub_core::config::{AppProfiles, BackupEntry, KeyboardConfig, LightingPreset};
 use perihub_core::effects::KeyboardLighting;
 use perihub_core::focus::{self, FocusSupport};
 use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
-use perihub_core::keyboard::Keymap;
-use perihub_core::mouse::{MouseLive, MouseState};
+use perihub_core::keyboard::{Keymap, KeymapRestore};
+use perihub_core::mouse::{MouseLive, MouseRestore, MouseState};
 use perihub_core::{DeviceStatus, Error};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, State};
@@ -111,6 +111,20 @@ pub async fn kb_reset_keymap(state: State<'_, AppState>) -> CmdResult<Keymap> {
     keymap
 }
 
+#[tauri::command]
+pub async fn kb_backups(state: State<'_, AppState>) -> CmdResult<Vec<BackupEntry>> {
+    let manager = state.manager.clone();
+    blocking(move || manager.keyboard()?.call(|k| Ok(k.backups()))).await
+}
+
+#[tauri::command]
+pub async fn kb_restore_backup(state: State<'_, AppState>, id: String) -> CmdResult<KeymapRestore> {
+    let manager = state.manager.clone();
+    let restored = blocking(move || manager.keyboard()?.call(move |k| k.restore_backup(&id))).await;
+    state.soft.watch_keyboard(state.manager.keyboard_triggers());
+    restored
+}
+
 #[derive(Serialize)]
 pub struct KeyCatalog {
     targets: &'static [keys::KeyInfo],
@@ -199,6 +213,18 @@ pub async fn mouse_save_profile(
 pub async fn mouse_restore_factory(state: State<'_, AppState>, number: u8) -> CmdResult<MouseState> {
     let manager = state.manager.clone();
     blocking(move || manager.mouse()?.call(move |m| m.restore_factory_profile(number))).await
+}
+
+#[tauri::command]
+pub async fn mouse_backups(state: State<'_, AppState>) -> CmdResult<Vec<BackupEntry>> {
+    let manager = state.manager.clone();
+    blocking(move || manager.mouse()?.call(|m| Ok(m.backups()))).await
+}
+
+#[tauri::command]
+pub async fn mouse_restore_backup(state: State<'_, AppState>, id: String) -> CmdResult<MouseRestore> {
+    let manager = state.manager.clone();
+    blocking(move || manager.mouse()?.call(move |m| m.restore_backup(&id))).await
 }
 
 #[tauri::command]

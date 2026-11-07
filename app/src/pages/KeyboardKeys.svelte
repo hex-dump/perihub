@@ -7,7 +7,9 @@
   import { bindingLabel, keyLabel, LAYOUT_HEIGHT, LAYOUT_WIDTH, layoutCaps, type KeyCap } from "../lib/keys";
   import { softSummary } from "../lib/macros";
   import { LAYOUTS, prefs, setLayout, type LayoutId } from "../lib/prefs.svelte";
+  import BackupsDialog from "../components/BackupsDialog.svelte";
   import ConfirmButton from "../components/ConfirmButton.svelte";
+  import { keymapRestoreMessage } from "../lib/backups";
   import KeyAccessPermission from "../components/KeyAccessPermission.svelte";
   import MacroEditor from "../components/MacroEditor.svelte";
   import SoftMacros from "../components/SoftMacros.svelte";
@@ -157,6 +159,22 @@
       message = "All keys are back to their factory settings.";
     } catch (e) {
       error = errorText(e);
+    } finally {
+      busy = null;
+    }
+  }
+
+  let showBackups = $state(false);
+
+  async function restoreBackup(id: string) {
+    busy = "Restoring the backup…";
+    error = message = null;
+    try {
+      const restored = await api.restoreKeyboardBackup(id);
+      keymap = restored.keymap;
+      drafts = [{}, {}];
+      message = keymapRestoreMessage(restored.keys);
+      showBackups = false;
     } finally {
       busy = null;
     }
@@ -319,6 +337,7 @@
       <ConfirmButton class="danger" disabled={!!busy} onconfirm={resetAll} confirmLabel="Reset all keys?">
         Reset all to factory
       </ConfirmButton>
+      <button disabled={!!busy} onclick={() => (showBackups = true)}>Backups…</button>
       <div class="grow"></div>
       {#if pending.length}
         <span class="muted small">{pending.length} unsaved {pending.length === 1 ? "change" : "changes"}</span>
@@ -334,6 +353,10 @@
     {#if soft}<SoftMacros info={soft} onchange={refreshSoft} />{/if}
   {/if}
 </div>
+
+{#if showBackups}
+  <BackupsDialog device="Apex 3 TKL" load={api.keyboardBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
+{/if}
 
 {#if editingSoft}
   <MacroEditor content={EMPTY_MACRO} soft={editingSoft.macro} onsavesoft={saveSoft} keys={catalog?.targets ?? []}

@@ -300,6 +300,30 @@ export interface KeyChange {
   binding: KeyBinding;
 }
 
+/** A backup PeriHub saved before writing to a device. */
+export interface BackupEntry {
+  id: string;
+  /** Unix time in seconds. */
+  created: number;
+  /** What was about to be written: profile3, factory2, directory, keymap, restore… */
+  label: string;
+}
+
+export interface KeymapRestore {
+  keymap: Keymap;
+  /** How many keys changed, on both layers. */
+  keys: number;
+}
+
+export interface MouseRestore {
+  state: MouseState;
+  /** Profiles whose settings changed. */
+  profiles: number[];
+  macros: boolean;
+  /** Whether the list of enabled profiles changed. */
+  directory: boolean;
+}
+
 // ---- Commands ----
 
 export const api = {
@@ -314,6 +338,8 @@ export const api = {
   keymap: () => invoke<Keymap>("kb_get_keymap"),
   applyKeymap: (changes: KeyChange[]) => invoke<Keymap>("kb_apply_keymap", { changes }),
   resetKeymap: () => invoke<Keymap>("kb_reset_keymap"),
+  keyboardBackups: () => invoke<BackupEntry[]>("kb_backups"),
+  restoreKeyboardBackup: (id: string) => invoke<KeymapRestore>("kb_restore_backup", { id }),
   keyCatalog: () => invoke<KeyCatalog>("kb_key_catalog"),
   keyAccess: () => invoke<KeyAccess>("kb_key_access"),
   grantKeyAccess: () => invoke<void>("kb_grant_key_access"),
@@ -328,6 +354,8 @@ export const api = {
   saveProfile: (number: number, settings: ProfileSettings) =>
     invoke<MouseState>("mouse_save_profile", { number, settings }),
   restoreFactory: (number: number) => invoke<MouseState>("mouse_restore_factory", { number }),
+  mouseBackups: () => invoke<BackupEntry[]>("mouse_backups"),
+  restoreMouseBackup: (id: string) => invoke<MouseRestore>("mouse_restore_backup", { id }),
   setProfileEnabled: (number: number, enabled: boolean) =>
     invoke<MouseState>("mouse_set_profile_enabled", { number, enabled }),
   setActiveProfile: (number: number) => invoke<MouseState>("mouse_set_active_profile", { number }),

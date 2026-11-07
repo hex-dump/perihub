@@ -4,11 +4,11 @@ use std::ffi::CString;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::apex::input::{KeyWatcher, KeyZones};
 use crate::apex::{Apex3Tkl, KeyBinding, Layer, MAX_BRIGHTNESS};
-use crate::config::{KeyboardConfig, write_backup};
+use crate::config::{self, BackupEntry, KeyboardConfig, write_backup};
 use crate::effects::{Frame, KeyboardLighting, NO_PRESSES};
 use crate::error::{Error, Result};
 use crate::softmacro::TRIGGER_KEYS;
@@ -19,6 +19,8 @@ const FRAME_INTERVAL: Duration = Duration::from_millis(33);
 const STATIC_REFRESH: Duration = Duration::from_secs(5);
 /// After a reconnect the key interfaces may not be accessible yet: reading them is retried this often.
 const KEYS_RETRY: Duration = Duration::from_secs(3);
+/// Folder of the key map backups.
+const BACKUPS: &str = "apex3tkl";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct KeyboardInfo {
@@ -26,7 +28,7 @@ pub struct KeyboardInfo {
     pub firmware: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Keymap {
     pub normal: Layer,
     pub steelseries: Layer,
@@ -161,8 +163,12 @@ impl KeyboardTask {
 
     /// Changes the key map after saving a backup of it.
     pub fn apply_keymap(&mut self, changes: &[(u8, u8, KeyBinding)]) -> Result<Keymap> {
+        self.write_keymap(changes, "keymap")
+    }
+
+    fn write_keymap(&mut self, changes: &[(u8, u8, KeyBinding)], label: &str) -> Result<Keymap> {
         let before = self.keymap()?;
-        write_backup("apex3tkl", "keymap", &[("keymap.json", serde_json::to_string_pretty(&before)?.as_bytes())])?;
+        write_backup(BACKUPS, label, &[("keymap.json", serde_json::to_string_pretty(&before)?.as_bytes())])?;
         let [normal, steelseries] = self.dev.apply_changes(changes)?;
         let keymap = Keymap { normal, steelseries };
         self.keymap_changed(&keymap);
@@ -196,6 +202,50 @@ impl KeyboardTask {
         }
         self.apply_keymap(&changes)
     }
+
+    /// The key map backups, newest first.
+    pub fn backups(&self) -> Vec<BackupEntry> {
+        config::list_backups(BACKUPS)
+    }
+
+    /// Puts back the key map saved in a backup, after backing up the current one.
+    pub fn restore_backup(&mut self, id: &str) -> Result<KeymapRestore> {
+        let data = config::read_backup_file(BACKUPS, id, "keymap.json")?;
+        let backup: Keymap = serde_json::from_slice(&data)
+            .map_err(|e| Error::Invalid(format!("backup {id}: unreadable key map: {e}")))?;
+        let current = self.keymap()?;
+        let changes = restore_changes(&current, &backup);
+        if changes.is_empty() {
+            return Ok(KeymapRestore { keymap: current, keys: 0 });
+        }
+        // Every binding is checked again before it is written (see Apex3Tkl::apply_changes).
+        let keymap = self.write_keymap(&changes, "restore")?;
+        log::info!("key map backup restored: {id}, {} keys", changes.len());
+        Ok(KeymapRestore { keymap, keys: changes.len() })
+    }
+}
+
+/// What restoring a key map backup changed.
+#[derive(Debug, Clone, Serialize)]
+pub struct KeymapRestore {
+    pub keymap: Keymap,
+    /// How many keys changed, on both layers.
+    pub keys: usize,
+}
+
+/// Keys whose binding differs from the backup. Keys that cannot be remapped are left alone.
+fn restore_changes(current: &Keymap, backup: &Keymap) -> Vec<(u8, u8, KeyBinding)> {
+    let mut changes = Vec::new();
+    for (layer, now, saved) in
+        [(0u8, &current.normal, &backup.normal), (1u8, &current.steelseries, &backup.steelseries)]
+    {
+        for (&source, &binding) in saved {
+            if crate::apex::keys::is_remappable_source(source) && now.get(&source) != Some(&binding) {
+                changes.push((layer, source, binding));
+            }
+        }
+    }
+    changes
 }
 
 impl DeviceTask for KeyboardTask {
@@ -218,5 +268,43 @@ impl DeviceTask for KeyboardTask {
             return Ok(interval);
         }
         Ok(due)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::apex::keys::STEELSERIES_KEY;
+
+    /// A key map backup saved by PeriHub from a real Apex 3 TKL.
+    fn real_backup() -> Keymap {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/apex3tkl-keymap.json");
+        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn a_real_key_map_backup_can_be_read() {
+        let backup = real_backup();
+        assert_eq!(backup.normal.len(), 114);
+        assert_eq!(backup.steelseries.len(), 114);
+        assert!(restore_changes(&backup, &backup).is_empty());
+    }
+
+    #[test]
+    fn restore_changes_only_the_keys_that_differ() {
+        let backup = real_backup();
+        let mut current = backup.clone();
+        current.normal.insert(0x04, KeyBinding::Key { usage: 0x05 }); // A now types B
+        current.steelseries.insert(0x1E, KeyBinding::Key { usage: 0x73 }); // SteelSeries + 1 now sends F24
+        let changes = restore_changes(&current, &backup);
+        assert_eq!(changes, [(0, 0x04, backup.normal[&0x04]), (1, 0x1E, backup.steelseries[&0x1E])]);
+    }
+
+    #[test]
+    fn restore_leaves_keys_that_cannot_be_remapped() {
+        let backup = real_backup();
+        let mut current = backup.clone();
+        current.normal.insert(STEELSERIES_KEY, KeyBinding::Key { usage: 0x05 });
+        assert!(restore_changes(&current, &backup).is_empty());
     }
 }

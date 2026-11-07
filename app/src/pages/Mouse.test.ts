@@ -13,6 +13,8 @@ const api = vi.hoisted(() => ({
   setProfileEnabled: vi.fn(),
   appSettings: vi.fn(),
   openTestForm: vi.fn(),
+  mouseBackups: vi.fn(),
+  restoreMouseBackup: vi.fn(),
 }));
 
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
@@ -208,5 +210,59 @@ describe("the experimental notice", () => {
 
     await open();
     expect(screen.queryByRole("button", { name: "Copy test report" })).toBeNull();
+  });
+});
+
+describe("Backups", () => {
+  const backups = [
+    { id: "1794000200-profile1", created: 1794000200, label: "profile1" },
+    { id: "1794000100-factory2", created: 1794000100, label: "factory2" },
+  ];
+
+  async function openBackups() {
+    api.mouseBackups.mockResolvedValue(backups);
+    await open();
+    await fireEvent.click(screen.getByRole("button", { name: "Backups…" }));
+    await wait(0);
+  }
+
+  it("lists the backups, newest first, with what they were taken before", async () => {
+    await openBackups();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain("Backups of the G502 HERO");
+    const items = screen.getAllByRole("listitem").map((li) => li.textContent);
+    expect(items[0]).toContain("Before saving profile 1");
+    expect(items[1]).toContain("Before resetting profile 2 to factory settings");
+  });
+
+  it("restores only after a second click, then shows the saved settings and what changed", async () => {
+    await openBackups();
+    await changeFirstLevel(1000);
+    const restored = state();
+    restored.profiles[0].settings.dpi_levels = [400, 1600];
+    api.restoreMouseBackup.mockResolvedValue({ state: restored, profiles: [1], macros: false, directory: false });
+
+    const [newest] = screen.getAllByRole("button", { name: "Restore" });
+    await fireEvent.click(newest);
+    expect(api.restoreMouseBackup).not.toHaveBeenCalled();
+    await fireEvent.click(screen.getByRole("button", { name: "Restore this backup?" }));
+    await wait(0);
+
+    expect(api.restoreMouseBackup).toHaveBeenCalledWith("1794000200-profile1");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(firstLevel().value).toBe("400");
+    expect(screen.getByText("Backup restored: profile 1 changed.")).toBeTruthy();
+  });
+
+  it("keeps the dialog open with the error when the restore fails", async () => {
+    await openBackups();
+    api.restoreMouseBackup.mockRejectedValue("this backup does not match the memory of this mouse");
+
+    await fireEvent.click(screen.getAllByRole("button", { name: "Restore" })[0]);
+    await fireEvent.click(screen.getByRole("button", { name: "Restore this backup?" }));
+    await wait(0);
+
+    expect(screen.getByRole("dialog").textContent).toContain("this backup does not match the memory of this mouse");
+    expect(screen.getByRole("button", { name: "Backups…" })).toBeTruthy();
   });
 });

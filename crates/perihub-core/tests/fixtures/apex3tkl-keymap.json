@@ -1,0 +1,814 @@
+{
+  "normal": {
+    "4": {
+      "type": "key",
+      "usage": 4
+    },
+    "5": {
+      "type": "key",
+      "usage": 5
+    },
+    "6": {
+      "type": "key",
+      "usage": 6
+    },
+    "7": {
+      "type": "key",
+      "usage": 7
+    },
+    "8": {
+      "type": "key",
+      "usage": 8
+    },
+    "9": {
+      "type": "key",
+      "usage": 9
+    },
+    "10": {
+      "type": "key",
+      "usage": 10
+    },
+    "11": {
+      "type": "key",
+      "usage": 11
+    },
+    "12": {
+      "type": "key",
+      "usage": 12
+    },
+    "13": {
+      "type": "key",
+      "usage": 13
+    },
+    "14": {
+      "type": "key",
+      "usage": 14
+    },
+    "15": {
+      "type": "key",
+      "usage": 15
+    },
+    "16": {
+      "type": "key",
+      "usage": 16
+    },
+    "17": {
+      "type": "key",
+      "usage": 17
+    },
+    "18": {
+      "type": "key",
+      "usage": 18
+    },
+    "19": {
+      "type": "key",
+      "usage": 19
+    },
+    "20": {
+      "type": "key",
+      "usage": 20
+    },
+    "21": {
+      "type": "key",
+      "usage": 21
+    },
+    "22": {
+      "type": "key",
+      "usage": 22
+    },
+    "23": {
+      "type": "key",
+      "usage": 23
+    },
+    "24": {
+      "type": "key",
+      "usage": 24
+    },
+    "25": {
+      "type": "key",
+      "usage": 25
+    },
+    "26": {
+      "type": "key",
+      "usage": 26
+    },
+    "27": {
+      "type": "key",
+      "usage": 27
+    },
+    "28": {
+      "type": "key",
+      "usage": 28
+    },
+    "29": {
+      "type": "key",
+      "usage": 29
+    },
+    "30": {
+      "type": "key",
+      "usage": 30
+    },
+    "31": {
+      "type": "key",
+      "usage": 31
+    },
+    "32": {
+      "type": "key",
+      "usage": 32
+    },
+    "33": {
+      "type": "key",
+      "usage": 33
+    },
+    "34": {
+      "type": "key",
+      "usage": 34
+    },
+    "35": {
+      "type": "key",
+      "usage": 35
+    },
+    "36": {
+      "type": "key",
+      "usage": 36
+    },
+    "37": {
+      "type": "key",
+      "usage": 37
+    },
+    "38": {
+      "type": "key",
+      "usage": 38
+    },
+    "39": {
+      "type": "key",
+      "usage": 39
+    },
+    "40": {
+      "type": "key",
+      "usage": 40
+    },
+    "41": {
+      "type": "key",
+      "usage": 41
+    },
+    "42": {
+      "type": "key",
+      "usage": 42
+    },
+    "43": {
+      "type": "key",
+      "usage": 43
+    },
+    "44": {
+      "type": "key",
+      "usage": 44
+    },
+    "45": {
+      "type": "key",
+      "usage": 45
+    },
+    "46": {
+      "type": "key",
+      "usage": 46
+    },
+    "47": {
+      "type": "key",
+      "usage": 47
+    },
+    "48": {
+      "type": "key",
+      "usage": 48
+    },
+    "49": {
+      "type": "key",
+      "usage": 49
+    },
+    "50": {
+      "type": "key",
+      "usage": 50
+    },
+    "51": {
+      "type": "key",
+      "usage": 51
+    },
+    "52": {
+      "type": "key",
+      "usage": 52
+    },
+    "53": {
+      "type": "key",
+      "usage": 53
+    },
+    "54": {
+      "type": "key",
+      "usage": 54
+    },
+    "55": {
+      "type": "key",
+      "usage": 55
+    },
+    "56": {
+      "type": "key",
+      "usage": 56
+    },
+    "57": {
+      "type": "key",
+      "usage": 57
+    },
+    "58": {
+      "type": "key",
+      "usage": 58
+    },
+    "59": {
+      "type": "key",
+      "usage": 59
+    },
+    "60": {
+      "type": "key",
+      "usage": 60
+    },
+    "61": {
+      "type": "key",
+      "usage": 61
+    },
+    "62": {
+      "type": "key",
+      "usage": 62
+    },
+    "63": {
+      "type": "key",
+      "usage": 63
+    },
+    "64": {
+      "type": "key",
+      "usage": 64
+    },
+    "65": {
+      "type": "key",
+      "usage": 65
+    },
+    "66": {
+      "type": "key",
+      "usage": 66
+    },
+    "67": {
+      "type": "key",
+      "usage": 67
+    },
+    "68": {
+      "type": "key",
+      "usage": 68
+    },
+    "69": {
+      "type": "key",
+      "usage": 69
+    },
+    "70": {
+      "type": "key",
+      "usage": 70
+    },
+    "71": {
+      "type": "key",
+      "usage": 71
+    },
+    "72": {
+      "type": "key",
+      "usage": 72
+    },
+    "73": {
+      "type": "key",
+      "usage": 73
+    },
+    "74": {
+      "type": "key",
+      "usage": 74
+    },
+    "75": {
+      "type": "key",
+      "usage": 75
+    },
+    "76": {
+      "type": "key",
+      "usage": 76
+    },
+    "77": {
+      "type": "key",
+      "usage": 77
+    },
+    "78": {
+      "type": "key",
+      "usage": 78
+    },
+    "79": {
+      "type": "key",
+      "usage": 79
+    },
+    "80": {
+      "type": "key",
+      "usage": 80
+    },
+    "81": {
+      "type": "key",
+      "usage": 81
+    },
+    "82": {
+      "type": "key",
+      "usage": 82
+    },
+    "83": {
+      "type": "key",
+      "usage": 83
+    },
+    "84": {
+      "type": "key",
+      "usage": 84
+    },
+    "85": {
+      "type": "key",
+      "usage": 85
+    },
+    "86": {
+      "type": "key",
+      "usage": 86
+    },
+    "87": {
+      "type": "key",
+      "usage": 87
+    },
+    "88": {
+      "type": "key",
+      "usage": 88
+    },
+    "89": {
+      "type": "key",
+      "usage": 89
+    },
+    "90": {
+      "type": "key",
+      "usage": 90
+    },
+    "91": {
+      "type": "key",
+      "usage": 91
+    },
+    "92": {
+      "type": "key",
+      "usage": 92
+    },
+    "93": {
+      "type": "key",
+      "usage": 93
+    },
+    "94": {
+      "type": "key",
+      "usage": 94
+    },
+    "95": {
+      "type": "key",
+      "usage": 95
+    },
+    "96": {
+      "type": "key",
+      "usage": 96
+    },
+    "97": {
+      "type": "key",
+      "usage": 97
+    },
+    "98": {
+      "type": "key",
+      "usage": 98
+    },
+    "99": {
+      "type": "key",
+      "usage": 99
+    },
+    "100": {
+      "type": "key",
+      "usage": 100
+    },
+    "133": {
+      "type": "key",
+      "usage": 133
+    },
+    "135": {
+      "type": "key",
+      "usage": 135
+    },
+    "136": {
+      "type": "key",
+      "usage": 136
+    },
+    "137": {
+      "type": "key",
+      "usage": 137
+    },
+    "138": {
+      "type": "key",
+      "usage": 138
+    },
+    "139": {
+      "type": "key",
+      "usage": 139
+    },
+    "144": {
+      "type": "key",
+      "usage": 144
+    },
+    "145": {
+      "type": "key",
+      "usage": 145
+    },
+    "224": {
+      "type": "key",
+      "usage": 224
+    },
+    "225": {
+      "type": "key",
+      "usage": 225
+    },
+    "226": {
+      "type": "key",
+      "usage": 226
+    },
+    "227": {
+      "type": "key",
+      "usage": 227
+    },
+    "228": {
+      "type": "key",
+      "usage": 228
+    },
+    "229": {
+      "type": "key",
+      "usage": 229
+    },
+    "230": {
+      "type": "key",
+      "usage": 230
+    },
+    "231": {
+      "type": "key",
+      "usage": 231
+    },
+    "240": {
+      "type": "key",
+      "usage": 240
+    }
+  },
+  "steelseries": {
+    "4": {
+      "type": "none"
+    },
+    "5": {
+      "type": "none"
+    },
+    "6": {
+      "type": "none"
+    },
+    "7": {
+      "type": "none"
+    },
+    "8": {
+      "type": "none"
+    },
+    "9": {
+      "type": "none"
+    },
+    "10": {
+      "type": "none"
+    },
+    "11": {
+      "type": "none"
+    },
+    "12": {
+      "type": "none"
+    },
+    "13": {
+      "type": "none"
+    },
+    "14": {
+      "type": "none"
+    },
+    "15": {
+      "type": "none"
+    },
+    "16": {
+      "type": "none"
+    },
+    "17": {
+      "type": "none"
+    },
+    "18": {
+      "type": "none"
+    },
+    "19": {
+      "type": "none"
+    },
+    "20": {
+      "type": "none"
+    },
+    "21": {
+      "type": "none"
+    },
+    "22": {
+      "type": "none"
+    },
+    "23": {
+      "type": "none"
+    },
+    "24": {
+      "type": "none"
+    },
+    "25": {
+      "type": "none"
+    },
+    "26": {
+      "type": "none"
+    },
+    "27": {
+      "type": "none"
+    },
+    "28": {
+      "type": "none"
+    },
+    "29": {
+      "type": "none"
+    },
+    "30": {
+      "type": "none"
+    },
+    "31": {
+      "type": "none"
+    },
+    "32": {
+      "type": "none"
+    },
+    "33": {
+      "type": "none"
+    },
+    "34": {
+      "type": "none"
+    },
+    "35": {
+      "type": "none"
+    },
+    "36": {
+      "type": "none"
+    },
+    "37": {
+      "type": "none"
+    },
+    "38": {
+      "type": "none"
+    },
+    "39": {
+      "type": "none"
+    },
+    "40": {
+      "type": "none"
+    },
+    "41": {
+      "type": "none"
+    },
+    "42": {
+      "type": "none"
+    },
+    "43": {
+      "type": "none"
+    },
+    "44": {
+      "type": "none"
+    },
+    "45": {
+      "type": "none"
+    },
+    "46": {
+      "type": "none"
+    },
+    "47": {
+      "type": "none"
+    },
+    "48": {
+      "type": "none"
+    },
+    "49": {
+      "type": "none"
+    },
+    "50": {
+      "type": "none"
+    },
+    "51": {
+      "type": "none"
+    },
+    "52": {
+      "type": "none"
+    },
+    "53": {
+      "type": "none"
+    },
+    "54": {
+      "type": "none"
+    },
+    "55": {
+      "type": "none"
+    },
+    "56": {
+      "type": "none"
+    },
+    "57": {
+      "type": "none"
+    },
+    "58": {
+      "type": "none"
+    },
+    "59": {
+      "type": "none"
+    },
+    "60": {
+      "type": "none"
+    },
+    "61": {
+      "type": "none"
+    },
+    "62": {
+      "type": "none"
+    },
+    "63": {
+      "type": "none"
+    },
+    "64": {
+      "type": "none"
+    },
+    "65": {
+      "type": "none"
+    },
+    "66": {
+      "type": "function",
+      "code": 1,
+      "param": 0
+    },
+    "67": {
+      "type": "function",
+      "code": 2,
+      "param": 1
+    },
+    "68": {
+      "type": "function",
+      "code": 3,
+      "param": 1
+    },
+    "69": {
+      "type": "function",
+      "code": 4,
+      "param": 1
+    },
+    "70": {
+      "type": "none"
+    },
+    "71": {
+      "type": "none"
+    },
+    "72": {
+      "type": "none"
+    },
+    "73": {
+      "type": "none"
+    },
+    "74": {
+      "type": "none"
+    },
+    "75": {
+      "type": "none"
+    },
+    "76": {
+      "type": "none"
+    },
+    "77": {
+      "type": "none"
+    },
+    "78": {
+      "type": "none"
+    },
+    "79": {
+      "type": "none"
+    },
+    "80": {
+      "type": "none"
+    },
+    "81": {
+      "type": "none"
+    },
+    "82": {
+      "type": "none"
+    },
+    "83": {
+      "type": "none"
+    },
+    "84": {
+      "type": "none"
+    },
+    "85": {
+      "type": "none"
+    },
+    "86": {
+      "type": "none"
+    },
+    "87": {
+      "type": "none"
+    },
+    "88": {
+      "type": "none"
+    },
+    "89": {
+      "type": "none"
+    },
+    "90": {
+      "type": "none"
+    },
+    "91": {
+      "type": "none"
+    },
+    "92": {
+      "type": "none"
+    },
+    "93": {
+      "type": "none"
+    },
+    "94": {
+      "type": "none"
+    },
+    "95": {
+      "type": "none"
+    },
+    "96": {
+      "type": "none"
+    },
+    "97": {
+      "type": "none"
+    },
+    "98": {
+      "type": "none"
+    },
+    "99": {
+      "type": "none"
+    },
+    "100": {
+      "type": "none"
+    },
+    "133": {
+      "type": "none"
+    },
+    "135": {
+      "type": "none"
+    },
+    "136": {
+      "type": "none"
+    },
+    "137": {
+      "type": "none"
+    },
+    "138": {
+      "type": "none"
+    },
+    "139": {
+      "type": "none"
+    },
+    "144": {
+      "type": "none"
+    },
+    "145": {
+      "type": "none"
+    },
+    "224": {
+      "type": "none"
+    },
+    "225": {
+      "type": "none"
+    },
+    "226": {
+      "type": "none"
+    },
+    "227": {
+      "type": "function",
+      "code": 5,
+      "param": 0
+    },
+    "228": {
+      "type": "none"
+    },
+    "229": {
+      "type": "none"
+    },
+    "230": {
+      "type": "none"
+    },
+    "231": {
+      "type": "none"
+    },
+    "240": {
+      "type": "none"
+    }
+  }
+}

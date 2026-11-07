@@ -2,7 +2,9 @@
   import { onDestroy, untrack } from "svelte";
   import { api, errorText, type Battery, type MouseInfo, type MouseState, type ProfileSettings } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
+  import BackupsDialog from "../components/BackupsDialog.svelte";
   import ConfirmButton from "../components/ConfirmButton.svelte";
+  import { mouseRestoreMessage } from "../lib/backups";
   import TestReport from "../components/TestReport.svelte";
   import MousePerformance from "./MousePerformance.svelte";
   import MouseButtons from "./MouseButtons.svelte";
@@ -127,6 +129,23 @@
       previewing = false;
       adopt(next);
       message = `Profile ${selected} restored to factory settings.`;
+    }
+  }
+
+  let showBackups = $state(false);
+
+  async function restoreBackup(id: string) {
+    previewEpoch++;
+    busy = "Restoring the backup…";
+    error = message = null;
+    try {
+      const restored = await api.restoreMouseBackup(id);
+      previewing = false;
+      adopt(restored.state);
+      message = mouseRestoreMessage(restored);
+      showBackups = false;
+    } finally {
+      busy = null;
     }
   }
 
@@ -302,6 +321,7 @@
     <ConfirmButton class="danger" disabled={!!busy || !info.writable} onconfirm={factory} confirmLabel="Reset this profile?">
       Factory settings
     </ConfirmButton>
+    <button disabled={!!busy || !info.writable} onclick={() => (showBackups = true)}>Backups…</button>
     <div class="grow"></div>
     {#if busy}
       <span class="muted small" role="status">{busy}</span>
@@ -317,6 +337,10 @@
       Save to mouse
     </button>
   </footer>
+
+  {#if showBackups}
+    <BackupsDialog device={info.model} load={api.mouseBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
+  {/if}
 {:else if info}
   {#if error}<div class="notice error">{error}</div>{:else}<div class="notice info">{busy ?? "Loading…"}</div>{/if}
 {/if}
