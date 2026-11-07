@@ -1,5 +1,5 @@
 pkgbase = perihub-bin
-	pkgdesc = Configure the SteelSeries Apex 3 TKL and Logitech G mice without SteelSeries GG or Logitech G HUB
+	pkgdesc = PeriHub for your peripherals: gaming keyboards and mice without SteelSeries GG or Logitech G HUB
 	pkgver = 0.5.4
 	pkgrel = 1
 	url = https://github.com/hex-dump/perihub

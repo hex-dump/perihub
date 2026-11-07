@@ -5,8 +5,8 @@
 <h1 align="center">PeriHub</h1>
 
 <p align="center">
-  An open-source app to configure gaming peripherals on <b>Windows and Linux</b>,<br>
-  without SteelSeries GG or Logitech G HUB.
+  <b>PeriHub for your peripherals</b>: one open-source app for your gaming keyboard and mouse<br>
+  on <b>Windows and Linux</b>, without SteelSeries GG or Logitech G HUB.
 </p>
 
 <p align="center">
@@ -17,7 +17,8 @@
 
 ![Keyboard lighting](docs/screenshots/keyboard-lighting.png)
 
-PeriHub currently supports the **SteelSeries Apex 3 TKL** keyboard and the **Logitech G502 HERO** mouse. The goal is to grow into a single, lightweight, vendor-neutral app for many more devices: see [Hardware roadmap](#hardware-roadmap).
+- **Fully supported now:** the SteelSeries Apex 3 TKL keyboard and the Logitech G502 HERO mouse.
+- **Not supported yet:** 30 more Logitech G mice are recognized in read-only mode until someone tests them, and more devices are on the way. See [Supported hardware](#supported-hardware) and the [Hardware roadmap](#hardware-roadmap).
 
 ## Contents
 
