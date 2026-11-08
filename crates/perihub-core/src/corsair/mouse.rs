@@ -119,6 +119,9 @@ impl CorsairMouseTask {
     /// Shows one colour on every LED (experimental). The first time it takes the mouse into
     /// software mode. If anything fails the mouse is given back at once.
     pub fn set_lighting(&mut self, color: Rgb) -> Result<CorsairMouseInfo> {
+        if self.info.leds == 0 {
+            return Err(Error::Invalid(format!("the {} has no lighting", self.info.model)));
+        }
         if self.info.lighting.is_none() {
             let others = crate::conflicts::corsair_programs_running();
             if !others.is_empty() {
@@ -291,7 +294,7 @@ mod tests {
     }
 
     fn open(fake: &FakeMouse) -> CorsairMouseTask {
-        CorsairMouseTask::open(BragiDevice::new(fake.clone()), models::find(0x1B70).unwrap()).unwrap()
+        CorsairMouseTask::open(BragiDevice::new(fake.clone(), 64), models::find(0x1B70).unwrap()).unwrap()
     }
 
     #[test]

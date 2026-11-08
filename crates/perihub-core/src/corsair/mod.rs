@@ -15,8 +15,8 @@ use crate::hidpp::Transport;
 pub const CORSAIR: u16 = 0x1B1C;
 /// HID interface the mice take requests on.
 pub const CONTROL_INTERFACE: i32 = 1;
-/// Packet size of the mice PeriHub supports for now.
-const PACKET: usize = 64;
+/// Packet size of most mice; a few use 128 bytes (see the model table).
+pub const PACKET: usize = 64;
 const MARKER: u8 = 0x08;
 const TIMEOUT: Duration = Duration::from_millis(1000);
 
@@ -88,24 +88,24 @@ pub fn lighting_data(colors: &[Rgb]) -> Vec<u8> {
     data
 }
 
-/// The packets that write `data` to the lighting handle: the first one carries the length, the
-/// others continue it.
-fn write_packets(data: &[u8]) -> Vec<[u8; PACKET]> {
+/// The packets of `size` bytes that write `data` to the lighting handle: the first one carries the
+/// length, the others continue it.
+fn write_packets(data: &[u8], size: usize) -> Vec<Vec<u8>> {
     let mut packets = Vec::new();
-    let mut first = [0u8; PACKET];
+    let mut first = vec![0u8; size];
     first[0] = MARKER;
     first[1] = command::WRITE;
     first[2] = LIGHTING_HANDLE;
     first[3..7].copy_from_slice(&(data.len() as u32).to_le_bytes());
-    let (head, mut rest) = data.split_at(data.len().min(PACKET - WRITE_DATA_AT));
+    let (head, mut rest) = data.split_at(data.len().min(size - WRITE_DATA_AT));
     first[WRITE_DATA_AT..WRITE_DATA_AT + head.len()].copy_from_slice(head);
     packets.push(first);
     while !rest.is_empty() {
-        let mut next = [0u8; PACKET];
+        let mut next = vec![0u8; size];
         next[0] = MARKER;
         next[1] = command::CONTINUE;
         next[2] = LIGHTING_HANDLE;
-        let (chunk, left) = rest.split_at(rest.len().min(PACKET - CONTINUE_DATA_AT));
+        let (chunk, left) = rest.split_at(rest.len().min(size - CONTINUE_DATA_AT));
         next[CONTINUE_DATA_AT..CONTINUE_DATA_AT + chunk.len()].copy_from_slice(chunk);
         packets.push(next);
         rest = left;
@@ -116,13 +116,16 @@ fn write_packets(data: &[u8]) -> Vec<[u8; PACKET]> {
 /// A Corsair mouse on its control interface.
 pub struct BragiDevice {
     dev: Box<dyn Transport>,
+    /// Packet size of this mouse.
+    size: usize,
     /// Experimental lighting is on: the commands it needs may be sent (see [`allowed`]).
     lighting: bool,
 }
 
 impl BragiDevice {
-    pub fn new(dev: impl Transport + 'static) -> Self {
-        Self { dev: Box::new(dev), lighting: false }
+    /// `size`: the packet size of the model, 64 or 128 bytes.
+    pub fn new(dev: impl Transport + 'static, size: usize) -> Self {
+        Self { dev: Box::new(dev), size, lighting: false }
     }
 
     pub fn set_lighting_allowed(&mut self, on: bool) {
@@ -130,12 +133,12 @@ impl BragiDevice {
     }
 
     /// Sends a packet and returns the reply to it, whatever its status.
-    fn exchange(&mut self, packet: &[u8; PACKET]) -> Result<[u8; PACKET]> {
+    fn exchange(&mut self, packet: &[u8]) -> Result<Vec<u8>> {
         if !allowed(packet, self.lighting) {
             return Err(Error::Invalid(format!("command {:#04x} is not allowed on this mouse", packet[1])));
         }
-        let mut out = [0u8; PACKET + 1];
-        out[1..].copy_from_slice(packet);
+        let mut out = vec![0u8; self.size + 1];
+        out[1..=packet.len()].copy_from_slice(packet);
         self.dev.write(&out)?;
         let deadline = Instant::now() + TIMEOUT;
         loop {
@@ -143,20 +146,20 @@ impl BragiDevice {
             if left.is_zero() {
                 return Err(Error::Timeout);
             }
-            let mut reply = [0u8; PACKET];
+            let mut reply = vec![0u8; self.size];
             let n = self.dev.read_timeout(&mut reply, left.as_millis().max(1) as i32)?;
             if n == 0 {
                 return Err(Error::Timeout);
             }
             // Other reports can arrive on the same interface: only the reply to this command counts.
-            if n >= 3 && reply[1] == packet[1] {
+            if n >= 7 && reply[1] == packet[1] {
                 return Ok(reply);
             }
         }
     }
 
     /// Sends a packet and fails unless the mouse reports success.
-    fn request(&mut self, packet: &[u8; PACKET]) -> Result<[u8; PACKET]> {
+    fn request(&mut self, packet: &[u8]) -> Result<Vec<u8>> {
         let reply = self.exchange(packet)?;
         match reply[2] {
             STATUS_OK => Ok(reply),
@@ -165,8 +168,8 @@ impl BragiDevice {
         }
     }
 
-    fn packet(command: u8, args: &[u8]) -> [u8; PACKET] {
-        let mut packet = [0u8; PACKET];
+    fn packet(&self, command: u8, args: &[u8]) -> Vec<u8> {
+        let mut packet = vec![0u8; self.size];
         packet[0] = MARKER;
         packet[1] = command;
         packet[2..2 + args.len()].copy_from_slice(args);
@@ -175,23 +178,23 @@ impl BragiDevice {
 
     /// Reads a property: three bytes, little endian.
     pub fn property(&mut self, property: u8) -> Result<u32> {
-        let reply = self.request(&Self::packet(command::GET, &[property]))?;
+        let reply = self.request(&self.packet(command::GET, &[property]))?;
         Ok(u32::from_le_bytes([reply[3], reply[4], reply[5], 0]))
     }
 
     /// Firmware version as "major.minor.build".
     pub fn firmware(&mut self) -> Result<String> {
-        let reply = self.request(&Self::packet(command::GET, &[property::FIRMWARE]))?;
+        let reply = self.request(&self.packet(command::GET, &[property::FIRMWARE]))?;
         Ok(format!("{}.{}.{}", reply[3], reply[4], u16::from_le_bytes([reply[5], reply[6]])))
     }
 
     pub fn set_mode(&mut self, mode: u8) -> Result<()> {
-        self.request(&Self::packet(command::SET, &[property::MODE, 0, mode, 0])).map(|_| ())
+        self.request(&self.packet(command::SET, &[property::MODE, 0, mode, 0])).map(|_| ())
     }
 
     /// Opens handle 0 on the lighting resource, closing it first if it was left open.
     pub fn open_lighting(&mut self) -> Result<()> {
-        let open = Self::packet(command::OPEN, &[LIGHTING_HANDLE, LIGHTING_RESOURCE, 0]);
+        let open = self.packet(command::OPEN, &[LIGHTING_HANDLE, LIGHTING_RESOURCE, 0]);
         let mut reply = self.exchange(&open)?;
         if reply[2] == STATUS_ALREADY_OPEN {
             self.close_lighting()?;
@@ -204,18 +207,18 @@ impl BragiDevice {
     }
 
     pub fn close_lighting(&mut self) -> Result<()> {
-        self.request(&Self::packet(command::CLOSE, &[CLOSE_ONE, LIGHTING_HANDLE])).map(|_| ())
+        self.request(&self.packet(command::CLOSE, &[CLOSE_ONE, LIGHTING_HANDLE])).map(|_| ())
     }
 
     pub fn write_lighting(&mut self, colors: &[Rgb]) -> Result<()> {
-        for packet in write_packets(&lighting_data(colors)) {
+        for packet in write_packets(&lighting_data(colors), self.size) {
             self.request(&packet)?;
         }
         Ok(())
     }
 
     pub fn keep_alive(&mut self) -> Result<()> {
-        self.request(&Self::packet(command::KEEP_ALIVE, &[])).map(|_| ())
+        self.request(&self.packet(command::KEEP_ALIVE, &[])).map(|_| ())
     }
 }
 
@@ -223,8 +226,8 @@ impl BragiDevice {
 mod tests {
     use super::*;
 
-    fn packet(bytes: &[u8]) -> [u8; PACKET] {
-        let mut p = [0u8; PACKET];
+    fn packet(bytes: &[u8]) -> Vec<u8> {
+        let mut p = vec![0u8; PACKET];
         p[..bytes.len()].copy_from_slice(bytes);
         p
     }
@@ -269,7 +272,7 @@ mod tests {
 
     #[test]
     fn a_short_write_is_one_packet_with_the_length() {
-        let packets = write_packets(&[9; 15]);
+        let packets = write_packets(&[9; 15], PACKET);
         assert_eq!(packets.len(), 1);
         assert_eq!(&packets[0][..7], &[0x08, 0x06, 0x00, 15, 0, 0, 0]);
         assert_eq!(&packets[0][7..22], &[9; 15]);
@@ -279,9 +282,14 @@ mod tests {
     #[test]
     fn a_long_write_continues_in_more_packets() {
         let data: Vec<u8> = (0..130).map(|i| i as u8).collect();
-        let packets = write_packets(&data);
+        let packets = write_packets(&data, PACKET);
         // 57 bytes in the first packet, 61 in each of the others.
         assert_eq!(packets.len(), 3);
+        // With 128-byte packets: 121, then 125.
+        let big = write_packets(&data, 128);
+        assert_eq!(big.len(), 2);
+        assert!(big.iter().all(|p| p.len() == 128));
+        assert_eq!(big[1][3], 121);
         assert_eq!(&packets[1][..3], &[0x08, 0x07, 0x00]);
         assert_eq!(packets[1][3], 57);
         assert_eq!(packets[2][3], 118);
@@ -316,7 +324,7 @@ mod tests {
     #[test]
     fn a_refused_command_never_reaches_the_mouse() {
         let sent = Default::default();
-        let mut dev = BragiDevice::new(Echo { sent: std::sync::Arc::clone(&sent), status: 0 });
+        let mut dev = BragiDevice::new(Echo { sent: std::sync::Arc::clone(&sent), status: 0 }, PACKET);
         assert!(dev.set_mode(MODE_SOFTWARE).is_err());
         assert!(dev.keep_alive().is_err());
         assert!(sent.lock().unwrap().is_empty());
@@ -330,7 +338,7 @@ mod tests {
 
     #[test]
     fn an_error_status_is_an_error() {
-        let mut dev = BragiDevice::new(Echo { sent: Default::default(), status: STATUS_UNSUPPORTED });
+        let mut dev = BragiDevice::new(Echo { sent: Default::default(), status: STATUS_UNSUPPORTED }, PACKET);
         assert!(dev.property(property::POLLING).is_err());
     }
 }

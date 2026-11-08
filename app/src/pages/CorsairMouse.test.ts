@@ -87,6 +87,12 @@ describe("a Corsair mouse", () => {
     expect(api.corsairLightingOff).not.toHaveBeenCalled();
   });
 
+  it("offers no lighting on a mouse without LEDs", () => {
+    render(CorsairMouse, { props: { info: { ...info, model: "SABRE V2 PRO", leds: 0 }, error: null } });
+    expect(screen.queryByRole("button", { name: "Try experimental lighting…" })).toBeNull();
+    expect(screen.getByText("The SABRE V2 PRO has no lighting.")).toBeTruthy();
+  });
+
   it("explains when the mouse could not be opened", () => {
     render(CorsairMouse, { props: { info: null, error: "Corsair M75: permission denied" } });
     expect(screen.getByText("Corsair M75: permission denied")).toBeTruthy();

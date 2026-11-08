@@ -572,7 +572,7 @@ impl Manager {
         let result = device
             .open_device(api)
             .map_err(Error::from)
-            .and_then(|dev| CorsairMouseTask::open(BragiDevice::new(dev), model));
+            .and_then(|dev| CorsairMouseTask::open(BragiDevice::new(dev, model.packet), model));
         let mut slots = self.slots.lock().unwrap();
         match result {
             Ok(task) => {

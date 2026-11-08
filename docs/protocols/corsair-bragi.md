@@ -23,7 +23,7 @@ marked **(both)**; facts from one source only are marked with it.
 - One request, one reply. A request is an output report with report id 0 followed by the packet;
   the reply is read from the same interface.
 - Packets are **64 bytes** on most mice. A few use 128 bytes (Scimitar RGB Elite `1be3`, M55
-  `2b03`) and some keyboards 1024 bytes **(both)**. PeriHub starts with 64-byte mice only.
+  `2b03`) and some keyboards 1024 bytes **(both)**.
 - Unused bytes of a packet are zero.
 
 ## Packet layout
@@ -98,19 +98,45 @@ A handle is opened on a resource, then data is written to the handle.
   Whether reads work in hardware mode is **not known**: PeriHub tries to read without changing
   the mode, and reports what fails.
 
-## Wired Bragi mice (64-byte packets)
+## Mice PeriHub recognizes
 
-| Mouse | Product id | LEDs | Source of the LED count |
-|---|---|---|---|
-| KATAR PRO | `1b93` | 1 | both |
-| KATAR PRO XT | `1bac` | 1 | both |
-| M55 RGB PRO | `1b70` | 2 | both |
-| M65 RGB ULTRA | `1b9e` | 3 | OpenLinkHub |
-| M75 | `1bf0` | 2 | OpenLinkHub |
-| SABRE RGB PRO | `1b79` | 5 | OpenLinkHub |
-| SABRE PRO CS | `1b7a` | 1 | OpenLinkHub |
+All of them on their USB cable, on HID interface 1 (OpenLinkHub). For wireless mice the product
+id below is the one they report with the cable; through their receiver they report another one,
+which PeriHub does not handle yet.
 
-Wireless Corsair mice connected with their cable, and receivers (Slipstream), are left for later.
+| Mouse | Product id | Packet | LEDs | Source of the LED count |
+|---|---|---|---|---|
+| KATAR PRO | `1b93` | 64 | 1 | both |
+| KATAR PRO XT | `1bac` | 64 | 1 | both |
+| M55 RGB PRO | `1b70` | 64 | 2 | both |
+| M65 RGB ULTRA | `1b9e` | 64 | 3 | OpenLinkHub |
+| M75 | `1bf0` | 64 | 2 | OpenLinkHub |
+| SABRE RGB PRO | `1b79` | 64 | 5 | OpenLinkHub |
+| SABRE PRO CS | `1b7a` | 64 | 1 | OpenLinkHub |
+| IRONCLAW RGB WIRELESS | `1b4c` | 64 | 6 | both |
+| IRONCLAW WIRELESS SE | `2b32` | 64 | 6 | OpenLinkHub |
+| DARK CORE RGB PRO | `1b80` | 64 | 12 | both |
+| DARK CORE RGB PRO SE | `1b7e` | 64 | 12 | both |
+| HARPOON RGB WIRELESS | `1b5e` | 64 | 2 | both |
+| HARPOON V2 | `2b2e` | 64 | 2 | OpenLinkHub |
+| M65 RGB ULTRA WIRELESS | `1bb5` | 64 | 2 | OpenLinkHub |
+| M65 RGB ULTRA WIRELESS | `1bd6` | 64 | 2 | OpenLinkHub |
+| M75 WIRELESS | `1bf1` | 64 | 2 | OpenLinkHub |
+| M75 WIRELESS | `2b08` | 64 | 2 | OpenLinkHub |
+| M75 AIR WIRELESS | `1bf2` | 64 | 1 | OpenLinkHub |
+| NIGHTSABRE WIRELESS | `1bb8` | 64 | 15 | OpenLinkHub |
+| SCIMITAR RGB ELITE WIRELESS | `1bdb` | 64 | 4 | OpenLinkHub |
+| SCIMITAR ELITE WIRELESS SE | `2b22` | 64 | 4 | OpenLinkHub |
+| SABRE RGB PRO WIRELESS | `1b98` | 64 | 4 | OpenLinkHub |
+| DARKSTAR RGB WIRELESS | `1bb2` | 64 | 13 | OpenLinkHub |
+| SABRE V2 PRO | `2b28` | 64 | 0 | OpenLinkHub (no lighting) |
+| SABRE V2 PRO MG | `2b29` | 64 | 0 | OpenLinkHub (no lighting) |
+| SABRE V2 PRO CF | `2b25` | 64 | 0 | OpenLinkHub (no lighting) |
+| SCIMITAR RGB ELITE | `1be3` | 128 | 5 | both (ckb-next also gives the 128-byte packets) |
+| M55 | `2b03` | 128 | 1 | OpenLinkHub |
+
+With 128-byte packets the layout is the same: only the packet is longer, so more data fits in
+each write. The Slipstream receiver and the keyboards are left for later.
 
 ## What PeriHub does with it
 

@@ -129,7 +129,9 @@
 
   <section class="card">
     <h2>Lighting (experimental)</h2>
-    {#if on}
+    {#if info.leds === 0}
+      <p class="muted">The {info.model} has no lighting.</p>
+    {:else if on}
       <p>PeriHub drives the lighting until you turn it off or quit PeriHub. It is not saved in the mouse.</p>
       <div class="row">
         <label class="row color">Colour <input type="color" value={color} oninput={(e) => pick((e.target as HTMLInputElement).value)} /></label>

@@ -78,7 +78,7 @@ KERNEL=="hidraw*", KERNELS=="0003:046D:C543.*", ENV{ID_USB_INTERFACE_NUM}=="02",
 KERNEL=="hidraw*", KERNELS=="0003:046D:C545.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 KERNEL=="hidraw*", KERNELS=="0003:046D:C547.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 KERNEL=="hidraw*", KERNELS=="0003:046D:C54D.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
-# Corsair mice (experimental, untested): only the control interface; the others report movements and clicks.
+# Corsair mice (experimental, untested), on their USB cable: only the control interface; the others report movements and clicks.
 # Corsair KATAR PRO
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b93", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair KATAR PRO XT
@@ -93,3 +93,45 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bf0", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b79", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair SABRE PRO CS
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b7a", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair IRONCLAW RGB WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b4c", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair IRONCLAW WIRELESS SE
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b32", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair DARK CORE RGB PRO
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b80", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair DARK CORE RGB PRO SE
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b7e", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair HARPOON RGB WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b5e", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair HARPOON V2
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b2e", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair M65 RGB ULTRA WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb5", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair M65 RGB ULTRA WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bd6", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair M75 WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bf1", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair M75 WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b08", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair M75 AIR WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bf2", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair NIGHTSABRE WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb8", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SCIMITAR RGB ELITE WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bdb", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SCIMITAR ELITE WIRELESS SE
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b22", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SABRE RGB PRO WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b98", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair DARKSTAR RGB WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb2", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SABRE V2 PRO
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b28", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SABRE V2 PRO MG
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b29", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SABRE V2 PRO CF
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b25", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SCIMITAR RGB ELITE
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1be3", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair M55
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b03", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
