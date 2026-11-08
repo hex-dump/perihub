@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>PeriHub for your peripherals</b>: one open-source app for your gaming keyboard and mouse<br>
-  on <b>Windows and Linux</b>, without SteelSeries GG or Logitech G HUB.
+  on <b>Windows and Linux</b>, without SteelSeries GG, Logitech G HUB or Corsair iCUE.
 </p>
 
 <p align="center">
@@ -15,77 +15,75 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/hex-dump/perihub" alt="MIT license"></a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/hex-dump/perihub/releases/latest"><b>Download</b></a> ·
+  <a href="https://hex-dump.github.io/perihub/">Website</a> ·
+  <a href="docs/devices.md">Devices</a> ·
+  <a href="https://github.com/hex-dump/perihub/discussions">Discussions</a>
+</p>
+
 ![Keyboard lighting](docs/screenshots/keyboard-lighting.png)
 
-- **Fully supported now:** the SteelSeries Apex 3 TKL keyboard and the Logitech G502 HERO mouse.
-- **Not supported yet:** 29 more Logitech G mice are recognized in read-only mode until someone tests them, 26 Corsair mice and 23 Corsair keyboards (from 0.6.0), and more devices are on the way. See [Supported hardware](#supported-hardware) and the [Hardware roadmap](#hardware-roadmap).
+- **Free and open source**, no account, no ads, no telemetry.
+- **Small**: a 4 MB installer, about 3 MB of memory while it waits in the tray.
+- **Settings stay in your devices**: key mapping, mouse profiles, DPI and macros keep working with PeriHub closed, on any PC.
 
 ## Contents
 
-- [Features](#features)
-- [Supported hardware](#supported-hardware)
-- [Hardware roadmap](#hardware-roadmap)
+- [Devices](#devices)
+- [What PeriHub can do](#what-perihub-can-do)
+- [Experimental features](#experimental-features)
 - [Download and install](#download-and-install)
-- [Usage](#usage)
+- [Using PeriHub](#using-perihub)
 - [Safety](#safety)
 - [Performance](#performance)
 - [FAQ](#faq)
 - [Known limitations](#known-limitations)
-- [Building from source](#building-from-source)
-- [Architecture](#architecture)
-- [Contributing](#contributing)
-- [Support the project](#support-the-project)
+- [Help and contributing](#help-and-contributing)
 - [Credits and license](#credits-and-license)
 
-## Features
+## Devices
+
+| Device | Support |
+|---|---|
+| **SteelSeries Apex 3 TKL** keyboard | ✅ Fully supported, tested on real hardware |
+| **Logitech G502 HERO** mouse | ✅ Fully supported, tested on real hardware |
+| 29 more **Logitech G mice** (G502 X, G Pro, G403, G703, G903, G305…) | 🧪 Experimental: read, and editable at your own risk with the USB cable |
+| 26 **Corsair mice** and 23 **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Experimental: read, and one colour of lighting for the session, at your own risk |
+| **Logitech G300** mouse | 👁 Read-only |
+
+The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
+
+Not on the list? Open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml): any brand can be asked for.
+
+## What PeriHub can do
 
 ### SteelSeries Apex 3 TKL
 
-| Feature | Details | Stored in |
+| Feature | Details | Saved in |
 |---|---|---|
-| 8-zone lighting | Static (one color per zone), gradient, breathing, color cycle, wave, reactive (the zone of each pressed key lights up), built-in rainbow, off | PC (PeriHub reapplies it whenever the keyboard is connected) |
-| Brightness | 0–100% in 17 steps, kept in sync with SteelSeries + F11/F12 | PC |
-| Key remapping | Any key, on both the normal layer and the "SteelSeries key held" layer, with the US, UK, Italian, German, French, Spanish, Portuguese, Swedish/Finnish, Norwegian and Danish layouts | **Keyboard memory**: works without PeriHub |
-| Software macros | A key, for example SteelSeries + 1, can start a macro run by PeriHub (see the G502 HERO below). On Linux this needs the optional rule for reactive lighting | The key in keyboard memory, the macro on the PC: PeriHub must be running |
+| Lighting | 8 zones: static, gradient, breathing, color cycle, wave, reactive (the zone of each key you press lights up), built-in rainbow, off | PC: PeriHub reapplies it when the keyboard is connected |
+| Brightness | 0–100% in 17 steps, in sync with SteelSeries + F11/F12 | PC |
+| Key remapping | Any key, on the normal layer and on the "SteelSeries key held" layer, with 10 keyboard layouts | **Keyboard**: works without PeriHub |
+| Software macros | A key, such as SteelSeries + 1, starts a macro run by PeriHub | The key in the keyboard, the macro on the PC |
 
 ### Logitech G502 HERO
 
-| Feature | Details | Stored in |
+| Feature | Details | Saved in |
 |---|---|---|
-| Profiles | 5 onboard profiles: activate, enable/disable, restore factory settings | **Mouse memory** |
-| DPI | Up to 5 levels from 100 to 25600 (step 50), default and sniper level, live preview | Mouse memory |
-| Polling rate | 125, 250, 500, 1000 Hz | Mouse memory |
-| Buttons | 11 buttons plus the G-Shift layer: mouse clicks, keys with Ctrl/Shift/Alt/Win/Alt Gr, media keys, DPI up/down/cycle/sniper, profile switching | Mouse memory |
-| Lighting | Logo and DPI indicator: off, fixed color with brightness, breathing, color cycle (breathing and color cycle stay in sync on both zones), with live preview | Mouse memory |
-| Macros | Recorded from the keyboard or built step by step: keys, mouse clicks, media keys, scrolling, pauses. Run once, repeat while the button is held, or one part on press and another on release | **Mouse memory**: works without PeriHub, on any PC |
-| Software macros | Run by PeriHub, for what the mouse cannot do alone: repeat a number of times or until you press the button again, type text (accents included), open a website or a program. Up to 8, started by mouse buttons or keyboard keys | PC: PeriHub must be running, also in the tray |
+| Profiles | 5 onboard profiles: activate, enable or disable, restore factory settings | **Mouse** |
+| DPI | Up to 5 levels from 100 to 25600, default and sniper level, live preview | Mouse |
+| Polling rate | 125, 250, 500, 1000 Hz | Mouse |
+| Buttons | 11 buttons plus the G-Shift layer: clicks, keys with modifiers, media keys, DPI and profile functions | Mouse |
+| Lighting | Logo and DPI indicator: off, fixed color, breathing, color cycle, with live preview | Mouse |
+| Macros | Recorded from the keyboard or built step by step: keys, clicks, media keys, scrolling, pauses | **Mouse**: works without PeriHub, on any PC |
+| Software macros | What the mouse cannot do alone: repeat, type text, open a website or a program. Up to 8 | PC: PeriHub must be running |
 
-### App profiles
+### Everything else
 
-While a game or an app is in focus, PeriHub can show one of your saved keyboard lightings and switch the mouse to one of its onboard profiles. When you switch to an app without a rule, both go back to how they were. It works on Windows and, on Linux, on Hyprland: other Linux desktops do not tell apps which window is in focus.
-
-PeriHub only reads the app's identifier (the executable name on Windows, the window class on Linux), never window titles or contents, and keeps nothing but your rules.
-
-### Corsair mice and keyboards (experimental, from 0.6.0)
-
-PeriHub recognizes 26 Corsair mice that speak Corsair's newer protocol, on their USB cable: KATAR PRO, KATAR PRO XT, M55 RGB PRO, M65 RGB ULTRA, M75, SABRE RGB PRO and SABRE PRO CS, and, connected with the cable, the wireless IRONCLAW RGB WIRELESS, IRONCLAW WIRELESS SE, DARK CORE RGB PRO, DARK CORE RGB PRO SE, HARPOON RGB WIRELESS, HARPOON V2, M65 RGB ULTRA WIRELESS, M75 WIRELESS, M75 AIR WIRELESS, NIGHTSABRE WIRELESS, SCIMITAR RGB ELITE WIRELESS, SCIMITAR ELITE WIRELESS SE, SABRE RGB PRO WIRELESS, DARKSTAR RGB WIRELESS and SABRE V2 PRO (also MG and CF, without lighting), plus the SCIMITAR RGB ELITE and the M55. The wireless ones are also recognized through their receiver (Slipstream and the older receivers of the same generation; not the Slipstream V2): PeriHub opens the first device connected to a receiver, and notices when it is turned off. PeriHub also recognizes 23 Corsair keyboards (K55 PRO, K55 CORE, K57, K60 PRO, K65 PLUS, K65 MINI, K70 CORE, K70 MAX, K70 PRO, K70 RGB TKL, K95 PLATINUM XT, K100, MAKR 75 and their variants: the full list is in the protocol page) in the same way: read-only, with experimental lighting of one colour on every key. Nobody has tested PeriHub on a Corsair mouse yet, so it reads them only: firmware, polling rate and DPI. **Experimental lighting** (one colour on every LED) can be turned on for the session, after a warning: PeriHub takes the mouse into software mode, as iCUE does, and gives it back to its own settings when it is turned off, when PeriHub quits and as soon as anything fails. Nothing is written to the mouse's memory, and the code refuses every command that lighting does not need. **No warranty:** turning it on means you use it at your own risk; the author is not responsible for any damage. The protocol, as PeriHub uses it, is described in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md). If you own one of these devices, **Open test form** on its page opens a [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml) already filled in with what PeriHub read: it is how a device becomes fully supported.
-
-### Logitech G300 (read-only, from 0.6.0)
-
-The G300 does not speak the protocol of the other Logitech mice: it keeps three profiles in reports of its own. PeriHub reads them and shows each profile's light colour, report rate, DPI levels and what every button does (G4 to G9 as printed on the mouse), with the active profile and DPI level. It changes nothing: the code that talks to the G300 can only read. The format comes from libratbag and was checked against a real G300 and Logitech Gaming Software in [issue #16](https://github.com/hex-dump/perihub/issues/16). Editing can come once owners confirm it: **Open test form** on the G300 page opens a [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml) already filled in.
-
-### Other Logitech G mice (experimental)
-
-26 more Logitech mice are recognized when connected with a USB cable (see [Supported hardware](#supported-hardware)). They have not been tested with PeriHub yet, so it only reads them: you can see their profiles, DPI levels, buttons and lighting, but nothing can be changed until someone confirms that the model works.
-
-From version 0.5.0 the 15 wireless models are also recognized through their LIGHTSPEED receiver, read-only too: three of them, the G305, G603 and G604, have no data cable. PeriHub also shows their battery, and when the mouse is turned off or asleep it says so and finds it again once it wakes up.
-
-**Experimental editing (from 0.6.0).** If you want to edit one of these mice before anyone has tested it, the mouse page has **Edit anyway…**. It is off by default, asks you to confirm the risk, and works only when all of these hold:
-
-- the mouse is connected with its USB cable, not through a receiver;
-- its memory is laid out like the G502 HERO's: the same profile format and 256-byte sectors.
-
-PeriHub accepts only the DPI and polling values the mouse itself reports, and leaves alone the LED settings of zones it does not report. It saves a backup before every write and reads every write back. Enabling or disabling profiles stays off. After each save it asks whether to keep the changes, and puts the backup back by itself after 15 seconds without an answer. If PeriHub is closed or the mouse unplugged before that, it does so the next time the mouse is connected; a save that fails halfway is undone at once, and PeriHub refuses to save if it could not undo it. **Turn off experimental editing** in the tray menu turns it off for every mouse. **No warranty:** like all of PeriHub it is provided "as is", and turning it on means you use it at your own risk; the author is not responsible for any damage. If it works, a [mouse test report](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml) makes the model fully supported for everyone.
+- **App profiles**: while a game or an app is in focus, PeriHub can switch the keyboard lighting and the mouse profile, and switch back afterwards. On Windows and on Hyprland. PeriHub only reads the app's identifier (the executable name or window class), never window titles or contents.
+- **Backups**: before every write to a device, PeriHub saves its memory, and **Backups…** puts it back.
+- **Updates in one click** on Windows, signed, and only when you choose.
 
 <table>
   <tr>
@@ -98,73 +96,31 @@ PeriHub accepts only the DPI and polling values the mouse itself reports, and le
   </tr>
 </table>
 
-## Supported hardware
+## Experimental features
 
-| Device | USB ID | Status |
+Some devices have not been tested yet. PeriHub reads them and changes nothing, unless you turn on an experimental feature on the device's page.
+
+> [!CAUTION]
+> **No warranty.** Experimental features have never been tried on your device. PeriHub is provided "as is", without any warranty, as its [license](LICENSE) says. If you turn one on, you use it at your own risk: the author of PeriHub is not responsible for any damage, malfunction or loss. PeriHub asks you to confirm this before each one is turned on.
+
+| | Logitech mice: **Edit anyway…** | Corsair devices: **Try experimental lighting…** |
 |---|---|---|
-| SteelSeries Apex 3 TKL | `1038:1622` (firmware 3.0.4) | ✅ Supported, tested on real hardware |
-| Logitech G502 HERO | `046d:c08b` | ✅ Supported, tested on real hardware |
-| Other Logitech G mice, with a USB cable (from 0.5.0 also with a LIGHTSPEED receiver) | listed below | 🧪 Experimental, read-only |
-| 26 Corsair mice and 23 Corsair keyboards, on their USB cable or wireless receiver (listed in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md#mice-perihub-recognizes)) | `1b1c:…` | 🧪 From 0.6.0: experimental, read-only plus session lighting |
-| Logitech G300 | `046d:c246` | 🧪 From 0.6.0: read-only ([issue #16](https://github.com/hex-dump/perihub/issues/16)) |
-| SteelSeries Apex 3 | `1038:161a` | From 0.5.0 recognized, not supported yet: PeriHub sends nothing to it ([issue #9](https://github.com/hex-dump/perihub/issues/9)) |
+| What you can change | Profiles: DPI, polling rate, buttons, lighting, macros | One colour on every LED or key, for this session |
+| When it is offered | USB cable, and a memory laid out like the G502 HERO's | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |
+| What stays off | Enabling or disabling profiles, editing through a receiver | Everything else: DPI, polling rate, buttons, the device's memory |
+| Safety net | Only values the mouse accepts; a backup before every save; every write read back | Only the commands lighting needs; nothing is saved in the device |
+| If something looks wrong | Each save is undone after 15 seconds unless you keep it, also after PeriHub closed or the mouse was unplugged | The device gets its own settings back after 15 seconds unless you keep it, when you quit PeriHub, and as soon as anything fails |
+| Turn it off | On the mouse page, or **Turn off experimental editing** in the tray menu | On the device page, or **Turn off experimental editing** in the tray menu |
 
-<details>
-<summary>Experimental Logitech mice</summary>
+### Help test your device
 
-The list comes from [libratbag](https://github.com/libratbag/libratbag). Wireless models are recognized with their USB cable. From version 0.5.0 they are also recognized through a LIGHTSPEED receiver (`046d:c539`, `c53a`, `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`), where they report the wireless ID in the last column. The receiver support has not been tried on real hardware yet: reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4).
+If you own a device marked 🧪 or 👁:
 
-| Mouse | USB ID | Through a receiver |
-|---|---|---|
-| Logitech G502 Proteus Core | `046d:c07d` | |
-| Logitech G502 Proteus Spectrum | `046d:c332` | |
-| Logitech G502 HERO Wireless | `046d:c08d` | `407f` |
-| Logitech G502 X | `046d:c099` | |
-| Logitech G502 X Wireless | `046d:c098` | `409f` |
-| Logitech G502 X PLUS | `046d:c095` | `4099` |
-| Logitech G Pro | `046d:c085` | |
-| Logitech G Pro | `046d:c08c` | |
-| Logitech G Pro Wireless | `046d:c088` | `4079` |
-| Logitech G Pro X Superlight | `046d:c094` | `4093` |
-| Logitech G102/G103/G203 | `046d:c084` | |
-| Logitech G102/G103/G203 | `046d:c092` | |
-| Logitech G102/G103/G203 | `046d:c09d` | |
-| Logitech G302 | `046d:c07f` | |
-| Logitech G303 | `046d:c080` | |
-| Logitech G303 Shroud Edition | `046d:c097` | |
-| Logitech G402 | `046d:c07e` | |
-| Logitech G403 | `046d:c083` | |
-| Logitech G403 HERO | `046d:c08f` | |
-| Logitech G403 Wireless | `046d:c082` | `405d` |
-| Logitech G703 | `046d:c087` | `4070` |
-| Logitech G703 HERO | `046d:c090` | `4086` |
-| Logitech G705 | `046d:c096` | `409d` |
-| Logitech G900 | `046d:c081` | `4053` |
-| Logitech G903 | `046d:c086` | `4067` |
-| Logitech G903 HERO | `046d:c091` | `4087` |
-| Logitech MX518 | `046d:c08e` | |
-| Logitech G305 (from 0.5.0) | wireless only | `4074` |
-| Logitech G603 (from 0.5.0) | wireless only | `406c` |
-| Logitech G604 (from 0.5.0) | wireless only | `4085` |
+1. Install PeriHub and quit the official app (G HUB, Logitech Gaming Software, iCUE).
+2. Open the device's page in PeriHub and press **Open test form**. It opens a report on GitHub with what PeriHub read already filled in: no key presses, apps or log lines.
+3. Check that what PeriHub shows matches your device, and send it. You need a free GitHub account.
 
-If you own one of these, please fill in a [mouse test report](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml) with what PeriHub shows (**Open test form**, on the mouse page, fills in what PeriHub knows): it takes a few minutes, and a model becomes fully supported once someone confirms it works.
-
-</details>
-
-PeriHub only talks to the devices listed here. It never sends commands to anything it does not recognize. From 0.5.0, behind a LIGHTSPEED receiver it first asks each device which model it is, with read commands only.
-
-## Hardware roadmap
-
-PeriHub is meant to support much more than these two devices. The plan is to add hardware over time, starting with devices that share protocols PeriHub already speaks:
-
-- **Logitech G mice using HID++ 2.0.** 29 more models are already recognized in read-only mode. Version 0.5.0 adds LIGHTSPEED receivers, read-only too. Next: enable editing as owners confirm them.
-- **Other SteelSeries keyboards**, such as the rest of the Apex range.
-- **Corsair mice and keyboards.** 26 mice and 23 keyboards are recognized from 0.6.0 (see [Corsair mice](#corsair-mice-and-keyboards-experimental-from-060)). Next: more than one device on the same receiver, and the Slipstream V2 receiver.
-- **SteelSeries mice.**
-- **Headsets and other peripherals**, where the hardware exposes useful settings.
-- **More languages** for the UI, and more layouts for the key remapping view.
-
-There is no fixed timeline: devices are added once their protocol can be verified on real hardware. If you own a device you would like to see supported, open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml): read-only dumps and testing help are the fastest way to get a device added. Other brands, like Corsair or Razer, can be requested too.
+Once someone confirms a model, it becomes fully supported for everyone.
 
 ## Download and install
 
@@ -172,33 +128,29 @@ Get the file for your system from the [releases page](https://github.com/hex-dum
 
 ### Windows
 
-1. Download `PeriHub_…_x64-setup.exe` (or the `.msi`) and run it.
+1. Download `PeriHub_…_x64-setup.exe` and run it.
 2. The installer is not code-signed yet ([code signing policy](CODE_SIGNING.md)). If SmartScreen blocks it, click **More info → Run anyway**.
-3. **Quit SteelSeries GG and Logitech G HUB** and turn off their autostart: two programs talking to the same device get in each other's way.
+3. **Quit SteelSeries GG, Logitech G HUB and Corsair iCUE**, and turn off their autostart: two programs talking to the same device get in each other's way.
 
-No drivers are needed: PeriHub uses the standard Windows HID interfaces.
+No drivers are needed. PeriHub tells you when a new version is out, in the tray menu and in **Settings → Updates**.
 
-From version 0.3.0, PeriHub tells you when a new version is out and installs it with one click (**Settings → Updates**). From 0.4.0 it also checks once a day while it runs in the tray, and shows the new version in the tray menu.
-
-**With Scoop**: [@Kissshot-2003](https://github.com/Kissshot-2003) maintains a [bucket for PeriHub](https://github.com/Kissshot-2003/perihub-scoop).
+**With Scoop**: [@Kissshot-2003](https://github.com/Kissshot-2003) maintains a [bucket for PeriHub](https://github.com/Kissshot-2003/perihub-scoop). Update it with `scoop update perihub`.
 
 ```pwsh
 scoop bucket add perihub-scoop https://github.com/Kissshot-2003/perihub-scoop
 scoop install perihub-scoop/perihub
 ```
 
-Update it with `scoop update perihub`, not from **Settings → Updates**: PeriHub's installer would add a second copy outside Scoop. From 0.5.0, PeriHub recognizes a Scoop install and leaves updates to Scoop.
-
 ### Linux
 
-**AppImage** (any distribution, including Arch and CachyOS):
+| Distribution | File |
+|---|---|
+| Debian, Ubuntu | `PeriHub_…_amd64.deb` |
+| Fedora, openSUSE | `PeriHub-…-1.x86_64.rpm` |
+| Arch, CachyOS | the `perihub-bin` package, built from this repository (below) |
+| Any other | `PeriHub_…_amd64.AppImage`: `chmod +x` it and run it |
 
-```sh
-chmod +x PeriHub_*_amd64.AppImage
-./PeriHub_*_amd64.AppImage
-```
-
-**Arch, CachyOS and other Arch-based distributions**: the `perihub-bin` package will be published on the AUR soon. Until then, you can build it from the repository; it installs the udev rule too:
+On Arch-based distributions, until `perihub-bin` is on the AUR:
 
 ```sh
 git clone https://github.com/hex-dump/perihub.git
@@ -206,11 +158,9 @@ cd perihub/packaging/aur/perihub-bin
 makepkg -si
 ```
 
-**Debian/Ubuntu** (`.deb`) and **Fedora/openSUSE** (`.rpm`): install the package with your distribution's package manager.
-
 #### USB permissions
 
-The `.deb` and `.rpm` packages install a udev rule automatically. With the AppImage, if PeriHub shows "permission denied", install the rule manually:
+The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage**, if PeriHub shows "permission denied", install it by hand, and again after an update that adds devices:
 
 ```sh
 sudo curl -o /etc/udev/rules.d/70-perihub.rules \
@@ -218,225 +168,119 @@ sudo curl -o /etc/udev/rules.d/70-perihub.rules \
 sudo udevadm control --reload && sudo udevadm trigger
 ```
 
-The rule grants access only to the HID interfaces of the supported devices, and only to the user with the active session. On the Apex 3 TKL it opens only the configuration interface: the interfaces that report what you type stay closed. On a LIGHTSPEED receiver it opens only the HID++ interface, which carries settings: mouse movements and typing arrive on the receiver's other interfaces, which stay closed. If you already use OpenRGB with its udev rules, you probably don't need it.
+The rule opens only the interfaces that carry settings, and only for the user at the screen. The ones that report what you type and how you move the mouse stay closed.
 
-From version 0.5.0 the rule includes the LIGHTSPEED receivers: if you installed it by hand for the AppImage, install it again with the commands above. The same goes for 0.6.0, which adds the Logitech G300 and the Corsair mice, keyboards and receivers (only their control interface). The packages update it on their own.
+<details>
+<summary><b>Optional rules</b>: reactive lighting and software macros</summary>
 
 <a id="optional-reactive-lighting"></a>
 
 #### Optional: reactive lighting, and keyboard keys that start software macros
 
-Reactive lighting needs a second rule, [`71-perihub-keys.rules`](packaging/linux/71-perihub-keys.rules), because it reads key presses. So does a key of the Apex 3 TKL that starts a software macro: PeriHub has to read the keyboard to see the macro's key. PeriHub offers to install the rule from **Lighting → Reactive** and from the **Keys** page, asking for your password, and can remove it from the same places.
+Reactive lighting reads key presses, and so does a key of the Apex 3 TKL that starts a software macro. This needs a second rule, [`71-perihub-keys.rules`](packaging/linux/71-perihub-keys.rules). PeriHub offers to install it from **Lighting → Reactive** and from the **Keys** page, asking for your password, and can remove it from there.
 
 > [!WARNING]
-> Linux cannot give this permission to PeriHub alone. With the rule installed, **every program running under your user account can read everything you type on the Apex 3 TKL**, including passwords and private messages, in any app and even while PeriHub is closed. A malicious or compromised program could use it as a keylogger. It turns off, for this keyboard, the protection Wayland normally gives. Install it only if you want reactive lighting or keyboard keys that start software macros, and trust all the software you run.
+> Linux cannot give this permission to PeriHub alone. With the rule installed, **every program running under your user account can read everything you type on the Apex 3 TKL**, passwords included, even while PeriHub is closed. Install it only if you want these features and trust all the software you run.
 
-PeriHub itself reads key presses only while the reactive effect is on, or while a key of the keyboard starts a software macro. It keeps only which lighting zone to light or which macro to start: it never stores, logs or sends what you type.
+PeriHub itself reads key presses only while reactive lighting is on or a keyboard key starts a macro, and never stores, logs or sends what you type.
 
 #### Optional: software macros
 
-Software macros press keys and click through a virtual keyboard and mouse, made with `/dev/uinput`. Many gaming systems already let your user open it, for game controllers: PeriHub says so on the mouse's **Buttons** page and on the keyboard's **Keys** page. Otherwise it offers to install [`72-perihub-uinput.rules`](packaging/linux/72-perihub-uinput.rules) from the same pages, asking for your password, and can remove it there. Keys of the Apex 3 TKL that start a macro also need [the rule for its keys](#optional-reactive-lighting-and-keyboard-keys-that-start-software-macros).
+Software macros type and click through a virtual keyboard and mouse (`/dev/uinput`). Many gaming systems already allow it, and PeriHub tells you so on the **Buttons** and **Keys** pages. Otherwise it offers to install [`72-perihub-uinput.rules`](packaging/linux/72-perihub-uinput.rules) from there.
 
 > [!WARNING]
-> With this rule, **every program running under your user account can simulate a keyboard and a mouse**, and use them to type and click anything as if it were you: for example, type commands into a terminal. Without it a program needs administrator rights for that. Install it only if you want software macros and trust all the software you run.
+> With this rule, **every program running under your user account can simulate a keyboard and a mouse**, and type or click anything as if it were you. Install it only if you want software macros and trust all the software you run.
 
-## Usage
+</details>
 
-- **Keyboard → Lighting**: pick an effect. Changes apply immediately and are remembered.
-- **Keyboard → Keys**: choose your layout (ANSI US, ISO UK, ISO Italian), click a key, pick its new function and press **Save to keyboard**. Switch to **With SteelSeries key** to change what keys do while the SteelSeries key is held.
-- **Mouse**: pick a profile at the top, then edit DPI, buttons and lighting. Nothing is written to the mouse until you press **Save to mouse**. DPI and LED changes are previewed live on the mouse before saving; leaving the page restores the saved settings.
-- **G-Shift**: assign "G-Shift" to a button. While you hold it, the other buttons use the functions from the G-Shift tab.
+## Using PeriHub
 
-### Running in the background
+- **Keyboard → Lighting**: pick an effect. It applies at once and is remembered.
+- **Keyboard → Keys**: pick your layout, click a key, choose its new function and press **Save to keyboard**. **With SteelSeries key** changes what keys do while the SteelSeries key is held.
+- **Mouse**: pick a profile at the top, then change DPI, buttons and lighting. Nothing is written until you press **Save to mouse**. DPI and lighting are previewed live; leaving the page brings the saved settings back.
+- **G-Shift**: give "G-Shift" to a button. While you hold it, the other buttons do what the G-Shift tab says.
 
-Closing the window does **not** quit PeriHub. It keeps running in the tray, without the window and with much less memory, to animate the keyboard lighting and to reapply it when the keyboard is plugged back in or the PC wakes up. Reopen it from the tray icon or by launching it again. To quit for real: **Quit** in the tray menu or **Settings → Quit PeriHub**.
+**Closing the window does not quit PeriHub.** It keeps running in the tray with much less memory, to animate the keyboard lighting and reapply it after a replug or a wake-up. To quit: **Quit** in the tray menu, or **Settings → Quit PeriHub**.
 
-On **Windows 11** new tray icons start among the hidden ones (the **^** arrow). To keep PeriHub in sight: **Settings → Personalization → Taskbar → Other system tray icons → PeriHub**.
-
-**Autostart** can be enabled in Settings. On Hyprland, XDG autostart entries only run when `xdg-desktop-autostart.target` is active (uwsm or systemd). Otherwise, add this to your configuration:
-
-```
-exec-once = /path/to/perihub --hidden
-```
-
-To see the tray icon on Hyprland or Sway you need a bar with a tray module, such as Waybar or the Noctalia bar.
+- **Windows 11** hides new tray icons behind the **^** arrow. To keep PeriHub visible: **Settings → Personalization → Taskbar → Other system tray icons → PeriHub**.
+- **Autostart** can be turned on in Settings. On Hyprland it needs `xdg-desktop-autostart.target` (uwsm or systemd), or `exec-once = /path/to/perihub --hidden` in your configuration. For the tray icon you need a bar with a tray, such as Waybar or Noctalia.
 
 ## Safety
 
-PeriHub does not modify firmware. It uses the same configuration commands as the official apps, with extra safeguards:
+PeriHub never touches firmware. It uses the same settings commands as the official apps, with more safeguards:
 
-- **Restricted commands.** The code can only send commands that have been verified.
-  - The command that reboots the Apex into its bootloader cannot even be expressed.
-  - On Logitech mice, only HID++ features `0x0000`, `0x0001`, `0x0003`, `0x0005`, `0x2201`, `0x8060`, `0x8070` and `0x8100` are used. From 0.5.0 also `0x1000`, `0x1001` and `0x1004`, only to read the battery.
-  - From 0.5.0, through a LIGHTSPEED receiver PeriHub only talks to the mouse, with the same rules. It never sends the receiver's own commands, which pair and unpair devices.
-- **Verified writes.**
-  - Mouse: profiles are edited on top of the original sector bytes, so fields PeriHub does not manage stay intact. Every written sector is read back and compared byte by byte.
-  - Keyboard: the key mapping is written to RAM first and only saved to memory if the read-back matches; otherwise it is rolled back.
-- **Untested mice are read-only.** For a mouse that has not been verified, the core only allows HID++ functions that read state, and it does not even take the mouse out of software mode.
-- **Factory profiles are read-only.** The mouse's ROM profiles are never written and are used for restoring.
-- **No data leaves your PC.** PeriHub works offline. The only connection is on Windows: when it starts and then once a day it asks GitHub for the latest release (you can turn this off in **Settings → Updates**). An update is downloaded only when you click **Update and restart**, and installed only if its signature matches PeriHub's key.
-- **Software macros start only from the devices.** A mouse button or a keyboard key starts one by sending an unused key from the device's memory (F19, F24, then F13–F18; never F20–F23, which mute the microphone or switch the touchpad on Linux). PeriHub reacts only to those keys, and only when they come from the mouse or from the Apex 3 TKL. On Linux it reads the mouse's own keyboard reports, which carry only what the mouse sends, never what you type; it reads the keyboard only while one of its keys starts a macro, and drops every other key as it arrives. On Windows it uses Raw Input, which gives an app the keys of every keyboard: while a software macro is saved, PeriHub drops each key that does not come from the mouse, or from the keyboard while one of its keys starts a macro, as soon as it arrives. Keys simulated by programs, PeriHub's own included, cannot start a macro. Every key a macro holds down is released when it stops. A macro opens only a website (http or https) or a file or program given by its full path, never through a command line.
-- **Key presses stay on your PC.** Two features read key presses: reactive lighting, only while it is on and only from the Apex 3 TKL, and software macros, from the mouse and, only while one of its keys starts a macro, from the Apex 3 TKL. On Windows both use Raw Input, which any app can use there without a permission and which delivers the keys of all keyboards: PeriHub drops those of other devices right away. Reactive lighting keeps nothing but the time of the last press in each lighting zone, and software macros only check whether a key starts one: which keys you press is never stored, logged or sent anywhere. On Linux, the keyboard's interfaces that report key presses are closed by default and opened only if you install the optional rule for its keys (see [the warning](#optional-reactive-lighting-and-keyboard-keys-that-start-software-macros)).
-- **Backups.** Before every write to a device's memory, PeriHub saves the previous state in
-  - Linux: `~/.config/perihub/backups/`
-  - Windows: `%APPDATA%\perihub\backups\`
+- **Only known commands.** The code can send only commands that have been checked, and refuses the others before they reach the device. The command that restarts the Apex into its firmware updater cannot even be written. On Logitech mice only a short list of HID++ features is used, and a receiver's pairing commands are never sent. On Corsair devices only property reads, and with experimental lighting the commands lighting needs, can get through.
+- **Untested devices are only read**, unless you turn on an [experimental feature](#experimental-features).
+- **Every write is checked.** Mouse profiles are changed on top of their original bytes and read back byte by byte. The keyboard's key mapping is tried in RAM first and saved only if the read-back matches.
+- **Backups** before every write: in `~/.config/perihub/backups/` on Linux and `%APPDATA%\perihub\backups\` on Windows. **Backups…** puts one back, writing only what differs.
+- **Factory profiles are never written**: they are only read, to restore a profile.
+- **Your key presses stay on your PC.** Reactive lighting and software macros read keys only while they need to, keep only which zone to light or which macro to start, and drop keys from other devices at once. Nothing you type is stored, logged or sent.
+- **No data leaves your PC.** PeriHub works offline. The only connection: on Windows it asks GitHub for the latest version at start and once a day (you can turn this off), and installs an update only if you ask and its signature matches PeriHub's key.
 
-  **Backups…** on the mouse page and on the keyboard's Keys page puts one back. Only what differs is written, each part is read back and compared, and the current state is backed up first. A backup that does not fit the mouse's memory, or whose profiles are damaged, is refused.
-
-How the release files are signed, and what PeriHub sends over the network: [CODE_SIGNING.md](CODE_SIGNING.md).
-
-To report a security issue, see [SECURITY.md](SECURITY.md).
+More: [how the release files are signed](CODE_SIGNING.md) · [reporting a security issue](SECURITY.md).
 
 ## Performance
-
-**Light on Windows.** PeriHub is a small app written in Rust. It draws its window with WebView2, the web engine that comes with Windows 11 and up-to-date Windows 10 (the installer adds it if it is missing), instead of shipping a browser of its own.
 
 | PeriHub 0.5.5 on Windows | |
 |---|---|
 | Download | **3.9 MB** installer |
 | On disk | **17 MB** |
-| In the system tray | **3 MB** of memory, **0.05%** of one CPU core |
+| In the tray | **3 MB** of memory, **0.05%** of one CPU core |
 | Window open | **39 MB** of memory, **0.2%** of one CPU core |
-| Background services | none |
-| Account, ads, telemetry | none |
+| Background services, account, ads, telemetry | none |
 
-What this means for you:
+PeriHub is written in Rust and draws its window with WebView2, the web engine of Windows, instead of shipping its own browser. The engine runs only while the window is open. An animated lighting effect, drawn by PeriHub frame by frame, adds about 0.6% of one core. How these numbers were measured: [docs/development.md](docs/development.md#performance-measurements).
 
-- **Light in the background.** In the tray PeriHub is a single small process. The web engine that draws the window starts when you open it and closes with it. (0.3.0 kept it running: 49 MB and about 2% of one core in the tray.) An animated lighting effect, which PeriHub draws frame by frame, takes about 0.6% of one core: measured on a real PC with both devices connected and the wave effect.
-- **Quit it and your setup stays.** Key mapping, mouse profiles, DPI, buttons and macros are stored in the devices, so they keep working with PeriHub closed, and nothing of PeriHub keeps running. PeriHub has to stay open only for the keyboard lighting (the Apex does not store it, except the built-in rainbow) and for app profiles.
-- **One app instead of two** if you use a SteelSeries keyboard and a Logitech mouse.
-- **Updates in one click**, signed, and only when you choose.
-- **Also on Linux**, where the official apps are not available: Logitech and SteelSeries offer [G HUB](https://www.logitechg.com/en-us/innovation/g-hub.html) and [GG](https://steelseries.com/gg) for Windows and macOS (checked in October 2026).
-
-<details>
-<summary>How these numbers were measured</summary>
-
-On 8 November 2026 the [Measure on Windows](.github/workflows/measure-windows.yml) workflow installed PeriHub 0.5.5 from its release on a fresh Windows Server 2025 virtual machine on GitHub Actions (AMD EPYC 9V45, 4 logical processors, WebView2 156), with no devices connected. Memory is the private working set, which is what Task Manager shows in the Memory column, of PeriHub and, with the window open, the 6 WebView2 processes it starts. CPU is their processor time over 2 minutes. Earlier versions were measured the same way: 0.4.0 on 20 October 2026, built from its source code on an Intel Xeon Platinum 8573C (2 MB in the tray, 42 MB with the window open), and 0.3.0 on 19 October 2026, installed from its release on an AMD EPYC 7763. On your PC the numbers will differ, for example with devices connected and an animated lighting effect, which PeriHub draws frame by frame. On 21 October 2026 PeriHub 0.4.1 was measured on a real PC (Windows 11, 16 logical processors) with both devices connected and the wave effect: in the tray it used 0.57–0.68% of one core over 60 seconds, almost all of it to animate the wave. The workflow is in the repository, so the measurement can be repeated, also on a fork.
-
-</details>
-
-**How does it compare with G HUB or SteelSeries GG?** We do not publish numbers for other apps: we have not measured them on the same machine, and their use of resources changes with the version, the devices and the features in use. They also support many more devices and features than PeriHub. To compare on your own PC, run one app at a time and look at Task Manager → Processes, where each app's processes are grouped under its name. If you do, share your numbers and the versions in [Discussions](https://github.com/hex-dump/perihub/discussions).
-
-G HUB is a trademark of Logitech; SteelSeries GG is a trademark of SteelSeries. PeriHub is not affiliated with either company.
+We do not publish numbers for G HUB or GG: we have not measured them on the same machine, and they support many more devices and features. To compare on your PC, run one app at a time and look at Task Manager → Processes. G HUB is a trademark of Logitech, SteelSeries GG of SteelSeries, iCUE of Corsair; PeriHub is not affiliated with them.
 
 ## FAQ
 
-**Can I keep GG or G HUB running?**
-No, quit them and turn off their autostart. On Windows, G HUB takes control of the mouse when it starts and after every wake-up, so the mouse stops using its onboard profiles; PeriHub shows a warning while G HUB is running. When G HUB is closed, PeriHub gives the mouse back its profiles within a few seconds.
+**Can I keep GG, G HUB or iCUE running?**
+No: quit them and turn off their autostart. G HUB, for example, takes control of the mouse when it starts and after every wake-up, so the mouse stops using its onboard profiles. PeriHub shows a warning while G HUB runs, and gives the mouse its profiles back when G HUB is closed.
 
 **Does this void my warranty?**
-PeriHub does not touch the firmware. It only writes settings (profiles, key mapping) that the official apps write too.
+PeriHub does not touch the firmware. It writes only settings (profiles, key mapping) that the official apps write too. Experimental features come with [no warranty](#experimental-features).
 
 **Why does the keyboard go back to the rainbow when PeriHub is closed?**
-The Apex 3 TKL does not store colors, and it behaves the same way with GG. PeriHub reapplies them as soon as it detects the keyboard. "Built-in rainbow" is the only effect generated by the keyboard itself.
+The Apex 3 TKL does not store colors, with GG too. PeriHub reapplies them as soon as it sees the keyboard.
+
+**How do I undo a change?**
+**Backups…** on the mouse page or the keyboard's Keys page, then **Restore** on the newest backup. For factory settings: **Keys → Reset all to factory** on the keyboard, **Factory settings** on each mouse profile.
 
 **Something does not work: what should I attach to a bug report?**
-The log file: **Settings → Problems → Open log folder** (`~/.local/state/perihub/perihub.log` on Linux, `%LOCALAPPDATA%\io.github.hexdump.perihub\logs\perihub.log` on Windows). It records devices connecting, errors and updates, never your key presses or the apps you use, and it stays under 1 MB.
+The log file: **Settings → Problems → Open log folder**. It records devices connecting, errors and updates, never your key presses or the apps you use.
 
-**How do I go back to factory settings?**
-Keyboard: **Keys → Reset all to factory**. Mouse: **Factory settings** on each profile. Backups are kept as well.
-
-**How do I undo a change I saved?**
-**Backups…** on the mouse page, or on the keyboard's Keys page, then **Restore** on the newest backup. Each backup is the memory just before PeriHub wrote to the device.
-
-**Is the UI available in other languages?**
-The UI is in English. More languages are on the roadmap.
+**Is PeriHub available in other languages?**
+The interface is in English. More languages are planned.
 
 ## Known limitations
 
-- **Windows**: tested on a real Windows 11 PC: keyboard lighting, reactive lighting, key remapping, mouse profiles and their macros, app profiles, tray icon, autostart with a real login, the updates from 0.3.0 to 0.4.1 and from 0.4.2 to 0.5.0, the G HUB warning, software macros started by mouse buttons and by keyboard keys, and the log file. Creating software macros with the editor and from the Keys page has been tried on Linux only. Autostart is also tested on the Windows registry at every change.
-- **Logitech wireless mice** through their LIGHTSPEED receiver (from 0.5.0) are read-only and not tried on real hardware yet, so reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4). A button of a mouse behind a receiver does not start software macros.
-- **App profiles** detect the app in focus on Windows and on Hyprland only. They switch lighting and mouse profiles, not key mappings, because changing those writes the keyboard's memory.
-- **Not yet available**: GameSense compatibility.
-- **Software macros** type text through the keyboard layout on Linux, so characters the layout cannot type (with Shift, AltGr or a dead key) are skipped. On Windows many games ignore typed text, but not keys.
-- **Out of scope**: SteelSeries Sonar and Moments, G HUB Lua scripts.
+- **Windows**: tested on a real Windows 11 PC (lighting, key remapping, mouse profiles and macros, app profiles, tray, autostart, updates, software macros). Creating software macros has been tried on Linux only.
+- **Logitech mice through a LIGHTSPEED receiver** are read-only and have not been tried on real hardware yet ([issue #4](https://github.com/hex-dump/perihub/issues/4)). Their buttons do not start software macros.
+- **Corsair devices** have not been tried on real hardware yet. With more than one device on the same receiver, only the first one is shown, and the Slipstream V2 receiver is not recognized.
+- **App profiles** work on Windows and Hyprland only. They switch lighting and mouse profiles, not key mappings.
+- **Software macros** on Linux skip characters the keyboard layout cannot type. On Windows many games ignore typed text, but not keys.
+- **Not available yet**: GameSense. **Out of scope**: SteelSeries Sonar and Moments, G HUB Lua scripts.
 
-## Building from source
+## Help and contributing
 
-You need stable [Rust](https://rustup.rs) (≥ 1.88) and [Node.js](https://nodejs.org) ≥ 20.19. On Linux you also need the development libraries for WebKitGTK 4.1, libayatana-appindicator, librsvg and libudev:
+- **Questions and ideas**: [Discussions](https://github.com/hex-dump/perihub/discussions).
+- **Bugs**: a [bug report](https://github.com/hex-dump/perihub/issues/new?template=bug_report.yml) with your system, the device, what PeriHub showed and the log file.
+- **Test reports**: [Logitech mice](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml), [Corsair devices and the G300](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml), or **Open test form** in the app.
+- **New devices**: a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) with the model and USB ID.
+- **Code**: how to build, test and find your way around the code is in [docs/development.md](docs/development.md).
 
-```sh
-# Debian/Ubuntu
-sudo apt install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libudev-dev
-# Arch/CachyOS
-sudo pacman -S webkit2gtk-4.1 libayatana-appindicator librsvg
-```
+### Support the project
 
-```sh
-git clone https://github.com/hex-dump/perihub.git
-cd perihub/app
-npm install
-npm run tauri dev                     # development, with hot reload
-npm run tauri build -- --no-bundle    # standalone binary in target/release/perihub
-npm run tauri build                   # installers for the current platform
-```
-
-Don't build the app with plain `cargo build`: that binary loads the UI from the development server (`localhost:1420`).
-
-Tests and checks:
-
-```sh
-cargo fmt --all                 # formatting (CI checks it)
-cargo test --workspace          # includes tests on sectors read from a real G502 HERO
-cargo clippy --workspace --all-targets
-cd app && npm run check         # frontend type check
-```
-
-### Command-line tool
-
-Useful for diagnostics and scripting. It refuses to start while the app is open, since both would compete for the same devices, and the app waits for it to finish.
-
-```sh
-cargo run -p perihub-cli -- status
-cargo run -p perihub-cli -- mouse state
-cargo run -p perihub-cli -- keyboard keymap
-cargo run -p perihub-cli -- mouse backups
-cargo run -p perihub-cli -- keyboard light '{"type":"wave","period_ms":3000,"reverse":false}' 10
-```
-
-## Architecture
-
-```
-crates/perihub-core     Rust library: protocols, effects, device detection, configuration
-  src/apex/             SteelSeries Apex 3 TKL: RGB (output reports) and key mapping (feature reports)
-  src/hidpp/            Logitech HID++ 2.0, LIGHTSPEED receivers, the onboard profile format (CRC-CCITT) and the list of mice
-  src/effects.rs        lighting effects rendered on the PC
-  src/manager.rs        device hotplug
-  src/worker.rs         one thread per device, so requests never interleave
-  tests/fixtures/       real G502 HERO sectors used by the tests
-crates/perihub-cli      command-line tool
-app/                    UI: Tauri 2 + Svelte 5
-packaging/linux         udev rule
-```
-
-- Device communication goes through [hidapi](https://github.com/libusb/hidapi). On Linux the hidraw backend is used, so the keyboard and mouse keep working normally while PeriHub is open.
-- On Windows the mouse's short and long HID++ collections are separate devices; PeriHub uses the long one (report `0x11`). Behind a LIGHTSPEED receiver it also uses the short one, where the receiver answers for a mouse that is asleep.
-- Each device family is a separate module in `perihub-core`, which is where new hardware will be added.
-
-## Contributing
-
-Bug reports, device requests and pull requests are welcome.
-
-- **Questions and ideas**: use [Discussions](https://github.com/hex-dump/perihub/discussions).
-- **Bugs**: include your OS, the device, and what the app showed.
-- **New devices**: open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) with the model and USB ID. Any brand can be requested.
-- **Experimental Logitech mice**: fill in a [mouse test report](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml).
-- **Corsair devices and the Logitech G300**: fill in a [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
-- **Code**: run `cargo fmt`, `cargo test`, `cargo clippy` and `npm run check` before opening a pull request.
-
-## Support the project
-
-PeriHub is free and open source. If it spared you from installing G HUB or SteelSeries GG and you'd like to say thanks, you can [buy me a coffee](https://buymeacoffee.com/hexdump1).
-
-Donations are entirely optional and don't unlock anything. They support the development of PeriHub, including buying new devices to add. You can help just as much without money: test PeriHub on your hardware, report bugs, or open a device request with read-only dumps.
+PeriHub is free. If it spared you an official app and you'd like to say thanks, you can [buy me a coffee](https://buymeacoffee.com/hexdump1). It is entirely optional and unlocks nothing: it helps buy new devices to add. Testing PeriHub on your hardware helps just as much.
 
 ## Credits and license
 
-The protocols were reconstructed thanks to the work of:
+The protocols were worked out thanks to:
 
-- [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB): documentation of the 8-zone Apex lighting protocol. No code was copied.
-- [libratbag](https://github.com/libratbag/libratbag): Logitech HID++ 2.0, onboard profiles and the list of Logitech mice (MIT).
-- [gorkemgun/apex-3-tkl](https://github.com/gorkemgun/apex-3-tkl): Apex 3 TKL key mapping (MIT).
-- [ckb-next](https://github.com/ckb-next/ckb-next) and [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub): documentation of Corsair's protocol, summarized in our own words in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md). No code was copied.
+- [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB): the Apex 8-zone lighting protocol. No code was copied.
+- [libratbag](https://github.com/libratbag/libratbag) (MIT): Logitech HID++ 2.0, onboard profiles, the list of Logitech mice and the G300's format.
+- [gorkemgun/apex-3-tkl](https://github.com/gorkemgun/apex-3-tkl) (MIT): the Apex 3 TKL key mapping.
+- [ckb-next](https://github.com/ckb-next/ckb-next) and [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub): Corsair's protocol, described in our own words in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md). No code was copied.
 
-PeriHub is released under the [MIT license](LICENSE). It is not affiliated with SteelSeries, Logitech or Corsair; product names belong to their respective owners.
+PeriHub is released under the [MIT license](LICENSE). It is not affiliated with SteelSeries, Logitech or Corsair; product names belong to their owners.
