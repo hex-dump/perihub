@@ -18,7 +18,7 @@
 ![Keyboard lighting](docs/screenshots/keyboard-lighting.png)
 
 - **Fully supported now:** the SteelSeries Apex 3 TKL keyboard and the Logitech G502 HERO mouse.
-- **Not supported yet:** 30 more Logitech G mice are recognized in read-only mode until someone tests them, and more devices are on the way. See [Supported hardware](#supported-hardware) and the [Hardware roadmap](#hardware-roadmap).
+- **Not supported yet:** 29 more Logitech G mice are recognized in read-only mode until someone tests them, and more devices are on the way. See [Supported hardware](#supported-hardware) and the [Hardware roadmap](#hardware-roadmap).
 
 ## Contents
 
@@ -68,7 +68,7 @@ PeriHub only reads the app's identifier (the executable name on Windows, the win
 
 ### Other Logitech G mice (experimental)
 
-27 more Logitech mice are recognized when connected with a USB cable (see [Supported hardware](#supported-hardware)). They have not been tested with PeriHub yet, so it only reads them: you can see their profiles, DPI levels, buttons and lighting, but nothing can be changed until someone confirms that the model works.
+26 more Logitech mice are recognized when connected with a USB cable (see [Supported hardware](#supported-hardware)). They have not been tested with PeriHub yet, so it only reads them: you can see their profiles, DPI levels, buttons and lighting, but nothing can be changed until someone confirms that the model works.
 
 From version 0.5.0 the 15 wireless models are also recognized through their LIGHTSPEED receiver, read-only too: three of them, the G305, G603 and G604, have no data cable. PeriHub also shows their battery, and when the mouse is turned off or asleep it says so and finds it again once it wakes up.
 
@@ -140,13 +140,13 @@ PeriHub only talks to the devices listed here. It never sends commands to anythi
 
 PeriHub is meant to support much more than these two devices. The plan is to add hardware over time, starting with devices that share protocols PeriHub already speaks:
 
-- **Logitech G mice using HID++ 2.0.** 27 more models are already recognized in read-only mode. Version 0.5.0 adds LIGHTSPEED receivers, read-only too. Next: enable editing as owners confirm them.
+- **Logitech G mice using HID++ 2.0.** 29 more models are already recognized in read-only mode. Version 0.5.0 adds LIGHTSPEED receivers, read-only too. Next: enable editing as owners confirm them.
 - **Other SteelSeries keyboards**, such as the rest of the Apex range.
 - **SteelSeries mice.**
 - **Headsets and other peripherals**, where the hardware exposes useful settings.
 - **More languages** for the UI, and more layouts for the key remapping view.
 
-There is no fixed timeline: devices are added once their protocol can be verified on real hardware. If you own a device you would like to see supported, open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml): read-only dumps and testing help are the fastest way to get a device added.
+There is no fixed timeline: devices are added once their protocol can be verified on real hardware. If you own a device you would like to see supported, open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml): read-only dumps and testing help are the fastest way to get a device added. Other brands, like Corsair or Razer, can be requested too.
 
 ## Download and install
 
@@ -273,12 +273,12 @@ To report a security issue, see [SECURITY.md](SECURITY.md).
 
 **Light on Windows.** PeriHub is a small app written in Rust. It draws its window with WebView2, the web engine that comes with Windows 11 and up-to-date Windows 10 (the installer adds it if it is missing), instead of shipping a browser of its own.
 
-| PeriHub 0.4.0 on Windows | |
+| PeriHub 0.5.5 on Windows | |
 |---|---|
-| Download | **3.8 MB** installer |
-| On disk | **16 MB** |
-| In the system tray | **2 MB** of memory, **0.05%** of one CPU core |
-| Window open | **42 MB** of memory, **0.3%** of one CPU core |
+| Download | **3.9 MB** installer |
+| On disk | **17 MB** |
+| In the system tray | **3 MB** of memory, **0.05%** of one CPU core |
+| Window open | **39 MB** of memory, **0.2%** of one CPU core |
 | Background services | none |
 | Account, ads, telemetry | none |
 
@@ -293,7 +293,7 @@ What this means for you:
 <details>
 <summary>How these numbers were measured</summary>
 
-On 20 October 2026 the [Measure on Windows](.github/workflows/measure-windows.yml) workflow built PeriHub 0.4.0 from its source code and installed it on a fresh Windows Server 2025 virtual machine on GitHub Actions (Intel Xeon Platinum 8573C, 4 logical processors, WebView2 154), with no devices connected. Memory is the private working set, which is what Task Manager shows in the Memory column, of PeriHub and, with the window open, the 6 WebView2 processes it starts. CPU is their processor time over 2 minutes. PeriHub 0.3.0 was measured the same way on 19 October 2026, installed from its release on a machine with an AMD EPYC 7763. On your PC the numbers will differ, for example with devices connected and an animated lighting effect, which PeriHub draws frame by frame. On 21 October 2026 PeriHub 0.4.1 was measured on a real PC (Windows 11, 16 logical processors) with both devices connected and the wave effect: in the tray it used 0.57–0.68% of one core over 60 seconds, almost all of it to animate the wave. The workflow is in the repository, so the measurement can be repeated, also on a fork.
+On 8 November 2026 the [Measure on Windows](.github/workflows/measure-windows.yml) workflow installed PeriHub 0.5.5 from its release on a fresh Windows Server 2025 virtual machine on GitHub Actions (AMD EPYC 9V45, 4 logical processors, WebView2 156), with no devices connected. Memory is the private working set, which is what Task Manager shows in the Memory column, of PeriHub and, with the window open, the 6 WebView2 processes it starts. CPU is their processor time over 2 minutes. Earlier versions were measured the same way: 0.4.0 on 20 October 2026, built from its source code on an Intel Xeon Platinum 8573C (2 MB in the tray, 42 MB with the window open), and 0.3.0 on 19 October 2026, installed from its release on an AMD EPYC 7763. On your PC the numbers will differ, for example with devices connected and an animated lighting effect, which PeriHub draws frame by frame. On 21 October 2026 PeriHub 0.4.1 was measured on a real PC (Windows 11, 16 logical processors) with both devices connected and the wave effect: in the tray it used 0.57–0.68% of one core over 60 seconds, almost all of it to animate the wave. The workflow is in the repository, so the measurement can be repeated, also on a fork.
 
 </details>
 
@@ -401,7 +401,7 @@ Bug reports, device requests and pull requests are welcome.
 
 - **Questions and ideas**: use [Discussions](https://github.com/hex-dump/perihub/discussions).
 - **Bugs**: include your OS, the device, and what the app showed.
-- **New devices**: open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) with the model and USB ID.
+- **New devices**: open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) with the model and USB ID. Any brand can be requested.
 - **Experimental Logitech mice**: fill in a [mouse test report](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml).
 - **Code**: run `cargo fmt`, `cargo test`, `cargo clippy` and `npm run check` before opening a pull request.
 
