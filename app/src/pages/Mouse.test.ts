@@ -240,7 +240,8 @@ describe("experimental editing", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Edit anyway…" }));
     const turnOn = screen.getByRole("button", { name: "Turn on experimental editing" }) as HTMLButtonElement;
     expect(turnOn.disabled).toBe(true);
-    await fireEvent.click(screen.getByRole("checkbox", { name: /I understand/ }));
+    expect(screen.getByRole("note").textContent).toContain("accepts no responsibility for any damage");
+    await fireEvent.click(screen.getByRole("checkbox", { name: /I have read this/ }));
     expect(turnOn.disabled).toBe(false);
     await fireEvent.click(turnOn);
     await wait(0);

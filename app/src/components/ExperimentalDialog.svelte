@@ -1,5 +1,6 @@
 <script lang="ts">
   // Asks before turning on experimental editing for an untested mouse model.
+  import NoWarranty from "./NoWarranty.svelte";
   interface Props {
     /** The mouse, e.g. "G403 HERO". */
     model: string;
@@ -47,10 +48,7 @@
     <p class="muted small">
       If it works, please send a mouse test report: it is how the {model} becomes fully supported.
     </p>
-    <label class="row check">
-      <input type="checkbox" bind:checked={understood} />
-      I understand that the {model} has not been tested and that I use this at my own risk.
-    </label>
+    <NoWarranty device={`Logitech ${model}`} bind:accepted={understood} />
     <div class="row end">
       <button onclick={onclose}>Cancel</button>
       <button class="primary" disabled={!understood} onclick={onconfirm}>Turn on experimental editing</button>
@@ -99,10 +97,6 @@
     padding-left: 20px;
   }
 
-  .check {
-    gap: 10px;
-    align-items: flex-start;
-  }
 
   .end {
     justify-content: flex-end;

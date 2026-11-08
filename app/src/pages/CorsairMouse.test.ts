@@ -55,6 +55,7 @@ describe("a Corsair mouse", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Try experimental lighting…" }));
     const turnOn = screen.getByRole("button", { name: "Turn on for this session" }) as HTMLButtonElement;
     expect(turnOn.disabled).toBe(true);
+    expect(screen.getByRole("note").textContent).toContain("accepts no responsibility for any damage");
     await fireEvent.click(screen.getByRole("checkbox"));
     await fireEvent.click(turnOn);
     await wait(0);

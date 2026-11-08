@@ -4,6 +4,7 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, debounce, errorText, type CorsairMouseInfo } from "../lib/api";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
+  import NoWarranty from "../components/NoWarranty.svelte";
 
   interface Props {
     info: CorsairMouseInfo | null;
@@ -153,10 +154,7 @@
           <b>To get out:</b> <b>Turn off</b> here, <b>Turn off experimental editing</b> in the tray menu, or quit
           PeriHub. If the mouse still behaves oddly, unplug it and plug it back in.
         </p>
-        <label class="row check">
-          <input type="checkbox" bind:checked={understood} />
-          I understand that this has not been tested on any Corsair mouse.
-        </label>
+        <NoWarranty device={`Corsair ${info.model}`} bind:accepted={understood} />
         <div class="row end">
           <button onclick={() => (asking = false)}>Cancel</button>
           <button class="primary" disabled={!understood || !!busy} onclick={turnOn}>Turn on for this session</button>
@@ -240,11 +238,6 @@
     gap: 4px;
   }
 
-  .check {
-    gap: 10px;
-    align-items: flex-start;
-    margin: 6px 0 10px;
-  }
 
   .end {
     justify-content: flex-end;
