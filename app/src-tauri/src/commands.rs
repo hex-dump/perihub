@@ -19,8 +19,12 @@ use crate::AppState;
 
 type CmdResult<T> = Result<T, String>;
 
-/// The mouse test form on GitHub; the interface adds the fields it fills in.
-const TEST_FORM_URL: &str = "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml";
+/// The test forms on GitHub (Logitech mice, and Corsair devices and the G300); the interface adds
+/// the fields it fills in.
+const TEST_FORM_URLS: &[&str] = &[
+    "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml&",
+    "https://github.com/hex-dump/perihub/issues/new?template=device_test.yml&",
+];
 
 async fn blocking<T: Send + 'static>(f: impl FnOnce() -> perihub_core::Result<T> + Send + 'static) -> CmdResult<T> {
     tauri::async_runtime::spawn_blocking(f).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())
@@ -487,11 +491,11 @@ pub fn app_open_log_folder() -> CmdResult<()> {
         .map_err(|e| format!("cannot open {}: {e}", dir.display()))
 }
 
-/// Opens PeriHub's mouse test form in the browser. Only that address: the page cannot ask for
-/// any other website or a program, and the fields it fills in are in the query.
+/// Opens one of PeriHub's test forms in the browser. Only those addresses: the page cannot ask
+/// for any other website or a program, and the fields it fills in are in the query.
 #[tauri::command]
 pub fn app_open_test_form(url: String) -> CmdResult<()> {
-    if !url.starts_with(TEST_FORM_URL) {
+    if !TEST_FORM_URLS.iter().any(|form| url.starts_with(form)) {
         return Err("not PeriHub's test form".to_string());
     }
     perihub_core::softmacro::inject::open_target(&url).map_err(|e| e.to_string())

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1 — 2026-11-08
+
+A test form for the new devices.
+
+### Added
+- **Open test form** and **Copy test report** on the pages of Corsair devices and the Logitech G300. The form opens on GitHub already filled in with what PeriHub read (no key presses, apps or log lines), like the one for Logitech mice: it is how a device becomes fully supported.
+
 ## 0.6.0 — 2026-11-08
 
 More devices: the Logitech G300 read-only, and Corsair mice, keyboards and wireless receivers, experimental. Untested Logitech mice can be edited at your own risk.

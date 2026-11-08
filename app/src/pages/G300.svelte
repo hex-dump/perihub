@@ -1,9 +1,10 @@
 <script lang="ts">
   // Logitech G300: its three profiles as stored in the mouse, read only.
   import { onDestroy } from "svelte";
-  import { getVersion } from "@tauri-apps/api/app";
-  import { api, errorText, type G300Button, type G300Info } from "../lib/api";
+  import { api, type G300Button, type G300Info, type G300Profile } from "../lib/api";
   import { keyLabel } from "../lib/keys";
+  import { g300Test } from "../lib/testReport";
+  import DeviceTestReport from "../components/DeviceTestReport.svelte";
 
   interface Props {
     info: G300Info | null;
@@ -12,13 +13,10 @@
 
   let { info: initial, error: connectError }: Props = $props();
 
-  const COPIED_MS = 3000;
   /** The mouse's buttons change the active profile and DPI level. */
   const LIVE_MS = 2000;
 
   let live = $state<G300Info | null>(null);
-  let error = $state<string | null>(null);
-  let copied = $state(false);
   const info = $derived(live ?? initial);
 
   const timer = setInterval(() => {
@@ -79,27 +77,10 @@
     return names[color.toLowerCase()] ?? color;
   }
 
-  async function copyReport() {
-    if (!info) return;
-    try {
-      const system = (await api.appSettings().catch(() => null))?.system ?? "?";
-      const lines = [
-        `PeriHub ${await getVersion()} on ${system}`,
-        `Mouse: Logitech G300, USB ID 046d:c246`,
-        `Active profile: ${info.active_profile}, DPI level ${info.active_level + 1} (${info.active_raw})`,
-        ...info.profiles.map(
-          (p) =>
-            `Profile ${p.number}: ${colorName(p.color)}, ${p.report_rate_hz ?? "?"} Hz, DPI ${p.dpi_levels
-              .map((d, i) => (i === p.default_level ? `${d}*` : `${d}`))
-              .join(" / ")}, ${p.buttons.map((b, i) => `${BUTTON_NAMES[i]}: ${action(b)}`).join("; ")}\n  ${p.raw}`,
-        ),
-      ];
-      await navigator.clipboard.writeText(lines.join("\n"));
-      copied = true;
-      setTimeout(() => (copied = false), COPIED_MS);
-    } catch (e) {
-      error = errorText(e);
-    }
+  function describe(p: G300Profile): string {
+    const levels = p.dpi_levels.map((d, i) => (i === p.default_level ? `${d}*` : `${d}`)).join(" / ");
+    const buttons = p.buttons.map((b, i) => `${BUTTON_NAMES[i]}: ${action(b)}`).join("; ");
+    return `${colorName(p.color)}, ${p.report_rate_hz ?? "?"} Hz, DPI ${levels}, ${buttons}`;
   }
 </script>
 
@@ -113,12 +94,11 @@
 {#if info}
   <div class="notice info">
     <b>Read-only support.</b> PeriHub shows the three profiles stored in the G300 and changes nothing. Please check that
-    they match Logitech Gaming Software and tell us on GitHub (issue #16): it is how editing can come next.
+    they match Logitech Gaming Software and send a test report: it is how editing can come next.
     <div class="row report">
-      <button class="tiny" onclick={copyReport}>{copied ? "Copied" : "Copy report"}</button>
+      <DeviceTestReport fields={(version, system) => g300Test(info!, describe, version, system)} />
     </div>
   </div>
-  {#if error}<div class="notice error">{error}</div>{/if}
 
   <div class="profiles">
     {#each info.profiles as profile (profile.number)}

@@ -1,0 +1,73 @@
+name: Device test report
+description: Tell us how PeriHub works with a Corsair device or the Logitech G300
+labels: ["device test"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing! PeriHub only reads these devices; on Corsair devices it can also try one colour of lighting for the session, if you turn it on. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
+  - type: input
+    id: model
+    attributes:
+      label: Device
+      description: The name PeriHub shows at the top of the device page.
+      placeholder: e.g. Corsair M65 RGB ULTRA, or Logitech G300
+    validations:
+      required: true
+  - type: input
+    id: usb-id
+    attributes:
+      label: USB ID (vendor:product)
+      description: "Linux: `lsusb`. Windows: Device Manager → device → Properties → Details → Hardware IDs (VID_xxxx&PID_xxxx)."
+      placeholder: e.g. 1b1c:1b9e
+    validations:
+      required: true
+  - type: input
+    id: connection
+    attributes:
+      label: Connection
+      placeholder: USB cable or wireless receiver
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: PeriHub version
+      placeholder: e.g. 0.6.1
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows or Linux
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Test report
+      description: "**Open test form** on the device page fills this in, and **Copy test report** copies it. It has no key presses, apps or log lines."
+      render: text
+  - type: checkboxes
+    id: matches
+    attributes:
+      label: What PeriHub shows correctly
+      description: Compare with the official software (iCUE, Logitech Gaming Software) or with how the device behaves.
+      options:
+        - label: Firmware version
+        - label: Polling rate (report rate)
+        - label: DPI (mice)
+        - label: "G300: profiles, DPI levels, light colour and buttons"
+        - label: "Corsair: experimental lighting showed the colour, and the device went back to its own lighting when it was turned off"
+        - label: "Corsair: every button or key kept working while experimental lighting was on"
+  - type: textarea
+    id: notices
+    attributes:
+      label: Messages and errors
+      description: Any message PeriHub shows on the device page, or an error if the device does not appear.
+  - type: textarea
+    id: details
+    attributes:
+      label: What is wrong or missing
+      description: Anything that does not match. Screenshots are very helpful.

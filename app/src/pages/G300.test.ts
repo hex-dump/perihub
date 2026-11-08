@@ -5,6 +5,7 @@ const api = vi.hoisted(() => ({ g300Info: vi.fn(), appSettings: vi.fn() }));
 
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.6.0" }));
+api.appSettings.mockResolvedValue({ system: "linux x86_64" });
 
 import type { G300Info } from "../lib/api";
 import G300 from "./G300.svelte";

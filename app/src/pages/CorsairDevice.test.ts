@@ -10,6 +10,7 @@ const api = vi.hoisted(() => ({
 
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.6.0" }));
+api.appSettings.mockResolvedValue({ system: "linux x86_64" });
 
 import type { CorsairInfo } from "../lib/api";
 import CorsairDevice from "./CorsairDevice.svelte";

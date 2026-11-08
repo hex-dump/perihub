@@ -1,10 +1,11 @@
 <script lang="ts">
   // A Corsair mouse or keyboard: what PeriHub reads from it, and experimental lighting for this session.
   import { onDestroy } from "svelte";
-  import { getVersion } from "@tauri-apps/api/app";
   import { api, debounce, errorText, type CorsairInfo } from "../lib/api";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import NoWarranty from "../components/NoWarranty.svelte";
+  import DeviceTestReport from "../components/DeviceTestReport.svelte";
+  import { corsairTest } from "../lib/testReport";
 
   interface Props {
     info: CorsairInfo | null;
@@ -13,22 +14,16 @@
 
   let { info, error: connectError }: Props = $props();
 
-  const COPIED_MS = 3000;
-
   let busy = $state<string | null>(null);
   let error = $state<string | null>(null);
   let asking = $state(false);
   let understood = $state(false);
   let confirmWorks = $state(false);
   let color = $state("#ff6a00");
-  let copied = $state(false);
 
   const on = $derived(!!info?.lighting);
   const noun = $derived(info?.kind === "keyboard" ? "keyboard" : "mouse");
 
-  function hex(n: number) {
-    return n.toString(16).padStart(4, "0");
-  }
 
   async function run(label: string, task: () => Promise<unknown>) {
     busy = label;
@@ -70,27 +65,6 @@
     if (on) sendColor(value);
   }
 
-  async function copyReport() {
-    if (!info) return;
-    const system = (await api.appSettings().catch(() => null))?.system ?? "?";
-    const lines = [
-      `PeriHub ${await getVersion()} on ${system}`,
-      `Device: Corsair ${info.model} (${info.kind}), USB ID 1b1c:${hex(info.product_id)}`,
-      `Firmware: ${info.firmware ?? "not read"}`,
-      `Connection: ${info.receiver ? `wireless receiver 1b1c:${hex(info.receiver)}` : "USB cable"}`,
-      `Mode at connection: ${info.mode ?? "not read"}`,
-      `Polling: ${info.polling_hz ?? "not read"} Hz, DPI: ${info.dpi ?? "not read"}`,
-      `Could not read: ${info.read_errors.join("; ") || "nothing"}`,
-      `Experimental lighting: ${on ? "on" : "off"}`,
-    ];
-    try {
-      await navigator.clipboard.writeText(lines.join("\n"));
-      copied = true;
-      setTimeout(() => (copied = false), COPIED_MS);
-    } catch (e) {
-      error = errorText(e);
-    }
-  }
 </script>
 
 <header>
@@ -103,10 +77,10 @@
 {#if info}
   <div class="notice info">
     <b>Experimental support.</b> Nobody has tested PeriHub on a Corsair {noun} yet. PeriHub reads the {info.model} and
-    changes nothing, except the lighting if you turn it on below. A report on PeriHub's GitHub page (device request)
-    with what you see here helps a lot.
+    changes nothing, except the lighting if you turn it on below. A test report on PeriHub's GitHub page with what you see
+    here helps make it fully supported.
     <div class="row report">
-      <button class="tiny" onclick={copyReport}>{copied ? "Copied" : "Copy report"}</button>
+      <DeviceTestReport fields={(version, system) => corsairTest(info!, version, system)} />
     </div>
   </div>
 

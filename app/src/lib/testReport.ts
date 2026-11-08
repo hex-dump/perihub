@@ -1,3 +1,4 @@
+import type { CorsairInfo, G300Info, G300Profile } from "./api";
 import type { MouseInfo } from "./api";
 
 const LOGITECH = "046d";
@@ -53,4 +54,68 @@ export function testFormUrl(mouse: MouseInfo, version: string, system: string): 
   };
   const query = Object.entries(fields).map(([name, value]) => `${name}=${encodeURIComponent(value)}`);
   return `${TEST_FORM}&${query.join("&")}`;
+}
+
+const DEVICE_TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=device_test.yml";
+
+/** The fields of the device test form (Corsair devices and the G300). */
+export interface DeviceTestFields {
+  model: string;
+  usbId: string;
+  connection: string;
+  report: string;
+}
+
+export function deviceTestFormUrl(fields: DeviceTestFields, version: string, system: string): string {
+  const values = {
+    model: fields.model,
+    "usb-id": fields.usbId,
+    connection: fields.connection,
+    version,
+    os: system.toLowerCase().startsWith("windows") ? "Windows" : "Linux",
+    report: fields.report,
+  };
+  const query = Object.entries(values).map(([name, value]) => `${name}=${encodeURIComponent(value)}`);
+  return `${DEVICE_TEST_FORM}&${query.join("&")}`;
+}
+
+/** What a tester sends about a Corsair device. */
+export function corsairTest(info: CorsairInfo, version: string, system: string): DeviceTestFields {
+  const connection = info.receiver ? `wireless receiver 1b1c:${hex(info.receiver)}` : "USB cable";
+  return {
+    model: `Corsair ${info.model}`,
+    usbId: `1b1c:${hex(info.product_id)}`,
+    connection: info.receiver ? "wireless receiver" : "USB cable",
+    report: [
+      `PeriHub ${version} on ${system}`,
+      `Device: Corsair ${info.model} (${info.kind}), USB ID 1b1c:${hex(info.product_id)}`,
+      `Connection: ${connection}`,
+      `Firmware: ${info.firmware ?? "not read"}`,
+      `Mode at connection: ${info.mode ?? "not read"}`,
+      `Polling: ${info.polling_hz ?? "not read"} Hz${info.kind === "mouse" ? `, DPI: ${info.dpi ?? "not read"}` : ""}`,
+      `LEDs: ${info.leds}`,
+      `Could not read: ${info.read_errors.join("; ") || "nothing"}`,
+      `Experimental lighting: ${info.lighting ? "on" : "off"}`,
+    ].join("\n"),
+  };
+}
+
+/** What a tester sends about the G300, with the bytes of every profile. */
+export function g300Test(
+  info: G300Info,
+  describe: (profile: G300Profile) => string,
+  version: string,
+  system: string,
+): DeviceTestFields {
+  return {
+    model: "Logitech G300",
+    usbId: "046d:c246",
+    connection: "USB cable",
+    report: [
+      `PeriHub ${version} on ${system}`,
+      "Mouse: Logitech G300, USB ID 046d:c246",
+      `Active profile: ${info.active_profile}, DPI level ${info.active_level + 1} (${info.active_raw})`,
+      ...info.profiles.map((p) => `Profile ${p.number}: ${describe(p)}\n  ${p.raw}`),
+    ].join("\n"),
+  };
 }
