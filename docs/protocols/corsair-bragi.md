@@ -194,6 +194,34 @@ K70 CORE). The 15-second confirmation gives the keyboard back without any key or
 
 Older Corsair keyboards (K70 RGB MK.2, K95 RGB PLATINUM, K65 RGB, K68 and others) speak an older protocol, not this one, and are not recognized.
 
+## Slipstream wireless receivers
+
+| Receiver | Product id | Source |
+|---|---|---|
+| SLIPSTREAM WIRELESS USB Receiver | `1ba6` | both (ckb-next calls it the generic Bragi dongle) |
+| SLIPSTREAM WIRELESS USB Receiver | `1bdc` | OpenLinkHub |
+| SLIPSTREAM WIRELESS USB Receiver | `2b00` | OpenLinkHub |
+| HARPOON RGB WIRELESS receiver | `1b65` | both |
+| DARK CORE RGB PRO SE receiver | `1b7f` | both |
+| DARK CORE RGB PRO receiver | `1b81` | both |
+| IRONCLAW RGB WIRELESS receiver | `1b66` | ckb-next |
+
+The newer "Slipstream V2" receiver (`2b1b`) is handled by a separate driver in OpenLinkHub, with
+differences PeriHub does not know: it is left out. So is the K57 receiver (`1b62`), which ckb-next talks to on other
+endpoints.
+
+- The receiver takes requests on **HID interface 1**, with 64-byte packets (OpenLinkHub).
+- Property `0x36` of the receiver (marker `0x08`) is a bit field: bit *n*, from 1 to 7, is set
+  while the device on channel *n* is connected (ckb-next).
+- A request to the device on channel *n* is the same packet with the marker byte `0x08 | n`
+  (ckb-next: "or" of the channel into byte 0; OpenLinkHub: base `0x08` plus the channel).
+- Behind the receiver a device reports the same product id as on its cable (property `0x12`,
+  ckb-next; OpenLinkHub matches the receiver's devices with the cable ids). `0xffff` means no
+  device (ckb-next).
+- PeriHub opens the first connected device of a receiver, with the packet size of the receiver,
+  and checks every few seconds that it is still connected. A receiver with more than one device
+  connected shows the first one only, for now.
+
 ## What PeriHub does with it
 
 - **Always (read-only):** get the firmware version, the mode, the polling rate and the DPI.

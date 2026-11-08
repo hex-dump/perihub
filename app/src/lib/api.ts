@@ -287,6 +287,8 @@ export interface CorsairInfo {
   product_id: number;
   model: string;
   kind: "mouse" | "keyboard";
+  /** Connected through its wireless receiver: the receiver's USB product id. */
+  receiver: number | null;
   leds: number;
   firmware: string | null;
   /** 1 = hardware (its own settings), 2 = software (a program drives it), as read at connection. */

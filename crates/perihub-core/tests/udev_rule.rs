@@ -42,6 +42,10 @@ fn udev_rule_opens_only_the_control_interface_of_the_corsair_devices() {
     }
     let in_rule =
         lines.iter().map(|line| line.split(r#"ATTRS{idProduct}==""#).nth(1).unwrap()[..4].to_string()).collect();
-    let in_list = CORSAIR.iter().map(|m| format!("{:04x}", m.product_id)).collect();
+    let in_list = CORSAIR
+        .iter()
+        .map(|m| format!("{:04x}", m.product_id))
+        .chain(perihub_core::corsair::models::RECEIVERS.iter().map(|(id, _)| format!("{id:04x}")))
+        .collect();
     assert_eq!(sorted(in_rule), sorted(in_list));
 }

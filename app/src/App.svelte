@@ -95,7 +95,7 @@
         <Icon name={device.kind} />
         <span class="col tight">
           <span class="name">Corsair {device.model}</span>
-          <span class="state on">Experimental</span>
+          <span class="state on">{device.receiver ? "Experimental · wireless" : "Experimental"}</span>
         </span>
       </button>
     {/each}

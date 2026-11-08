@@ -77,6 +77,7 @@
       `PeriHub ${await getVersion()} on ${system}`,
       `Device: Corsair ${info.model} (${info.kind}), USB ID 1b1c:${hex(info.product_id)}`,
       `Firmware: ${info.firmware ?? "not read"}`,
+      `Connection: ${info.receiver ? `wireless receiver 1b1c:${hex(info.receiver)}` : "USB cable"}`,
       `Mode at connection: ${info.mode ?? "not read"}`,
       `Polling: ${info.polling_hz ?? "not read"} Hz, DPI: ${info.dpi ?? "not read"}`,
       `Could not read: ${info.read_errors.join("; ") || "nothing"}`,
@@ -119,6 +120,7 @@
   <section class="card">
     <h2>What PeriHub read</h2>
     <dl>
+      <dt>Connection</dt><dd>{info.receiver ? "Wireless receiver" : "USB cable"}</dd>
       <dt>Firmware</dt><dd>{info.firmware ?? "not read"}</dd>
       <dt>Polling rate</dt><dd>{info.polling_hz ? `${info.polling_hz} Hz` : "not read"}</dd>
       {#if info.kind === "mouse"}<dt>DPI</dt><dd>{info.dpi ?? "not read"}</dd>{/if}

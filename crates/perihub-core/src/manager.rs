@@ -26,6 +26,8 @@ use crate::worker::Worker;
 
 const POLL_INTERVAL: Duration = Duration::from_secs(2);
 /// Conflicting programs are looked for every this many detection passes (10 seconds).
+/// How often a Corsair receiver without a connected device is asked again.
+const CORSAIR_RECEIVER_RETRY: Duration = Duration::from_secs(10);
 const CONFLICT_CHECK_EVERY: u32 = 5;
 
 const STEELSERIES: u16 = 0x1038;
@@ -55,10 +57,20 @@ fn mouse_hidpp_interface(d: &DeviceInfo) -> Option<&'static MouseModel> {
 /// interface can have more than one collection: the vendor-defined one is preferred (not verified
 /// on a real device yet).
 fn corsair_control_interfaces(devices: &[DeviceInfo]) -> Vec<(DeviceInfo, &'static corsair::models::CorsairModel)> {
-    let mut found: Vec<(DeviceInfo, &'static corsair::models::CorsairModel)> = Vec::new();
+    pick_collections(devices, |d| corsair::models::find(d.product_id()))
+}
+
+/// The control interfaces of the Corsair wireless receivers PeriHub knows.
+fn corsair_receiver_interfaces(devices: &[DeviceInfo]) -> Vec<(DeviceInfo, ())> {
+    pick_collections(devices, |d| corsair::models::is_receiver(d.product_id()).then_some(()))
+}
+
+/// One collection of interface 1 per Corsair device that `known` accepts.
+fn pick_collections<T: Copy>(devices: &[DeviceInfo], known: impl Fn(&DeviceInfo) -> Option<T>) -> Vec<(DeviceInfo, T)> {
+    let mut found: Vec<(DeviceInfo, T)> = Vec::new();
     for d in devices {
         let Some(model) = (d.vendor_id() == corsair::CORSAIR && d.interface_number() == corsair::CONTROL_INTERFACE)
-            .then(|| corsair::models::find(d.product_id()))
+            .then(|| known(d))
             .flatten()
         else {
             continue;
@@ -169,6 +181,8 @@ struct Slots {
     corsair_error: Option<String>,
     /// Corsair devices that failed to open: not retried until they are plugged in again.
     corsair_failed: Vec<CString>,
+    /// Corsair receivers without a connected device, and when they were last asked.
+    corsair_waiting: HashMap<CString, std::time::Instant>,
     /// Set by the mouse's thread while another program controls the mouse.
     mouse_host_mode: Option<Arc<AtomicBool>>,
     reported_host_mode: bool,
@@ -566,7 +580,10 @@ impl Manager {
     fn poll_corsair(&self, api: &HidApi) -> bool {
         let devices: Vec<DeviceInfo> = api.device_list().cloned().collect();
         let found = corsair_control_interfaces(&devices);
-        let present = |path: &CStr| found.iter().any(|(d, _)| d.path() == path);
+        let receivers = corsair_receiver_interfaces(&devices);
+        let present = |path: &CStr| {
+            found.iter().any(|(d, _)| d.path() == path) || receivers.iter().any(|(d, _)| d.path() == path)
+        };
         let mut changed = false;
         let mut slots = self.slots.lock().unwrap();
         let before = slots.corsair.len();
@@ -579,7 +596,8 @@ impl Manager {
         });
         changed |= slots.corsair.len() != before;
         slots.corsair_failed.retain(|path| present(path));
-        if found.is_empty() && slots.corsair_error.take().is_some() {
+        slots.corsair_waiting.retain(|path, _| present(path));
+        if found.is_empty() && receivers.is_empty() && slots.corsair_error.take().is_some() {
             changed = true;
         }
         let new: Vec<_> = found
@@ -589,7 +607,20 @@ impl Manager {
                     && !slots.corsair_failed.iter().any(|p| p.as_c_str() == d.path())
             })
             .collect();
+        let open_receivers: Vec<DeviceInfo> = receivers
+            .into_iter()
+            .map(|(d, _)| d)
+            .filter(|d| {
+                let path = d.path();
+                !slots.corsair.iter().any(|(p, _, _)| p.as_c_str() == path)
+                    && !slots.corsair_failed.iter().any(|p| p.as_c_str() == path)
+                    && slots.corsair_waiting.get(path).is_none_or(|at| at.elapsed() >= CORSAIR_RECEIVER_RETRY)
+            })
+            .collect();
         drop(slots);
+        for receiver in open_receivers {
+            changed |= self.open_corsair_receiver(api, &receiver);
+        }
         for (device, model) in new {
             let result = device
                 .open_device(api)
@@ -615,6 +646,59 @@ impl Manager {
             changed = true;
         }
         changed
+    }
+
+    /// Opens the first connected device behind a Corsair receiver that PeriHub knows. Returns
+    /// `true` if the status changed.
+    fn open_corsair_receiver(&self, api: &HidApi, receiver: &DeviceInfo) -> bool {
+        let path = receiver.path().to_owned();
+        let result = receiver.open_device(api).map_err(Error::from).and_then(|dev| {
+            let mut dev = BragiDevice::new(dev, corsair::PACKET);
+            for channel in dev.connected_channels()? {
+                dev.set_channel(channel);
+                let id = match dev.product_id() {
+                    Ok(id) => id,
+                    Err(e) => {
+                        log::debug!("Corsair receiver, channel {channel}: {e}");
+                        continue;
+                    }
+                };
+                match corsair::models::find(id) {
+                    Some(model) => {
+                        return CorsairTask::open_behind(dev, model, receiver.product_id(), channel).map(Some);
+                    }
+                    None => log::info!("Corsair receiver, channel {channel}: device {id:04x} is not supported yet"),
+                }
+            }
+            Ok(None)
+        });
+        let mut slots = self.slots.lock().unwrap();
+        match result {
+            Ok(Some(task)) => {
+                let info = task.info();
+                log::info!("Corsair {} connected through its receiver (experimental support, read-only)", info.model);
+                slots.corsair.push((path.clone(), Worker::spawn("perihub-corsair", task), info));
+                slots.corsair_waiting.remove(&path);
+                true
+            }
+            // Nothing connected (or nothing PeriHub knows): asked again later.
+            Ok(None) => {
+                slots.corsair_waiting.insert(path, std::time::Instant::now());
+                false
+            }
+            Err(error) => {
+                let message = format!("Corsair receiver: {}", open_error_message(error));
+                log::warn!("{message}");
+                if message.contains("permission denied") {
+                    slots.corsair_waiting.insert(path, std::time::Instant::now());
+                } else {
+                    slots.corsair_failed.push(path);
+                }
+                let changed = slots.corsair_error.as_ref() != Some(&message);
+                slots.corsair_error = Some(message);
+                changed
+            }
+        }
     }
 
     /// Gives every Corsair device with experimental lighting back to its own settings (tray menu,

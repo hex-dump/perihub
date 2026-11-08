@@ -32,6 +32,9 @@ mod command {
 
 pub mod property {
     pub const POLLING: u8 = 0x01;
+    pub const PRODUCT_ID: u8 = 0x12;
+    /// On a receiver: bit n set while the device on channel n is connected.
+    pub const CHANNELS: u8 = 0x36;
     pub const MODE: u8 = 0x03;
     pub const FIRMWARE: u8 = 0x13;
     pub const DPI_X: u8 = 0x21;
@@ -60,7 +63,8 @@ const CONTINUE_DATA_AT: usize = 3;
 /// to it, and the keep-alive. Every other command, property or resource is refused, whatever the
 /// rest of the code asks for.
 pub fn allowed(packet: &[u8], lighting: bool) -> bool {
-    if packet.len() < 6 || packet[0] != MARKER {
+    // The marker, with the channel of a device behind a receiver in its low bits.
+    if packet.len() < 6 || packet[0] & !0x07 != MARKER {
         return false;
     }
     match packet[1] {
@@ -90,10 +94,10 @@ pub fn lighting_data(colors: &[Rgb]) -> Vec<u8> {
 
 /// The packets of `size` bytes that write `data` to the lighting handle: the first one carries the
 /// length, the others continue it.
-fn write_packets(data: &[u8], size: usize) -> Vec<Vec<u8>> {
+fn write_packets(data: &[u8], size: usize, marker: u8) -> Vec<Vec<u8>> {
     let mut packets = Vec::new();
     let mut first = vec![0u8; size];
-    first[0] = MARKER;
+    first[0] = marker;
     first[1] = command::WRITE;
     first[2] = LIGHTING_HANDLE;
     first[3..7].copy_from_slice(&(data.len() as u32).to_le_bytes());
@@ -102,7 +106,7 @@ fn write_packets(data: &[u8], size: usize) -> Vec<Vec<u8>> {
     packets.push(first);
     while !rest.is_empty() {
         let mut next = vec![0u8; size];
-        next[0] = MARKER;
+        next[0] = marker;
         next[1] = command::CONTINUE;
         next[2] = LIGHTING_HANDLE;
         let (chunk, left) = rest.split_at(rest.len().min(size - CONTINUE_DATA_AT));
@@ -116,8 +120,11 @@ fn write_packets(data: &[u8], size: usize) -> Vec<Vec<u8>> {
 /// A Corsair mouse on its control interface.
 pub struct BragiDevice {
     dev: Box<dyn Transport>,
-    /// Packet size of this mouse.
+    /// Packet size of this device.
     size: usize,
+    /// Channel of the device behind a receiver (1 to 7), or 0 for the device on the cable or the
+    /// receiver itself.
+    channel: u8,
     /// Experimental lighting is on: the commands it needs may be sent (see [`allowed`]).
     lighting: bool,
 }
@@ -125,11 +132,30 @@ pub struct BragiDevice {
 impl BragiDevice {
     /// `size`: the packet size of the model, 64 or 128 bytes.
     pub fn new(dev: impl Transport + 'static, size: usize) -> Self {
-        Self { dev: Box::new(dev), size, lighting: false }
+        Self { dev: Box::new(dev), size, channel: 0, lighting: false }
     }
 
     pub fn set_lighting_allowed(&mut self, on: bool) {
         self.lighting = on;
+    }
+
+    /// Talks to the device on this channel of a receiver from now on.
+    pub fn set_channel(&mut self, channel: u8) {
+        self.channel = channel & 0x07;
+    }
+
+    /// On a receiver: the channels whose device is connected now.
+    pub fn connected_channels(&mut self) -> Result<Vec<u8>> {
+        let mut packet = self.packet(command::GET, &[property::CHANNELS]);
+        packet[0] = MARKER;
+        let reply = self.request(&packet)?;
+        Ok((1..=7).filter(|n| reply[3] >> n & 1 == 1).collect())
+    }
+
+    /// USB product id the device reports (behind a receiver, the same as on its cable).
+    pub fn product_id(&mut self) -> Result<u16> {
+        let id = self.property(property::PRODUCT_ID)? as u16;
+        if id == 0xFFFF { Err(Error::Unreachable) } else { Ok(id) }
     }
 
     /// Sends a packet and returns the reply to it, whatever its status.
@@ -170,7 +196,7 @@ impl BragiDevice {
 
     fn packet(&self, command: u8, args: &[u8]) -> Vec<u8> {
         let mut packet = vec![0u8; self.size];
-        packet[0] = MARKER;
+        packet[0] = MARKER | self.channel;
         packet[1] = command;
         packet[2..2 + args.len()].copy_from_slice(args);
         packet
@@ -211,7 +237,7 @@ impl BragiDevice {
     }
 
     pub fn write_lighting(&mut self, colors: &[Rgb]) -> Result<()> {
-        for packet in write_packets(&lighting_data(colors), self.size) {
+        for packet in write_packets(&lighting_data(colors), self.size, MARKER | self.channel) {
             self.request(&packet)?;
         }
         Ok(())
@@ -262,6 +288,10 @@ mod tests {
             assert!(!allowed(&packet(&[0x08, command]), true), "{command:#x}");
         }
         assert!(!allowed(&packet(&[0x07, 0x02, 0x13]), true));
+        assert!(!allowed(&packet(&[0x18, 0x02, 0x13]), true));
+        // A device behind a receiver: the channel in the marker.
+        assert!(allowed(&packet(&[0x09, 0x02, 0x13]), false));
+        assert!(!allowed(&packet(&[0x09, 0x01, 0x01, 0x00, 0x01, 0x00]), true));
     }
 
     #[test]
@@ -272,7 +302,7 @@ mod tests {
 
     #[test]
     fn a_short_write_is_one_packet_with_the_length() {
-        let packets = write_packets(&[9; 15], PACKET);
+        let packets = write_packets(&[9; 15], PACKET, MARKER);
         assert_eq!(packets.len(), 1);
         assert_eq!(&packets[0][..7], &[0x08, 0x06, 0x00, 15, 0, 0, 0]);
         assert_eq!(&packets[0][7..22], &[9; 15]);
@@ -282,11 +312,11 @@ mod tests {
     #[test]
     fn a_long_write_continues_in_more_packets() {
         let data: Vec<u8> = (0..130).map(|i| i as u8).collect();
-        let packets = write_packets(&data, PACKET);
+        let packets = write_packets(&data, PACKET, MARKER);
         // 57 bytes in the first packet, 61 in each of the others.
         assert_eq!(packets.len(), 3);
         // With 128-byte packets: 121, then 125.
-        let big = write_packets(&data, 128);
+        let big = write_packets(&data, 128, MARKER);
         assert_eq!(big.len(), 2);
         assert!(big.iter().all(|p| p.len() == 128));
         assert_eq!(big[1][3], 121);
@@ -334,6 +364,22 @@ mod tests {
         // Report id 0, then the packet.
         assert_eq!(&sent[0][..4], &[0x00, 0x08, 0x02, 0x13]);
         assert_eq!(sent[0].len(), PACKET + 1);
+    }
+
+    #[test]
+    fn a_device_behind_a_receiver_gets_its_channel_in_every_packet() {
+        let sent = Default::default();
+        let mut dev = BragiDevice::new(Echo { sent: std::sync::Arc::clone(&sent), status: 0 }, PACKET);
+        // The receiver answers 4, 2, 7 to every read: bits 2 (0b100) for property 0x36.
+        assert_eq!(dev.connected_channels().unwrap(), [2]);
+        dev.set_channel(2);
+        dev.firmware().unwrap();
+        dev.set_lighting_allowed(true);
+        dev.write_lighting(&[Rgb { r: 1, g: 2, b: 3 }]).unwrap();
+        let sent = sent.lock().unwrap();
+        assert_eq!(sent[0][1], 0x08, "the receiver itself");
+        assert_eq!(sent[1][1], 0x0A, "channel 2");
+        assert_eq!(sent[2][1], 0x0A);
     }
 
     #[test]

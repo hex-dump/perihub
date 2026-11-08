@@ -102,6 +102,21 @@ pub const MODELS: &[CorsairModel] = &[
     keyboard(0x2B04, "MAKR 75", 512, 137),
 ];
 
+/// Wireless receivers (Slipstream and older ones of the same generation), from the protocol page.
+pub const RECEIVERS: &[(u16, &str)] = &[
+    (0x1BA6, "SLIPSTREAM WIRELESS USB Receiver"),
+    (0x1BDC, "SLIPSTREAM WIRELESS USB Receiver"),
+    (0x2B00, "SLIPSTREAM WIRELESS USB Receiver"),
+    (0x1B65, "HARPOON RGB WIRELESS receiver"),
+    (0x1B7F, "DARK CORE RGB PRO SE receiver"),
+    (0x1B81, "DARK CORE RGB PRO receiver"),
+    (0x1B66, "IRONCLAW RGB WIRELESS receiver"),
+];
+
+pub fn is_receiver(product_id: u16) -> bool {
+    RECEIVERS.iter().any(|&(id, _)| id == product_id)
+}
+
 pub fn find(product_id: u16) -> Option<&'static CorsairModel> {
     MODELS.iter().find(|m| m.product_id == product_id)
 }
@@ -118,6 +133,15 @@ mod tests {
         assert_eq!(ids.len(), MODELS.len());
         assert!(MODELS.iter().all(|m| matches!(m.packet, 64 | 128 | 256 | 512 | 1024)));
         assert!(MODELS.iter().filter(|m| m.kind == Kind::Mouse).all(|m| m.leds <= 15));
+    }
+
+    #[test]
+    fn receivers_match_the_protocol_page() {
+        let page = include_str!("../../../../docs/protocols/corsair-bragi.md");
+        for (id, name) in RECEIVERS {
+            assert!(page.contains(&format!("| {name} | `{id:04x}` |")), "{name} {id:04x}");
+            assert!(find(*id).is_none(), "a receiver is not a device");
+        }
     }
 
     #[test]

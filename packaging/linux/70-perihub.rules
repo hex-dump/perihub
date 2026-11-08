@@ -207,3 +207,18 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bc5", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bab", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair MAKR 75
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b04", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair wireless receivers (experimental, untested): only the control interface.
+# Corsair SLIPSTREAM WIRELESS USB Receiver
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1ba6", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SLIPSTREAM WIRELESS USB Receiver
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bdc", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SLIPSTREAM WIRELESS USB Receiver
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b00", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair HARPOON RGB WIRELESS receiver
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b65", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair DARK CORE RGB PRO SE receiver
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b7f", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair DARK CORE RGB PRO receiver
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b81", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair IRONCLAW RGB WIRELESS receiver
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b66", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"

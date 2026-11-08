@@ -23,12 +23,16 @@ const IDLE: Duration = Duration::from_secs(60);
 /// works (see [`CorsairTask::keep_lighting`]). The interface counts down 15 seconds and turns
 /// it off itself; this is the fallback if the window was closed or stopped answering.
 const CONFIRM_WITHIN: Duration = Duration::from_secs(20);
+/// How often PeriHub checks that a device behind a receiver is still connected.
+const PRESENCE_CHECK: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Clone, Serialize)]
 pub struct CorsairInfo {
     pub product_id: u16,
     pub model: String,
     pub kind: super::models::Kind,
+    /// Connected through its wireless receiver: the receiver's USB product id.
+    pub receiver: Option<u16>,
     pub leds: u8,
     pub firmware: Option<String>,
     /// 1 = hardware (its own settings), 2 = software (a program drives it), as read at connection.
@@ -47,6 +51,9 @@ pub struct CorsairTask {
     last_keep_alive: Instant,
     /// When lighting is turned off unless the user confirms that the device still works.
     confirm_by: Option<Instant>,
+    /// Behind a receiver: its channel, and when PeriHub last checked that it is still connected.
+    channel: Option<u8>,
+    last_presence_check: Instant,
     closed: bool,
 }
 
@@ -100,6 +107,7 @@ impl CorsairTask {
             product_id: model.product_id,
             model: model.name.into(),
             kind: model.kind,
+            receiver: None,
             leds: model.leds,
             firmware,
             mode,
@@ -117,7 +125,24 @@ impl CorsairTask {
             info.dpi,
             info.read_errors
         );
-        Ok(Self { dev, info, last_keep_alive: Instant::now(), confirm_by: None, closed: false })
+        Ok(Self {
+            dev,
+            info,
+            last_keep_alive: Instant::now(),
+            confirm_by: None,
+            channel: None,
+            last_presence_check: Instant::now(),
+            closed: false,
+        })
+    }
+
+    /// Opens the device on `channel` of a receiver (see [`CorsairTask::open`]).
+    pub fn open_behind(mut dev: BragiDevice, model: &'static CorsairModel, receiver: u16, channel: u8) -> Result<Self> {
+        dev.set_channel(channel);
+        let mut task = Self::open(dev, model)?;
+        task.info.receiver = Some(receiver);
+        task.channel = Some(channel);
+        Ok(task)
     }
 
     /// Shows one colour on every LED (experimental). The first time it takes the device into
@@ -213,20 +238,33 @@ impl DeviceTask for CorsairTask {
         if self.closed {
             return Err(Error::NotConnected);
         }
+        // Behind a receiver the device can be turned off or fall asleep: the thread stops, and the
+        // manager finds it again when it is back.
+        if let Some(channel) = self.channel
+            && self.last_presence_check.elapsed() >= PRESENCE_CHECK
+        {
+            self.last_presence_check = Instant::now();
+            if !self.dev.connected_channels()?.contains(&channel) {
+                log::info!("Corsair {}: turned off or asleep behind its receiver", self.info.model);
+                self.release();
+                return Err(Error::Unreachable);
+            }
+        }
+        let idle = if self.channel.is_some() { PRESENCE_CHECK } else { IDLE };
         if self.info.lighting.is_none() {
-            return Ok(IDLE);
+            return Ok(idle);
         }
         if self.confirm_by.is_some_and(|at| Instant::now() >= at) {
             log::warn!("Corsair {}: lighting was not confirmed: giving the device back", self.info.model);
             self.release();
-            return Ok(IDLE);
+            return Ok(idle);
         }
         if self.last_keep_alive.elapsed() >= KEEP_ALIVE {
             let others = crate::conflicts::corsair_programs_running();
             if !others.is_empty() {
                 log::warn!("Corsair {}: {} started: giving the device back", self.info.model, others.join(", "));
                 self.release();
-                return Ok(IDLE);
+                return Ok(idle);
             }
             self.last_keep_alive = Instant::now();
             if let Err(e) = self.dev.keep_alive() {
@@ -235,7 +273,7 @@ impl DeviceTask for CorsairTask {
                 return Err(e);
             }
         }
-        let next = KEEP_ALIVE.saturating_sub(self.last_keep_alive.elapsed());
+        let next = KEEP_ALIVE.saturating_sub(self.last_keep_alive.elapsed()).min(idle);
         Ok(match self.confirm_by {
             Some(at) => next.min(at.saturating_duration_since(Instant::now())),
             None => next,
@@ -263,6 +301,8 @@ mod tests {
         sent: Arc<Mutex<Vec<Vec<u8>>>>,
         /// Commands answered with this status instead of success.
         fail: Arc<Mutex<Option<(u8, u8)>>>,
+        /// Behind a receiver: the channels connected (property 0x36).
+        channels: Arc<Mutex<u8>>,
     }
 
     impl Transport for FakeMouse {
@@ -283,12 +323,15 @@ mod tests {
             }
             if last[1] == 0x02 {
                 // mode 1 (hardware), 1000 Hz (4), 1600 DPI, firmware 1.2.3
-                buf[3..7].copy_from_slice(match last[2] {
-                    0x03 => &[1, 0, 0, 0],
-                    0x01 => &[4, 0, 0, 0],
-                    0x21 => &[0x40, 0x06, 0, 0],
-                    _ => &[1, 2, 3, 0],
-                });
+                let channels = *self.channels.lock().unwrap();
+                let value: [u8; 4] = match last[2] {
+                    0x03 => [1, 0, 0, 0],
+                    0x01 => [4, 0, 0, 0],
+                    0x21 => [0x40, 0x06, 0, 0],
+                    0x36 => [channels, 0, 0, 0],
+                    _ => [1, 2, 3, 0],
+                };
+                buf[3..7].copy_from_slice(&value);
             }
             Ok(64)
         }
@@ -367,6 +410,24 @@ mod tests {
         task.keep_lighting();
         task.tick().unwrap();
         assert!(task.info.lighting.is_some());
+    }
+
+    #[test]
+    fn a_device_behind_a_receiver_stops_when_it_is_turned_off() {
+        let fake = FakeMouse::default();
+        *fake.channels.lock().unwrap() = 0b10;
+        let model = models::find(0x1B4C).unwrap();
+        let mut task = CorsairTask::open_behind(BragiDevice::new(fake.clone(), 64), model, 0x1BA6, 1).unwrap();
+        assert_eq!(task.info.receiver, Some(0x1BA6));
+        // Every request after opening went to channel 1.
+        assert!(fake.sent.lock().unwrap().iter().all(|p| p[0] == 0x09));
+        task.last_presence_check = Instant::now() - PRESENCE_CHECK;
+        task.tick().unwrap();
+        // The check asks the receiver itself.
+        assert_eq!(&fake.sent.lock().unwrap().last().unwrap()[..3], &[0x08, 0x02, 0x36]);
+        *fake.channels.lock().unwrap() = 0;
+        task.last_presence_check = Instant::now() - PRESENCE_CHECK;
+        assert!(matches!(task.tick(), Err(Error::Unreachable)));
     }
 
     #[test]

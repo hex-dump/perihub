@@ -18,6 +18,7 @@ const info: CorsairInfo = {
   product_id: 0x1b70,
   model: "M55 RGB PRO",
   kind: "mouse",
+  receiver: null,
   leds: 2,
   firmware: "4.5.12",
   mode: 1,
