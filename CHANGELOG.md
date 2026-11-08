@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — 2026-11-08
+
+More devices: the Logitech G300 read-only, and Corsair mice, keyboards and wireless receivers, experimental. Untested Logitech mice can be edited at your own risk.
 
 ### Added
 - **Logitech G300 (read-only).** PeriHub shows the three profiles stored in the G300: light colour, report rate, DPI levels with the default one, and what each button does, G4 to G9 as printed on the mouse, plus the active profile and DPI level. Nothing is changed: the G300 code can only read. Checked against a real G300 and Logitech Gaming Software in issue #16, thanks to omeggga.

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PeriHub for your peripherals: open-source alternative to G HUB and GG</title>
-  <meta name="description" content="Free, open-source app for your gaming peripherals on Windows and Linux, without Logitech G HUB or SteelSeries GG: lighting, DPI, buttons, key remapping and macros, with no account and no telemetry.">
+  <meta name="description" content="Free, open-source app for your gaming peripherals on Windows and Linux, without Logitech G HUB, SteelSeries GG or Corsair iCUE: lighting, DPI, buttons, key remapping and macros, with no account and no telemetry.">
   <link rel="canonical" href="https://hex-dump.github.io/perihub/">
   <meta name="google-site-verification" content="KVLvAEzYk0dIyE8OSqlv4WGCeTM5UA_0ox9jzblj8tQ">
   <meta name="theme-color" content="#0e0f13">
@@ -22,7 +22,7 @@
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "PeriHub",
-    "description": "Free, open-source app to configure gaming keyboards and mice on Windows and Linux, without SteelSeries GG or Logitech G HUB.",
+    "description": "Free, open-source app to configure gaming keyboards and mice on Windows and Linux, without SteelSeries GG, Logitech G HUB or Corsair iCUE.",
     "url": "https://hex-dump.github.io/perihub/",
     "image": "https://hex-dump.github.io/perihub/social-preview.png",
     "applicationCategory": "UtilitiesApplication",
@@ -153,7 +153,7 @@
         </div>
         <div class="device-group test">
           <h3><span class="chip test">Read-only</span> Not supported yet</h3>
-          <p>29 more <b>Logitech G mice</b> are recognized: 26 with a USB cable, and 15 wireless models through their LIGHTSPEED receiver. PeriHub shows their profiles, DPI, buttons, lighting and battery, but changes nothing until someone confirms that the model works.</p>
+          <p>29 more <b>Logitech G mice</b> are recognized: 26 with a USB cable, and 15 wireless models through their LIGHTSPEED receiver. PeriHub shows their profiles, DPI, buttons, lighting and battery, but changes nothing until someone confirms that the model works. From 0.6.0 you can also turn on <b>experimental editing</b> for one of them, at your own risk: only with the USB cable, and every save is backed up and undone after 15 seconds unless you keep it.</p>
           <h4 class="models-title">With a USB cable</h4>
           <ul class="models">
               <li>Logitech G502 Proteus Core</li>
@@ -198,6 +198,63 @@
               <li>Logitech G305</li>
               <li>Logitech G603</li>
               <li>Logitech G604</li>
+          </ul>
+          <p class="after-models">The <b>Logitech G300</b> is shown read-only from 0.6.0: its three profiles, light colour, DPI levels and buttons, checked against a real G300.</p>
+          <p class="after-models">From 0.6.0, <b>26 Corsair mice</b> and <b>23 Corsair keyboards</b> of the newer generation are recognized, on their USB cable or through their Slipstream receiver. Nobody has tested them yet: PeriHub reads them, and can try one colour of lighting for the session, at your own risk.</p>
+          <h4 class="models-title">Corsair mice</h4>
+          <ul class="models">
+              <li>Corsair KATAR PRO</li>
+              <li>Corsair KATAR PRO XT</li>
+              <li>Corsair M55 RGB PRO</li>
+              <li>Corsair M65 RGB ULTRA</li>
+              <li>Corsair M75</li>
+              <li>Corsair SABRE RGB PRO</li>
+              <li>Corsair SABRE PRO CS</li>
+              <li>Corsair IRONCLAW RGB WIRELESS</li>
+              <li>Corsair IRONCLAW WIRELESS SE</li>
+              <li>Corsair DARK CORE RGB PRO</li>
+              <li>Corsair DARK CORE RGB PRO SE</li>
+              <li>Corsair HARPOON RGB WIRELESS</li>
+              <li>Corsair HARPOON V2</li>
+              <li>Corsair M65 RGB ULTRA WIRELESS</li>
+              <li>Corsair M75 WIRELESS</li>
+              <li>Corsair M75 AIR WIRELESS</li>
+              <li>Corsair NIGHTSABRE WIRELESS</li>
+              <li>Corsair SCIMITAR RGB ELITE WIRELESS</li>
+              <li>Corsair SCIMITAR ELITE WIRELESS SE</li>
+              <li>Corsair SABRE RGB PRO WIRELESS</li>
+              <li>Corsair DARKSTAR RGB WIRELESS</li>
+              <li>Corsair SABRE V2 PRO</li>
+              <li>Corsair SABRE V2 PRO MG</li>
+              <li>Corsair SABRE V2 PRO CF</li>
+              <li>Corsair SCIMITAR RGB ELITE</li>
+              <li>Corsair M55</li>
+          </ul>
+          <h4 class="models-title">Corsair keyboards</h4>
+          <ul class="models">
+              <li>Corsair K55 PRO RGB</li>
+              <li>Corsair K55 RGB PRO XT</li>
+              <li>Corsair K55 CORE RGB</li>
+              <li>Corsair K55 CORE TKL RGB</li>
+              <li>Corsair K57 RGB WIRELESS</li>
+              <li>Corsair K60 RGB PRO</li>
+              <li>Corsair K60 RGB PRO LP</li>
+              <li>Corsair K65 PLUS WIRELESS</li>
+              <li>Corsair K65 PRO MINI</li>
+              <li>Corsair K65 RGB MINI</li>
+              <li>Corsair K70 CORE RGB</li>
+              <li>Corsair K70 CORE TKL</li>
+              <li>Corsair K70 CORE TKL WIRELESS</li>
+              <li>Corsair K70 MAX</li>
+              <li>Corsair K70 PRO</li>
+              <li>Corsair K70 PRO MINI WIRELESS</li>
+              <li>Corsair K70 PRO TKL</li>
+              <li>Corsair K70 RGB TKL</li>
+              <li>Corsair K70 RGB TKL CS</li>
+              <li>Corsair K95 RGB PLATINUM XT</li>
+              <li>Corsair K100 RGB</li>
+              <li>Corsair K100 AIR WIRELESS</li>
+              <li>Corsair MAKR 75</li>
           </ul>
           <p class="after-models">The <b>SteelSeries Apex 3</b> (not TKL) is recognized, but PeriHub sends nothing to it yet.</p>
         </div>

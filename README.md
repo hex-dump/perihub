@@ -18,7 +18,7 @@
 ![Keyboard lighting](docs/screenshots/keyboard-lighting.png)
 
 - **Fully supported now:** the SteelSeries Apex 3 TKL keyboard and the Logitech G502 HERO mouse.
-- **Not supported yet:** 29 more Logitech G mice are recognized in read-only mode until someone tests them, 26 Corsair mice and 23 Corsair keyboards from the next version, and more devices are on the way. See [Supported hardware](#supported-hardware) and the [Hardware roadmap](#hardware-roadmap).
+- **Not supported yet:** 29 more Logitech G mice are recognized in read-only mode until someone tests them, 26 Corsair mice and 23 Corsair keyboards (from 0.6.0), and more devices are on the way. See [Supported hardware](#supported-hardware) and the [Hardware roadmap](#hardware-roadmap).
 
 ## Contents
 
@@ -66,11 +66,11 @@ While a game or an app is in focus, PeriHub can show one of your saved keyboard 
 
 PeriHub only reads the app's identifier (the executable name on Windows, the window class on Linux), never window titles or contents, and keeps nothing but your rules.
 
-### Corsair mice and keyboards (experimental, from the next version)
+### Corsair mice and keyboards (experimental, from 0.6.0)
 
 PeriHub recognizes 26 Corsair mice that speak Corsair's newer protocol, on their USB cable: KATAR PRO, KATAR PRO XT, M55 RGB PRO, M65 RGB ULTRA, M75, SABRE RGB PRO and SABRE PRO CS, and, connected with the cable, the wireless IRONCLAW RGB WIRELESS, IRONCLAW WIRELESS SE, DARK CORE RGB PRO, DARK CORE RGB PRO SE, HARPOON RGB WIRELESS, HARPOON V2, M65 RGB ULTRA WIRELESS, M75 WIRELESS, M75 AIR WIRELESS, NIGHTSABRE WIRELESS, SCIMITAR RGB ELITE WIRELESS, SCIMITAR ELITE WIRELESS SE, SABRE RGB PRO WIRELESS, DARKSTAR RGB WIRELESS and SABRE V2 PRO (also MG and CF, without lighting), plus the SCIMITAR RGB ELITE and the M55. The wireless ones are also recognized through their receiver (Slipstream and the older receivers of the same generation; not the Slipstream V2): PeriHub opens the first device connected to a receiver, and notices when it is turned off. PeriHub also recognizes 23 Corsair keyboards (K55 PRO, K55 CORE, K57, K60 PRO, K65 PLUS, K65 MINI, K70 CORE, K70 MAX, K70 PRO, K70 RGB TKL, K95 PLATINUM XT, K100, MAKR 75 and their variants: the full list is in the protocol page) in the same way: read-only, with experimental lighting of one colour on every key. Nobody has tested PeriHub on a Corsair mouse yet, so it reads them only: firmware, polling rate and DPI. **Experimental lighting** (one colour on every LED) can be turned on for the session, after a warning: PeriHub takes the mouse into software mode, as iCUE does, and gives it back to its own settings when it is turned off, when PeriHub quits and as soon as anything fails. Nothing is written to the mouse's memory, and the code refuses every command that lighting does not need. **No warranty:** turning it on means you use it at your own risk; the author is not responsible for any damage. The protocol, as PeriHub uses it, is described in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md). If you own one of these mice, a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) with the report from its page helps get it supported.
 
-### Logitech G300 (read-only, from the next version)
+### Logitech G300 (read-only, from 0.6.0)
 
 The G300 does not speak the protocol of the other Logitech mice: it keeps three profiles in reports of its own. PeriHub reads them and shows each profile's light colour, report rate, DPI levels and what every button does (G4 to G9 as printed on the mouse), with the active profile and DPI level. It changes nothing: the code that talks to the G300 can only read. The format comes from libratbag and was checked against a real G300 and Logitech Gaming Software in [issue #16](https://github.com/hex-dump/perihub/issues/16). Editing can come once more owners confirm it.
 
@@ -80,7 +80,7 @@ The G300 does not speak the protocol of the other Logitech mice: it keeps three 
 
 From version 0.5.0 the 15 wireless models are also recognized through their LIGHTSPEED receiver, read-only too: three of them, the G305, G603 and G604, have no data cable. PeriHub also shows their battery, and when the mouse is turned off or asleep it says so and finds it again once it wakes up.
 
-**Experimental editing (from the next version).** If you want to edit one of these mice before anyone has tested it, the mouse page has **Edit anyway…**. It is off by default, asks you to confirm the risk, and works only when all of these hold:
+**Experimental editing (from 0.6.0).** If you want to edit one of these mice before anyone has tested it, the mouse page has **Edit anyway…**. It is off by default, asks you to confirm the risk, and works only when all of these hold:
 
 - the mouse is connected with its USB cable, not through a receiver;
 - its memory is laid out like the G502 HERO's: the same profile format and 256-byte sectors.
@@ -105,8 +105,8 @@ PeriHub accepts only the DPI and polling values the mouse itself reports, and le
 | SteelSeries Apex 3 TKL | `1038:1622` (firmware 3.0.4) | ✅ Supported, tested on real hardware |
 | Logitech G502 HERO | `046d:c08b` | ✅ Supported, tested on real hardware |
 | Other Logitech G mice, with a USB cable (from 0.5.0 also with a LIGHTSPEED receiver) | listed below | 🧪 Experimental, read-only |
-| 26 Corsair mice and 23 Corsair keyboards, on their USB cable or wireless receiver (listed in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md#mice-perihub-recognizes)) | `1b1c:…` | 🧪 From the next version: experimental, read-only plus session lighting |
-| Logitech G300 | `046d:c246` | 🧪 From the next version: read-only ([issue #16](https://github.com/hex-dump/perihub/issues/16)) |
+| 26 Corsair mice and 23 Corsair keyboards, on their USB cable or wireless receiver (listed in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md#mice-perihub-recognizes)) | `1b1c:…` | 🧪 From 0.6.0: experimental, read-only plus session lighting |
+| Logitech G300 | `046d:c246` | 🧪 From 0.6.0: read-only ([issue #16](https://github.com/hex-dump/perihub/issues/16)) |
 | SteelSeries Apex 3 | `1038:161a` | From 0.5.0 recognized, not supported yet: PeriHub sends nothing to it ([issue #9](https://github.com/hex-dump/perihub/issues/9)) |
 
 <details>
@@ -159,7 +159,7 @@ PeriHub is meant to support much more than these two devices. The plan is to add
 
 - **Logitech G mice using HID++ 2.0.** 29 more models are already recognized in read-only mode. Version 0.5.0 adds LIGHTSPEED receivers, read-only too. Next: enable editing as owners confirm them.
 - **Other SteelSeries keyboards**, such as the rest of the Apex range.
-- **Corsair mice and keyboards.** 26 mice and 23 keyboards are recognized on their cable from the next version (see [Corsair mice](#corsair-mice-and-keyboards-experimental-from-the-next-version)). Next: more than one device on the same receiver, and the Slipstream V2 receiver.
+- **Corsair mice and keyboards.** 26 mice and 23 keyboards are recognized from 0.6.0 (see [Corsair mice](#corsair-mice-and-keyboards-experimental-from-060)). Next: more than one device on the same receiver, and the Slipstream V2 receiver.
 - **SteelSeries mice.**
 - **Headsets and other peripherals**, where the hardware exposes useful settings.
 - **More languages** for the UI, and more layouts for the key remapping view.
@@ -220,7 +220,7 @@ sudo udevadm control --reload && sudo udevadm trigger
 
 The rule grants access only to the HID interfaces of the supported devices, and only to the user with the active session. On the Apex 3 TKL it opens only the configuration interface: the interfaces that report what you type stay closed. On a LIGHTSPEED receiver it opens only the HID++ interface, which carries settings: mouse movements and typing arrive on the receiver's other interfaces, which stay closed. If you already use OpenRGB with its udev rules, you probably don't need it.
 
-From version 0.5.0 the rule includes the LIGHTSPEED receivers: if you installed it by hand for the AppImage, install it again with the commands above. The packages update it on their own.
+From version 0.5.0 the rule includes the LIGHTSPEED receivers: if you installed it by hand for the AppImage, install it again with the commands above. The same goes for 0.6.0, which adds the Logitech G300 and the Corsair mice, keyboards and receivers (only their control interface). The packages update it on their own.
 
 <a id="optional-reactive-lighting"></a>
 
