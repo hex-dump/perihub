@@ -7,11 +7,22 @@
     model: string;
     /** Seconds before the changes are undone. */
     seconds?: number;
+    /** What happens without an answer, instead of putting the backup back. */
+    undoText?: string;
+    /** What to check, instead of the buttons that were changed. */
+    checkText?: string;
     onkeep: () => void;
     onundo: () => void;
   }
 
-  let { model, seconds = 15, onkeep, onundo }: Props = $props();
+  let {
+    model,
+    seconds = 15,
+    undoText = "puts back the backup",
+    checkText = "move it, click, try the buttons you changed",
+    onkeep,
+    onundo,
+  }: Props = $props();
 
   let left = $state(0);
   let done = false;
@@ -50,8 +61,8 @@
   <div class="dialog col" role="alertdialog" aria-modal="true" aria-labelledby="keep-title" aria-describedby="keep-text">
     <h2 id="keep-title">Keep these changes?</h2>
     <p id="keep-text">
-      Check that the {model} works as expected: move it, click, try the buttons you changed. Without an answer, PeriHub
-      puts back the backup in <b>{left}</b> seconds.
+      Check that the {model} works as expected: {checkText}. Without an answer, PeriHub
+      {undoText} in <b>{left}</b> seconds.
     </p>
     <div class="row end">
       <button bind:this={undoButton} onclick={() => finish(false)}>Undo now</button>

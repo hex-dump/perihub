@@ -5,11 +5,12 @@
   import Keyboard from "./pages/Keyboard.svelte";
   import AppProfiles from "./pages/AppProfiles.svelte";
   import Mouse from "./pages/Mouse.svelte";
+  import CorsairMouse from "./pages/CorsairMouse.svelte";
   import Settings from "./pages/Settings.svelte";
   import Icon from "./components/Icon.svelte";
 
-  type Page = "keyboard" | "mouse" | "profiles" | "settings";
-  const PAGES: Page[] = ["keyboard", "mouse", "profiles", "settings"];
+  type Page = "keyboard" | "mouse" | "corsair" | "profiles" | "settings";
+  const PAGES: Page[] = ["keyboard", "mouse", "corsair", "profiles", "settings"];
 
   // Navigation through the URL hash (#page or #page:tab), so a page can be opened directly.
   function fromHash(): [Page, string | undefined] {
@@ -34,6 +35,8 @@
     mouse_asleep: null,
     unsupported_keyboard: null,
     conflicts: [],
+    corsair_mouse: null,
+    corsair_error: null,
   });
 
   onMount(() => {
@@ -77,6 +80,18 @@
       </span>
     </button>
 
+    {#if status.corsair_mouse || status.corsair_error || page === "corsair"}
+      <button class:active={page === "corsair"} onclick={() => go("corsair")}>
+        <Icon name="mouse" />
+        <span class="col tight">
+          <span class="name">{status.corsair_mouse ? `Corsair ${status.corsair_mouse.model}` : "Corsair mouse"}</span>
+          <span class="state" class:on={!!status.corsair_mouse}>
+            {status.corsair_mouse ? "Experimental" : "Not connected"}
+          </span>
+        </span>
+      </button>
+    {/if}
+
     <div class="grow"></div>
     <button class:active={page === "profiles"} onclick={() => go("profiles")}>
       <Icon name="profiles" />
@@ -107,6 +122,8 @@
           />{/key}
       {:else if page === "mouse"}
         {#key tab}<Mouse info={status.mouse} error={status.mouse_error} asleep={status.mouse_asleep} initialTab={tab} />{/key}
+      {:else if page === "corsair"}
+        <CorsairMouse info={status.corsair_mouse} error={status.corsair_error} />
       {:else if page === "profiles"}
         <AppProfiles {status} />
       {:else}

@@ -117,6 +117,9 @@ pub fn update_available(available: State<'_, Available>) -> Option<UpdateInfo> {
 pub async fn update_install(app: AppHandle) -> Result<(), String> {
     let update = find(&app).await?.ok_or("PeriHub is already up to date")?;
     log::info!("installing PeriHub {}", update.version);
+    // The installer closes PeriHub without asking: give a Corsair mouse back first.
+    let manager = app.state::<crate::AppState>().manager.clone();
+    let _ = tauri::async_runtime::spawn_blocking(move || manager.release_corsair()).await;
     update.download_and_install(|_, _| {}, || {}).await.map_err(|e| format!("update failed: {e}"))?;
     // On Windows the installer has already closed PeriHub; elsewhere start the new version.
     app.restart()

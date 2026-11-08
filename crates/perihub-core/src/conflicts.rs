@@ -28,7 +28,33 @@ impl Conflict {
 
 const ALL: &[Conflict] = &[Conflict::LogitechGHub];
 
-/// Conflicting programs that are running now. Always empty on Linux, where they do not exist.
+/// Programs that drive Corsair mice, by executable name (lowercase). Two programs driving the same
+/// Corsair mouse can leave it unable to click (OpenRGB issue 4843), so PeriHub's experimental
+/// lighting stays off while one of them runs. Names from their build files and packages:
+/// openrgb (Arch package), ckb-next and ckb-next-daemon (CMake targets), OpenLinkHub (its systemd
+/// unit). iCUE's is the name of its main executable, not yet seen on a real PC.
+const CORSAIR_PROGRAMS: &[(&str, &str)] = &[
+    ("openrgb", "OpenRGB"),
+    ("openrgb.exe", "OpenRGB"),
+    ("ckb-next", "ckb-next"),
+    ("ckb-next-daemon", "ckb-next"),
+    ("openlinkhub", "OpenLinkHub"),
+    ("icue.exe", "Corsair iCUE"),
+];
+
+/// Programs that drive Corsair mice and are running now, by name, without repeats.
+pub fn corsair_programs_running() -> Vec<&'static str> {
+    corsair_programs_in(&process_names())
+}
+
+fn corsair_programs_in(names: &[String]) -> Vec<&'static str> {
+    let mut found: Vec<&'static str> =
+        CORSAIR_PROGRAMS.iter().filter(|(exe, _)| names.iter().any(|n| n == exe)).map(|&(_, name)| name).collect();
+    found.dedup();
+    found
+}
+
+/// Conflicting programs that are running now. G HUB only exists on Windows.
 pub fn running() -> Vec<Conflict> {
     let names = process_names();
     ALL.iter().copied().filter(|c| c.processes().iter().any(|p| names.iter().any(|n| n == p))).collect()
@@ -61,7 +87,36 @@ fn process_names() -> Vec<String> {
     names
 }
 
+/// Lowercase names of the running processes, from /proc (empty where there is none).
 #[cfg(not(windows))]
 fn process_names() -> Vec<String> {
-    Vec::new()
+    let Ok(dir) = std::fs::read_dir("/proc") else { return Vec::new() };
+    dir.flatten()
+        .filter(|e| e.file_name().to_string_lossy().bytes().all(|b| b.is_ascii_digit()))
+        .filter_map(|e| std::fs::read_to_string(e.path().join("comm")).ok())
+        .map(|name| name.trim().to_lowercase())
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn programs_that_drive_corsair_mice_are_found_by_name() {
+        let names = |list: &[&str]| list.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert!(corsair_programs_in(&names(&["zsh", "perihub", "firefox"])).is_empty());
+        assert_eq!(corsair_programs_in(&names(&["ckb-next", "ckb-next-daemon"])), ["ckb-next"]);
+        assert_eq!(corsair_programs_in(&names(&["openlinkhub", "icue.exe"])), ["OpenLinkHub", "Corsair iCUE"]);
+        // Only whole names: a process that merely contains the name does not count.
+        assert!(corsair_programs_in(&names(&["openrgb-helper"])).is_empty());
+    }
+
+    #[test]
+    fn process_names_can_be_read() {
+        // This test itself is running.
+        if cfg!(target_os = "linux") {
+            assert!(!process_names().is_empty());
+        }
+    }
 }

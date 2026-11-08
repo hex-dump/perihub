@@ -32,3 +32,16 @@ fn udev_rule_opens_only_the_hidpp_interface_of_the_receivers() {
     let in_list = RECEIVERS.iter().map(|id| format!("{id:04x}")).collect();
     assert_eq!(sorted(in_rule), sorted(in_list));
 }
+
+#[test]
+fn udev_rule_opens_only_the_control_interface_of_the_corsair_mice() {
+    use perihub_core::corsair::models::MODELS as CORSAIR;
+    let lines: Vec<&str> = RULE.lines().filter(|line| line.contains(r#"ATTRS{idVendor}=="1b1c""#)).collect();
+    for line in &lines {
+        assert!(line.contains(r#"ENV{ID_USB_INTERFACE_NUM}=="01""#), "{line}");
+    }
+    let in_rule =
+        lines.iter().map(|line| line.split(r#"ATTRS{idProduct}==""#).nth(1).unwrap()[..4].to_string()).collect();
+    let in_list = CORSAIR.iter().map(|m| format!("{:04x}", m.product_id)).collect();
+    assert_eq!(sorted(in_rule), sorted(in_list));
+}

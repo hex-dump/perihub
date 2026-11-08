@@ -78,3 +78,18 @@ KERNEL=="hidraw*", KERNELS=="0003:046D:C543.*", ENV{ID_USB_INTERFACE_NUM}=="02",
 KERNEL=="hidraw*", KERNELS=="0003:046D:C545.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 KERNEL=="hidraw*", KERNELS=="0003:046D:C547.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 KERNEL=="hidraw*", KERNELS=="0003:046D:C54D.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+# Corsair mice (experimental, untested): only the control interface; the others report movements and clicks.
+# Corsair KATAR PRO
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b93", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair KATAR PRO XT
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bac", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair M55 RGB PRO
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b70", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair M65 RGB ULTRA
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b9e", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair M75
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bf0", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SABRE RGB PRO
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b79", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair SABRE PRO CS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b7a", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"

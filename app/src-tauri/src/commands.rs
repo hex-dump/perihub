@@ -2,7 +2,9 @@
 //! so they run off the main thread to avoid freezing the window.
 
 use perihub_core::apex::{KeyBinding, keys};
+use perihub_core::color::Rgb;
 use perihub_core::config::{AppProfiles, BackupEntry, KeyboardConfig, LightingPreset};
+use perihub_core::corsair::mouse::CorsairMouseInfo;
 use perihub_core::effects::KeyboardLighting;
 use perihub_core::focus::{self, FocusSupport};
 use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
@@ -280,14 +282,67 @@ pub async fn mouse_set_experimental(app: AppHandle, product_id: u16, enabled: bo
     .map_err(|e| e.to_string())?
 }
 
-/// "Turn off experimental editing" in the tray menu.
+/// "Turn off experimental editing" in the tray menu: Logitech mice and Corsair lighting.
 pub fn turn_off_experimental(app: &AppHandle) {
     let app = app.clone();
     std::thread::spawn(move || {
         if let Err(error) = set_experimental(&app, Vec::clear) {
             log::warn!("turning off experimental editing: {error}");
         }
+        app.state::<AppState>().manager.release_corsair();
+        corsair_changed(&app);
     });
+}
+
+// ---- Corsair mouse (experimental) ----
+
+/// Tells the interface and the tray menu that the Corsair mouse's lighting changed.
+fn corsair_changed(app: &AppHandle) {
+    crate::window::refresh_menu(app);
+    let _ = app.emit("devices-changed", app.state::<AppState>().manager.status());
+}
+
+#[tauri::command]
+pub async fn corsair_set_lighting(app: AppHandle, color: Rgb) -> CmdResult<CorsairMouseInfo> {
+    let manager = app.state::<AppState>().manager.clone();
+    let result = blocking({
+        let manager = manager.clone();
+        move || manager.corsair_mouse()?.call(move |m| m.set_lighting(color))
+    })
+    .await;
+    // On error the mouse was given back: the status shows it either way.
+    if let Ok(worker) = manager.corsair_mouse()
+        && let Ok(info) = worker.call(|m| Ok(m.info()))
+    {
+        manager.corsair_changed(&info);
+    }
+    corsair_changed(&app);
+    result
+}
+
+/// The user checked that the mouse still works: the core stops counting down to give it back.
+#[tauri::command]
+pub async fn corsair_keep_lighting(state: State<'_, AppState>) -> CmdResult<()> {
+    let manager = state.manager.clone();
+    blocking(move || {
+        manager.corsair_mouse()?.call(|m| {
+            m.keep_lighting();
+            Ok(())
+        })
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn corsair_lighting_off(app: AppHandle) -> CmdResult<()> {
+    let manager = app.state::<AppState>().manager.clone();
+    blocking(move || {
+        manager.release_corsair();
+        Ok(())
+    })
+    .await?;
+    corsair_changed(&app);
+    Ok(())
 }
 
 fn set_experimental(app: &AppHandle, change: impl FnOnce(&mut Vec<u16>)) -> CmdResult<Vec<u16>> {

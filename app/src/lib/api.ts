@@ -278,6 +278,24 @@ export interface DeviceStatus {
   unsupported_keyboard: string | null;
   /** Running programs that take control of the devices, such as "Logitech G HUB". */
   conflicts: string[];
+  /** A Corsair mouse (experimental support). */
+  corsair_mouse: CorsairMouseInfo | null;
+  corsair_error: string | null;
+}
+
+export interface CorsairMouseInfo {
+  product_id: number;
+  model: string;
+  leds: number;
+  firmware: string | null;
+  /** 1 = hardware (its own settings), 2 = software (a program drives it), as read at connection. */
+  mode: number | null;
+  polling_hz: number | null;
+  dpi: number | null;
+  /** What could not be read. */
+  read_errors: string[];
+  /** The colour shown on every LED while experimental lighting is on ("#rrggbb"). */
+  lighting: string | null;
 }
 
 export interface AppSettings {
@@ -373,6 +391,11 @@ export const api = {
     invoke<number[]>("mouse_set_experimental", { productId, enabled }),
   onExperimental: (handler: (ids: number[]) => void): Promise<UnlistenFn> =>
     listen<number[]>("experimental-changed", (event) => handler(event.payload)),
+  /** Experimental lighting on a Corsair mouse: one colour on every LED, for this session. */
+  corsairSetLighting: (color: string) => invoke<CorsairMouseInfo>("corsair_set_lighting", { color }),
+  corsairLightingOff: () => invoke<void>("corsair_lighting_off"),
+  /** The mouse still works: the core stops counting down to give it back. */
+  corsairKeepLighting: () => invoke<void>("corsair_keep_lighting"),
   /** Keeps a save to an untested mouse: the core stops counting down to undo it. */
   keepChanges: () => invoke<void>("mouse_keep_changes"),
   /** Puts back the mouse memory saved before the last write. */

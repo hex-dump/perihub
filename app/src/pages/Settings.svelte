@@ -142,8 +142,9 @@
     <h2>Credits</h2>
     <p class="small">PeriHub {version}</p>
     <p class="muted small">
-      Protocols reconstructed thanks to the work of OpenRGB (Apex lighting), libratbag (Logitech HID++) and
-      gorkemgun/apex-3-tkl (Apex key mapping). PeriHub is not affiliated with SteelSeries or Logitech.
+      Protocols reconstructed thanks to the work of OpenRGB (Apex lighting), libratbag (Logitech HID++),
+      gorkemgun/apex-3-tkl (Apex key mapping), ckb-next and OpenLinkHub (Corsair, no code copied). PeriHub is not
+      affiliated with SteelSeries, Logitech or Corsair.
     </p>
   </div>
 

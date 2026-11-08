@@ -37,6 +37,8 @@ const status: DeviceStatus = {
   mouse_asleep: null,
   unsupported_keyboard: null,
   conflicts: [],
+  corsair_mouse: null,
+  corsair_error: null,
 };
 
 const autostartBox = () => screen.getByRole("checkbox", { name: /Start PeriHub when I log in/ }) as HTMLInputElement;
