@@ -10,6 +10,8 @@ const cable: MouseInfo = {
   model: "G502 HERO",
   name: "G502 HERO Gaming Mouse",
   verified: true,
+  experimental: false,
+  pending_undo: false,
   receiver: false,
   link: null,
   host_mode: false,

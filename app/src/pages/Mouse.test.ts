@@ -15,6 +15,11 @@ const api = vi.hoisted(() => ({
   openTestForm: vi.fn(),
   mouseBackups: vi.fn(),
   restoreMouseBackup: vi.fn(),
+  experimentalMice: vi.fn(),
+  setExperimental: vi.fn(),
+  onExperimental: vi.fn(),
+  keepChanges: vi.fn(),
+  undoLastWrite: vi.fn(),
 }));
 
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
@@ -28,6 +33,8 @@ const info: MouseInfo = {
   model: "G502 HERO",
   name: "G502 HERO Gaming Mouse",
   verified: true,
+  experimental: false,
+  pending_undo: false,
   receiver: false,
   link: null,
   host_mode: false,
@@ -99,6 +106,11 @@ beforeEach(() => {
   api.saveProfile.mockImplementation(async () => state());
   api.setActiveProfile.mockImplementation(async () => ({ ...state(), active_profile: 2 }));
   api.appSettings.mockResolvedValue({ system: "linux x86_64" });
+  api.experimentalMice.mockResolvedValue([]);
+  api.setExperimental.mockImplementation(async (id: number, on: boolean) => (on ? [id] : []));
+  api.onExperimental.mockResolvedValue(() => {});
+  api.keepChanges.mockResolvedValue(undefined);
+  api.undoLastWrite.mockImplementation(async () => ({ state: state(), profiles: [1], macros: false, directory: false }));
 });
 
 afterEach(() => {
@@ -210,6 +222,72 @@ describe("the experimental notice", () => {
 
     await open();
     expect(screen.queryByRole("button", { name: "Copy test report" })).toBeNull();
+  });
+});
+
+describe("experimental editing", () => {
+  const untested = { ...info, model: "G403 HERO", product_id: 0xc08f, verified: false, writable: false };
+  const experimental = { ...untested, experimental: true, writable: true };
+
+  it("is off by default: the editor stays read-only", async () => {
+    await open(untested);
+    expect(firstLevel().matches(":disabled")).toBe(true);
+    expect((screen.getByRole("button", { name: "Save to mouse" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("turns on only after the risk is acknowledged", async () => {
+    await open(untested);
+    await fireEvent.click(screen.getByRole("button", { name: "Edit anyway…" }));
+    const turnOn = screen.getByRole("button", { name: "Turn on experimental editing" }) as HTMLButtonElement;
+    expect(turnOn.disabled).toBe(true);
+    await fireEvent.click(screen.getByRole("checkbox", { name: /I understand/ }));
+    expect(turnOn.disabled).toBe(false);
+    await fireEvent.click(turnOn);
+    await wait(0);
+    expect(api.setExperimental).toHaveBeenCalledWith(0xc08f, true);
+  });
+
+  it("is not offered behind a LIGHTSPEED receiver", async () => {
+    await open({ ...untested, receiver: true });
+    expect(screen.queryByRole("button", { name: "Edit anyway…" })).toBeNull();
+  });
+
+  it("enables the editor but not enabling or disabling profiles", async () => {
+    await open(experimental);
+    expect(firstLevel().matches(":disabled")).toBe(false);
+    const enabled = screen.getAllByRole("checkbox", { name: "Enabled" }) as HTMLInputElement[];
+    expect(enabled.every((c) => c.disabled)).toBe(true);
+  });
+
+  it("asks to keep a save, and undoes it after 15 seconds without an answer", async () => {
+    await open(experimental);
+    await changeFirstLevel(1000);
+    await fireEvent.click(screen.getByRole("button", { name: "Save to mouse" }));
+    await wait(0);
+    expect(screen.getByRole("alertdialog").textContent).toContain("Keep these changes?");
+    await wait(15_000);
+    expect(api.undoLastWrite).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(screen.getByText("Changes undone: the backup is back on the mouse.")).toBeTruthy();
+  });
+
+  it("keeps a save when asked", async () => {
+    await open(experimental);
+    await changeFirstLevel(1000);
+    await fireEvent.click(screen.getByRole("button", { name: "Save to mouse" }));
+    await wait(0);
+    await fireEvent.click(screen.getByRole("button", { name: "Keep changes" }));
+    await wait(20_000);
+    expect(api.keepChanges).toHaveBeenCalledOnce();
+    expect(api.undoLastWrite).not.toHaveBeenCalled();
+  });
+
+  it("does not ask on a tested mouse", async () => {
+    await open();
+    await changeFirstLevel(1000);
+    await fireEvent.click(screen.getByRole("button", { name: "Save to mouse" }));
+    await wait(0);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 });
 

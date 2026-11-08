@@ -1,6 +1,6 @@
 //! Detects supported devices when they are plugged in or unplugged.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ffi::{CStr, CString};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -165,14 +165,19 @@ pub type Listener = Box<dyn Fn(&DeviceStatus) + Send + Sync>;
 pub struct Manager {
     slots: Arc<Mutex<Slots>>,
     keyboard_config: Arc<Mutex<KeyboardConfig>>,
+    /// USB product ids of untested mice with experimental editing turned on.
+    experimental_mice: Arc<Mutex<HashSet<u16>>>,
 }
 
 impl Manager {
     /// Starts detection in the background. `listener` is called on every change.
-    pub fn start(keyboard_config: KeyboardConfig, listener: Listener) -> Self {
+    /// `experimental_mice`: untested models the user chose to edit anyway (see
+    /// [`Manager::set_experimental_mice`]).
+    pub fn start(keyboard_config: KeyboardConfig, experimental_mice: &[u16], listener: Listener) -> Self {
         let manager = Self {
             slots: Arc::new(Mutex::new(Slots::default())),
             keyboard_config: Arc::new(Mutex::new(keyboard_config)),
+            experimental_mice: Arc::new(Mutex::new(experimental_mice.iter().copied().collect())),
         };
         let background = manager.clone();
         thread::Builder::new()
@@ -320,8 +325,8 @@ impl Manager {
                 let result = info
                     .open_device(api)
                     .map_err(Error::from)
-                    .and_then(|dev| HidppDevice::new(dev, model.device_index, !model.verified))
-                    .and_then(|dev| MouseTask::open(dev, model));
+                    .and_then(|dev| HidppDevice::new(dev, model.device_index, !self.may_write(model)))
+                    .and_then(|dev| MouseTask::open(dev, model, self.experimental(model)));
                 changed |= self.install_mouse(result, info.path(), model, None);
             }
             // No mouse with a cable: look behind the receivers.
@@ -363,7 +368,13 @@ impl Manager {
                 log::info!(
                     "mouse connected: {} ({}{}), firmware {}",
                     mouse.model,
-                    if mouse.verified { "tested" } else { "read-only" },
+                    if mouse.verified {
+                        "tested"
+                    } else if mouse.experimental {
+                        "experimental editing"
+                    } else {
+                        "read-only"
+                    },
                     via.as_deref().map(|via| format!(", through {via}")).unwrap_or_default(),
                     mouse.firmware.iter().map(|f| format!("{} {}", f.name, f.version)).collect::<Vec<_>>().join(", ")
                 );
@@ -435,8 +446,9 @@ impl Manager {
                 };
                 let wireless_id = model.wireless_id.unwrap_or_default();
                 let link = ReceiverLink { receiver_id: paths.0.product_id(), slot, wireless_id };
+                // Experimental editing needs the cable: behind a receiver an untested model stays read-only.
                 let result = open_behind(api, paths, slot, !model.verified)
-                    .and_then(|dev| MouseTask::open(dev, model))
+                    .and_then(|dev| MouseTask::open(dev, model, false))
                     .map(|mut task| {
                         task.info.link = Some(link);
                         task
@@ -537,6 +549,48 @@ impl Manager {
     pub fn set_keyboard_config(&self, config: KeyboardConfig) {
         *self.keyboard_config.lock().unwrap() = config;
     }
+
+    fn experimental(&self, model: &MouseModel) -> bool {
+        !model.verified && self.experimental_mice.lock().unwrap().contains(&model.product_id)
+    }
+
+    /// A tested model, or an untested one with experimental editing: PeriHub may send it commands
+    /// that change it. [`MouseTask::open`] still keeps it from saving if its memory differs from
+    /// the G502 HERO's.
+    fn may_write(&self, model: &MouseModel) -> bool {
+        model.verified || self.experimental(model)
+    }
+
+    /// Turns experimental editing on for these untested models, and off for the others. A connected
+    /// mouse whose setting changed is opened again, since a read-only connection stays read-only
+    /// until it is closed. Its thread first undoes a save that was not kept (see
+    /// [`MouseTask::close`]), so this can take a few seconds.
+    pub fn set_experimental_mice(&self, ids: &[u16]) {
+        let new: HashSet<u16> = ids.iter().copied().collect();
+        let old = std::mem::replace(&mut *self.experimental_mice.lock().unwrap(), new.clone());
+        let worker = {
+            let slots = self.slots.lock().unwrap();
+            slots
+                .mouse
+                .as_ref()
+                .filter(|(_, info)| !info.verified && old.contains(&info.product_id) != new.contains(&info.product_id))
+                .map(|(worker, _)| worker.clone())
+        };
+        let Some(worker) = worker else { return };
+        log::info!("experimental editing changed: opening the mouse again");
+        // While this runs the slot still holds the mouse, so the hotplug thread does not open it a
+        // second time; afterwards the old thread stops at its next tick.
+        if let Err(e) = worker.call(|m| m.close()) {
+            log::warn!("closing the mouse: {e}");
+        }
+        let mut slots = self.slots.lock().unwrap();
+        if slots.mouse.as_ref().is_some_and(|(w, _)| w.same(&worker)) {
+            slots.mouse = None;
+            slots.mouse_path = None;
+            slots.mouse_host_mode = None;
+            slots.mouse_failed = None;
+        }
+    }
 }
 
 fn is_permission_error(error: &Error) -> bool {
@@ -549,5 +603,31 @@ fn open_error_message(error: Error) -> String {
         "permission denied: install the PeriHub udev rule (see the README)".into()
     } else {
         error.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn manager(experimental: &[u16]) -> Manager {
+        Manager {
+            slots: Arc::new(Mutex::new(Slots::default())),
+            keyboard_config: Arc::new(Mutex::new(KeyboardConfig::default())),
+            experimental_mice: Arc::new(Mutex::new(experimental.iter().copied().collect())),
+        }
+    }
+
+    #[test]
+    fn untested_mice_stay_read_only_unless_experimental_editing_is_on_for_them() {
+        let g502 = models::find(0xC08B).unwrap();
+        let g403 = models::find(0xC083).unwrap();
+        let g903 = models::find(0xC086).unwrap();
+        let manager = manager(&[0xC083]);
+        assert!(manager.may_write(g502), "tested");
+        assert!(manager.may_write(g403), "experimental editing on");
+        assert!(!manager.may_write(g903), "experimental editing off");
+        manager.set_experimental_mice(&[]);
+        assert!(!manager.may_write(g403), "turned off again");
     }
 }

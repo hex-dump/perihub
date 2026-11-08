@@ -23,6 +23,12 @@ const ONBOARD_MODE: u8 = 1;
 const HOST_MODE: u8 = 2;
 /// How often the mouse is checked for another program having taken control of it.
 const MODE_CHECK: Duration = Duration::from_secs(5);
+/// After a save to an untested model, the backup goes back by itself unless the change is kept
+/// (see [`MouseTask::keep_changes`]). The interface counts down 15 seconds and undoes it itself;
+/// this is the fallback if the window was closed or stopped answering.
+const UNDO_AFTER: Duration = Duration::from_secs(20);
+/// A save that was not kept is undone when the mouse is opened again, but not a day later.
+const PENDING_UNDO_MAX_AGE: Duration = Duration::from_secs(24 * 60 * 60);
 
 #[derive(Debug, Clone, Serialize)]
 pub struct MouseInfo {
@@ -33,6 +39,13 @@ pub struct MouseInfo {
     pub name: String,
     /// Tested with PeriHub: unverified models are read-only.
     pub verified: bool,
+    /// Untested model that the user chose to edit anyway, and that meets every condition for it
+    /// (see [`experimental_allowed`]).
+    pub experimental: bool,
+    /// A save to this untested mouse was neither kept nor undone (PeriHub was closed, or the mouse
+    /// unplugged, during the countdown), and the mouse is read-only now: turning experimental
+    /// editing on again puts the backup back.
+    pub pending_undo: bool,
     /// Connected through a LIGHTSPEED receiver instead of its cable.
     pub receiver: bool,
     /// Which receiver and slot, for test reports.
@@ -95,6 +108,28 @@ pub struct MouseTask {
     last_profile: u8,
     /// A DPI or LED preview is shown instead of the saved settings.
     previewing: bool,
+    /// Backup taken before the last write, to undo it (see [`MouseTask::undo_last_write`]).
+    last_backup: Option<String>,
+    /// When the last save to an untested model is undone, unless it is kept.
+    undo_at: Option<Instant>,
+    /// Set before the manager opens the mouse again: the thread stops at its next tick.
+    closed: bool,
+}
+
+/// Whether an untested model may be edited after the user turned experimental editing on. Only
+/// a mouse whose memory looks like the G502 HERO's, the one PeriHub was verified on: the same
+/// profile format and sector size. And only with its cable: a write over the radio that stops
+/// halfway has never been tried.
+pub fn experimental_allowed(enabled: bool, onboard: &OnboardInfo, receiver: bool) -> bool {
+    enabled
+        && !receiver
+        && WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
+        && onboard.sector_size as usize == profile::WRITE_SECTOR_SIZE
+}
+
+/// Whether `new` changes an LED slot of the profile that is not one of the mouse's LED zones.
+fn unknown_led_slots_changed(current: &ProfileSettings, new: &ProfileSettings, zones: &[u8]) -> bool {
+    (0..profile::LED_SLOTS).any(|i| !zones.contains(&(i as u8)) && new.leds.get(i) != current.leds.get(i))
 }
 
 /// What to do after reading the mouse's mode.
@@ -164,16 +199,21 @@ fn missing_as_empty<T>(result: Result<Vec<T>>) -> Result<Vec<T>> {
 }
 
 impl MouseTask {
-    pub fn open(mut dev: HidppDevice, model: &'static MouseModel) -> Result<Self> {
+    /// `experimental`: the user turned experimental editing on for this untested model. It is used
+    /// only if the mouse meets [`experimental_allowed`].
+    pub fn open(mut dev: HidppDevice, model: &'static MouseModel, experimental: bool) -> Result<Self> {
         let onboard = dev.onboard_info()?;
         if onboard.memory_model != 1 || onboard.macro_format != 1 {
             return Err(Error::Protocol("onboard profile memory uses an unknown format".into()));
         }
+        let experimental = !model.verified && experimental_allowed(experimental, &onboard, dev.is_behind_receiver());
         let info = MouseInfo {
             product_id: model.product_id,
             model: model.name.into(),
             name: dev.device_name()?,
             verified: model.verified,
+            experimental,
+            pending_undo: false,
             receiver: dev.is_behind_receiver(),
             link: None,
             host_mode: false,
@@ -181,7 +221,7 @@ impl MouseTask {
             dpi: dev.dpi_capabilities(0)?,
             report_rates_ms: missing_as_empty(dev.report_rates())?,
             led_zones: missing_as_empty(dev.led_zones())?,
-            writable: model.verified && WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format),
+            writable: (model.verified || experimental) && WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format),
             onboard,
         };
         let mut task = Self {
@@ -192,9 +232,13 @@ impl MouseTask {
             last_mode_check: Instant::now(),
             last_profile: 1,
             previewing: false,
+            last_backup: None,
+            undo_at: None,
+            closed: false,
         };
         task.check_mode()?;
         task.info.host_mode = task.host_mode.load(Ordering::SeqCst);
+        task.finish_pending_undo();
         let active = task.dev.active_profile()?;
         if (1..=task.profile_count()).contains(&active) {
             task.last_profile = active;
@@ -255,6 +299,26 @@ impl MouseTask {
             Ok(())
         } else {
             Err(Error::Invalid("saving is not supported on this mouse model yet".into()))
+        }
+    }
+
+    /// Changes that stay in the mouse's RAM (active profile, DPI level, previews): a tested model,
+    /// or an untested one with experimental editing.
+    fn check_controllable(&self) -> Result<()> {
+        if self.model.verified || self.info.experimental {
+            Ok(())
+        } else {
+            Err(Error::Invalid("this mouse model is read-only until it has been tested".into()))
+        }
+    }
+
+    /// The list of enabled profiles (sector 0) is written only on tested models: restoring it has
+    /// not been tried on real hardware yet.
+    fn check_tested(&self) -> Result<()> {
+        if self.model.verified {
+            Ok(())
+        } else {
+            Err(Error::Invalid("enabling or disabling profiles needs a tested mouse model".into()))
         }
     }
 
@@ -428,7 +492,8 @@ impl MouseTask {
         Ok(sector)
     }
 
-    fn backup_all(&mut self, label: &str) -> Result<()> {
+    /// Saves every sector to a backup and returns them.
+    fn backup_all(&mut self, label: &str) -> Result<Vec<Vec<u8>>> {
         let mut files = Vec::new();
         for sector in 0..self.info.onboard.sector_count as u16 {
             files.push((format!("sector_{sector:04x}.bin"), self.dev.read_sector(sector, self.sector_size())?));
@@ -436,8 +501,10 @@ impl MouseTask {
         let refs: Vec<(&str, &[u8])> = files.iter().map(|(n, d)| (n.as_str(), d.as_slice())).collect();
         let dir = write_backup(&self.model.backup_dir(), label, &refs)?;
         // The folder name only: the full path would put the user's name in the log file.
-        log::info!("mouse backup saved: {}", dir.file_name().unwrap_or_default().to_string_lossy());
-        Ok(())
+        let id = dir.file_name().unwrap_or_default().to_string_lossy().into_owned();
+        log::info!("mouse backup saved: {id}");
+        self.last_backup = Some(id);
+        Ok(files.into_iter().map(|(_, data)| data).collect())
     }
 
     fn write_verified(&mut self, sector: u16, data: &[u8]) -> Result<()> {
@@ -509,17 +576,23 @@ impl MouseTask {
         if caps.step > 0 && settings.dpi_levels.iter().any(|d| !(d - caps.min).is_multiple_of(caps.step)) {
             return Err(Error::Invalid(format!("DPI values must be multiples of {}", caps.step)));
         }
+        let mut sector = self.read_profile_sector(number)?;
+        if !self.model.verified {
+            self.check_led_slots(&sector, settings)?;
+        }
         let mut settings = settings.clone();
         let macro_sectors = self.place_macros(&mut settings)?;
-        let mut sector = self.read_profile_sector(number)?;
         settings.apply(&mut sector)?;
-        self.backup_all(&format!("profile{number}"))?;
-        // Macros first: if writing stops halfway, the profile still points to the old ones.
-        for (id, data) in &macro_sectors {
-            self.write_verified(*id as u16, data)?;
-        }
-        self.write_verified(number as u16, &sector)?;
-        self.reload_if_active(number)?;
+        self.backup_before_writing(&format!("profile{number}"))?;
+        let written = (|| {
+            // Macros first: if writing stops halfway, the profile still points to the old ones.
+            for (id, data) in &macro_sectors {
+                self.write_verified(*id as u16, data)?;
+            }
+            self.write_verified(number as u16, &sector)?;
+            self.reload_if_active(number)
+        })();
+        self.after_writing(written)?;
         self.state()
     }
 
@@ -527,10 +600,117 @@ impl MouseTask {
         self.check_writable()?;
         self.check_number(number)?;
         let sector = self.read_factory_sector(number)?;
-        self.backup_all(&format!("factory{number}"))?;
-        self.write_verified(number as u16, &sector)?;
-        self.reload_if_active(number)?;
+        self.backup_before_writing(&format!("factory{number}"))?;
+        let written = (|| {
+            self.write_verified(number as u16, &sector)?;
+            self.reload_if_active(number)
+        })();
+        self.after_writing(written)?;
         self.state()
+    }
+
+    /// Backs up the memory before a save. On an untested model the backup must be one PeriHub can
+    /// put back, and the undo is armed before the first write, so that a save that stops halfway
+    /// is undone too, also if PeriHub is closed or the mouse unplugged (see [`Self::finish_pending_undo`]).
+    fn backup_before_writing(&mut self, label: &str) -> Result<()> {
+        let sectors = self.backup_all(label)?;
+        if !self.info.experimental {
+            return Ok(());
+        }
+        check_backup(&sectors, &self.info.onboard).map_err(|e| {
+            Error::Invalid(format!("nothing was saved: PeriHub could not undo a save on this mouse ({e})"))
+        })?;
+        let id = self.last_backup.clone().unwrap_or_default();
+        std::fs::write(self.pending_undo_path(), &id)?;
+        self.undo_at = Some(Instant::now() + UNDO_AFTER);
+        Ok(())
+    }
+
+    /// On an untested model a failed save is undone at once.
+    fn after_writing(&mut self, written: Result<()>) -> Result<()> {
+        let Err(error) = written else { return Ok(()) };
+        if !self.info.experimental {
+            return Err(error);
+        }
+        match self.undo_last_write() {
+            Ok(_) => Err(Error::Protocol(format!("{error}. The backup was put back."))),
+            Err(undo) => Err(Error::Protocol(format!(
+                "{error}. Putting the backup back failed too ({undo}): try Backups…, or Logitech G HUB."
+            ))),
+        }
+    }
+
+    /// File that marks a save to an untested model that was neither kept nor undone yet. It keeps
+    /// the backup's id, so that the save is undone even after PeriHub was closed.
+    fn pending_undo_path(&self) -> std::path::PathBuf {
+        config::config_dir().join("backups").join(self.model.backup_dir()).join("pending-undo")
+    }
+
+    /// The user checked the mouse after a save and keeps the changes.
+    pub fn keep_changes(&mut self) {
+        self.undo_at = None;
+        let _ = std::fs::remove_file(self.pending_undo_path());
+    }
+
+    /// When the mouse is opened: a save that was neither kept nor undone (PeriHub closed, mouse
+    /// unplugged during the countdown) is undone now, if the mouse can be written to. A day later
+    /// the backup is too old to put back blindly: the mark is dropped.
+    fn finish_pending_undo(&mut self) {
+        let path = self.pending_undo_path();
+        let Ok(id) = std::fs::read_to_string(&path) else { return };
+        let id = id.trim().to_string();
+        let stamp = id.split('-').next().and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
+        let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+        if now.saturating_sub(stamp) > PENDING_UNDO_MAX_AGE.as_secs() {
+            log::warn!("a save that was not kept is too old to undo now: backup {id} left alone");
+            let _ = std::fs::remove_file(&path);
+            return;
+        }
+        if !self.info.writable {
+            self.info.pending_undo = true;
+            return;
+        }
+        log::warn!("a save to this mouse was not kept before PeriHub closed or the mouse was unplugged: undoing it");
+        self.last_backup = Some(id);
+        if let Err(e) = self.undo_last_write() {
+            log::warn!("undo failed: {e}");
+        }
+    }
+
+    /// Before the manager opens the mouse again (experimental editing turned off): a save that was
+    /// not kept is undone while the mouse can still be written to, then the thread stops.
+    pub fn close(&mut self) -> Result<()> {
+        if self.undo_at.is_some() {
+            log::warn!("experimental editing turned off before a save was kept: undoing it");
+            if let Err(e) = self.undo_last_write() {
+                log::warn!("undo failed: {e}");
+            }
+        }
+        self.closed = true;
+        Ok(())
+    }
+
+    /// On an untested model, LED slots that the mouse does not report as zones keep their bytes:
+    /// PeriHub only knows what they mean on the G502 HERO.
+    fn check_led_slots(&self, sector: &[u8], settings: &ProfileSettings) -> Result<()> {
+        let current = ProfileSettings::parse(sector, self.info.onboard.button_count as usize)?;
+        let zones: Vec<u8> = self.info.led_zones.iter().map(|z| z.index).collect();
+        if unknown_led_slots_changed(&current, settings, &zones) {
+            return Err(Error::Invalid("this mouse has no such LED zone".into()));
+        }
+        Ok(())
+    }
+
+    /// Puts back the memory saved before the last write: the "Keep these changes?" countdown on an
+    /// untested model calls this when it is not confirmed.
+    pub fn undo_last_write(&mut self) -> Result<MouseRestore> {
+        self.undo_at = None;
+        let id = self.last_backup.clone().ok_or_else(|| Error::Invalid("nothing to undo".into()))?;
+        let restore = self.restore_backup(&id)?;
+        self.last_backup = None;
+        let _ = std::fs::remove_file(self.pending_undo_path());
+        log::info!("last write undone: backup {id} put back");
+        Ok(restore)
     }
 
     /// The backups saved for this mouse model, newest first.
@@ -552,6 +732,9 @@ impl MouseTask {
             .map(|sector| self.dev.read_sector(sector, onboard.sector_size))
             .collect::<Result<Vec<_>>>()?;
         let order = restore_order(&current, &backup, onboard.profile_count as usize);
+        if order.contains(&0) {
+            self.check_tested()?;
+        }
         if !order.is_empty() {
             self.backup_all("restore")?;
             for &sector in &order {
@@ -579,6 +762,7 @@ impl MouseTask {
 
     pub fn set_profile_enabled(&mut self, number: u8, enabled: bool) -> Result<MouseState> {
         self.check_writable()?;
+        self.check_tested()?;
         self.check_number(number)?;
         let mut flags = self.state()?.profiles.iter().map(|p| p.enabled).collect::<Vec<_>>();
         flags[number as usize - 1] = enabled;
@@ -623,6 +807,7 @@ impl MouseTask {
     }
 
     pub fn set_active_profile(&mut self, number: u8) -> Result<()> {
+        self.check_controllable()?;
         self.check_number(number)?;
         match self.dev.set_active_profile(number) {
             // The mouse refuses while another program controls it: check, then try once more.
@@ -640,11 +825,13 @@ impl MouseTask {
     }
 
     pub fn set_active_dpi_index(&mut self, index: u8) -> Result<()> {
+        self.check_controllable()?;
         self.dev.set_active_dpi_index(index)
     }
 
     /// DPI preview (not saved: the mouse goes back to the profile at the next level change).
     pub fn preview_dpi(&mut self, dpi: u16) -> Result<()> {
+        self.check_controllable()?;
         let caps = &self.info.dpi;
         if dpi < caps.min || dpi > caps.max {
             return Err(Error::Invalid(format!("{dpi} DPI")));
@@ -655,6 +842,7 @@ impl MouseTask {
     }
 
     pub fn preview_led(&mut self, zone: u8, effect: &LedEffect) -> Result<()> {
+        self.check_controllable()?;
         let zone = self
             .info
             .led_zones
@@ -670,6 +858,15 @@ impl MouseTask {
 
 impl DeviceTask for MouseTask {
     fn tick(&mut self) -> Result<Duration> {
+        if self.closed {
+            return Err(Error::NotConnected);
+        }
+        if self.undo_at.is_some_and(|at| Instant::now() >= at) {
+            log::warn!("a save to an untested mouse was not kept: undoing it");
+            if let Err(e) = self.undo_last_write() {
+                log::warn!("undo failed: {e}");
+            }
+        }
         // tick also runs after every request: the mode is read only every MODE_CHECK.
         if self.last_mode_check.elapsed() >= MODE_CHECK {
             match self.check_mode() {
@@ -681,7 +878,11 @@ impl DeviceTask for MouseTask {
                 Err(e) => log::debug!("mouse mode check: {e}"),
             }
         }
-        Ok(MODE_CHECK.saturating_sub(self.last_mode_check.elapsed()))
+        let next = MODE_CHECK.saturating_sub(self.last_mode_check.elapsed());
+        Ok(match self.undo_at {
+            Some(at) => next.min(at.saturating_duration_since(Instant::now())),
+            None => next,
+        })
     }
 }
 
@@ -783,6 +984,41 @@ mod tests {
             has_dpi_shift: true,
         };
         (sectors, onboard)
+    }
+
+    #[test]
+    fn experimental_editing_needs_a_memory_like_the_g502_and_the_cable() {
+        let (_, g502) = g502_memory();
+        assert!(experimental_allowed(true, &g502, false));
+        assert!(!experimental_allowed(false, &g502, false), "turned off");
+        assert!(!experimental_allowed(true, &g502, true), "behind a receiver");
+        let other_format = OnboardInfo { profile_format: 3, ..g502.clone() };
+        assert!(!experimental_allowed(true, &other_format, false), "another profile format");
+        let small_sectors = OnboardInfo { sector_size: 240, ..g502.clone() };
+        assert!(!experimental_allowed(true, &small_sectors, false), "smaller sectors (G502 X)");
+        let big_sectors = OnboardInfo { sector_size: 512, ..g502 };
+        assert!(!experimental_allowed(true, &big_sectors, false), "bigger sectors");
+    }
+
+    #[test]
+    fn led_slots_that_are_not_zones_of_the_mouse_keep_their_bytes() {
+        let (memory, onboard) = g502_memory();
+        let current = ProfileSettings::parse(&memory[1], onboard.button_count as usize).unwrap();
+        let mut new = current.clone();
+        assert!(!unknown_led_slots_changed(&current, &new, &[]));
+        new.leds[1] = LedEffect::Off;
+        assert_ne!(new.leds[1], current.leds[1], "the fixture must have an effect in slot 1");
+        assert!(!unknown_led_slots_changed(&current, &new, &[0, 1]), "both zones exist");
+        assert!(unknown_led_slots_changed(&current, &new, &[0]), "only zone 0 exists");
+        assert!(unknown_led_slots_changed(&current, &new, &[]), "a mouse without LEDs");
+    }
+
+    #[test]
+    fn an_untested_mouse_with_a_blank_profile_list_cannot_be_undone_so_it_is_not_saved() {
+        // backup_before_writing refuses a save when check_backup refuses the backup just taken.
+        let (mut memory, onboard) = g502_memory();
+        memory[0] = vec![0xFF; onboard.sector_size as usize];
+        assert!(check_backup(&memory, &onboard).is_err());
     }
 
     #[test]

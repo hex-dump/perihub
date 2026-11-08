@@ -29,7 +29,7 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
     `Mouse: ${mouse.model} (reports itself as "${mouse.name}")`,
     `USB ID: ${usbId(mouse)}`,
     `Connection: ${connection(mouse)}`,
-    `Support: ${mouse.verified ? "tested" : "read-only"}`,
+    `Support: ${mouse.verified ? "tested" : mouse.experimental ? "experimental editing on" : "read-only"}`,
     `Software control: ${mouse.host_mode ? "yes" : "no"}`,
     `Firmware: ${mouse.firmware.map((f) => `${f.name} ${f.version}`).join(", ")}`,
     `Profiles: ${onboard.profile_count}, buttons: ${onboard.button_count}`,

@@ -77,7 +77,7 @@ fn run(args: &[&str]) -> Result<()> {
         return Err(invalid("PeriHub is open: quit it from the tray first, since both would talk to the same devices"));
     };
     let config = AppConfig::load();
-    let manager = Manager::start(config.keyboard, Box::new(|_| {}));
+    let manager = Manager::start(config.keyboard, &[], Box::new(|_| {}));
     wait_for_devices(&manager);
     match args {
         ["status"] => print_json(&manager.status()),

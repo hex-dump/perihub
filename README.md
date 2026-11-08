@@ -72,6 +72,13 @@ PeriHub only reads the app's identifier (the executable name on Windows, the win
 
 From version 0.5.0 the 15 wireless models are also recognized through their LIGHTSPEED receiver, read-only too: three of them, the G305, G603 and G604, have no data cable. PeriHub also shows their battery, and when the mouse is turned off or asleep it says so and finds it again once it wakes up.
 
+**Experimental editing (from the next version).** If you want to edit one of these mice before anyone has tested it, the mouse page has **Edit anyway…**. It is off by default, asks you to confirm the risk, and works only when all of these hold:
+
+- the mouse is connected with its USB cable, not through a receiver;
+- its memory is laid out like the G502 HERO's: the same profile format and 256-byte sectors.
+
+PeriHub accepts only the DPI and polling values the mouse itself reports, and leaves alone the LED settings of zones it does not report. It saves a backup before every write and reads every write back. Enabling or disabling profiles stays off. After each save it asks whether to keep the changes, and puts the backup back by itself after 15 seconds without an answer. If PeriHub is closed or the mouse unplugged before that, it does so the next time the mouse is connected; a save that fails halfway is undone at once, and PeriHub refuses to save if it could not undo it. **Turn off experimental editing** in the tray menu turns it off for every mouse. It is a risk you choose: if it works, a [mouse test report](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml) makes the model fully supported for everyone.
+
 <table>
   <tr>
     <td><img src="docs/screenshots/keyboard-keys.png" alt="Key remapping"></td>

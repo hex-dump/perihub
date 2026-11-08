@@ -60,6 +60,8 @@ pub struct AppConfig {
     pub check_updates: bool,
     /// Macros run by PeriHub, started by buttons that send their trigger key.
     pub software_macros: Vec<crate::softmacro::SoftwareMacro>,
+    /// USB product ids of untested mice that the user chose to edit anyway (experimental editing).
+    pub experimental_mice: Vec<u16>,
 }
 
 impl Default for AppConfig {
@@ -71,6 +73,7 @@ impl Default for AppConfig {
             app_profiles: AppProfiles::default(),
             check_updates: true,
             software_macros: Vec::new(),
+            experimental_mice: Vec::new(),
         }
     }
 }

@@ -58,6 +58,11 @@ impl<T: DeviceTask> Worker<T> {
         Self { tx, alive }
     }
 
+    /// Both handles talk to the same thread.
+    pub fn same(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.alive, &other.alive)
+    }
+
     pub fn is_alive(&self) -> bool {
         self.alive.load(Ordering::SeqCst)
     }

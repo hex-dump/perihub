@@ -6,6 +6,8 @@
   import ConfirmButton from "../components/ConfirmButton.svelte";
   import { mouseRestoreMessage } from "../lib/backups";
   import TestReport from "../components/TestReport.svelte";
+  import ExperimentalDialog from "../components/ExperimentalDialog.svelte";
+  import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import MousePerformance from "./MousePerformance.svelte";
   import MouseButtons from "./MouseButtons.svelte";
   import MouseLighting from "./MouseLighting.svelte";
@@ -36,6 +38,53 @@
   /** Changing it recreates the editors that preview, which drops the previews they have not sent. */
   let previewEpoch = $state(0);
   let battery = $state<Battery | null>(null);
+
+  /** Untested models with experimental editing turned on (USB product ids). */
+  let experimentalMice = $state<number[]>([]);
+  let showExperimental = $state(false);
+  /** A save to an untested mouse waits to be kept or undone. */
+  let confirmKeep = $state(false);
+  /** Tested, or untested with experimental editing: the controls are enabled. */
+  const editable = $derived(!!info && (info.verified || info.experimental));
+  const experimentalOn = $derived(!!info && experimentalMice.includes(info.product_id));
+
+  api.experimentalMice().then((ids) => (experimentalMice = ids)).catch(() => {});
+  const unlistenExperimental = api.onExperimental((ids) => (experimentalMice = ids));
+  onDestroy(() => unlistenExperimental.then((off) => off()));
+
+  async function setExperimental(enabled: boolean) {
+    showExperimental = false;
+    await run(enabled ? "Turning on experimental editing…" : "Turning off experimental editing…", async () => {
+      // The mouse is opened again: the page reloads when the new status arrives.
+      experimentalMice = await api.setExperimental(info!.product_id, enabled);
+    });
+  }
+
+  /** After a save or a factory reset on an untested mouse. */
+  function askToKeep() {
+    if (info?.experimental) confirmKeep = true;
+  }
+
+  async function keep() {
+    confirmKeep = false;
+    await api.keepChanges().catch(() => {});
+  }
+
+  async function undo() {
+    confirmKeep = false;
+    busy = "Putting the backup back…";
+    error = message = null;
+    try {
+      const restored = await api.undoLastWrite();
+      previewing = false;
+      adopt(restored.state);
+      message = "Changes undone: the backup is back on the mouse.";
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      busy = null;
+    }
+  }
 
   function batteryText(b: Battery): string {
     if (b.state === "full") return "Charged";
@@ -79,6 +128,9 @@
   $effect(() => {
     if (info && info !== loadedFor) {
       loadedFor = info;
+      // The mouse was opened again (experimental editing turned off): the core already undid a
+      // save that was not kept.
+      confirmKeep = false;
       run("Reading profiles from the mouse…", api.mouseState).then((s) => s && adopt(s, false));
     }
     if (!info) {
@@ -112,6 +164,7 @@
       previewing = false;
       adopt(next);
       message = `Profile ${selected} saved to the mouse.`;
+      askToKeep();
     }
   }
 
@@ -129,6 +182,7 @@
       previewing = false;
       adopt(next);
       message = `Profile ${selected} restored to factory settings.`;
+      askToKeep();
     }
   }
 
@@ -233,14 +287,47 @@
   </div>
 {/if}
 {#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
-{#if info && !info.verified}
+{#if info && !info.verified && info.experimental}
+  <div class="notice error">
+    <b>Experimental editing is on.</b> PeriHub has not been tested on the {info.model} yet: you can change and save its
+    profiles at your own risk. Every save is backed up, and undone after 15 seconds unless you keep it. If it works,
+    please send a mouse test report.
+    <div class="row report">
+      <TestReport mouse={info} />
+      <button class="tiny" disabled={!!busy} onclick={() => setExperimental(false)}>Turn off</button>
+    </div>
+  </div>
+{:else if info && !info.verified}
   <div class="notice info">
     <b>Experimental support.</b> PeriHub has not been tested on the {info.model}
     {info.receiver ? "through its LIGHTSPEED receiver" : ""} yet, so it only reads the mouse: you can look at its
     profiles, but nothing can be changed. A mouse test report on PeriHub's GitHub page{info.receiver
       ? " (issue #4)"
       : ""} helps get it fully supported.
-    <div class="report"><TestReport mouse={info} /></div>
+    {#if info.pending_undo}
+      <p class="small">
+        <b>A save to this mouse was not kept</b> before PeriHub closed or the mouse was unplugged. Turn experimental
+        editing on again to put the backup back.
+      </p>
+    {/if}
+    {#if experimentalOn && info.receiver}
+      <p class="small">Experimental editing is on for this model, but it needs the USB cable: connect the mouse with it.</p>
+    {:else if experimentalOn}
+      <p class="small">
+        Experimental editing is on for this model, but its memory is not laid out like the G502 HERO's (profile format
+        {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors), so PeriHub keeps it read-only.
+      </p>
+    {/if}
+    <div class="row report">
+      <TestReport mouse={info} />
+      {#if experimentalOn}
+        <button class="tiny" disabled={!!busy} onclick={() => setExperimental(false)}>Turn off experimental editing</button>
+      {:else if info.pending_undo && !info.receiver}
+        <button class="tiny" disabled={!!busy} onclick={() => setExperimental(true)}>Turn on and undo</button>
+      {:else if !info.receiver}
+        <button class="tiny" disabled={!!busy} onclick={() => (showExperimental = true)}>Edit anyway…</button>
+      {/if}
+    </div>
   </div>
   {#if info.host_mode}
     <div class="notice info">
@@ -249,6 +336,9 @@
   {/if}
 {:else if info && !info.writable}
   <div class="notice error">This model uses a profile format that has not been verified yet: editing is disabled.</div>
+{/if}
+{#if info && showExperimental}
+  <ExperimentalDialog model={info.model} onconfirm={() => setExperimental(true)} onclose={() => (showExperimental = false)} />
 {/if}
 {#if info?.verified && info.host_mode}
   <div class="notice error">
@@ -274,7 +364,7 @@
         </button>
         <div class="actions">
           {#if !active}
-            <button class="tiny" disabled={!!busy || !profile.enabled || !info.verified} onclick={() => activate(profile.number)}>
+            <button class="tiny" disabled={!!busy || !profile.enabled || !editable} onclick={() => activate(profile.number)}>
               Make active
             </button>
           {/if}
@@ -282,7 +372,8 @@
             <input
               type="checkbox"
               checked={profile.enabled}
-              disabled={!!busy || !info.writable}
+              disabled={!!busy || !info.writable || !info.verified}
+              title={info.verified ? undefined : "Needs a tested mouse model"}
               onchange={(e) => toggleEnabled(profile.number, (e.target as HTMLInputElement).checked)}
             />
             Enabled
@@ -300,8 +391,8 @@
     <button class:active={tab === "lighting"} onclick={() => changeTab("lighting")}>Lighting</button>
   </div>
 
-  <!-- Unverified models are read-only: every control in the editor is disabled. -->
-  <fieldset disabled={!info.verified}>
+  <!-- Unverified models are read-only unless experimental editing is on: every control in the editor is disabled. -->
+  <fieldset disabled={!editable}>
     {#if tab === "performance"}
       {#key previewEpoch}
         <MousePerformance {info} bind:settings={draft} onpreview={() => (previewing = true)}
@@ -337,6 +428,10 @@
       Save to mouse
     </button>
   </footer>
+
+  {#if confirmKeep}
+    <KeepChangesDialog model={info.model} onkeep={keep} onundo={undo} />
+  {/if}
 
   {#if showBackups}
     <BackupsDialog device={info.model} load={api.mouseBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
@@ -492,5 +587,7 @@
 
   .report {
     margin-top: 10px;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 </style>

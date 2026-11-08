@@ -232,6 +232,11 @@ export interface MouseInfo {
   name: string;
   /** Tested with PeriHub: unverified models are read-only. */
   verified: boolean;
+  /** Untested model that the user chose to edit anyway, and that meets every condition for it:
+   * the G502 HERO's profile format and sector size, connected with its cable. */
+  experimental: boolean;
+  /** A save that was neither kept nor undone waits for experimental editing to be turned on again. */
+  pending_undo: boolean;
   /** Connected through a LIGHTSPEED receiver instead of its cable. */
   receiver: boolean;
   /** Which receiver and slot, for test reports. */
@@ -362,6 +367,16 @@ export const api = {
   previewDpi: (dpi: number) => invoke<void>("mouse_preview_dpi", { dpi }),
   previewLed: (zone: number, effect: LedEffect) => invoke<void>("mouse_preview_led", { zone, effect }),
   revertPreview: () => invoke<void>("mouse_revert_preview"),
+  /** USB product ids of untested mice with experimental editing turned on. */
+  experimentalMice: () => invoke<number[]>("mouse_experimental"),
+  setExperimental: (productId: number, enabled: boolean) =>
+    invoke<number[]>("mouse_set_experimental", { productId, enabled }),
+  onExperimental: (handler: (ids: number[]) => void): Promise<UnlistenFn> =>
+    listen<number[]>("experimental-changed", (event) => handler(event.payload)),
+  /** Keeps a save to an untested mouse: the core stops counting down to undo it. */
+  keepChanges: () => invoke<void>("mouse_keep_changes"),
+  /** Puts back the mouse memory saved before the last write. */
+  undoLastWrite: () => invoke<MouseRestore>("mouse_undo_last_write"),
 
   profiles: () => invoke<ProfilesInfo>("profiles_get"),
   setProfiles: (profiles: AppProfiles) => invoke<void>("profiles_set", { profiles }),

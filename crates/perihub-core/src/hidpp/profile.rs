@@ -22,7 +22,7 @@ pub const DPI_SLOTS: usize = 5;
 pub const BUTTON_SLOTS: usize = 16;
 pub const LED_SLOTS: usize = 2;
 /// Sector size of the profiles PeriHub writes, verified on the G502 HERO.
-const WRITE_SECTOR_SIZE: usize = 256;
+pub const WRITE_SECTOR_SIZE: usize = 256;
 /// Smallest sector that holds every field PeriHub reads, and the CRC after them. Some mice
 /// (the G502 X) report sectors smaller than 256 bytes: they can be read, not written.
 const READ_SECTOR_SIZE: usize = OFF_LEDS + LED_LEN * LED_SLOTS + 2;

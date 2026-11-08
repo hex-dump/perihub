@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Experimental editing for untested Logitech mice.** **Edit anyway…** on the mouse page lets you change and save the profiles of a mouse nobody has tested yet, at your own risk. It is off by default and needs the USB cable and a memory laid out like the G502 HERO's. PeriHub accepts only the DPI and polling values the mouse reports, backs up and reads back every write, and after each save asks whether to keep the changes: without an answer the backup goes back after 15 seconds. Enabling or disabling profiles stays off. The tray menu has **Turn off experimental editing**. The test report says whether it was on.
+
 ## 0.5.5 — 2026-11-07
 
 Backups can now be restored from the app.
