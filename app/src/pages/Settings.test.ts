@@ -38,6 +38,8 @@ const status: DeviceStatus = {
   unsupported_keyboard: null,
   conflicts: [],
   corsair: [],
+  g300: null,
+  g300_error: null,
   corsair_error: null,
 };
 

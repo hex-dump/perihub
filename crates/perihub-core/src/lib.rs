@@ -9,6 +9,7 @@ pub mod corsair;
 pub mod effects;
 pub mod error;
 pub mod focus;
+pub mod g300;
 pub mod hidpp;
 pub mod keyboard;
 pub mod manager;

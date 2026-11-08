@@ -78,6 +78,9 @@ KERNEL=="hidraw*", KERNELS=="0003:046D:C543.*", ENV{ID_USB_INTERFACE_NUM}=="02",
 KERNEL=="hidraw*", KERNELS=="0003:046D:C545.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 KERNEL=="hidraw*", KERNELS=="0003:046D:C547.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 KERNEL=="hidraw*", KERNELS=="0003:046D:C54D.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+# Logitech G300 (read only): interface 1, which holds its profiles. It also has a keyboard collection,
+# which sends only the keys assigned to the mouse's own buttons.
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c246", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair mice (experimental, untested), on their USB cable: only the control interface; the others report movements and clicks.
 # Corsair KATAR PRO
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b93", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"

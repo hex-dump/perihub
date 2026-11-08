@@ -278,9 +278,41 @@ export interface DeviceStatus {
   unsupported_keyboard: string | null;
   /** Running programs that take control of the devices, such as "Logitech G HUB". */
   conflicts: string[];
+  /** A Logitech G300 (read only). */
+  g300: G300Info | null;
+  g300_error: string | null;
   /** Corsair mice and keyboards (experimental support). */
   corsair: CorsairInfo[];
   corsair_error: string | null;
+}
+
+export type G300Button =
+  | { type: "none" }
+  | { type: "mouse"; button: number }
+  | { type: "dpi_up" | "dpi_down" | "dpi_cycle" | "profile_cycle" | "dpi_shift" | "dpi_default" }
+  | { type: "key"; modifiers: number; key: number }
+  | { type: "unknown"; code: number; modifiers: number; key: number };
+
+export interface G300Profile {
+  number: number;
+  /** "#rrggbb": the G300's light is on or off per channel. */
+  color: string;
+  report_rate_hz: number | null;
+  dpi_levels: number[];
+  default_level: number | null;
+  /** Byte 7, not fully understood: with a DPI shift button, the shift DPI / 250. */
+  shift_byte: number;
+  buttons: G300Button[];
+  raw: string;
+}
+
+export interface G300Info {
+  product_id: number;
+  model: string;
+  active_profile: number;
+  active_level: number;
+  profiles: G300Profile[];
+  active_raw: string;
 }
 
 export interface CorsairInfo {
@@ -394,6 +426,7 @@ export const api = {
     invoke<number[]>("mouse_set_experimental", { productId, enabled }),
   onExperimental: (handler: (ids: number[]) => void): Promise<UnlistenFn> =>
     listen<number[]>("experimental-changed", (event) => handler(event.payload)),
+  g300Info: () => invoke<G300Info>("g300_info"),
   /** Experimental lighting on a Corsair mouse: one colour on every LED, for this session. */
   corsairSetLighting: (productId: number, color: string) =>
     invoke<CorsairInfo>("corsair_set_lighting", { productId, color }),

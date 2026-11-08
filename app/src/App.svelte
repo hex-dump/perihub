@@ -6,11 +6,12 @@
   import AppProfiles from "./pages/AppProfiles.svelte";
   import Mouse from "./pages/Mouse.svelte";
   import CorsairDevice from "./pages/CorsairDevice.svelte";
+  import G300 from "./pages/G300.svelte";
   import Settings from "./pages/Settings.svelte";
   import Icon from "./components/Icon.svelte";
 
-  type Page = "keyboard" | "mouse" | "corsair" | "profiles" | "settings";
-  const PAGES: Page[] = ["keyboard", "mouse", "corsair", "profiles", "settings"];
+  type Page = "keyboard" | "mouse" | "g300" | "corsair" | "profiles" | "settings";
+  const PAGES: Page[] = ["keyboard", "mouse", "g300", "corsair", "profiles", "settings"];
 
   // Navigation through the URL hash (#page or #page:tab), so a page can be opened directly.
   function fromHash(): [Page, string | undefined] {
@@ -37,6 +38,8 @@
     unsupported_keyboard: null,
     conflicts: [],
     corsair: [],
+    g300: null,
+    g300_error: null,
     corsair_error: null,
   });
 
@@ -87,6 +90,15 @@
       </span>
     </button>
 
+    {#if status.g300 || status.g300_error || page === "g300"}
+      <button class:active={page === "g300"} onclick={() => go("g300")}>
+        <Icon name="mouse" />
+        <span class="col tight">
+          <span class="name">Logitech G300</span>
+          <span class="state" class:on={!!status.g300}>{status.g300 ? "Read-only" : "Not connected"}</span>
+        </span>
+      </button>
+    {/if}
     {#each status.corsair as device (device.product_id)}
       <button
         class:active={page === "corsair" && corsairShown?.product_id === device.product_id}
@@ -139,6 +151,8 @@
           />{/key}
       {:else if page === "mouse"}
         {#key tab}<Mouse info={status.mouse} error={status.mouse_error} asleep={status.mouse_asleep} initialTab={tab} />{/key}
+      {:else if page === "g300"}
+        <G300 info={status.g300} error={status.g300_error} />
       {:else if page === "corsair"}
         {#key corsairShown?.product_id}<CorsairDevice info={corsairShown} error={status.corsair_error} />{/key}
       {:else if page === "profiles"}

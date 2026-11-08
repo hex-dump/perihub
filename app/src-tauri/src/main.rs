@@ -165,6 +165,7 @@ fn main() {
             commands::mouse_set_experimental,
             commands::mouse_undo_last_write,
             commands::mouse_keep_changes,
+            commands::g300_info,
             commands::corsair_set_lighting,
             commands::corsair_lighting_off,
             commands::corsair_keep_lighting,

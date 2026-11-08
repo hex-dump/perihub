@@ -7,6 +7,7 @@ use perihub_core::config::{AppProfiles, BackupEntry, KeyboardConfig, LightingPre
 use perihub_core::corsair::device::CorsairInfo;
 use perihub_core::effects::KeyboardLighting;
 use perihub_core::focus::{self, FocusSupport};
+use perihub_core::g300::G300Info;
 use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
 use perihub_core::keyboard::{Keymap, KeymapRestore};
 use perihub_core::mouse::{MouseLive, MouseRestore, MouseState};
@@ -292,6 +293,15 @@ pub fn turn_off_experimental(app: &AppHandle) {
         app.state::<AppState>().manager.release_corsair();
         corsair_changed(&app);
     });
+}
+
+// ---- Logitech G300 (read only) ----
+
+/// The G300's profiles, with the active profile and DPI level read again now.
+#[tauri::command]
+pub async fn g300_info(state: State<'_, AppState>) -> CmdResult<G300Info> {
+    let manager = state.manager.clone();
+    blocking(move || manager.g300()?.call(|g| g.info())).await
 }
 
 // ---- Corsair mice and keyboards (experimental) ----

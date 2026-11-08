@@ -16,6 +16,7 @@ use crate::conflicts::{self, Conflict};
 use crate::corsair::device::{CorsairInfo, CorsairTask};
 use crate::corsair::{self, BragiDevice};
 use crate::error::{Error, Result};
+use crate::g300::{self, G300Info, G300Task};
 use crate::hidpp::models::{self, MouseModel};
 use crate::hidpp::receiver::{self, Presence};
 use crate::hidpp::{HidppDevice, Transport};
@@ -167,6 +168,9 @@ pub struct DeviceStatus {
     pub unsupported_keyboard: Option<String>,
     /// Running programs that take control of the devices, such as Logitech G HUB.
     pub conflicts: Vec<String>,
+    /// A Logitech G300 (read only).
+    pub g300: Option<G300Info>,
+    pub g300_error: Option<String>,
     /// Corsair mice and keyboards (experimental support).
     pub corsair: Vec<CorsairInfo>,
     pub corsair_error: Option<String>,
@@ -176,6 +180,11 @@ pub struct DeviceStatus {
 struct Slots {
     keyboard: Option<(Worker<KeyboardTask>, KeyboardInfo)>,
     mouse: Option<(Worker<MouseTask>, MouseInfo)>,
+    /// The Logitech G300, by the path of its vendor collection.
+    g300: Option<(CString, Worker<G300Task>, G300Info)>,
+    /// G300 that failed to open: not retried until it is plugged in again.
+    g300_failed: Option<CString>,
+    g300_error: Option<String>,
     /// Open Corsair devices, by the path of their control interface.
     corsair: Vec<(CString, Worker<CorsairTask>, CorsairInfo)>,
     corsair_error: Option<String>,
@@ -251,6 +260,7 @@ impl Manager {
         loop {
             let mut changed = self.poll(&mut api);
             changed |= self.poll_corsair(&api);
+            changed |= self.poll_g300(&api);
             if pass.is_multiple_of(CONFLICT_CHECK_EVERY) {
                 changed |= self.check_conflicts();
             }
@@ -552,8 +562,64 @@ impl Manager {
             unsupported_keyboard: slots.unsupported_keyboard.clone(),
             conflicts: slots.conflicts.iter().map(|c| c.name().to_string()).collect(),
             corsair: slots.corsair.iter().map(|(_, _, info)| info.clone()).collect(),
+            g300: slots.g300.as_ref().map(|(_, _, info)| info.clone()),
+            g300_error: slots.g300_error.clone(),
             corsair_error: slots.corsair_error.clone(),
         }
+    }
+
+    pub fn g300(&self) -> Result<Worker<G300Task>> {
+        self.slots.lock().unwrap().g300.as_ref().map(|(_, w, _)| w.clone()).ok_or(Error::NotConnected)
+    }
+
+    /// Opens or forgets the Logitech G300 (read only). Returns `true` if the status changed.
+    fn poll_g300(&self, api: &HidApi) -> bool {
+        let candidates: Vec<&DeviceInfo> = api
+            .device_list()
+            .filter(|d| {
+                d.vendor_id() == LOGITECH
+                    && d.product_id() == g300::PRODUCT_ID
+                    && d.interface_number() == g300::INTERFACE
+            })
+            .collect();
+        // On Windows the interface has a keyboard collection too: the reports are in the vendor one.
+        let found = candidates.iter().find(|d| d.usage_page() == g300::USAGE_PAGE).or(candidates.first()).copied();
+        let path = found.map(|d| d.path().to_owned());
+        let mut slots = self.slots.lock().unwrap();
+        let mut changed = false;
+        if slots.g300.as_ref().is_some_and(|(p, w, _)| !w.is_alive() || Some(p) != path.as_ref()) {
+            slots.g300 = None;
+            log::info!("Logitech G300 disconnected");
+            changed = true;
+        }
+        if slots.g300_failed.is_some() && slots.g300_failed != path {
+            slots.g300_failed = None;
+        }
+        let Some(device) = found else {
+            return changed | slots.g300_error.take().is_some();
+        };
+        if slots.g300.is_some() || slots.g300_failed.as_deref() == Some(device.path()) {
+            return changed;
+        }
+        drop(slots);
+        let result = device.open_device(api).map_err(Error::from).and_then(G300Task::open);
+        let mut slots = self.slots.lock().unwrap();
+        match result {
+            Ok(task) => {
+                let info = task.info.clone();
+                slots.g300 = Some((device.path().to_owned(), Worker::spawn("perihub-g300", task), info));
+                slots.g300_error = None;
+            }
+            Err(error) => {
+                let message = format!("G300: {}", open_error_message(error));
+                log::warn!("{message}");
+                if !message.contains("permission denied") {
+                    slots.g300_failed = Some(device.path().to_owned());
+                }
+                slots.g300_error = Some(message);
+            }
+        }
+        true
     }
 
     /// The open Corsair device with this USB product id.

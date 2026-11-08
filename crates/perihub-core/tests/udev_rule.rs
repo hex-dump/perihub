@@ -18,7 +18,12 @@ fn udev_rule_matches_mouse_list() {
         .map(|line| line.split(r#"ATTRS{idProduct}==""#).nth(1).unwrap()[..4].to_string())
         .collect();
     // Mice without a cable are reached through a receiver only.
-    let in_list = MODELS.iter().filter(|m| m.has_cable()).map(|m| format!("{:04x}", m.product_id)).collect();
+    let in_list = MODELS
+        .iter()
+        .filter(|m| m.has_cable())
+        .map(|m| format!("{:04x}", m.product_id))
+        .chain([format!("{:04x}", perihub_core::g300::PRODUCT_ID)])
+        .collect();
     assert_eq!(sorted(in_rule), sorted(in_list));
 }
 
@@ -48,4 +53,11 @@ fn udev_rule_opens_only_the_control_interface_of_the_corsair_devices() {
         .chain(perihub_core::corsair::models::RECEIVERS.iter().map(|(id, _)| format!("{id:04x}")))
         .collect();
     assert_eq!(sorted(in_rule), sorted(in_list));
+}
+
+#[test]
+fn udev_rule_opens_only_interface_1_of_the_g300() {
+    let lines: Vec<&str> = RULE.lines().filter(|line| line.contains(r#"ATTRS{idProduct}=="c246""#)).collect();
+    assert_eq!(lines.len(), 1);
+    assert!(lines[0].contains(r#"ENV{ID_USB_INTERFACE_NUM}=="01""#));
 }
