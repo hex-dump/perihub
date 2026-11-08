@@ -3,8 +3,8 @@
 //! reads them, and changes their lighting only when the user turns on experimental lighting for
 //! the session.
 
+pub mod device;
 pub mod models;
-pub mod mouse;
 
 use std::time::{Duration, Instant};
 

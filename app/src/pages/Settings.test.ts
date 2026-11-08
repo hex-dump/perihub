@@ -37,7 +37,7 @@ const status: DeviceStatus = {
   mouse_asleep: null,
   unsupported_keyboard: null,
   conflicts: [],
-  corsair_mouse: null,
+  corsair: [],
   corsair_error: null,
 };
 

@@ -18,7 +18,7 @@
 ![Keyboard lighting](docs/screenshots/keyboard-lighting.png)
 
 - **Fully supported now:** the SteelSeries Apex 3 TKL keyboard and the Logitech G502 HERO mouse.
-- **Not supported yet:** 29 more Logitech G mice are recognized in read-only mode until someone tests them, 26 Corsair mice from the next version, and more devices are on the way. See [Supported hardware](#supported-hardware) and the [Hardware roadmap](#hardware-roadmap).
+- **Not supported yet:** 29 more Logitech G mice are recognized in read-only mode until someone tests them, 26 Corsair mice and 23 Corsair keyboards from the next version, and more devices are on the way. See [Supported hardware](#supported-hardware) and the [Hardware roadmap](#hardware-roadmap).
 
 ## Contents
 
@@ -66,9 +66,9 @@ While a game or an app is in focus, PeriHub can show one of your saved keyboard 
 
 PeriHub only reads the app's identifier (the executable name on Windows, the window class on Linux), never window titles or contents, and keeps nothing but your rules.
 
-### Corsair mice (experimental, from the next version)
+### Corsair mice and keyboards (experimental, from the next version)
 
-PeriHub recognizes 26 Corsair mice that speak Corsair's newer protocol, on their USB cable: KATAR PRO, KATAR PRO XT, M55 RGB PRO, M65 RGB ULTRA, M75, SABRE RGB PRO and SABRE PRO CS, and, connected with the cable, the wireless IRONCLAW RGB WIRELESS, IRONCLAW WIRELESS SE, DARK CORE RGB PRO, DARK CORE RGB PRO SE, HARPOON RGB WIRELESS, HARPOON V2, M65 RGB ULTRA WIRELESS, M75 WIRELESS, M75 AIR WIRELESS, NIGHTSABRE WIRELESS, SCIMITAR RGB ELITE WIRELESS, SCIMITAR ELITE WIRELESS SE, SABRE RGB PRO WIRELESS, DARKSTAR RGB WIRELESS and SABRE V2 PRO (also MG and CF, without lighting), plus the SCIMITAR RGB ELITE and the M55. Through their wireless receiver (Slipstream) they are not supported yet. Nobody has tested PeriHub on a Corsair mouse yet, so it reads them only: firmware, polling rate and DPI. **Experimental lighting** (one colour on every LED) can be turned on for the session, after a warning: PeriHub takes the mouse into software mode, as iCUE does, and gives it back to its own settings when it is turned off, when PeriHub quits and as soon as anything fails. Nothing is written to the mouse's memory, and the code refuses every command that lighting does not need. **No warranty:** turning it on means you use it at your own risk; the author is not responsible for any damage. The protocol, as PeriHub uses it, is described in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md). If you own one of these mice, a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) with the report from its page helps get it supported.
+PeriHub recognizes 26 Corsair mice that speak Corsair's newer protocol, on their USB cable: KATAR PRO, KATAR PRO XT, M55 RGB PRO, M65 RGB ULTRA, M75, SABRE RGB PRO and SABRE PRO CS, and, connected with the cable, the wireless IRONCLAW RGB WIRELESS, IRONCLAW WIRELESS SE, DARK CORE RGB PRO, DARK CORE RGB PRO SE, HARPOON RGB WIRELESS, HARPOON V2, M65 RGB ULTRA WIRELESS, M75 WIRELESS, M75 AIR WIRELESS, NIGHTSABRE WIRELESS, SCIMITAR RGB ELITE WIRELESS, SCIMITAR ELITE WIRELESS SE, SABRE RGB PRO WIRELESS, DARKSTAR RGB WIRELESS and SABRE V2 PRO (also MG and CF, without lighting), plus the SCIMITAR RGB ELITE and the M55. Through their wireless receiver (Slipstream) they are not supported yet. PeriHub also recognizes 23 Corsair keyboards (K55 PRO, K55 CORE, K57, K60 PRO, K65 PLUS, K65 MINI, K70 CORE, K70 MAX, K70 PRO, K70 RGB TKL, K95 PLATINUM XT, K100, MAKR 75 and their variants: the full list is in the protocol page) in the same way: read-only, with experimental lighting of one colour on every key. Nobody has tested PeriHub on a Corsair mouse yet, so it reads them only: firmware, polling rate and DPI. **Experimental lighting** (one colour on every LED) can be turned on for the session, after a warning: PeriHub takes the mouse into software mode, as iCUE does, and gives it back to its own settings when it is turned off, when PeriHub quits and as soon as anything fails. Nothing is written to the mouse's memory, and the code refuses every command that lighting does not need. **No warranty:** turning it on means you use it at your own risk; the author is not responsible for any damage. The protocol, as PeriHub uses it, is described in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md). If you own one of these mice, a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) with the report from its page helps get it supported.
 
 ### Other Logitech G mice (experimental)
 
@@ -101,7 +101,7 @@ PeriHub accepts only the DPI and polling values the mouse itself reports, and le
 | SteelSeries Apex 3 TKL | `1038:1622` (firmware 3.0.4) | ✅ Supported, tested on real hardware |
 | Logitech G502 HERO | `046d:c08b` | ✅ Supported, tested on real hardware |
 | Other Logitech G mice, with a USB cable (from 0.5.0 also with a LIGHTSPEED receiver) | listed below | 🧪 Experimental, read-only |
-| 26 Corsair mice, on their USB cable (listed in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md#mice-perihub-recognizes)) | `1b1c:…` | 🧪 From the next version: experimental, read-only plus session lighting |
+| 26 Corsair mice and 23 Corsair keyboards, on their USB cable (listed in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md#mice-perihub-recognizes)) | `1b1c:…` | 🧪 From the next version: experimental, read-only plus session lighting |
 | SteelSeries Apex 3 | `1038:161a` | From 0.5.0 recognized, not supported yet: PeriHub sends nothing to it ([issue #9](https://github.com/hex-dump/perihub/issues/9)) |
 
 <details>
@@ -154,7 +154,7 @@ PeriHub is meant to support much more than these two devices. The plan is to add
 
 - **Logitech G mice using HID++ 2.0.** 29 more models are already recognized in read-only mode. Version 0.5.0 adds LIGHTSPEED receivers, read-only too. Next: enable editing as owners confirm them.
 - **Other SteelSeries keyboards**, such as the rest of the Apex range.
-- **Corsair mice and keyboards.** 26 mice are recognized on their cable from the next version (see [Corsair mice](#corsair-mice-experimental-from-the-next-version)). Next: the Slipstream wireless receiver, then keyboards.
+- **Corsair mice and keyboards.** 26 mice and 23 keyboards are recognized on their cable from the next version (see [Corsair mice](#corsair-mice-and-keyboards-experimental-from-the-next-version)). Next: the Slipstream wireless receiver.
 - **SteelSeries mice.**
 - **Headsets and other peripherals**, where the hardware exposes useful settings.
 - **More languages** for the UI, and more layouts for the key remapping view.

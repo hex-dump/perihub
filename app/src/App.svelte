@@ -5,7 +5,7 @@
   import Keyboard from "./pages/Keyboard.svelte";
   import AppProfiles from "./pages/AppProfiles.svelte";
   import Mouse from "./pages/Mouse.svelte";
-  import CorsairMouse from "./pages/CorsairMouse.svelte";
+  import CorsairDevice from "./pages/CorsairDevice.svelte";
   import Settings from "./pages/Settings.svelte";
   import Icon from "./components/Icon.svelte";
 
@@ -22,11 +22,12 @@
   let page = $state<Page>(initialPage);
   let tab = $state<string | undefined>(initialTab);
 
-  function go(next: Page) {
+  function go(next: Page, nextTab?: string) {
     page = next;
-    tab = undefined;
-    history.replaceState(null, "", `#${next}`);
+    tab = nextTab;
+    history.replaceState(null, "", nextTab ? `#${next}:${nextTab}` : `#${next}`);
   }
+
   let status = $state<DeviceStatus>({
     keyboard: null,
     mouse: null,
@@ -35,9 +36,15 @@
     mouse_asleep: null,
     unsupported_keyboard: null,
     conflicts: [],
-    corsair_mouse: null,
+    corsair: [],
     corsair_error: null,
   });
+
+  const hex = (id: number) => id.toString(16).padStart(4, "0");
+  /** The Corsair device on screen: the one in the address, or the first one. */
+  const corsairShown = $derived(
+    status.corsair.find((d) => hex(d.product_id) === tab) ?? (page === "corsair" ? status.corsair[0] : undefined) ?? null,
+  );
 
   onMount(() => {
     api.status().then((s) => (status = s));
@@ -80,14 +87,24 @@
       </span>
     </button>
 
-    {#if status.corsair_mouse || status.corsair_error || page === "corsair"}
+    {#each status.corsair as device (device.product_id)}
+      <button
+        class:active={page === "corsair" && corsairShown?.product_id === device.product_id}
+        onclick={() => go("corsair", hex(device.product_id))}
+      >
+        <Icon name={device.kind} />
+        <span class="col tight">
+          <span class="name">Corsair {device.model}</span>
+          <span class="state on">Experimental</span>
+        </span>
+      </button>
+    {/each}
+    {#if status.corsair.length === 0 && (status.corsair_error || page === "corsair")}
       <button class:active={page === "corsair"} onclick={() => go("corsair")}>
         <Icon name="mouse" />
         <span class="col tight">
-          <span class="name">{status.corsair_mouse ? `Corsair ${status.corsair_mouse.model}` : "Corsair mouse"}</span>
-          <span class="state" class:on={!!status.corsair_mouse}>
-            {status.corsair_mouse ? "Experimental" : "Not connected"}
-          </span>
+          <span class="name">Corsair</span>
+          <span class="state">Not connected</span>
         </span>
       </button>
     {/if}
@@ -123,7 +140,7 @@
       {:else if page === "mouse"}
         {#key tab}<Mouse info={status.mouse} error={status.mouse_error} asleep={status.mouse_asleep} initialTab={tab} />{/key}
       {:else if page === "corsair"}
-        <CorsairMouse info={status.corsair_mouse} error={status.corsair_error} />
+        {#key corsairShown?.product_id}<CorsairDevice info={corsairShown} error={status.corsair_error} />{/key}
       {:else if page === "profiles"}
         <AppProfiles {status} />
       {:else}

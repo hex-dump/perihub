@@ -63,7 +63,7 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     // A way out that does not need the window, in case an untested mouse stops clicking.
     let experimental = app.try_state::<crate::AppState>().is_some_and(|state| {
         !state.config.lock().unwrap().experimental_mice.is_empty()
-            || state.manager.status().corsair_mouse.is_some_and(|m| m.lighting.is_some())
+            || state.manager.status().corsair.iter().any(|d| d.lighting.is_some())
     });
     if experimental {
         items.push(MenuItem::with_id(app, "experimental-off", "Turn off experimental editing", true, None::<&str>)?);

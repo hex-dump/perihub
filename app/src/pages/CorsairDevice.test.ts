@@ -11,12 +11,13 @@ const api = vi.hoisted(() => ({
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.6.0" }));
 
-import type { CorsairMouseInfo } from "../lib/api";
-import CorsairMouse from "./CorsairMouse.svelte";
+import type { CorsairInfo } from "../lib/api";
+import CorsairDevice from "./CorsairDevice.svelte";
 
-const info: CorsairMouseInfo = {
+const info: CorsairInfo = {
   product_id: 0x1b70,
   model: "M55 RGB PRO",
+  kind: "mouse",
   leds: 2,
   firmware: "4.5.12",
   mode: 1,
@@ -43,7 +44,7 @@ afterEach(() => {
 
 describe("a Corsair mouse", () => {
   it("shows what was read and changes nothing by itself", async () => {
-    render(CorsairMouse, { props: { info, error: null } });
+    render(CorsairDevice, { props: { info, error: null } });
     await wait(0);
     expect(screen.getByText("4.5.12")).toBeTruthy();
     expect(screen.getByText("1000 Hz")).toBeTruthy();
@@ -51,7 +52,7 @@ describe("a Corsair mouse", () => {
   });
 
   it("turns lighting on only after the risk is acknowledged", async () => {
-    render(CorsairMouse, { props: { info, error: null } });
+    render(CorsairDevice, { props: { info, error: null } });
     await fireEvent.click(screen.getByRole("button", { name: "Try experimental lighting…" }));
     const turnOn = screen.getByRole("button", { name: "Turn on for this session" }) as HTMLButtonElement;
     expect(turnOn.disabled).toBe(true);
@@ -59,11 +60,11 @@ describe("a Corsair mouse", () => {
     await fireEvent.click(screen.getByRole("checkbox"));
     await fireEvent.click(turnOn);
     await wait(0);
-    expect(api.corsairSetLighting).toHaveBeenCalledOnce();
+    expect(api.corsairSetLighting).toHaveBeenCalledWith(0x1b70, "#ff6a00");
   });
 
   it("gives the mouse back after 15 seconds unless it still works", async () => {
-    const page = render(CorsairMouse, { props: { info, error: null } });
+    const page = render(CorsairDevice, { props: { info, error: null } });
     await fireEvent.click(screen.getByRole("button", { name: "Try experimental lighting…" }));
     await fireEvent.click(screen.getByRole("checkbox"));
     await fireEvent.click(screen.getByRole("button", { name: "Turn on for this session" }));
@@ -76,7 +77,7 @@ describe("a Corsair mouse", () => {
   });
 
   it("keeps the lighting when the mouse still works", async () => {
-    const page = render(CorsairMouse, { props: { info, error: null } });
+    const page = render(CorsairDevice, { props: { info, error: null } });
     await fireEvent.click(screen.getByRole("button", { name: "Try experimental lighting…" }));
     await fireEvent.click(screen.getByRole("checkbox"));
     await fireEvent.click(screen.getByRole("button", { name: "Turn on for this session" }));
@@ -89,13 +90,20 @@ describe("a Corsair mouse", () => {
   });
 
   it("offers no lighting on a mouse without LEDs", () => {
-    render(CorsairMouse, { props: { info: { ...info, model: "SABRE V2 PRO", leds: 0 }, error: null } });
+    render(CorsairDevice, { props: { info: { ...info, model: "SABRE V2 PRO", leds: 0 }, error: null } });
     expect(screen.queryByRole("button", { name: "Try experimental lighting…" })).toBeNull();
     expect(screen.getByText("The SABRE V2 PRO has no lighting.")).toBeTruthy();
   });
 
+  it("talks about keys on a keyboard", async () => {
+    render(CorsairDevice, { props: { info: { ...info, model: "K70 CORE RGB", kind: "keyboard", dpi: null }, error: null } });
+    await fireEvent.click(screen.getByRole("button", { name: "Try experimental lighting…" }));
+    expect(document.body.textContent).toContain("it is not known whether every key still types");
+    expect(screen.queryByText("DPI")).toBeNull();
+  });
+
   it("explains when the mouse could not be opened", () => {
-    render(CorsairMouse, { props: { info: null, error: "Corsair M75: permission denied" } });
+    render(CorsairDevice, { props: { info: null, error: "Corsair M75: permission denied" } });
     expect(screen.getByText("Corsair M75: permission denied")).toBeTruthy();
   });
 });

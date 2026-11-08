@@ -135,3 +135,75 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b25", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1be3", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair M55
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b03", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair keyboards (experimental, untested), on their USB cable: only the control interface (1). Key presses arrive on
+# interface 0, and in software mode on interface 2 (OpenLinkHub): both stay closed.
+# Corsair K55 PRO RGB
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1ba4", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K55 RGB PRO XT
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1ba1", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K55 CORE RGB
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bfe", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K55 CORE RGB
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b05", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K55 CORE TKL RGB
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b20", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K57 RGB WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b6e", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K60 RGB PRO
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1ba0", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K60 RGB PRO LP
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bad", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K65 PLUS WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b10", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K65 PLUS WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b11", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K65 PLUS WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b23", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K65 PRO MINI
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bd7", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K65 RGB MINI
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1baf", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K65 RGB MINI
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bc3", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K65 RGB MINI
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bcf", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 CORE RGB
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bfd", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 CORE RGB
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bff", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 CORE RGB
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b0a", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 CORE TKL
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b01", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 CORE TKL WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b02", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 MAX
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bc0", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 PRO
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb3", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 PRO
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bc4", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 PRO
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bc6", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 PRO
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bd4", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 PRO MINI WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb6", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 PRO TKL
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b14", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 RGB TKL
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b73", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 RGB TKL CS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb9", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K95 RGB PLATINUM XT
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b89", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K100 RGB
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b7c", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K100 RGB
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b7d", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K100 RGB
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bc5", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K100 AIR WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bab", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair MAKR 75
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b04", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"

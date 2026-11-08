@@ -34,7 +34,7 @@ fn udev_rule_opens_only_the_hidpp_interface_of_the_receivers() {
 }
 
 #[test]
-fn udev_rule_opens_only_the_control_interface_of_the_corsair_mice() {
+fn udev_rule_opens_only_the_control_interface_of_the_corsair_devices() {
     use perihub_core::corsair::models::MODELS as CORSAIR;
     let lines: Vec<&str> = RULE.lines().filter(|line| line.contains(r#"ATTRS{idVendor}=="1b1c""#)).collect();
     for line in &lines {

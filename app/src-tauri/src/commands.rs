@@ -4,7 +4,7 @@
 use perihub_core::apex::{KeyBinding, keys};
 use perihub_core::color::Rgb;
 use perihub_core::config::{AppProfiles, BackupEntry, KeyboardConfig, LightingPreset};
-use perihub_core::corsair::mouse::CorsairMouseInfo;
+use perihub_core::corsair::device::CorsairInfo;
 use perihub_core::effects::KeyboardLighting;
 use perihub_core::focus::{self, FocusSupport};
 use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
@@ -294,24 +294,24 @@ pub fn turn_off_experimental(app: &AppHandle) {
     });
 }
 
-// ---- Corsair mouse (experimental) ----
+// ---- Corsair mice and keyboards (experimental) ----
 
-/// Tells the interface and the tray menu that the Corsair mouse's lighting changed.
+/// Tells the interface and the tray menu that a Corsair device's lighting changed.
 fn corsair_changed(app: &AppHandle) {
     crate::window::refresh_menu(app);
     let _ = app.emit("devices-changed", app.state::<AppState>().manager.status());
 }
 
 #[tauri::command]
-pub async fn corsair_set_lighting(app: AppHandle, color: Rgb) -> CmdResult<CorsairMouseInfo> {
+pub async fn corsair_set_lighting(app: AppHandle, product_id: u16, color: Rgb) -> CmdResult<CorsairInfo> {
     let manager = app.state::<AppState>().manager.clone();
     let result = blocking({
         let manager = manager.clone();
-        move || manager.corsair_mouse()?.call(move |m| m.set_lighting(color))
+        move || manager.corsair(product_id)?.call(move |m| m.set_lighting(color))
     })
     .await;
-    // On error the mouse was given back: the status shows it either way.
-    if let Ok(worker) = manager.corsair_mouse()
+    // On error the device was given back: the status shows it either way.
+    if let Ok(worker) = manager.corsair(product_id)
         && let Ok(info) = worker.call(|m| Ok(m.info()))
     {
         manager.corsair_changed(&info);
@@ -322,10 +322,10 @@ pub async fn corsair_set_lighting(app: AppHandle, color: Rgb) -> CmdResult<Corsa
 
 /// The user checked that the mouse still works: the core stops counting down to give it back.
 #[tauri::command]
-pub async fn corsair_keep_lighting(state: State<'_, AppState>) -> CmdResult<()> {
+pub async fn corsair_keep_lighting(state: State<'_, AppState>, product_id: u16) -> CmdResult<()> {
     let manager = state.manager.clone();
     blocking(move || {
-        manager.corsair_mouse()?.call(|m| {
+        manager.corsair(product_id)?.call(|m| {
             m.keep_lighting();
             Ok(())
         })
@@ -334,10 +334,11 @@ pub async fn corsair_keep_lighting(state: State<'_, AppState>) -> CmdResult<()> 
 }
 
 #[tauri::command]
-pub async fn corsair_lighting_off(app: AppHandle) -> CmdResult<()> {
+pub async fn corsair_lighting_off(app: AppHandle, product_id: u16) -> CmdResult<()> {
     let manager = app.state::<AppState>().manager.clone();
     blocking(move || {
-        manager.release_corsair();
+        let info = manager.corsair(product_id)?.call(|m| m.turn_off_lighting())?;
+        manager.corsair_changed(&info);
         Ok(())
     })
     .await?;

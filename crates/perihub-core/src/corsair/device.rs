@@ -1,9 +1,9 @@
-//! A Corsair mouse on its own thread: what PeriHub reads from it, and experimental lighting.
+//! A Corsair mouse or keyboard on its own thread: what PeriHub reads from it, and experimental lighting.
 //!
-//! Experimental lighting lasts for the session only. It puts the mouse in software mode, which
+//! Experimental lighting lasts for the session only. It puts the device in software mode, which
 //! PeriHub keeps with a keep-alive, and gives it back to its own settings (hardware mode) when it
 //! is turned off, when the thread stops (unplugged, PeriHub quitting) and as soon as a command
-//! fails, so that PeriHub never holds a mouse it can no longer talk to.
+//! fails, so that PeriHub never holds a device it can no longer talk to.
 
 use std::time::{Duration, Instant};
 
@@ -19,15 +19,16 @@ use crate::worker::DeviceTask;
 const KEEP_ALIVE: Duration = Duration::from_secs(20);
 /// Nothing to do while experimental lighting is off: the thread only wakes up for requests.
 const IDLE: Duration = Duration::from_secs(60);
-/// After lighting is turned on, the mouse is given back unless the user confirms that it still
-/// works (see [`CorsairMouseTask::keep_lighting`]). The interface counts down 15 seconds and turns
+/// After lighting is turned on, the device is given back unless the user confirms that it still
+/// works (see [`CorsairTask::keep_lighting`]). The interface counts down 15 seconds and turns
 /// it off itself; this is the fallback if the window was closed or stopped answering.
 const CONFIRM_WITHIN: Duration = Duration::from_secs(20);
 
 #[derive(Debug, Clone, Serialize)]
-pub struct CorsairMouseInfo {
+pub struct CorsairInfo {
     pub product_id: u16,
     pub model: String,
+    pub kind: super::models::Kind,
     pub leds: u8,
     pub firmware: Option<String>,
     /// 1 = hardware (its own settings), 2 = software (a program drives it), as read at connection.
@@ -40,11 +41,11 @@ pub struct CorsairMouseInfo {
     pub lighting: Option<Rgb>,
 }
 
-pub struct CorsairMouseTask {
+pub struct CorsairTask {
     dev: BragiDevice,
-    pub info: CorsairMouseInfo,
+    pub info: CorsairInfo,
     last_keep_alive: Instant,
-    /// When lighting is turned off unless the user confirms that the mouse still works.
+    /// When lighting is turned off unless the user confirms that the device still works.
     confirm_by: Option<Instant>,
     closed: bool,
 }
@@ -59,8 +60,8 @@ fn polling_hz(value: u32) -> Option<u16> {
     }
 }
 
-impl CorsairMouseTask {
-    /// Reads what it can without changing anything. A mouse that answers nothing at all is an error.
+impl CorsairTask {
+    /// Reads what it can without changing anything. A device that answers nothing at all is an error.
     pub fn open(mut dev: BragiDevice, model: &'static CorsairModel) -> Result<Self> {
         let mut errors = Vec::new();
         let mut answered = false;
@@ -89,13 +90,16 @@ impl CorsairMouseTask {
         };
         let mode = read("mode", property::MODE, &mut answered).map(|v| v as u8);
         let polling = read("polling rate", property::POLLING, &mut answered);
-        let dpi = read("DPI", property::DPI_X, &mut answered);
+        // Keyboards have no DPI.
+        let dpi =
+            if model.kind == super::models::Kind::Mouse { read("DPI", property::DPI_X, &mut answered) } else { None };
         if !answered {
-            return Err(Error::Protocol(format!("the mouse did not answer ({})", errors.join("; "))));
+            return Err(Error::Protocol(format!("the device did not answer ({})", errors.join("; "))));
         }
-        let info = CorsairMouseInfo {
+        let info = CorsairInfo {
             product_id: model.product_id,
             model: model.name.into(),
+            kind: model.kind,
             leds: model.leds,
             firmware,
             mode,
@@ -116,9 +120,9 @@ impl CorsairMouseTask {
         Ok(Self { dev, info, last_keep_alive: Instant::now(), confirm_by: None, closed: false })
     }
 
-    /// Shows one colour on every LED (experimental). The first time it takes the mouse into
-    /// software mode. If anything fails the mouse is given back at once.
-    pub fn set_lighting(&mut self, color: Rgb) -> Result<CorsairMouseInfo> {
+    /// Shows one colour on every LED (experimental). The first time it takes the device into
+    /// software mode. If anything fails the device is given back at once.
+    pub fn set_lighting(&mut self, color: Rgb) -> Result<CorsairInfo> {
         if self.info.leds == 0 {
             return Err(Error::Invalid(format!("the {} has no lighting", self.info.model)));
         }
@@ -126,7 +130,7 @@ impl CorsairMouseTask {
             let others = crate::conflicts::corsair_programs_running();
             if !others.is_empty() {
                 return Err(Error::Invalid(format!(
-                    "quit {} first: two programs driving the same Corsair mouse can leave it unable to click",
+                    "quit {} first: two programs driving the same Corsair device can leave it unable to click or type",
                     others.join(" and ")
                 )));
             }
@@ -157,18 +161,18 @@ impl CorsairMouseTask {
         }
     }
 
-    /// The user checked that the mouse still works with PeriHub driving it.
+    /// The user checked that the device still works with PeriHub driving it.
     pub fn keep_lighting(&mut self) {
         self.confirm_by = None;
     }
 
-    /// Gives the mouse back to its own settings.
-    pub fn turn_off_lighting(&mut self) -> Result<CorsairMouseInfo> {
+    /// Gives the device back to its own settings.
+    pub fn turn_off_lighting(&mut self) -> Result<CorsairInfo> {
         self.release();
         Ok(self.info.clone())
     }
 
-    /// Back to hardware mode, best effort: the mouse may be gone already.
+    /// Back to hardware mode, best effort: the device may be gone already.
     fn release(&mut self) {
         self.confirm_by = None;
         if self.info.lighting.take().is_some() || self.dev_lighting_allowed() {
@@ -177,7 +181,10 @@ impl CorsairMouseTask {
             }
             match self.dev.set_mode(MODE_HARDWARE) {
                 Ok(()) => {
-                    log::info!("Corsair {}: experimental lighting off, mouse back to its own settings", self.info.model)
+                    log::info!(
+                        "Corsair {}: experimental lighting off, device back to its own settings",
+                        self.info.model
+                    )
                 }
                 Err(e) => log::warn!("Corsair {}: switching back to hardware mode failed: {e}", self.info.model),
             }
@@ -189,19 +196,19 @@ impl CorsairMouseTask {
         self.dev.lighting
     }
 
-    /// Before the manager drops the mouse: give it back, then stop the thread.
+    /// Before the manager drops the device: give it back, then stop the thread.
     pub fn close(&mut self) -> Result<()> {
         self.release();
         self.closed = true;
         Ok(())
     }
 
-    pub fn info(&self) -> CorsairMouseInfo {
+    pub fn info(&self) -> CorsairInfo {
         self.info.clone()
     }
 }
 
-impl DeviceTask for CorsairMouseTask {
+impl DeviceTask for CorsairTask {
     fn tick(&mut self) -> Result<Duration> {
         if self.closed {
             return Err(Error::NotConnected);
@@ -210,20 +217,20 @@ impl DeviceTask for CorsairMouseTask {
             return Ok(IDLE);
         }
         if self.confirm_by.is_some_and(|at| Instant::now() >= at) {
-            log::warn!("Corsair {}: lighting was not confirmed: giving the mouse back", self.info.model);
+            log::warn!("Corsair {}: lighting was not confirmed: giving the device back", self.info.model);
             self.release();
             return Ok(IDLE);
         }
         if self.last_keep_alive.elapsed() >= KEEP_ALIVE {
             let others = crate::conflicts::corsair_programs_running();
             if !others.is_empty() {
-                log::warn!("Corsair {}: {} started: giving the mouse back", self.info.model, others.join(", "));
+                log::warn!("Corsair {}: {} started: giving the device back", self.info.model, others.join(", "));
                 self.release();
                 return Ok(IDLE);
             }
             self.last_keep_alive = Instant::now();
             if let Err(e) = self.dev.keep_alive() {
-                log::warn!("Corsair {}: keep-alive failed ({e}): giving the mouse back", self.info.model);
+                log::warn!("Corsair {}: keep-alive failed ({e}): giving the device back", self.info.model);
                 self.release();
                 return Err(e);
             }
@@ -236,7 +243,7 @@ impl DeviceTask for CorsairMouseTask {
     }
 }
 
-impl Drop for CorsairMouseTask {
+impl Drop for CorsairTask {
     fn drop(&mut self) {
         self.release();
     }
@@ -293,8 +300,8 @@ mod tests {
         }
     }
 
-    fn open(fake: &FakeMouse) -> CorsairMouseTask {
-        CorsairMouseTask::open(BragiDevice::new(fake.clone(), 64), models::find(0x1B70).unwrap()).unwrap()
+    fn open(fake: &FakeMouse) -> CorsairTask {
+        CorsairTask::open(BragiDevice::new(fake.clone(), 64), models::find(0x1B70).unwrap()).unwrap()
     }
 
     #[test]

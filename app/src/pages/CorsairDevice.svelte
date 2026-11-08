@@ -1,13 +1,13 @@
 <script lang="ts">
-  // A Corsair mouse: what PeriHub reads from it, and experimental lighting for this session.
+  // A Corsair mouse or keyboard: what PeriHub reads from it, and experimental lighting for this session.
   import { onDestroy } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
-  import { api, debounce, errorText, type CorsairMouseInfo } from "../lib/api";
+  import { api, debounce, errorText, type CorsairInfo } from "../lib/api";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import NoWarranty from "../components/NoWarranty.svelte";
 
   interface Props {
-    info: CorsairMouseInfo | null;
+    info: CorsairInfo | null;
     error: string | null;
   }
 
@@ -24,6 +24,7 @@
   let copied = $state(false);
 
   const on = $derived(!!info?.lighting);
+  const noun = $derived(info?.kind === "keyboard" ? "keyboard" : "mouse");
 
   function hex(n: number) {
     return n.toString(16).padStart(4, "0");
@@ -46,21 +47,21 @@
   async function turnOn() {
     asking = false;
     understood = false;
-    if (await run("Taking control of the lighting…", () => api.corsairSetLighting(color))) confirmWorks = true;
+    if (await run("Taking control of the lighting…", () => api.corsairSetLighting(info!.product_id, color))) confirmWorks = true;
   }
 
   async function keep() {
     confirmWorks = false;
-    await api.corsairKeepLighting().catch(() => {});
+    await api.corsairKeepLighting(info!.product_id).catch(() => {});
   }
 
   async function turnOff() {
     confirmWorks = false;
-    await run("Giving the mouse back to its own settings…", () => api.corsairLightingOff());
+    await run(`Giving the ${noun} back to its own settings…`, () => api.corsairLightingOff(info!.product_id));
   }
 
   const sendColor = debounce((value: string) => {
-    api.corsairSetLighting(value).catch((e) => (error = errorText(e)));
+    api.corsairSetLighting(info!.product_id, value).catch((e) => (error = errorText(e)));
   }, 150);
   onDestroy(() => sendColor.cancel());
 
@@ -74,7 +75,7 @@
     const system = (await api.appSettings().catch(() => null))?.system ?? "?";
     const lines = [
       `PeriHub ${await getVersion()} on ${system}`,
-      `Mouse: Corsair ${info.model}, USB ID 1b1c:${hex(info.product_id)}`,
+      `Device: Corsair ${info.model} (${info.kind}), USB ID 1b1c:${hex(info.product_id)}`,
       `Firmware: ${info.firmware ?? "not read"}`,
       `Mode at connection: ${info.mode ?? "not read"}`,
       `Polling: ${info.polling_hz ?? "not read"} Hz, DPI: ${info.dpi ?? "not read"}`,
@@ -92,7 +93,7 @@
 </script>
 
 <header>
-  <h1>{info ? `Corsair ${info.model}` : "Corsair mouse"}</h1>
+  <h1>{info ? `Corsair ${info.model}` : "Corsair device"}</h1>
   <span class="chip test">Experimental</span>
 </header>
 
@@ -100,7 +101,7 @@
 
 {#if info}
   <div class="notice info">
-    <b>Experimental support.</b> Nobody has tested PeriHub on a Corsair mouse yet. PeriHub reads the {info.model} and
+    <b>Experimental support.</b> Nobody has tested PeriHub on a Corsair {noun} yet. PeriHub reads the {info.model} and
     changes nothing, except the lighting if you turn it on below. A report on PeriHub's GitHub page (device request)
     with what you see here helps a lot.
     <div class="row report">
@@ -110,7 +111,7 @@
 
   {#if info.mode === 2}
     <div class="notice info">
-      The mouse was under the control of another program (such as iCUE) when PeriHub found it: what it shows may not be
+      The {noun} was under the control of another program (such as iCUE) when PeriHub found it: what it shows may not be
       its own settings.
     </div>
   {/if}
@@ -120,7 +121,7 @@
     <dl>
       <dt>Firmware</dt><dd>{info.firmware ?? "not read"}</dd>
       <dt>Polling rate</dt><dd>{info.polling_hz ? `${info.polling_hz} Hz` : "not read"}</dd>
-      <dt>DPI</dt><dd>{info.dpi ?? "not read"}</dd>
+      {#if info.kind === "mouse"}<dt>DPI</dt><dd>{info.dpi ?? "not read"}</dd>{/if}
       <dt>LEDs</dt><dd>{info.leds}</dd>
     </dl>
     {#if info.read_errors.length}
@@ -133,7 +134,7 @@
     {#if info.leds === 0}
       <p class="muted">The {info.model} has no lighting.</p>
     {:else if on}
-      <p>PeriHub drives the lighting until you turn it off or quit PeriHub. It is not saved in the mouse.</p>
+      <p>PeriHub drives the lighting until you turn it off or quit PeriHub. It is not saved in the {noun}.</p>
       <div class="row">
         <label class="row color">Colour <input type="color" value={color} oninput={(e) => pick((e.target as HTMLInputElement).value)} /></label>
         <div class="grow"></div>
@@ -142,17 +143,20 @@
     {:else if asking}
       <div class="col ask">
         <p>
-          PeriHub has to take the mouse into software mode, as iCUE does. While it is on, some buttons (for example the
-          DPI button) might not work, and the lighting shows only what PeriHub sends. Nothing is written to the mouse's
-          memory.
+          PeriHub has to take the {noun} into software mode, as iCUE does. While it is on,
+          {info.kind === "keyboard"
+            ? "some keys (for example the volume dial or FN combinations) might not work, and it is not known whether every key still types"
+            : "some buttons (for example the DPI button) might not work"}, and the lighting shows only what PeriHub sends.
+          Nothing is written to the {noun}'s memory.
         </p>
         <p>
           It stays off while another program that drives Corsair mice runs (iCUE, OpenRGB, ckb-next, OpenLinkHub):
-          two of them at once can leave a mouse unable to click.
+          two of them at once can leave a {noun} unable to {info.kind === "keyboard" ? "type" : "click"}.
         </p>
         <p>
           <b>To get out:</b> <b>Turn off</b> here, <b>Turn off experimental editing</b> in the tray menu, or quit
-          PeriHub. If the mouse still behaves oddly, unplug it and plug it back in.
+          PeriHub. If the {noun} still behaves oddly, unplug it and plug it back in. The confirmation that follows gives it
+          back by itself after 15 seconds, without any key or click.
         </p>
         <NoWarranty device={`Corsair ${info.model}`} bind:accepted={understood} />
         <div class="row end">
@@ -161,7 +165,7 @@
         </div>
       </div>
     {:else}
-      <p class="muted">The mouse uses its own lighting. You can try PeriHub's, for this session only.</p>
+      <p class="muted">The {noun} uses its own lighting. You can try PeriHub's, for this session only.</p>
       <div class="row">
         <label class="row color">Colour <input type="color" value={color} oninput={(e) => pick((e.target as HTMLInputElement).value)} /></label>
         <div class="grow"></div>
@@ -175,14 +179,16 @@
   {#if confirmWorks && on}
     <KeepChangesDialog
       model={info.model}
-      undoText="gives the mouse back to its own settings"
-      checkText="move it, click with every button, use the scroll wheel"
+      undoText={`gives the ${noun} back to its own settings`}
+      checkText={info.kind === "keyboard"
+        ? "type a few keys, try the volume dial and FN combinations"
+        : "move it, click with every button, use the scroll wheel"}
       onkeep={keep}
       onundo={turnOff}
     />
   {/if}
 {:else if !connectError}
-  <div class="notice info">No Corsair mouse connected.</div>
+  <div class="notice info">No Corsair device connected.</div>
 {/if}
 
 <style>

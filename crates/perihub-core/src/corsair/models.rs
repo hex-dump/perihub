@@ -1,22 +1,36 @@
-//! Corsair mice PeriHub recognizes on their USB cable, from the table in
+//! Corsair mice and keyboards PeriHub recognizes on their USB cable, from the tables in
 //! `docs/protocols/corsair-bragi.md`. None has been tested on real hardware yet.
+
+use serde::Serialize;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Kind {
+    Mouse,
+    Keyboard,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CorsairModel {
     pub product_id: u16,
     pub name: &'static str,
+    pub kind: Kind,
     /// LEDs the lighting data covers; 0 for mice without lighting.
     pub leds: u8,
-    /// Packet size: 64 bytes, or 128 on a few mice.
+    /// Packet size in bytes: 64 on most mice, up to 1024 on keyboards.
     pub packet: usize,
 }
 
 const fn model(product_id: u16, name: &'static str, leds: u8) -> CorsairModel {
-    CorsairModel { product_id, name, leds, packet: super::PACKET }
+    CorsairModel { product_id, name, kind: Kind::Mouse, leds, packet: super::PACKET }
 }
 
 const fn big(product_id: u16, name: &'static str, leds: u8) -> CorsairModel {
-    CorsairModel { product_id, name, leds, packet: 128 }
+    CorsairModel { product_id, name, kind: Kind::Mouse, leds, packet: 128 }
+}
+
+const fn keyboard(product_id: u16, name: &'static str, packet: usize, leds: u8) -> CorsairModel {
+    CorsairModel { product_id, name, kind: Kind::Keyboard, leds, packet }
 }
 
 pub const MODELS: &[CorsairModel] = &[
@@ -50,6 +64,42 @@ pub const MODELS: &[CorsairModel] = &[
     // 128-byte packets.
     big(0x1BE3, "SCIMITAR RGB ELITE", 5),
     big(0x2B03, "M55", 1),
+    // Keyboards.
+    keyboard(0x1BA4, "K55 PRO RGB", 64, 5),
+    keyboard(0x1BA1, "K55 RGB PRO XT", 64, 137),
+    keyboard(0x1BFE, "K55 CORE RGB", 64, 10),
+    keyboard(0x2B05, "K55 CORE RGB", 64, 10),
+    keyboard(0x2B20, "K55 CORE TKL RGB", 64, 8),
+    keyboard(0x1B6E, "K57 RGB WIRELESS", 64, 137),
+    keyboard(0x1BA0, "K60 RGB PRO", 64, 123),
+    keyboard(0x1BAD, "K60 RGB PRO LP", 64, 123),
+    keyboard(0x2B10, "K65 PLUS WIRELESS", 64, 123),
+    keyboard(0x2B11, "K65 PLUS WIRELESS", 64, 123),
+    keyboard(0x2B23, "K65 PLUS WIRELESS", 64, 123),
+    keyboard(0x1BD7, "K65 PRO MINI", 128, 130),
+    keyboard(0x1BAF, "K65 RGB MINI", 1024, 124),
+    keyboard(0x1BC3, "K65 RGB MINI", 1024, 124),
+    keyboard(0x1BCF, "K65 RGB MINI", 1024, 124),
+    keyboard(0x1BFD, "K70 CORE RGB", 64, 123),
+    keyboard(0x1BFF, "K70 CORE RGB", 64, 123),
+    keyboard(0x2B0A, "K70 CORE RGB", 64, 123),
+    keyboard(0x2B01, "K70 CORE TKL", 64, 125),
+    keyboard(0x2B02, "K70 CORE TKL WIRELESS", 64, 123),
+    keyboard(0x1BC0, "K70 MAX", 128, 142),
+    keyboard(0x1BB3, "K70 PRO", 1024, 142),
+    keyboard(0x1BC4, "K70 PRO", 1024, 142),
+    keyboard(0x1BC6, "K70 PRO", 1024, 142),
+    keyboard(0x1BD4, "K70 PRO", 1024, 142),
+    keyboard(0x1BB6, "K70 PRO MINI WIRELESS", 1024, 130),
+    keyboard(0x2B14, "K70 PRO TKL", 256, 139),
+    keyboard(0x1B73, "K70 RGB TKL", 1024, 130),
+    keyboard(0x1BB9, "K70 RGB TKL CS", 1024, 130),
+    keyboard(0x1B89, "K95 RGB PLATINUM XT", 64, 156),
+    keyboard(0x1B7C, "K100 RGB", 1024, 194),
+    keyboard(0x1B7D, "K100 RGB", 1024, 194),
+    keyboard(0x1BC5, "K100 RGB", 1024, 194),
+    keyboard(0x1BAB, "K100 AIR WIRELESS", 1024, 137),
+    keyboard(0x2B04, "MAKR 75", 512, 137),
 ];
 
 pub fn find(product_id: u16) -> Option<&'static CorsairModel> {
@@ -66,11 +116,12 @@ mod tests {
         ids.sort();
         ids.dedup();
         assert_eq!(ids.len(), MODELS.len());
-        assert!(MODELS.iter().all(|m| m.leds <= 15 && matches!(m.packet, 64 | 128)));
+        assert!(MODELS.iter().all(|m| matches!(m.packet, 64 | 128 | 256 | 512 | 1024)));
+        assert!(MODELS.iter().filter(|m| m.kind == Kind::Mouse).all(|m| m.leds <= 15));
     }
 
     #[test]
-    fn the_table_matches_the_protocol_page() {
+    fn the_tables_match_the_protocol_page() {
         let page = include_str!("../../../../docs/protocols/corsair-bragi.md");
         for m in MODELS {
             let row = format!("| {} | `{:04x}` | {} | {} |", m.name, m.product_id, m.packet, m.leds);

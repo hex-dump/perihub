@@ -138,6 +138,62 @@ which PeriHub does not handle yet.
 With 128-byte packets the layout is the same: only the packet is longer, so more data fits in
 each write. The Slipstream receiver and the keyboards are left for later.
 
+## Keyboards PeriHub recognizes
+
+On their USB cable, HID interface 1 (OpenLinkHub). Packets are larger on many keyboards: 128,
+256, 512 or 1024 bytes (OpenLinkHub; ckb-next agrees on 1024 for the K100, K65 RGB MINI, K70 PRO
+and K70 RGB TKL). Where the two sources give different LED counts PeriHub uses OpenLinkHub's,
+the more recent one: since PeriHub only shows one colour on every key, a count that is a little
+off leaves a few keys unlit at worst, or makes the keyboard refuse the write, which turns the
+lighting off.
+
+Key presses arrive on interface 0, and in software mode also on interface 2 (OpenLinkHub listens
+there): PeriHub opens neither, only interface 1.
+
+Not known: whether every key still types normally while a keyboard is in software mode.
+OpenLinkHub handles some keys itself in software mode (the volume dial and FN layer on the
+K70 CORE). The 15-second confirmation gives the keyboard back without any key or click.
+
+| Keyboard | Product id | Packet | LEDs | Source of the LED count |
+|---|---|---|---|---|
+| K55 PRO RGB | `1ba4` | 64 | 5 | OpenLinkHub (ckb-next: 6) |
+| K55 RGB PRO XT | `1ba1` | 64 | 137 | both |
+| K55 CORE RGB | `1bfe` | 64 | 10 | OpenLinkHub |
+| K55 CORE RGB | `2b05` | 64 | 10 | OpenLinkHub |
+| K55 CORE TKL RGB | `2b20` | 64 | 8 | OpenLinkHub |
+| K57 RGB WIRELESS | `1b6e` | 64 | 137 | both |
+| K60 RGB PRO | `1ba0` | 64 | 123 | both |
+| K60 RGB PRO LP | `1bad` | 64 | 123 | both |
+| K65 PLUS WIRELESS | `2b10` | 64 | 123 | OpenLinkHub |
+| K65 PLUS WIRELESS | `2b11` | 64 | 123 | OpenLinkHub |
+| K65 PLUS WIRELESS | `2b23` | 64 | 123 | OpenLinkHub |
+| K65 PRO MINI | `1bd7` | 128 | 130 | OpenLinkHub |
+| K65 RGB MINI | `1baf` | 1024 | 124 | OpenLinkHub (ckb-next: 123) |
+| K65 RGB MINI | `1bc3` | 1024 | 124 | OpenLinkHub |
+| K65 RGB MINI | `1bcf` | 1024 | 124 | OpenLinkHub |
+| K70 CORE RGB | `1bfd` | 64 | 123 | both |
+| K70 CORE RGB | `1bff` | 64 | 123 | both |
+| K70 CORE RGB | `2b0a` | 64 | 123 | both |
+| K70 CORE TKL | `2b01` | 64 | 125 | OpenLinkHub |
+| K70 CORE TKL WIRELESS | `2b02` | 64 | 123 | OpenLinkHub |
+| K70 MAX | `1bc0` | 128 | 142 | OpenLinkHub |
+| K70 PRO | `1bb3` | 1024 | 142 | OpenLinkHub (ckb-next: 193) |
+| K70 PRO | `1bc4` | 1024 | 142 | OpenLinkHub |
+| K70 PRO | `1bc6` | 1024 | 142 | OpenLinkHub |
+| K70 PRO | `1bd4` | 1024 | 142 | OpenLinkHub (ckb-next: 193) |
+| K70 PRO MINI WIRELESS | `1bb6` | 1024 | 130 | OpenLinkHub |
+| K70 PRO TKL | `2b14` | 256 | 139 | OpenLinkHub |
+| K70 RGB TKL | `1b73` | 1024 | 130 | OpenLinkHub (ckb-next: 193) |
+| K70 RGB TKL CS | `1bb9` | 1024 | 130 | OpenLinkHub (ckb-next: 193) |
+| K95 RGB PLATINUM XT | `1b89` | 64 | 156 | both |
+| K100 RGB | `1b7c` | 1024 | 194 | OpenLinkHub (ckb-next: 193) |
+| K100 RGB | `1b7d` | 1024 | 194 | OpenLinkHub (ckb-next: 193) |
+| K100 RGB | `1bc5` | 1024 | 194 | OpenLinkHub (ckb-next: 193) |
+| K100 AIR WIRELESS | `1bab` | 1024 | 137 | OpenLinkHub |
+| MAKR 75 | `2b04` | 512 | 137 | OpenLinkHub |
+
+Older Corsair keyboards (K70 RGB MK.2, K95 RGB PLATINUM, K65 RGB, K68 and others) speak an older protocol, not this one, and are not recognized.
+
 ## What PeriHub does with it
 
 - **Always (read-only):** get the firmware version, the mode, the polling rate and the DPI.

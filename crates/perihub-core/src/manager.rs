@@ -13,7 +13,7 @@ use serde::Serialize;
 use crate::apex::Apex3Tkl;
 use crate::config::KeyboardConfig;
 use crate::conflicts::{self, Conflict};
-use crate::corsair::mouse::{CorsairMouseInfo, CorsairMouseTask};
+use crate::corsair::device::{CorsairInfo, CorsairTask};
 use crate::corsair::{self, BragiDevice};
 use crate::error::{Error, Result};
 use crate::hidpp::models::{self, MouseModel};
@@ -51,19 +51,28 @@ fn mouse_hidpp_interface(d: &DeviceInfo) -> Option<&'static MouseModel> {
     if d.vendor_id() == LOGITECH && long_collection { models::find(d.product_id()) } else { None }
 }
 
-/// The control interface of a Corsair mouse PeriHub knows. On Windows an interface can have more
-/// than one collection: the vendor-defined one is preferred (not verified on a real mouse yet).
-fn corsair_control_interface(devices: &[DeviceInfo]) -> Option<(DeviceInfo, &'static corsair::models::CorsairModel)> {
-    let candidates: Vec<&DeviceInfo> = devices
-        .iter()
-        .filter(|d| {
-            d.vendor_id() == corsair::CORSAIR
-                && d.interface_number() == corsair::CONTROL_INTERFACE
-                && corsair::models::find(d.product_id()).is_some()
-        })
-        .collect();
-    let chosen = candidates.iter().find(|d| d.usage_page() >= 0xFF00).or(candidates.first())?;
-    Some(((*chosen).clone(), corsair::models::find(chosen.product_id())?))
+/// The control interfaces of the Corsair devices PeriHub knows, one per device. On Windows an
+/// interface can have more than one collection: the vendor-defined one is preferred (not verified
+/// on a real device yet).
+fn corsair_control_interfaces(devices: &[DeviceInfo]) -> Vec<(DeviceInfo, &'static corsair::models::CorsairModel)> {
+    let mut found: Vec<(DeviceInfo, &'static corsair::models::CorsairModel)> = Vec::new();
+    for d in devices {
+        let Some(model) = (d.vendor_id() == corsair::CORSAIR && d.interface_number() == corsair::CONTROL_INTERFACE)
+            .then(|| corsair::models::find(d.product_id()))
+            .flatten()
+        else {
+            continue;
+        };
+        // Collections of the same interface share the serial number and product id.
+        let same =
+            found.iter().position(|(o, _)| o.product_id() == d.product_id() && o.serial_number() == d.serial_number());
+        match same {
+            Some(i) if found[i].0.usage_page() < 0xFF00 && d.usage_page() >= 0xFF00 => found[i] = (d.clone(), model),
+            Some(_) => {}
+            None => found.push((d.clone(), model)),
+        }
+    }
+    found
 }
 
 /// HID++ collection of a LIGHTSPEED receiver: usage 2 is the long one, 1 the short one. On Linux
@@ -146,8 +155,8 @@ pub struct DeviceStatus {
     pub unsupported_keyboard: Option<String>,
     /// Running programs that take control of the devices, such as Logitech G HUB.
     pub conflicts: Vec<String>,
-    /// A Corsair mouse (experimental support).
-    pub corsair_mouse: Option<CorsairMouseInfo>,
+    /// Corsair mice and keyboards (experimental support).
+    pub corsair: Vec<CorsairInfo>,
     pub corsair_error: Option<String>,
 }
 
@@ -155,11 +164,11 @@ pub struct DeviceStatus {
 struct Slots {
     keyboard: Option<(Worker<KeyboardTask>, KeyboardInfo)>,
     mouse: Option<(Worker<MouseTask>, MouseInfo)>,
-    corsair: Option<(Worker<CorsairMouseTask>, CorsairMouseInfo)>,
-    corsair_path: Option<CString>,
+    /// Open Corsair devices, by the path of their control interface.
+    corsair: Vec<(CString, Worker<CorsairTask>, CorsairInfo)>,
     corsair_error: Option<String>,
-    /// Corsair mouse that failed to open: not retried until it is plugged in again.
-    corsair_failed: Option<CString>,
+    /// Corsair devices that failed to open: not retried until they are plugged in again.
+    corsair_failed: Vec<CString>,
     /// Set by the mouse's thread while another program controls the mouse.
     mouse_host_mode: Option<Arc<AtomicBool>>,
     reported_host_mode: bool,
@@ -528,79 +537,94 @@ impl Manager {
             mouse_asleep: slots.mouse_asleep.clone(),
             unsupported_keyboard: slots.unsupported_keyboard.clone(),
             conflicts: slots.conflicts.iter().map(|c| c.name().to_string()).collect(),
-            corsair_mouse: slots.corsair.as_ref().map(|(_, info)| info.clone()),
+            corsair: slots.corsair.iter().map(|(_, _, info)| info.clone()).collect(),
             corsair_error: slots.corsair_error.clone(),
         }
     }
 
-    pub fn corsair_mouse(&self) -> Result<Worker<CorsairMouseTask>> {
-        self.slots.lock().unwrap().corsair.as_ref().map(|(w, _)| w.clone()).ok_or(Error::NotConnected)
+    /// The open Corsair device with this USB product id.
+    pub fn corsair(&self, product_id: u16) -> Result<Worker<CorsairTask>> {
+        let slots = self.slots.lock().unwrap();
+        slots
+            .corsair
+            .iter()
+            .find(|(_, _, info)| info.product_id == product_id)
+            .map(|(_, w, _)| w.clone())
+            .ok_or(Error::NotConnected)
     }
 
-    /// Keeps the status in step with the Corsair mouse's lighting (it lasts for the session only).
-    pub fn corsair_changed(&self, info: &CorsairMouseInfo) {
-        if let Some((_, current)) = self.slots.lock().unwrap().corsair.as_mut() {
+    /// Keeps the status in step with a Corsair device's lighting (it lasts for the session only).
+    pub fn corsair_changed(&self, info: &CorsairInfo) {
+        let mut slots = self.slots.lock().unwrap();
+        if let Some((_, _, current)) = slots.corsair.iter_mut().find(|(_, _, i)| i.product_id == info.product_id) {
             *current = info.clone();
         }
     }
 
-    /// Opens or forgets the Corsair mouse. Returns `true` if the status changed.
+    /// Opens new Corsair devices and forgets the ones that went away. Returns `true` if the
+    /// status changed.
     fn poll_corsair(&self, api: &HidApi) -> bool {
         let devices: Vec<DeviceInfo> = api.device_list().cloned().collect();
-        let found = corsair_control_interface(&devices);
-        let mut slots = self.slots.lock().unwrap();
+        let found = corsair_control_interfaces(&devices);
+        let present = |path: &CStr| found.iter().any(|(d, _)| d.path() == path);
         let mut changed = false;
-        let path = found.as_ref().map(|(d, _)| d.path().to_owned());
-        if slots.corsair.as_ref().is_some_and(|(w, _)| !w.is_alive()) || slots.corsair_path != path {
-            if slots.corsair.take().is_some() {
-                log::info!("Corsair mouse disconnected");
-                changed = true;
+        let mut slots = self.slots.lock().unwrap();
+        let before = slots.corsair.len();
+        slots.corsair.retain(|(path, worker, info)| {
+            let keep = worker.is_alive() && present(path);
+            if !keep {
+                log::info!("Corsair {} disconnected", info.model);
             }
-            slots.corsair_path = None;
-        }
-        if slots.corsair_failed.is_some() && slots.corsair_failed != path {
-            slots.corsair_failed = None;
-        }
-        if path.is_none() && slots.corsair_error.take().is_some() {
+            keep
+        });
+        changed |= slots.corsair.len() != before;
+        slots.corsair_failed.retain(|path| present(path));
+        if found.is_empty() && slots.corsair_error.take().is_some() {
             changed = true;
         }
-        let Some((device, model)) = found else { return changed };
-        if slots.corsair.is_some() || slots.corsair_failed.as_deref() == Some(device.path()) {
-            return changed;
-        }
+        let new: Vec<_> = found
+            .into_iter()
+            .filter(|(d, _)| {
+                !slots.corsair.iter().any(|(p, _, _)| p.as_c_str() == d.path())
+                    && !slots.corsair_failed.iter().any(|p| p.as_c_str() == d.path())
+            })
+            .collect();
         drop(slots);
-        let result = device
-            .open_device(api)
-            .map_err(Error::from)
-            .and_then(|dev| CorsairMouseTask::open(BragiDevice::new(dev, model.packet), model));
-        let mut slots = self.slots.lock().unwrap();
-        match result {
-            Ok(task) => {
-                let info = task.info();
-                log::info!("Corsair mouse connected: {} (experimental support, read-only)", info.model);
-                slots.corsair = Some((Worker::spawn("perihub-corsair", task), info));
-                slots.corsair_path = Some(device.path().to_owned());
-                slots.corsair_error = None;
-            }
-            Err(error) => {
-                let message = format!("Corsair {}: {}", model.name, open_error_message(error));
-                log::warn!("{message}");
-                if !message.contains("permission denied") {
-                    slots.corsair_failed = Some(device.path().to_owned());
+        for (device, model) in new {
+            let result = device
+                .open_device(api)
+                .map_err(Error::from)
+                .and_then(|dev| CorsairTask::open(BragiDevice::new(dev, model.packet), model));
+            let mut slots = self.slots.lock().unwrap();
+            match result {
+                Ok(task) => {
+                    let info = task.info();
+                    log::info!("Corsair {} connected (experimental support, read-only)", info.model);
+                    slots.corsair.push((device.path().to_owned(), Worker::spawn("perihub-corsair", task), info));
+                    slots.corsair_error = None;
                 }
-                slots.corsair_error = Some(message);
+                Err(error) => {
+                    let message = format!("Corsair {}: {}", model.name, open_error_message(error));
+                    log::warn!("{message}");
+                    if !message.contains("permission denied") {
+                        slots.corsair_failed.push(device.path().to_owned());
+                    }
+                    slots.corsair_error = Some(message);
+                }
             }
+            changed = true;
         }
-        true
+        changed
     }
 
-    /// Gives the Corsair mouse back to its own settings if experimental lighting is on (tray menu,
-    /// quitting PeriHub).
+    /// Gives every Corsair device with experimental lighting back to its own settings (tray menu,
+    /// quitting PeriHub, installing an update).
     pub fn release_corsair(&self) {
-        if let Ok(worker) = self.corsair_mouse()
-            && let Ok(info) = worker.call(|m| m.turn_off_lighting())
-        {
-            self.corsair_changed(&info);
+        let workers: Vec<_> = self.slots.lock().unwrap().corsair.iter().map(|(_, w, _)| w.clone()).collect();
+        for worker in workers {
+            if let Ok(info) = worker.call(|m| m.turn_off_lighting()) {
+                self.corsair_changed(&info);
+            }
         }
     }
 
