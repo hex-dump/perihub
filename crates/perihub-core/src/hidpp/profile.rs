@@ -533,6 +533,23 @@ mod tests {
         assert_eq!(written[..253], big[..253]);
     }
 
+    /// Sector 0x0100 of the G502 HERO (firmware U1 27.03), read on 2026-11-09: five entries that
+    /// end in 0xFF instead of 0x00, the end marker, then the firmware's name.
+    #[test]
+    fn the_factory_list_of_a_real_g502_hero_enables_its_five_profiles() {
+        let mut sector = vec![0x00; 256];
+        let start: Vec<u8> = (1..=5).flat_map(|n| [0x01, n, 0x01, 0xFF]).chain([0xFF, 0xFF]).collect();
+        sector[..start.len()].copy_from_slice(&start);
+        sector[start.len()..start.len() + 13].copy_from_slice(b"U127.03_B0010");
+        assert_eq!(parse_factory_directory(&sector, 5, 5), Some(vec![true; 5]));
+        // The mouse's own list, as it is in the same mouse, is not a factory list.
+        let own = build_directory(&[true; 5], 256);
+        assert_eq!(own[..24], [0, 1, 1, 0, 0, 2, 1, 0, 0, 3, 1, 0, 0, 4, 1, 0, 0, 5, 1, 0, 0xFF, 0xFF, 0, 0]);
+        assert_eq!(parse_factory_directory(&own, 5, 5), None);
+        assert!(!is_blank_directory(&own));
+        assert!(is_blank_directory(&[0xFF; 256]) && is_blank_directory(&[0x00; 255]));
+    }
+
     #[test]
     fn the_factory_list_gives_the_enabled_profiles_only_when_it_makes_sense() {
         let list = |entries: &[[u8; 4]]| {

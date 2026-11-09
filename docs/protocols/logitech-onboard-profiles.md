@@ -13,20 +13,21 @@ Sources studied (read only, for the protocol facts):
 - [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0), `hidpp20.py` and
   `settings_templates.py`: the factory list in sector `0x0100`, and profiles selected by their
   two-byte address, `0x01nn` for a factory profile.
-- A real G502 HERO (`046d:c08b`, firmware U1 27.03): everything marked **(G502)**.
+- A real G502 HERO (`046d:c08b`, firmware U1 27.03), which has a profile list of its own:
+  everything marked **(G502)**.
 - Issues [#15](https://github.com/hex-dump/perihub/issues/15) and
   [#20](https://github.com/hex-dump/perihub/issues/20): the memory formats of a G502 X Wireless and
   of a G502 HERO with newer firmware.
 
 What is not marked **(G502)** comes from the two projects above and has not been seen by PeriHub
-on a real mouse.
+on a real mouse. In particular, PeriHub has never met a mouse without a profile list.
 
 ## Sectors
 
 - The mouse's own memory is a row of sectors of the same size, numbered from `0x0000`. Sector 0 is
   the **profile list**; sector *n* holds profile *n*; the rest is for macros **(G502)**.
 - The factory profiles are in read-only sectors: `0x0100` is the **factory list**, `0x0100 + n`
-  factory profile *n*. A mouse can have fewer factory profiles than profiles (2 and 5 on the
+  factory profile *n* **(G502)**. A mouse can have fewer factory profiles than profiles (2 and 5 on the
   G502 X Wireless of #15); the profiles past them start as copies of factory profile 1.
 - A sector ends with a CRC-CCITT (initial value `0xFFFF`) of everything before it, big-endian
   **(G502)**. With 256-byte sectors it sits in bytes 254–255, with 255-byte sectors in 253–254.
@@ -46,6 +47,10 @@ Four bytes for each profile, then an end marker **(G502)**:
 | 3 | `00` |
 
 The end marker is `FF FF 00 00`; the rest of the sector is `FF`, with the CRC at the end.
+
+The factory list of the G502 HERO reads `01 01 01 FF`, `01 02 01 FF` … `01 05 01 FF`, then `FF FF`
+and the name of the firmware in ASCII (`U127.03_B0010`): the same entries with a last byte of
+`FF`, all five profiles enabled, and no CRC to check **(G502)**.
 
 ## A mouse nothing was saved to
 

@@ -1359,7 +1359,7 @@ mod tests {
                 sector[3..5].copy_from_slice(&dpi.to_le_bytes());
                 rom.insert(ROM_SECTOR_BASE + n as u16, sector);
                 let at = 4 * (n as usize - 1);
-                list[at..at + 4].copy_from_slice(&[0x01, n, (n <= 3) as u8, 0x00]);
+                list[at..at + 4].copy_from_slice(&[0x01, n, (n <= 3) as u8, 0xFF]);
             }
             let end = 4 * onboard.rom_profile_count as usize;
             list[end..end + 4].copy_from_slice(&[0xFF, 0xFF, 0x00, 0x00]);
