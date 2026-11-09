@@ -78,13 +78,20 @@ Own one? Send a [mouse test report](https://github.com/hex-dump/perihub/issues/n
 
 | Device | USB ID | Level |
 |---|---|---|
-| G300 | `046d:c246` | 👁 Read-only |
+| G300 | `046d:c246` | 🧪 Experimental (from the next version; 👁 read-only in 0.6.1) |
 
-The G300 has a protocol of its own. PeriHub shows its three profiles: light colour, report rate,
-DPI levels, and what each button does (G4 to G9 as printed on the mouse), with the active profile
-and DPI level. The format was checked against a real G300 and Logitech Gaming Software in
+The G300 has a protocol of its own ([how it works](protocols/logitech-g300.md)). PeriHub shows its
+three profiles: light colour, report rate, DPI levels and DPI shift, and what each button does (G4
+to G9 as printed on the mouse), with the active profile and DPI level. The format was checked
+against a real G300 and Logitech Gaming Software in
 [issue #16](https://github.com/hex-dump/perihub/issues/16), and PeriHub 0.6.1 read it correctly on
-Windows. Own one? Send a
+Windows.
+
+**Edit anyway…** on the G300 page turns on experimental editing: light colour, report rate, DPI
+levels, default level and shift, and the buttons except left and right, with only the values
+Logitech Gaming Software offers. PeriHub backs up the three profiles before every save, reads the
+save back, and undoes it after 15 seconds unless you keep it. Saving has not been tried on a real
+G300 yet. Own one? Send a
 [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
 
 ## Corsair

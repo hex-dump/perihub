@@ -50,7 +50,7 @@
 | **Logitech G502 HERO** mouse | ✅ Fully supported, tested on real hardware |
 | 29 more **Logitech G mice** (G502 X, G Pro, G403, G703, G903, G305…) | 🧪 Experimental: read, and editable at your own risk with the USB cable |
 | 26 **Corsair mice** and 23 **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Experimental: read, and one colour of lighting for the session, at your own risk |
-| **Logitech G300** mouse | 👁 Read-only |
+| **Logitech G300** mouse | 🧪 Experimental: read, and editable at your own risk (from the next version; read-only in 0.6.1) |
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
 
@@ -103,14 +103,14 @@ Some devices have not been tested yet. PeriHub reads them and changes nothing, u
 > [!CAUTION]
 > **No warranty.** Experimental features have never been tried on your device. PeriHub is provided "as is", without any warranty, as its [license](LICENSE) says. If you turn one on, you use it at your own risk: the author of PeriHub is not responsible for any damage, malfunction or loss. PeriHub asks you to confirm this before each one is turned on.
 
-| | Logitech mice: **Edit anyway…** | Corsair devices: **Try experimental lighting…** |
-|---|---|---|
-| What you can change | Profiles: DPI, polling rate, buttons, lighting, macros | One colour on every LED or key, for this session |
-| When it is offered | USB cable, and a memory laid out like the G502 HERO's | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |
-| What stays off | Enabling or disabling profiles, editing through a receiver | Everything else: DPI, polling rate, buttons, the device's memory |
-| Safety net | Only values the mouse accepts; a backup before every save; every write read back | Only the commands lighting needs; nothing is saved in the device |
-| If something looks wrong | Each save is undone after 15 seconds unless you keep it, also after PeriHub closed or the mouse was unplugged | The device gets its own settings back after 15 seconds unless you keep it, when you quit PeriHub, and as soon as anything fails |
-| Turn it off | On the mouse page, or **Turn off experimental editing** in the tray menu | On the device page, or **Turn off experimental editing** in the tray menu |
+| | Logitech mice: **Edit anyway…** | Logitech G300: **Edit anyway…** (from the next version) | Corsair devices: **Try experimental lighting…** |
+|---|---|---|---|
+| What you can change | Profiles: DPI, polling rate, buttons, lighting, macros | Profiles: light colour, report rate, DPI levels and shift, buttons | One colour on every LED or key, for this session |
+| When it is offered | USB cable, and a memory laid out like the G502 HERO's | Always | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |
+| What stays off | Enabling or disabling profiles, editing through a receiver | The left and right buttons | Everything else: DPI, polling rate, buttons, the device's memory |
+| Safety net | Only values the mouse accepts; a backup before every save; every write read back | Only values Logitech Gaming Software offers; only the edited fields change; a backup of the three profiles before every save; every write read back | Only the commands lighting needs; nothing is saved in the device |
+| If something looks wrong | Each save is undone after 15 seconds unless you keep it, also after PeriHub closed or the mouse was unplugged | The same | The device gets its own settings back after 15 seconds unless you keep it, when you quit PeriHub, and as soon as anything fails |
+| Turn it off | On the mouse page, or **Turn off experimental editing** in the tray menu | On the G300 page, or the tray menu | On the device page, or **Turn off experimental editing** in the tray menu |
 
 ### Help test your device
 

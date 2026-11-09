@@ -168,7 +168,7 @@ pub struct DeviceStatus {
     pub unsupported_keyboard: Option<String>,
     /// Running programs that take control of the devices, such as Logitech G HUB.
     pub conflicts: Vec<String>,
-    /// A Logitech G300 (read only).
+    /// A Logitech G300 (read only, or experimental editing).
     pub g300: Option<G300Info>,
     pub g300_error: Option<String>,
     /// Corsair mice and keyboards (experimental support).
@@ -572,7 +572,22 @@ impl Manager {
         self.slots.lock().unwrap().g300.as_ref().map(|(_, w, _)| w.clone()).ok_or(Error::NotConnected)
     }
 
-    /// Opens or forgets the Logitech G300 (read only). Returns `true` if the status changed.
+    /// Closes the G300 so that the hotplug thread opens it again, with or without experimental
+    /// editing. Its thread first undoes a save that was not kept (see [`G300Task::close`]).
+    fn reopen_g300(&self) {
+        let Ok(worker) = self.g300() else { return };
+        log::info!("G300 experimental editing changed: opening the mouse again");
+        if let Err(e) = worker.call(|g| g.close()) {
+            log::warn!("closing the G300: {e}");
+        }
+        let mut slots = self.slots.lock().unwrap();
+        if slots.g300.as_ref().is_some_and(|(_, w, _)| w.same(&worker)) {
+            slots.g300 = None;
+            slots.g300_failed = None;
+        }
+    }
+
+    /// Opens or forgets the Logitech G300. Returns `true` if the status changed.
     fn poll_g300(&self, api: &HidApi) -> bool {
         let candidates: Vec<&DeviceInfo> = api
             .device_list()
@@ -602,7 +617,12 @@ impl Manager {
             return changed;
         }
         drop(slots);
-        let result = device.open_device(api).map_err(Error::from).and_then(G300Task::open);
+        // Experimental editing on: the task gets the connection that can send reports.
+        let experimental = self.experimental_mice.lock().unwrap().contains(&g300::PRODUCT_ID);
+        let result = device
+            .open_device(api)
+            .map_err(Error::from)
+            .and_then(|dev| if experimental { G300Task::open_experimental(dev) } else { G300Task::open(dev) });
         let mut slots = self.slots.lock().unwrap();
         match result {
             Ok(task) => {
@@ -841,6 +861,9 @@ impl Manager {
     pub fn set_experimental_mice(&self, ids: &[u16]) {
         let new: HashSet<u16> = ids.iter().copied().collect();
         let old = std::mem::replace(&mut *self.experimental_mice.lock().unwrap(), new.clone());
+        if old.contains(&g300::PRODUCT_ID) != new.contains(&g300::PRODUCT_ID) {
+            self.reopen_g300();
+        }
         let worker = {
             let slots = self.slots.lock().unwrap();
             slots

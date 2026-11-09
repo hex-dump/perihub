@@ -278,7 +278,7 @@ export interface DeviceStatus {
   unsupported_keyboard: string | null;
   /** Running programs that take control of the devices, such as "Logitech G HUB". */
   conflicts: string[];
-  /** A Logitech G300 (read only). */
+  /** A Logitech G300 (read only, or experimental editing). */
   g300: G300Info | null;
   g300_error: string | null;
   /** Corsair mice and keyboards (experimental support). */
@@ -300,10 +300,25 @@ export interface G300Profile {
   report_rate_hz: number | null;
   dpi_levels: number[];
   default_level: number | null;
-  /** Byte 7, not fully understood: with a DPI shift button, the shift DPI / 250. */
+  /** DPI while the DPI shift button is held; null when the shift is off. */
+  shift_dpi: number | null;
+  /** Byte 7 as read: the shift DPI / 250, and bit 0x40 when the shift is off. */
   shift_byte: number;
   buttons: G300Button[];
   raw: string;
+}
+
+/** What can be changed in a G300 profile. */
+export interface G300Settings {
+  /** "#rrggbb", each channel 00 or ff. */
+  color: string;
+  report_rate_hz: number;
+  /** Four levels, 250 to 2500 DPI in steps of 250. */
+  dpi_levels: number[];
+  default_level: number;
+  shift_dpi: number | null;
+  /** Nine buttons; the left and right ones keep what they have. */
+  buttons: G300Button[];
 }
 
 export interface G300Info {
@@ -313,6 +328,10 @@ export interface G300Info {
   active_level: number;
   profiles: G300Profile[];
   active_raw: string;
+  /** Experimental editing is on: the profiles can be saved. */
+  experimental: boolean;
+  /** A save was neither kept nor undone: turning experimental editing on puts the backup back. */
+  pending_undo: boolean;
 }
 
 export interface CorsairInfo {
@@ -427,6 +446,10 @@ export const api = {
   onExperimental: (handler: (ids: number[]) => void): Promise<UnlistenFn> =>
     listen<number[]>("experimental-changed", (event) => handler(event.payload)),
   g300Info: () => invoke<G300Info>("g300_info"),
+  /** Saves a G300 profile (experimental editing): undone unless kept. */
+  g300Save: (number: number, settings: G300Settings) => invoke<G300Info>("g300_save", { number, settings }),
+  g300KeepChanges: () => invoke<void>("g300_keep_changes"),
+  g300UndoLastWrite: () => invoke<G300Info>("g300_undo_last_write"),
   /** Experimental lighting on a Corsair mouse: one colour on every LED, for this session. */
   corsairSetLighting: (productId: number, color: string) =>
     invoke<CorsairInfo>("corsair_set_lighting", { productId, color }),

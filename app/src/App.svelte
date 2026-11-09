@@ -95,7 +95,7 @@
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Logitech G300</span>
-          <span class="state" class:on={!!status.g300}>{status.g300 ? "Read-only" : "Not connected"}</span>
+          <span class="state" class:on={!!status.g300}>{status.g300 ? (status.g300.experimental ? "Experimental editing" : "Read-only") : "Not connected"}</span>
         </span>
       </button>
     {/if}

@@ -110,8 +110,13 @@ impl AppConfig {
 
 /// Saves a backup before every write to a device's memory.
 pub fn write_backup(device: &str, label: &str, files: &[(&str, &[u8])]) -> Result<PathBuf> {
+    write_backup_in(&config_dir().join("backups").join(device), label, files)
+}
+
+/// [`write_backup`] into the backup folder `root` of a device.
+pub(crate) fn write_backup_in(root: &Path, label: &str, files: &[(&str, &[u8])]) -> Result<PathBuf> {
     let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-    let dir = config_dir().join("backups").join(device).join(format!("{stamp}-{label}"));
+    let dir = root.join(format!("{stamp}-{label}"));
     fs::create_dir_all(&dir)?;
     for (name, data) in files {
         fs::write(dir.join(name), data)?;
@@ -193,7 +198,7 @@ pub fn read_backup_file(device: &str, id: &str, name: &str) -> Result<Vec<u8>> {
     read_backup_file_in(&config_dir().join("backups").join(device), id, name)
 }
 
-fn read_backup_file_in(root: &Path, id: &str, name: &str) -> Result<Vec<u8>> {
+pub(crate) fn read_backup_file_in(root: &Path, id: &str, name: &str) -> Result<Vec<u8>> {
     if BackupEntry::parse(id).is_none() || name.contains(['/', '\\']) || name.starts_with('.') {
         return Err(Error::Invalid(format!("invalid backup {id:?}")));
     }

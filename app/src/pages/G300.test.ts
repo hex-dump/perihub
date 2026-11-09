@@ -1,7 +1,17 @@
-import { cleanup, render, screen } from "@testing-library/svelte";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const api = vi.hoisted(() => ({ g300Info: vi.fn(), appSettings: vi.fn() }));
+const api = vi.hoisted(() => ({
+  g300Info: vi.fn(),
+  appSettings: vi.fn(),
+  experimentalMice: vi.fn(),
+  setExperimental: vi.fn(),
+  onExperimental: vi.fn(),
+  keyCatalog: vi.fn(),
+  g300Save: vi.fn(),
+  g300KeepChanges: vi.fn(),
+  g300UndoLastWrite: vi.fn(),
+}));
 
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.6.0" }));
@@ -17,6 +27,8 @@ const info: G300Info = {
   active_profile: 1,
   active_level: 1,
   active_raw: "f0 02 00 00",
+  experimental: false,
+  pending_undo: false,
   profiles: [
     {
       number: 1,
@@ -24,6 +36,7 @@ const info: G300Info = {
       report_rate_hz: 1000,
       dpi_levels: [500, 1000, 1500, 2500],
       default_level: 1,
+      shift_dpi: null,
       shift_byte: 0x40,
       buttons: [
         { type: "mouse", button: 1 },
@@ -42,6 +55,13 @@ const info: G300Info = {
 };
 
 afterEach(cleanup);
+beforeEach(() => {
+  vi.clearAllMocks();
+  api.appSettings.mockResolvedValue({ system: "linux x86_64" });
+  api.experimentalMice.mockResolvedValue([]);
+  api.onExperimental.mockResolvedValue(() => {});
+  api.keyCatalog.mockResolvedValue({ targets: [{ usage: 0x04 }, { usage: 0x06 }, { usage: 0x2b }], sources: [] });
+});
 
 describe("the G300 page", () => {
   it("shows the stored profile with the names printed on the mouse, and nothing to edit", () => {
@@ -53,5 +73,39 @@ describe("the G300 page", () => {
     expect(row("G7")).toContain("Ctrl + C");
     expect(row("G8")).toContain("Next profile");
     expect(screen.queryAllByRole("textbox").length + screen.queryAllByRole("spinbutton").length).toBe(0);
+  });
+
+  it("offers experimental editing only behind a warning", async () => {
+    render(G300, { props: { info, error: null } });
+    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+    expect(screen.queryAllByRole("combobox").length).toBe(0);
+    await fireEvent.click(screen.getByRole("button", { name: "Edit anyway…" }));
+    const confirm = screen.getByRole("button", { name: "Turn on experimental editing" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+  });
+
+  it("saves only what was changed, keeps left and right as they are, and asks to keep the save", async () => {
+    const experimental = { ...info, experimental: true };
+    api.g300Save.mockResolvedValue(experimental);
+    render(G300, { props: { info: experimental, error: null } });
+    await fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.queryByRole("combobox", { name: "Left button function" })).toBeNull();
+    await fireEvent.change(screen.getByRole("combobox", { name: "G4 function" }), { target: { value: "mouse" } });
+    await fireEvent.change(screen.getByRole("combobox", { name: "G4 click" }), { target: { value: "4" } });
+    await fireEvent.change(screen.getByRole("combobox", { name: "DPI level 1" }), { target: { value: "750" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Save to the mouse" }));
+    expect(api.g300Save).toHaveBeenCalledTimes(1);
+    const [number, settings] = api.g300Save.mock.calls[0];
+    const profile = info.profiles[0];
+    expect(number).toBe(1);
+    expect(settings).toEqual({
+      color: "#ffffff",
+      report_rate_hz: 1000,
+      dpi_levels: [750, 1000, 1500, 2500],
+      default_level: 1,
+      shift_dpi: null,
+      buttons: [...profile.buttons.slice(0, 3), { type: "mouse", button: 4 }, ...profile.buttons.slice(4)],
+    });
+    expect(await screen.findByRole("button", { name: /keep/i })).toBeTruthy();
   });
 });

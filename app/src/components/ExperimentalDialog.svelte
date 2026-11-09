@@ -4,11 +4,13 @@
   interface Props {
     /** The mouse, e.g. "G403 HERO". */
     model: string;
+    /** The G300 has a protocol of its own: different risks and protections. */
+    g300?: boolean;
     onconfirm: () => void;
     onclose: () => void;
   }
 
-  let { model, onconfirm, onclose }: Props = $props();
+  let { model, g300 = false, onconfirm, onclose }: Props = $props();
 
   let understood = $state(false);
 
@@ -22,6 +24,29 @@
 <div class="backdrop">
   <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="experimental-title">
     <h2 id="experimental-title">Edit the {model} anyway?</h2>
+    {#if g300}
+      <p>
+        PeriHub reads the G300 correctly, but has never saved to one. It saves a profile the way libratbag (Piper) does,
+        and only with the values Logitech Gaming Software offers; whether the G300 keeps it after being unplugged has
+        not been proven.
+      </p>
+      <ul>
+        <li>
+          <b>What could go wrong:</b> a profile that is not kept, or buttons and DPI that do not behave as set, until
+          they are saved again or fixed with Logitech Gaming Software.
+        </li>
+        <li>
+          <b>What PeriHub does to protect the mouse:</b> it backs up the three profiles before every save, writes only
+          what you changed, and reads it back. The left and right buttons cannot be changed. After each save it asks
+          whether to keep the changes, and puts the backup back by itself after 15 seconds without an answer. If PeriHub
+          is closed or the mouse unplugged before that, it does so the next time the mouse is connected.
+        </li>
+        <li>
+          <b>To turn it off:</b> here on the G300 page, or <b>Turn off experimental editing</b> in the tray menu.
+        </li>
+      </ul>
+      <p class="muted small">If it works, please send a test report: it is how the G300 becomes fully supported.</p>
+    {:else}
     <p>
       Nobody has tested PeriHub on the {model} yet. Its memory looks like the G502 HERO's, the mouse PeriHub was
       tested on, so saving should work, but it has not been proven.
@@ -48,6 +73,7 @@
     <p class="muted small">
       If it works, please send a mouse test report: it is how the {model} becomes fully supported.
     </p>
+    {/if}
     <NoWarranty device={`Logitech ${model}`} bind:accepted={understood} />
     <div class="row end">
       <button onclick={onclose}>Cancel</button>
