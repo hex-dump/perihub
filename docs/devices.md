@@ -34,8 +34,14 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
 - **Logitech G502 HERO** (`046d:c08b`): ✅ supported.
 - **Every other mouse below**: 🧪 experimental. PeriHub shows their profiles, DPI levels, buttons,
   lighting and battery. With **Edit anyway…** on the mouse page you can also change and save them,
-  at your own risk, if the mouse is connected with its USB cable and its memory is laid out like
-  the G502 HERO's. Otherwise, and always through a receiver, they are read-only.
+  at your own risk, if the mouse is connected with its USB cable and its memory uses a format
+  PeriHub can write: profile format 2 (the G502 HERO's) or 3 (the G502 X Wireless's), in 255- or
+  256-byte sectors. Otherwise, and always through a receiver, they are read-only. The test report
+  shows the format of your mouse.
+- **A mouse nothing was ever saved to** has no profile list of its own and uses its factory
+  profiles: PeriHub shows those. On the G502 HERO the first save creates the list, with a copy of
+  the factory profiles. On an untested mouse PeriHub does not create it: save a profile once
+  with Logitech G HUB or Onboard Memory Manager first.
 - **Wireless models** are also recognized through their LIGHTSPEED receiver (`046d:c539`, `c53a`,
   `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`), read-only. The receiver support has not
   been tried on real hardware yet: reports are welcome in
@@ -90,8 +96,10 @@ Windows.
 **Edit anyway…** on the G300 page turns on experimental editing: light colour, report rate, DPI
 levels, default level and shift, and the buttons except left and right, with only the values
 Logitech Gaming Software offers. PeriHub backs up the three profiles before every save, reads the
-save back, and undoes it after 15 seconds unless you keep it. Saving has not been tried on a real
-G300 yet. Own one? Send a
+save back, and undoes it after 15 seconds unless you keep it. Saving was first tried on a real
+G300 in [issue #21](https://github.com/hex-dump/perihub/issues/21): the light colour, the report
+rate and the buttons were saved. Whether a save stays after the mouse is unplugged has not been
+confirmed yet. Own one? Send a
 [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
 
 ## Corsair

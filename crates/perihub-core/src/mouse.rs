@@ -16,9 +16,15 @@ use crate::hidpp::profile::{self, ButtonAction, LedEffect, ProfileSettings};
 use crate::hidpp::{Battery, DpiCapabilities, FirmwareEntity, HidppDevice, LedZone, OnboardInfo, ROM_SECTOR_BASE};
 use crate::worker::DeviceTask;
 
-/// Profile formats verified byte by byte on a real device. Others can be read
-/// but not written.
-const WRITABLE_PROFILE_FORMATS: &[u8] = &[2];
+/// Profile formats PeriHub writes. Format 2 was verified byte by byte on the G502 HERO. Format 3
+/// (the G502 X Wireless of issue #15) is written the same way by libratbag and Solaar, which use
+/// one layout for all their formats: PeriHub has never saved one, so it is only reached through
+/// experimental editing, like every untested model. The others can be read but not written.
+const WRITABLE_PROFILE_FORMATS: &[u8] = &[2, 3];
+/// Sector sizes PeriHub writes: 256 bytes on the G502 HERO it was verified on, 255 on other mice
+/// and on newer G502 HERO firmware (issue #20), with the CRC one byte earlier.
+const WRITABLE_SECTOR_SIZES: std::ops::RangeInclusive<usize> =
+    profile::MIN_WRITE_SECTOR_SIZE..=profile::VERIFIED_SECTOR_SIZE;
 const ONBOARD_MODE: u8 = 1;
 const HOST_MODE: u8 = 2;
 /// How often the mouse is checked for another program having taken control of it.
@@ -58,6 +64,23 @@ pub struct MouseInfo {
     pub led_zones: Vec<LedZone>,
     pub onboard: OnboardInfo,
     pub writable: bool,
+    /// The mouse's profile list when it was connected (for test reports;
+    /// [`MouseState::profile_list`] is the state now).
+    pub profile_list: ProfileList,
+}
+
+/// The list in the mouse's memory (sector 0) that says which profiles it uses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProfileList {
+    /// The mouse has its own list and uses the profiles saved in its memory.
+    Own,
+    /// Nothing was ever saved to the mouse: the sector is blank, and the mouse uses its factory
+    /// profiles. The first save creates the list.
+    Factory,
+    /// Something is there, but its checksum does not match: PeriHub cannot tell which profiles
+    /// the mouse uses, and does not save over it.
+    Damaged,
 }
 
 /// Where a mouse behind a LIGHTSPEED receiver is.
@@ -85,6 +108,9 @@ pub struct MouseState {
     pub profiles: Vec<MouseProfile>,
     /// Bytes free for new macros: the sectors that no profile and no macro use.
     pub macro_space: u32,
+    /// Without a list of its own ([`ProfileList::Factory`]) the mouse uses its factory profiles,
+    /// which are then the ones in `profiles`.
+    pub profile_list: ProfileList,
 }
 
 /// What changes without PeriHub: the active profile and DPI, which the mouse's own buttons
@@ -114,17 +140,18 @@ pub struct MouseTask {
     undo_at: Option<Instant>,
     /// Set before the manager opens the mouse again: the thread stops at its next tick.
     closed: bool,
+    /// The mouse's profile list, as last read (see [`MouseTask::read_directory`]).
+    list: ProfileList,
 }
 
 /// Whether an untested model may be edited after the user turned experimental editing on. Only
-/// a mouse whose memory looks like the G502 HERO's, the one PeriHub was verified on: the same
-/// profile format and sector size. And only with its cable: a write over the radio that stops
-/// halfway has never been tried.
+/// a mouse whose memory PeriHub knows how to write: one of the profile formats and sector sizes
+/// above. And only with its cable: a write over the radio that stops halfway has never been tried.
 pub fn experimental_allowed(enabled: bool, onboard: &OnboardInfo, receiver: bool) -> bool {
     enabled
         && !receiver
         && WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
-        && onboard.sector_size as usize == profile::VERIFIED_SECTOR_SIZE
+        && WRITABLE_SECTOR_SIZES.contains(&(onboard.sector_size as usize))
 }
 
 /// Whether `new` changes an LED slot of the profile that is not one of the mouse's LED zones.
@@ -167,8 +194,6 @@ enum Reload {
     ModeSwitch,
 }
 
-/// Mice with more profiles keep the way verified since 0.1.0. Better to go through an enabled
-/// profile: the behavior with disabled ones is not verified.
 /// The profile to switch to after a restore, if the backup disabled the active one. With no active
 /// profile (0, another program controls the mouse) the mouse is left as it is.
 fn profile_after_restore(active: u8, enabled: &[bool]) -> Option<u8> {
@@ -182,6 +207,8 @@ fn profile_after_restore(active: u8, enabled: &[bool]) -> Option<u8> {
     enabled.iter().position(|&on| on).map(|i| i as u8 + 1)
 }
 
+/// Mice with more profiles keep the way verified since 0.1.0. Better to go through an enabled
+/// profile: the behavior with disabled ones is not verified.
 fn reload_method(active: u8, enabled: &[bool]) -> Reload {
     let others = || (1..=enabled.len() as u8).filter(|&n| n != active);
     match others().find(|&n| enabled[n as usize - 1]).or_else(|| others().next()) {
@@ -221,7 +248,10 @@ impl MouseTask {
             dpi: dev.dpi_capabilities(0)?,
             report_rates_ms: missing_as_empty(dev.report_rates())?,
             led_zones: missing_as_empty(dev.led_zones())?,
-            writable: (model.verified || experimental) && WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format),
+            writable: (model.verified || experimental)
+                && WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
+                && WRITABLE_SECTOR_SIZES.contains(&(onboard.sector_size as usize)),
+            profile_list: ProfileList::Own,
             onboard,
         };
         let mut task = Self {
@@ -235,7 +265,10 @@ impl MouseTask {
             last_backup: None,
             undo_at: None,
             closed: false,
+            list: ProfileList::Own,
         };
+        task.read_directory()?;
+        task.info.profile_list = task.list;
         task.check_mode()?;
         task.info.host_mode = task.host_mode.load(Ordering::SeqCst);
         task.finish_pending_undo();
@@ -267,7 +300,7 @@ impl MouseTask {
                 // After a wake-up the G502 HERO came back with no active profile (0).
                 let active = self.dev.active_profile()?;
                 if !(1..=self.profile_count()).contains(&active) {
-                    self.dev.set_active_profile(self.last_profile)?;
+                    self.select_profile(self.last_profile)?;
                 }
                 false
             }
@@ -322,16 +355,150 @@ impl MouseTask {
         }
     }
 
-    pub fn state(&mut self) -> Result<MouseState> {
-        let directory = self.dev.read_sector(0, self.sector_size())?;
-        let enabled = if profile::crc_is_valid(&directory) {
-            profile::parse_directory(&directory, self.profile_count() as usize)
-        } else {
-            vec![true; self.profile_count() as usize]
+    /// The profile list (sector 0), if the mouse has a valid one of its own. Otherwise
+    /// [`Self::list`] says why not:
+    /// - a blank sector means that nothing was ever saved to the mouse, which uses its factory
+    ///   profiles (libratbag reads a list without a valid CRC that way, Solaar one that starts
+    ///   with four blank bytes: PeriHub wants both). Some mice, the G305 for one, refuse to read
+    ///   the sector at all then;
+    /// - anything else without a valid CRC is a damaged list, which is never taken for a blank one:
+    ///   creating a new list would replace profiles the mouse may be using.
+    fn read_directory(&mut self) -> Result<Option<Vec<u8>>> {
+        let (list, directory) = match self.dev.read_sector(0, self.sector_size()) {
+            Ok(sector) if profile::crc_is_valid(&sector) => (ProfileList::Own, Some(sector)),
+            Ok(sector) if profile::is_blank_directory(&sector) => (ProfileList::Factory, None),
+            Ok(_) => (ProfileList::Damaged, None),
+            Err(Error::Hidpp(HidppErrorCode(0x02))) => (ProfileList::Factory, None),
+            Err(e) => return Err(e),
         };
+        if list != self.list {
+            log::info!("mouse profile list: {list:?}");
+        }
+        self.list = list;
+        Ok(directory)
+    }
+
+    /// The mouse uses its factory profiles: it has no profile list of its own.
+    fn factory_memory(&self) -> bool {
+        self.list == ProfileList::Factory
+    }
+
+    /// Which profiles are enabled: what the mouse's list says, or without one the factory list
+    /// (sector 0x0100). If no list can be read, every profile counts as enabled.
+    fn enabled_profiles(&mut self, directory: Option<&[u8]>) -> Result<Vec<bool>> {
+        let count = self.profile_count() as usize;
+        if let Some(directory) = directory {
+            return Ok(profile::parse_directory(directory, count));
+        }
+        if !self.factory_memory() {
+            return Ok(vec![true; count]);
+        }
+        let factory = match self.dev.read_sector(ROM_SECTOR_BASE, self.sector_size()) {
+            Ok(sector) => {
+                profile::parse_factory_directory(&sector, count, self.info.onboard.rom_profile_count as usize)
+            }
+            Err(Error::Hidpp(_)) => None,
+            Err(e) => return Err(e),
+        };
+        Ok(factory.unwrap_or_else(|| vec![true; count]))
+    }
+
+    /// How many profiles can be selected: all of them, or only the factory ones while the mouse
+    /// has no profile list.
+    fn selectable_profiles(&self) -> u8 {
+        if self.factory_memory() {
+            self.profile_count().min(self.info.onboard.rom_profile_count)
+        } else {
+            self.profile_count()
+        }
+    }
+
+    /// Selects a profile where the mouse keeps the ones it uses: its own memory, or the factory
+    /// profiles while it has no profile list.
+    fn select_profile(&mut self, number: u8) -> Result<()> {
+        self.dev.set_active_profile(self.factory_memory(), number)
+    }
+
+    /// Before a save, with the profile list just read. A damaged list is left alone. Creating the
+    /// list of a mouse that has none is for tested models: on an untested one the save could not be
+    /// undone, since the backup holds no list to put back.
+    fn check_list_for_saving(&self) -> Result<()> {
+        match self.list {
+            ProfileList::Own => Ok(()),
+            ProfileList::Factory if self.model.verified => Ok(()),
+            ProfileList::Factory => Err(Error::Invalid(
+                "nothing was saved: this mouse has never had profiles saved to its memory and uses its factory ones. \
+                 PeriHub creates that first profile list only on tested models: save a profile once with Logitech \
+                 G HUB (or Onboard Memory Manager), then try again"
+                    .into(),
+            )),
+            ProfileList::Damaged => Err(Error::Invalid(
+                "nothing was saved: the profile list in the mouse's memory is damaged (its checksum does not match), \
+                 so PeriHub cannot tell which profiles the mouse uses. Restore a backup with Backups…, or save a \
+                 profile once with Logitech G HUB (or Onboard Memory Manager). Please send a mouse test report too"
+                    .into(),
+            )),
+        }
+    }
+
+    /// For a mouse without a profile list, or a profile about to be enabled: the factory copy of
+    /// each of these profile sectors that holds no profile the mouse uses, so that the list never
+    /// points to an empty sector. Without a list (`listed` false) that is whatever the sector holds.
+    fn missing_profile_sectors(
+        &mut self,
+        numbers: impl Iterator<Item = u8>,
+        listed: bool,
+    ) -> Result<Vec<(u8, Vec<u8>)>> {
+        let mut sectors = Vec::new();
+        for number in numbers {
+            let current = self.dev.read_sector(number as u16, self.sector_size())?;
+            if listed && profile::crc_is_valid(&current) {
+                continue;
+            }
+            let factory = self.read_factory_sector(number)?;
+            if current != factory {
+                sectors.push((number, factory));
+            }
+        }
+        Ok(sectors)
+    }
+
+    /// After the mouse got its first profile list: from the factory profile it was using to the
+    /// same profile in its own memory, or to `fallback` if that one is not enabled.
+    fn adopt_own_profiles(&mut self, enabled: &[bool], fallback: u8) -> Result<()> {
+        self.list = ProfileList::Own;
+        let active = self.dev.active_profile()?;
+        let usable = |n: u8| enabled.get((n as usize).wrapping_sub(1)).copied().unwrap_or(false);
+        let target = if usable(active) {
+            active
+        } else if usable(fallback) {
+            fallback
+        } else {
+            enabled.iter().position(|&on| on).map_or(fallback, |i| i as u8 + 1)
+        };
+        log::info!("the mouse had no profile list: created, switching to profile {target} of its own memory");
+        match self.select_profile(target) {
+            Ok(()) => {
+                self.last_profile = target;
+                self.previewing = false;
+                Ok(())
+            }
+            // Everything is saved by now: a mouse that refuses the switch starts using its new
+            // list when it is plugged in again, and the save must not be reported as failed.
+            Err(Error::Hidpp(code)) => {
+                log::warn!("the mouse refused to switch to its new profile list ({code:?})");
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn state(&mut self) -> Result<MouseState> {
+        let directory = self.read_directory()?;
+        let enabled = self.enabled_profiles(directory.as_deref())?;
         let mut profiles = Vec::new();
         let mut macro_sectors = HashMap::new();
-        let mut used = self.reserved_sectors(&directory);
+        let mut used = self.reserved_sectors(directory.as_deref());
         for number in 1..=self.profile_count() {
             let sector = self.read_profile_sector(number)?;
             let mut settings = ProfileSettings::parse(&sector, self.info.onboard.button_count as usize)?;
@@ -348,25 +515,30 @@ impl MouseTask {
             current_dpi: self.dev.sensor_dpi(0)?.0,
             profiles,
             macro_space: free as u32 * (self.sector_size() as u32 - 2),
+            profile_list: self.list,
         })
     }
 
     /// The directory and the profile sectors, by number and as the directory lists them:
     /// macros never go there.
-    fn reserved_sectors(&self, directory: &[u8]) -> HashSet<u8> {
+    fn reserved_sectors(&self, directory: Option<&[u8]>) -> HashSet<u8> {
         let mut reserved: HashSet<u8> = (0..=self.profile_count()).collect();
-        if profile::crc_is_valid(directory) {
+        if let Some(directory) = directory {
             let listed = profile::directory_sectors(directory, self.profile_count() as usize);
             reserved.extend(listed.into_iter().filter_map(|s| u8::try_from(s).ok()));
         }
         reserved
     }
 
-    /// User profile sector; if it was never written (invalid CRC), the factory one applies.
+    /// The profile as the mouse uses it: its sector in the mouse's memory, or the factory profile
+    /// if that sector was never written (invalid CRC) or the mouse has no profile list at all (a
+    /// sector left there by an older list is not in use). Goes by the list as last read.
     fn read_profile_sector(&mut self, number: u8) -> Result<Vec<u8>> {
-        let sector = self.dev.read_sector(number as u16, self.sector_size())?;
-        if profile::crc_is_valid(&sector) {
-            return Ok(sector);
+        if !self.factory_memory() {
+            let sector = self.dev.read_sector(number as u16, self.sector_size())?;
+            if profile::crc_is_valid(&sector) {
+                return Ok(sector);
+            }
         }
         self.read_factory_sector(number)
     }
@@ -423,8 +595,8 @@ impl MouseTask {
     fn place_macros(&mut self, settings: &mut ProfileSettings) -> Result<Vec<(u8, Vec<u8>)>> {
         let buttons = self.info.onboard.button_count as usize;
         let mut cache = HashMap::new();
-        let directory = self.dev.read_sector(0, self.sector_size())?;
-        let mut used = self.reserved_sectors(&directory);
+        let directory = self.read_directory()?;
+        let mut used = self.reserved_sectors(directory.as_deref());
         // Macros in the mouse now.
         let mut existing = Vec::new();
         for n in 1..=self.profile_count() {
@@ -531,16 +703,12 @@ impl MouseTask {
     /// Goes back to the saved settings of the active profile, dropping DPI and LED previews (RAM only).
     fn reload_active(&mut self) -> Result<()> {
         let active = self.dev.active_profile()?;
-        let directory = self.dev.read_sector(0, self.sector_size())?;
-        let enabled = if profile::crc_is_valid(&directory) {
-            profile::parse_directory(&directory, self.profile_count() as usize)
-        } else {
-            vec![true; self.profile_count() as usize]
-        };
-        match reload_method(active, &enabled) {
+        let directory = self.read_directory()?;
+        let enabled = self.enabled_profiles(directory.as_deref())?;
+        match reload_method(active, &enabled[..self.selectable_profiles() as usize]) {
             Reload::Through(other) => {
-                self.dev.set_active_profile(other)?;
-                self.dev.set_active_profile(active)?;
+                self.select_profile(other)?;
+                self.select_profile(active)?;
             }
             Reload::ModeSwitch => {
                 let level = self.dev.active_dpi_index()?;
@@ -576,6 +744,10 @@ impl MouseTask {
         if caps.step > 0 && settings.dpi_levels.iter().any(|d| !(d - caps.min).is_multiple_of(caps.step)) {
             return Err(Error::Invalid(format!("DPI values must be multiples of {}", caps.step)));
         }
+        // A mouse nothing was ever saved to has no profile list: the save creates it, with the
+        // factory copy of every other profile, so the mouse goes on as before except for this one.
+        let listed = self.read_directory()?.is_some();
+        self.check_list_for_saving()?;
         let mut sector = self.read_profile_sector(number)?;
         if !self.model.verified {
             self.check_led_slots(&sector, settings)?;
@@ -583,14 +755,31 @@ impl MouseTask {
         let mut settings = settings.clone();
         let macro_sectors = self.place_macros(&mut settings)?;
         settings.apply(&mut sector)?;
+        let (others, new_list) = if listed {
+            (Vec::new(), None)
+        } else {
+            let others = self.missing_profile_sectors((1..=self.profile_count()).filter(|&n| n != number), false)?;
+            let enabled = self.enabled_profiles(None)?;
+            (others, Some((profile::build_directory(&enabled, self.sector_size() as usize), enabled)))
+        };
         self.backup_before_writing(&format!("profile{number}"))?;
         let written = (|| {
             // Macros first: if writing stops halfway, the profile still points to the old ones.
             for (id, data) in &macro_sectors {
                 self.write_verified(*id as u16, data)?;
             }
+            for (id, data) in &others {
+                self.write_verified(*id as u16, data)?;
+            }
             self.write_verified(number as u16, &sector)?;
-            self.reload_if_active(number)
+            match &new_list {
+                // The list last: until it is there, the mouse keeps using its factory profiles.
+                Some((directory, enabled)) => {
+                    self.write_verified(0, directory)?;
+                    self.adopt_own_profiles(enabled, number)
+                }
+                None => self.reload_if_active(number),
+            }
         })();
         self.after_writing(written)?;
         self.state()
@@ -599,6 +788,12 @@ impl MouseTask {
     pub fn restore_factory_profile(&mut self, number: u8) -> Result<MouseState> {
         self.check_writable()?;
         self.check_number(number)?;
+        // Without a profile list the mouse already uses its factory profiles.
+        self.read_directory()?;
+        if self.factory_memory() {
+            return self.state();
+        }
+        self.check_list_for_saving()?;
         let sector = self.read_factory_sector(number)?;
         self.backup_before_writing(&format!("factory{number}"))?;
         let written = (|| {
@@ -743,7 +938,8 @@ impl MouseTask {
             let enabled = profile::parse_directory(&backup[0], onboard.profile_count as usize);
             match profile_after_restore(self.dev.active_profile()?, &enabled) {
                 Some(other) => {
-                    self.dev.set_active_profile(other)?;
+                    self.list = ProfileList::Own;
+                    self.select_profile(other)?;
                     self.previewing = false;
                 }
                 None => self.reload_active()?,
@@ -764,14 +960,31 @@ impl MouseTask {
         self.check_writable()?;
         self.check_tested()?;
         self.check_number(number)?;
+        let listed = self.read_directory()?.is_some();
+        self.check_list_for_saving()?;
         let mut flags = self.state()?.profiles.iter().map(|p| p.enabled).collect::<Vec<_>>();
         flags[number as usize - 1] = enabled;
         if !flags.iter().any(|&f| f) {
             return Err(Error::Invalid("at least one profile must stay enabled".into()));
         }
+        // The list must not point to a sector that holds no profile: a profile that was never
+        // saved gets its factory copy first. Without a list yet, that is every profile.
+        let missing = if !listed {
+            self.missing_profile_sectors(1..=self.profile_count(), false)?
+        } else if enabled {
+            self.missing_profile_sectors(std::iter::once(number), true)?
+        } else {
+            Vec::new()
+        };
         let directory = profile::build_directory(&flags, self.sector_size() as usize);
         self.backup_all("directory")?;
+        for (id, data) in &missing {
+            self.write_verified(*id as u16, data)?;
+        }
         self.write_verified(0, &directory)?;
+        if !listed {
+            self.adopt_own_profiles(&flags, number)?;
+        }
         self.state()
     }
 
@@ -809,14 +1022,19 @@ impl MouseTask {
     pub fn set_active_profile(&mut self, number: u8) -> Result<()> {
         self.check_controllable()?;
         self.check_number(number)?;
-        match self.dev.set_active_profile(number) {
+        if number > self.selectable_profiles() {
+            return Err(Error::Invalid(format!(
+                "profile {number} is not in use yet: the mouse has only its factory profiles until one is saved to it"
+            )));
+        }
+        match self.select_profile(number) {
             // The mouse refuses while another program controls it: check, then try once more.
             Err(Error::Hidpp(HidppErrorCode(0x02))) => {
                 self.check_mode()?;
                 if self.host_mode.load(Ordering::SeqCst) {
                     return Err(Error::Invalid("another program, such as Logitech G HUB, controls the mouse".into()));
                 }
-                self.dev.set_active_profile(number)?;
+                self.select_profile(number)?;
             }
             other => other?,
         }
@@ -907,7 +1125,14 @@ fn check_backup(backup: &[Vec<u8>], onboard: &OnboardInfo) -> Result<()> {
     }
     let directory = &backup[0];
     if !profile::crc_is_valid(directory) {
-        return Err(Error::Invalid("the profile list in this backup is damaged".into()));
+        let blank = directory.iter().all(|&b| b == 0xFF) || directory.iter().all(|&b| b == 0x00);
+        return Err(Error::Invalid(if blank {
+            "this backup is from before anything was saved to the mouse: its memory was empty and it used its \
+             factory profiles. To go back to those, use Factory settings on each profile"
+                .into()
+        } else {
+            "the profile list in this backup is damaged".into()
+        }));
     }
     for address in profile::directory_sectors(directory, onboard.profile_count as usize) {
         let sector = backup.get(address as usize).filter(|_| address != 0);
@@ -987,15 +1212,21 @@ mod tests {
     }
 
     #[test]
-    fn experimental_editing_needs_a_memory_like_the_g502_and_the_cable() {
+    fn experimental_editing_needs_a_memory_perihub_can_write_and_the_cable() {
         let (_, g502) = g502_memory();
         assert!(experimental_allowed(true, &g502, false));
         assert!(!experimental_allowed(false, &g502, false), "turned off");
         assert!(!experimental_allowed(true, &g502, true), "behind a receiver");
-        let other_format = OnboardInfo { profile_format: 3, ..g502.clone() };
-        assert!(!experimental_allowed(true, &other_format, false), "another profile format");
+        // The G502 X Wireless of issue #15: profile format 3, 255-byte sectors.
+        let g502_x = OnboardInfo { profile_format: 3, sector_size: 255, rom_profile_count: 2, ..g502.clone() };
+        assert!(experimental_allowed(true, &g502_x, false));
+        assert!(!experimental_allowed(true, &g502_x, true), "behind a receiver");
+        for format in [0, 1, 4, 5] {
+            let other_format = OnboardInfo { profile_format: format, ..g502.clone() };
+            assert!(!experimental_allowed(true, &other_format, false), "profile format {format}");
+        }
         let small_sectors = OnboardInfo { sector_size: 240, ..g502.clone() };
-        assert!(!experimental_allowed(true, &small_sectors, false), "smaller sectors (G502 X)");
+        assert!(!experimental_allowed(true, &small_sectors, false), "smaller sectors");
         let big_sectors = OnboardInfo { sector_size: 512, ..g502 };
         assert!(!experimental_allowed(true, &big_sectors, false), "bigger sectors");
     }
@@ -1075,5 +1306,499 @@ mod tests {
         assert_eq!(profile_after_restore(1, &[false, false, true, true, true]), Some(3));
         // While another program controls the mouse no profile is active (0).
         assert_eq!(profile_after_restore(0, &[true; 5]), None);
+    }
+
+    // ---- A simulated mouse: whole saves, as the mouse sees them ----
+
+    use std::sync::Mutex;
+
+    use crate::hidpp::tests::{FakeDevice, reply};
+    use crate::hidpp::{feature, models};
+
+    const SIM_FEATURES: &[u16] = &[
+        feature::ROOT,
+        feature::DEVICE_INFO,
+        feature::DEVICE_NAME,
+        feature::ADJUSTABLE_DPI,
+        feature::REPORT_RATE,
+        feature::ONBOARD_PROFILES,
+    ];
+
+    /// The memory and state of a HID++ mouse with onboard profiles, as far as PeriHub talks to one.
+    struct Sim {
+        onboard: OnboardInfo,
+        /// The mouse's own sectors, from the profile list (0) on.
+        user: Vec<Vec<u8>>,
+        /// The factory sectors: the list at 0x0100, the profiles after it.
+        rom: HashMap<u16, Vec<u8>>,
+        active: [u8; 2],
+        writing: Option<(u16, usize, Vec<u8>)>,
+        /// Sectors written, in order.
+        written: Vec<u16>,
+        /// Profile addresses selected, in order.
+        selected: Vec<[u8; 2]>,
+        /// Like the G305: reading the profile list fails until one was written.
+        refuses_blank_list: bool,
+    }
+
+    impl Sim {
+        /// The G502 HERO of the fixtures. Its factory profiles are its saved ones at 400 DPI more,
+        /// and the factory list enables the first three.
+        fn g502() -> Self {
+            let (user, onboard) = g502_memory();
+            Self::new(user, onboard)
+        }
+
+        fn new(user: Vec<Vec<u8>>, onboard: OnboardInfo) -> Self {
+            let size = onboard.sector_size as usize;
+            let mut rom = HashMap::new();
+            let mut list = vec![0xFF; size];
+            for n in 1..=onboard.rom_profile_count {
+                let mut sector = user[n as usize].clone();
+                let dpi = u16::from_le_bytes([sector[3], sector[4]]) + 400;
+                sector[3..5].copy_from_slice(&dpi.to_le_bytes());
+                rom.insert(ROM_SECTOR_BASE + n as u16, sector);
+                let at = 4 * (n as usize - 1);
+                list[at..at + 4].copy_from_slice(&[0x01, n, (n <= 3) as u8, 0x00]);
+            }
+            let end = 4 * onboard.rom_profile_count as usize;
+            list[end..end + 4].copy_from_slice(&[0xFF, 0xFF, 0x00, 0x00]);
+            rom.insert(ROM_SECTOR_BASE, list);
+            Self {
+                onboard,
+                user,
+                rom,
+                active: [0, 1],
+                writing: None,
+                written: Vec::new(),
+                selected: Vec::new(),
+                refuses_blank_list: false,
+            }
+        }
+
+        /// The same mouse before anything was saved to it: an empty memory, on factory profile 1.
+        fn blank(mut self) -> Self {
+            let size = self.onboard.sector_size as usize;
+            self.user.iter_mut().for_each(|sector| *sector = vec![0xFF; size]);
+            self.active = [1, 1];
+            self
+        }
+
+        /// The memory of a mouse with `size`-byte sectors and this profile format: the same
+        /// profiles, with the CRC where that sector size puts it.
+        fn resized(mut self, size: usize, profile_format: u8) -> Self {
+            for sector in self.user.iter_mut().chain(self.rom.values_mut()) {
+                sector.truncate(size);
+                profile::write_crc(sector);
+            }
+            self.onboard.sector_size = size as u16;
+            self.onboard.profile_format = profile_format;
+            self
+        }
+
+        fn factory(&self, number: u8) -> Vec<u8> {
+            let mut sector = self.rom[&(ROM_SECTOR_BASE + number as u16)].clone();
+            profile::write_crc(&mut sector);
+            sector
+        }
+
+        fn answer(&mut self, feature: u16, function: u8, p: &[u8]) -> std::result::Result<Vec<u8>, u8> {
+            const INVALID_ARGUMENT: u8 = 2;
+            let info = &self.onboard;
+            Ok(match (feature, function) {
+                (feature::DEVICE_INFO, 0) => vec![1],
+                (feature::DEVICE_INFO, 1) => vec![0, b'U', b'1', b' ', 0x27, 0x03, 0x00, 0x00],
+                (feature::DEVICE_NAME, 0) => vec![4],
+                (feature::DEVICE_NAME, 1) => b"Test".to_vec(),
+                // 100 to 25600 DPI in steps of 50.
+                (feature::ADJUSTABLE_DPI, 1) => vec![0, 0x00, 0x64, 0xE0, 0x32, 0x64, 0x00],
+                (feature::ADJUSTABLE_DPI, 2) => vec![0, 0x03, 0x20, 0x03, 0x20],
+                (feature::ADJUSTABLE_DPI, 3) => vec![],
+                // 1, 2, 4 and 8 ms.
+                (feature::REPORT_RATE, 0) => vec![0x8B],
+                (feature::ONBOARD_PROFILES, 0) => {
+                    let [hi, lo] = info.sector_size.to_be_bytes();
+                    vec![
+                        info.memory_model,
+                        info.profile_format,
+                        info.macro_format,
+                        info.profile_count,
+                        info.rom_profile_count,
+                        info.button_count,
+                        info.sector_count,
+                        hi,
+                        lo,
+                        0x0A,
+                    ]
+                }
+                (feature::ONBOARD_PROFILES, 1) => vec![],
+                (feature::ONBOARD_PROFILES, 2) => vec![ONBOARD_MODE],
+                (feature::ONBOARD_PROFILES, 3) => {
+                    let limit = if p[0] == 1 { info.rom_profile_count } else { info.profile_count };
+                    if p[0] > 1 || !(1..=limit).contains(&p[1]) {
+                        return Err(INVALID_ARGUMENT);
+                    }
+                    self.active = [p[0], p[1]];
+                    self.selected.push(self.active);
+                    vec![]
+                }
+                (feature::ONBOARD_PROFILES, 4) => self.active.to_vec(),
+                (feature::ONBOARD_PROFILES, 5) => {
+                    let (sector, offset) =
+                        (u16::from_be_bytes([p[0], p[1]]), u16::from_be_bytes([p[2], p[3]]) as usize);
+                    let data = match self.user.get(sector as usize) {
+                        Some(data) => data,
+                        None => self.rom.get(&sector).ok_or(INVALID_ARGUMENT)?,
+                    };
+                    if sector == 0 && self.refuses_blank_list && !profile::crc_is_valid(data) {
+                        return Err(INVALID_ARGUMENT);
+                    }
+                    data.get(offset..offset + 16).ok_or(INVALID_ARGUMENT)?.to_vec()
+                }
+                (feature::ONBOARD_PROFILES, 6) => {
+                    let (sector, length) =
+                        (u16::from_be_bytes([p[0], p[1]]), u16::from_be_bytes([p[4], p[5]]) as usize);
+                    if sector as usize >= self.user.len() || length != info.sector_size as usize {
+                        return Err(INVALID_ARGUMENT);
+                    }
+                    self.writing = Some((sector, length, Vec::new()));
+                    vec![]
+                }
+                (feature::ONBOARD_PROFILES, 7) => {
+                    self.writing.as_mut().ok_or(INVALID_ARGUMENT)?.2.extend_from_slice(&p[..16]);
+                    vec![]
+                }
+                (feature::ONBOARD_PROFILES, 8) => {
+                    let (sector, length, data) = self.writing.take().ok_or(INVALID_ARGUMENT)?;
+                    self.user[sector as usize] = data.get(..length).ok_or(INVALID_ARGUMENT)?.to_vec();
+                    self.written.push(sector);
+                    vec![]
+                }
+                (feature::ONBOARD_PROFILES, 0x0B) => vec![0],
+                (feature::ONBOARD_PROFILES, 0x0C) => vec![],
+                _ => return Err(INVALID_ARGUMENT),
+            })
+        }
+    }
+
+    fn model_of(product_id: u16) -> &'static MouseModel {
+        models::MODELS.iter().find(|m| m.product_id == product_id).unwrap()
+    }
+
+    const G502_HERO: u16 = 0xC08B;
+    const G502_X_WIRELESS: u16 = 0xC098;
+
+    /// PeriHub's connection to the simulated mouse.
+    fn open_sim(sim: Sim, product_id: u16, experimental: bool) -> (MouseTask, Arc<Mutex<Sim>>) {
+        let sim = Arc::new(Mutex::new(sim));
+        let mouse = sim.clone();
+        let fake = FakeDevice::new(move |request| {
+            let (index, function) = (request[2] as usize, request[3] >> 4);
+            if index == 0 && function == 1 {
+                return vec![reply(request, &[4, 2, request[6]])];
+            }
+            if index == 0 && function == 0 {
+                let id = u16::from_be_bytes([request[4], request[5]]);
+                let found = SIM_FEATURES.iter().position(|&f| f == id).map_or(0, |i| i as u8);
+                return vec![reply(request, &[found])];
+            }
+            match mouse.lock().unwrap().answer(SIM_FEATURES[index], function, &request[4..]) {
+                Ok(payload) => vec![reply(request, &payload)],
+                Err(code) => {
+                    let mut error = reply(request, &[]);
+                    error[2..6].copy_from_slice(&[0xFF, request[2], request[3], code]);
+                    vec![error]
+                }
+            }
+        });
+        let dev = HidppDevice::new(fake, models::WIRED_INDEX, false).unwrap();
+        let task = MouseTask::open(dev, model_of(product_id), experimental).unwrap();
+        (task, sim)
+    }
+
+    fn parsed(sector: &[u8]) -> ProfileSettings {
+        ProfileSettings::parse(sector, 11).unwrap()
+    }
+
+    /// The settings of `profile` with another first DPI level.
+    fn edited(state: &MouseState, profile: u8) -> ProfileSettings {
+        let mut settings = state.profiles[profile as usize - 1].settings.clone();
+        settings.dpi_levels[0] = 3250;
+        settings
+    }
+
+    fn forget_test_files() {
+        let _ = std::fs::remove_dir_all(config::config_dir());
+    }
+
+    #[test]
+    fn a_save_writes_only_that_profile_when_the_mouse_has_a_profile_list() {
+        let (mut task, sim) = open_sim(Sim::g502(), G502_HERO, false);
+        let state = task.state().unwrap();
+        assert_eq!(state.profile_list, ProfileList::Own);
+        let before = sim.lock().unwrap().user.clone();
+
+        let state = task.save_profile(2, &edited(&state, 2)).unwrap();
+        assert_eq!(state.profiles[1].settings.dpi_levels[0], 3250);
+        let mouse = sim.lock().unwrap();
+        assert_eq!(mouse.written, [2]);
+        assert!(mouse.selected.is_empty(), "profile 2 is not the active one");
+        for sector in (0..16).filter(|&s| s != 2) {
+            assert_eq!(mouse.user[sector], before[sector], "sector {sector}");
+        }
+        drop(mouse);
+
+        // The active profile is loaded again, through another profile of the mouse's own memory.
+        task.save_profile(1, &edited(&state, 1)).unwrap();
+        assert_eq!(sim.lock().unwrap().selected, [[0, 2], [0, 1]]);
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_mouse_nothing_was_saved_to_shows_its_factory_profiles() {
+        let mut sim = Sim::g502().blank();
+        // A profile left from an older list is not what the mouse uses.
+        sim.user[2] = g502_memory().0[2].clone();
+        let factory: Vec<ProfileSettings> = (1..=5).map(|n| parsed(&sim.factory(n))).collect();
+        let (mut task, sim) = open_sim(sim, G502_HERO, false);
+
+        let state = task.state().unwrap();
+        assert_eq!(state.profile_list, ProfileList::Factory);
+        assert_eq!(state.active_profile, 1);
+        assert_eq!(state.profiles.iter().map(|p| p.enabled).collect::<Vec<_>>(), [true, true, true, false, false]);
+        for (profile, factory) in state.profiles.iter().zip(&factory) {
+            assert_eq!(&profile.settings, factory, "profile {}", profile.number);
+        }
+
+        // Profiles are selected among the factory ones.
+        task.set_active_profile(3).unwrap();
+        assert_eq!(sim.lock().unwrap().selected, [[1, 3]]);
+        assert!(sim.lock().unwrap().written.is_empty());
+    }
+
+    #[test]
+    fn a_mouse_that_refuses_to_read_a_missing_profile_list_is_read_too() {
+        let mut sim = Sim::g502().blank();
+        sim.refuses_blank_list = true;
+        let (mut task, _) = open_sim(sim, G502_HERO, false);
+        assert_eq!(task.state().unwrap().profile_list, ProfileList::Factory);
+    }
+
+    #[test]
+    fn only_the_factory_profiles_can_be_selected_without_a_profile_list() {
+        let (memory, onboard) = g502_memory();
+        let sim = Sim::new(memory, OnboardInfo { rom_profile_count: 2, ..onboard }).blank();
+        let (mut task, sim) = open_sim(sim, G502_HERO, false);
+        task.set_active_profile(2).unwrap();
+        assert!(task.set_active_profile(3).is_err());
+        assert_eq!(sim.lock().unwrap().selected, [[1, 2]]);
+        // Profiles past the factory ones start as copies of the first.
+        let state = task.state().unwrap();
+        assert_eq!(state.profiles[4].settings, state.profiles[0].settings);
+    }
+
+    #[test]
+    fn the_first_save_creates_the_profile_list() {
+        let mut sim = Sim::g502().blank();
+        sim.user[4] = g502_memory().0[4].clone();
+        let factory: Vec<Vec<u8>> = (0..=5).map(|n| if n == 0 { Vec::new() } else { sim.factory(n) }).collect();
+        let (mut task, sim) = open_sim(sim, G502_HERO, false);
+        let state = task.state().unwrap();
+
+        let state = task.save_profile(2, &edited(&state, 2)).unwrap();
+        assert_eq!(state.profile_list, ProfileList::Own);
+        assert_eq!(state.active_profile, 1);
+        assert_eq!(state.profiles[1].settings.dpi_levels[0], 3250);
+        assert_eq!(state.profiles.iter().map(|p| p.enabled).collect::<Vec<_>>(), [true, true, true, false, false]);
+
+        let mouse = sim.lock().unwrap();
+        // Every other profile gets its factory copy, then the saved one, and the list last.
+        assert_eq!(mouse.written, [1, 3, 4, 5, 2, 0]);
+        for n in [1, 3, 4, 5] {
+            assert_eq!(mouse.user[n], factory[n], "profile {n}");
+        }
+        let mut expected = parsed(&factory[2]);
+        expected.dpi_levels[0] = 3250;
+        assert_eq!(parsed(&mouse.user[2]), expected);
+        assert!(profile::crc_is_valid(&mouse.user[0]));
+        assert_eq!(profile::directory_sectors(&mouse.user[0], 5), [1, 2, 3, 4, 5]);
+        // From factory profile 1 to profile 1 of its own memory.
+        assert_eq!(mouse.selected, [[0, 1]]);
+        drop(mouse);
+
+        // From now on a save writes that profile only.
+        sim.lock().unwrap().written.clear();
+        task.save_profile(3, &edited(&state, 3)).unwrap();
+        assert_eq!(sim.lock().unwrap().written, [3]);
+        forget_test_files();
+    }
+
+    #[test]
+    fn enabling_a_profile_creates_the_missing_list_too() {
+        let (mut task, sim) = open_sim(Sim::g502().blank(), G502_HERO, false);
+        let state = task.set_profile_enabled(4, true).unwrap();
+        assert_eq!(state.profile_list, ProfileList::Own);
+        assert_eq!(state.profiles.iter().map(|p| p.enabled).collect::<Vec<_>>(), [true, true, true, true, false]);
+        let mouse = sim.lock().unwrap();
+        assert_eq!(mouse.written, [1, 2, 3, 4, 5, 0]);
+        assert_eq!(mouse.selected, [[0, 1]]);
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_profile_that_was_never_saved_gets_its_factory_copy_before_it_is_enabled() {
+        let mut sim = Sim::g502();
+        sim.user[0] = profile::build_directory(&[true, true, true, false, true], 256);
+        sim.user[4] = vec![0xFF; 256];
+        let factory = sim.factory(4);
+        let (mut task, sim) = open_sim(sim, G502_HERO, false);
+
+        task.set_profile_enabled(4, true).unwrap();
+        let mouse = sim.lock().unwrap();
+        assert_eq!(mouse.written, [4, 0]);
+        assert_eq!(mouse.user[4], factory);
+        drop(mouse);
+
+        // Disabling writes the list only, and so does enabling a profile that is there.
+        sim.lock().unwrap().written.clear();
+        task.set_profile_enabled(4, false).unwrap();
+        task.set_profile_enabled(4, true).unwrap();
+        assert_eq!(sim.lock().unwrap().written, [0, 0]);
+        forget_test_files();
+    }
+
+    #[test]
+    fn restoring_factory_settings_writes_nothing_to_a_mouse_without_a_profile_list() {
+        let (mut task, sim) = open_sim(Sim::g502().blank(), G502_HERO, false);
+        assert_eq!(task.restore_factory_profile(2).unwrap().profile_list, ProfileList::Factory);
+        assert!(sim.lock().unwrap().written.is_empty());
+    }
+
+    #[test]
+    fn a_damaged_profile_list_is_never_taken_for_a_blank_one() {
+        let mut sim = Sim::g502();
+        // A list with its entries and a checksum that does not match.
+        sim.user[0][254] ^= 0xFF;
+        let saved: Vec<ProfileSettings> = (1..=5).map(|n| parsed(&sim.user[n])).collect();
+        let (mut task, sim) = open_sim(sim, G502_HERO, false);
+        assert_eq!(task.info.profile_list, ProfileList::Damaged);
+
+        // Read as before: the profiles in the mouse's memory, all enabled.
+        let state = task.state().unwrap();
+        assert_eq!(state.profile_list, ProfileList::Damaged);
+        assert!(state.profiles.iter().all(|p| p.enabled));
+        for (profile, saved) in state.profiles.iter().zip(&saved) {
+            assert_eq!(&profile.settings, saved);
+        }
+
+        // Nothing is written over it: no profile, no factory copies, no new list.
+        let error = task.save_profile(2, &edited(&state, 2)).unwrap_err().to_string();
+        assert!(error.contains("damaged"), "{error}");
+        assert!(task.set_profile_enabled(2, false).is_err());
+        assert!(task.restore_factory_profile(2).is_err());
+        assert!(sim.lock().unwrap().written.is_empty());
+
+        // Profiles are still selected in the mouse's own memory.
+        task.set_active_profile(2).unwrap();
+        assert_eq!(sim.lock().unwrap().selected, [[0, 2]]);
+        forget_test_files();
+    }
+
+    /// The G502 X Wireless of issue #15, as its test report describes it.
+    fn g502_x() -> Sim {
+        let (memory, onboard) = g502_memory();
+        Sim::new(memory, OnboardInfo { rom_profile_count: 2, ..onboard }).resized(255, 3)
+    }
+
+    #[test]
+    fn an_untested_mouse_with_format_3_and_255_byte_sectors_is_read_only_until_editing_is_turned_on() {
+        let (mut task, sim) = open_sim(g502_x(), G502_X_WIRELESS, false);
+        assert!(!task.info.writable && !task.info.experimental);
+        let state = task.state().unwrap();
+        assert!(task.save_profile(2, &edited(&state, 2)).is_err());
+        assert!(task.set_active_profile(2).is_err());
+        let mouse = sim.lock().unwrap();
+        assert!(mouse.written.is_empty() && mouse.selected.is_empty());
+    }
+
+    #[test]
+    fn an_experimental_save_to_255_byte_sectors_can_be_kept_or_undone() {
+        let (mut task, sim) = open_sim(g502_x(), G502_X_WIRELESS, true);
+        assert!(task.info.writable && task.info.experimental);
+        let before = sim.lock().unwrap().user.clone();
+        let state = task.state().unwrap();
+
+        let saved = task.save_profile(2, &edited(&state, 2)).unwrap();
+        assert_eq!(saved.profiles[1].settings.dpi_levels[0], 3250);
+        assert!(task.pending_undo_path().exists(), "the undo is armed");
+        {
+            let mouse = sim.lock().unwrap();
+            assert_eq!(mouse.written, [2]);
+            assert_eq!(mouse.user[2].len(), 255);
+            assert!(profile::crc_is_valid(&mouse.user[2]));
+            // Nothing but the DPI level and the CRC changed.
+            let changed: Vec<usize> = (0..255).filter(|&i| mouse.user[2][i] != before[2][i]).collect();
+            assert_eq!(changed, [3, 4, 253, 254]);
+        }
+
+        task.undo_last_write().unwrap();
+        assert_eq!(sim.lock().unwrap().user, before);
+        assert!(!task.pending_undo_path().exists());
+
+        // The profile list stays as it is on an untested model.
+        assert!(task.set_profile_enabled(2, false).is_err());
+
+        task.save_profile(2, &edited(&state, 2)).unwrap();
+        task.keep_changes();
+        assert!(!task.pending_undo_path().exists());
+        assert_eq!(parsed(&sim.lock().unwrap().user[2]).dpi_levels[0], 3250);
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_macro_longer_than_a_255_byte_sector_is_saved_and_read_back() {
+        use crate::hidpp::macros::{MacroKind, MacroStep};
+        let (mut task, sim) = open_sim(g502_x(), G502_X_WIRELESS, true);
+        let state = task.state().unwrap();
+        // 120 key presses: more than one sector of 253 bytes of macro.
+        let press: Vec<MacroStep> = (0..120u8)
+            .flat_map(|i| {
+                let key = 0x04 + i % 26;
+                [MacroStep::KeyDown { modifiers: 0, key }, MacroStep::KeyUp { modifiers: 0, key }]
+            })
+            .collect();
+        let long = Macro { kind: MacroKind::Once, press, release: Vec::new() };
+        let mut settings = state.profiles[1].settings.clone();
+        settings.buttons[5] = ButtonAction::Macro { sector: 0, offset: 0, content: Some(long.clone()) };
+
+        let saved = task.save_profile(2, &settings).unwrap();
+        let ButtonAction::Macro { content, .. } = &saved.profiles[1].settings.buttons[5] else {
+            panic!("button 6 holds no macro: {:?}", saved.profiles[1].settings.buttons[5]);
+        };
+        assert_eq!(content.as_ref(), Some(&long));
+        let mouse = sim.lock().unwrap();
+        // The macro's sectors first, the profile that points to them last.
+        assert!(mouse.written.len() >= 3, "{:?}", mouse.written);
+        assert_eq!(mouse.written.last(), Some(&2));
+        assert!(mouse.written[..mouse.written.len() - 1].iter().all(|&s| s > 5));
+        for &sector in &mouse.written {
+            assert_eq!(mouse.user[sector as usize].len(), 255);
+            assert!(profile::crc_is_valid(&mouse.user[sector as usize]), "sector {sector}");
+        }
+        drop(mouse);
+        task.keep_changes();
+        forget_test_files();
+    }
+
+    #[test]
+    fn an_untested_mouse_without_a_profile_list_is_not_saved_to() {
+        let (mut task, sim) = open_sim(g502_x().blank(), G502_X_WIRELESS, true);
+        let state = task.state().unwrap();
+        assert_eq!(state.profile_list, ProfileList::Factory);
+        let error = task.save_profile(1, &edited(&state, 1)).unwrap_err().to_string();
+        assert!(error.contains("never had profiles saved"), "{error}");
+        assert!(sim.lock().unwrap().written.is_empty());
+        assert!(!task.pending_undo_path().exists());
+        forget_test_files();
     }
 }

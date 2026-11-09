@@ -26,9 +26,9 @@
     <h2 id="experimental-title">Edit the {model} anyway?</h2>
     {#if g300}
       <p>
-        PeriHub reads the G300 correctly, but has never saved to one. It saves a profile the way libratbag (Piper) does,
-        and only with the values Logitech Gaming Software offers; whether the G300 keeps it after being unplugged has
-        not been proven.
+        PeriHub reads the G300 correctly, and saving has worked on the one G300 it was tried on so far. It saves a
+        profile the way libratbag (Piper) does, and only with the values Logitech Gaming Software offers; whether the
+        G300 keeps it after being unplugged has not been proven.
       </p>
       <ul>
         <li>
@@ -48,8 +48,8 @@
       <p class="muted small">If it works, please send a test report: it is how the G300 becomes fully supported.</p>
     {:else}
     <p>
-      Nobody has tested PeriHub on the {model} yet. Its memory looks like the G502 HERO's, the mouse PeriHub was
-      tested on, so saving should work, but it has not been proven.
+      Nobody has tested PeriHub on the {model} yet. PeriHub saves to it only if its memory uses a format it knows how
+      to write, the way it does on the G502 HERO it was tested on, so saving should work, but it has not been proven.
     </p>
     <ul>
       <li>

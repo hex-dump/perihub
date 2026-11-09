@@ -106,7 +106,7 @@ Some devices have not been tested yet. PeriHub reads them and changes nothing, u
 | | Logitech mice: **Edit anyway…** | Logitech G300: **Edit anyway…** | Corsair devices: **Try experimental lighting…** |
 |---|---|---|---|
 | What you can change | Profiles: DPI, polling rate, buttons, lighting, macros | Profiles: light colour, report rate, DPI levels and shift, buttons | One colour on every LED or key, for this session |
-| When it is offered | USB cable, and a memory laid out like the G502 HERO's | Always | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |
+| When it is offered | USB cable, and a memory format PeriHub can write (profile format 2 or 3, 255- or 256-byte sectors) | Always | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |
 | What stays off | Enabling or disabling profiles, editing through a receiver | The left and right buttons | Everything else: DPI, polling rate, buttons, the device's memory |
 | Safety net | Only values the mouse accepts; a backup before every save; every write read back | Only values Logitech Gaming Software offers; only the edited fields change; a backup of the three profiles before every save; every write read back | Only the commands lighting needs; nothing is saved in the device |
 | If something looks wrong | Each save is undone after 15 seconds unless you keep it, also after PeriHub closed or the mouse was unplugged | The same | The device gets its own settings back after 15 seconds unless you keep it, when you quit PeriHub, and as soon as anything fails |

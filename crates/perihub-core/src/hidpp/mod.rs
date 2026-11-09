@@ -585,8 +585,10 @@ impl HidppDevice {
         Ok(self.call(feature::ONBOARD_PROFILES, 4, &[])?[1])
     }
 
-    pub fn set_active_profile(&mut self, number: u8) -> Result<()> {
-        self.call(feature::ONBOARD_PROFILES, 3, &[0, number])?;
+    /// Selects a profile by its address: sector `number` of the mouse's own memory, or of the
+    /// factory profiles (0x01nn, which Solaar selects the same way) with `factory`.
+    pub fn set_active_profile(&mut self, factory: bool, number: u8) -> Result<()> {
+        self.call(feature::ONBOARD_PROFILES, 3, &[factory as u8, number])?;
         Ok(())
     }
 

@@ -32,6 +32,7 @@ const cable: MouseInfo = {
     has_dpi_shift: true,
   },
   writable: true,
+  profile_list: "own",
 };
 
 const wireless: MouseInfo = {
@@ -55,8 +56,16 @@ describe("testReport", () => {
     expect(report).toContain(
       "Memory: model 1, profile format 2, macro format 1, 16 sectors of 256 bytes, 5 factory profiles",
     );
+    expect(report).toContain("Profile list: saved in the mouse");
     expect(report).toContain("DPI: 100-25600, step 50");
     expect(report).toContain("LEDs: zone 0 at 1, effects 0 1 3");
+  });
+
+  it("says when the mouse had no profile list of its own", () => {
+    const report = testReport({ ...cable, profile_list: "factory" }, "0.6.3", "linux x86_64");
+    expect(report).toContain("Profile list: none when connected (factory profiles in use)");
+    const damaged = testReport({ ...cable, profile_list: "damaged" }, "0.6.3", "linux x86_64");
+    expect(damaged).toContain("Profile list: damaged when connected (checksum does not match)");
   });
 
   it("gives the receiver, the slot and the wireless id of a mouse behind a receiver", () => {
@@ -85,6 +94,8 @@ describe("testFormUrl", () => {
     const url = testFormUrl(wireless, "0.5.2", "windows x86_64");
     expect(url.startsWith("https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml&")).toBe(true);
     const query = fields(url);
+    // GitHub wants a title before the report can be sent.
+    expect(query.get("title")).toBe("G502 X Lightspeed test report");
     expect(query.get("model")).toBe("G502 X Lightspeed");
     expect(query.get("usb-id")).toBe("046d:c547");
     expect(query.get("connection")).toBe("LIGHTSPEED receiver");

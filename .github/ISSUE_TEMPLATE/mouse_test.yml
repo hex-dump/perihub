@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing! Experimental mice are read-only: PeriHub only reads them and changes nothing, so testing is safe. A model becomes fully supported once someone confirms that what PeriHub shows matches the mouse.
+        Thanks for testing! PeriHub only reads an experimental mouse and changes nothing, unless you turn on **Edit anyway…** yourself, so testing is safe. A model becomes fully supported once someone confirms that what PeriHub shows matches the mouse and that saving works.
   - type: input
     id: model
     attributes:
@@ -61,6 +61,15 @@ body:
         - label: Polling rate
         - label: Button assignments
         - label: Lighting zones and their colors
+  - type: checkboxes
+    id: saving
+    attributes:
+      label: Saving, if you turned on Edit anyway…
+      description: Optional, and at your own risk. Leave these empty if you only read the mouse.
+      options:
+        - label: A change I saved took effect on the mouse
+        - label: It was still there after unplugging the mouse and plugging it back in
+        - label: Letting the 15 seconds run out put the old settings back
   - type: textarea
     id: notices
     attributes:

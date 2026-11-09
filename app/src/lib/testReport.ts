@@ -4,6 +4,13 @@ import type { MouseInfo } from "./api";
 const LOGITECH = "046d";
 const TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml";
 
+/** The mouse's profile list when it was connected. */
+const PROFILE_LIST = {
+  own: "saved in the mouse",
+  factory: "none when connected (factory profiles in use)",
+  damaged: "damaged when connected (checksum does not match)",
+};
+
 const hex = (id: number) => id.toString(16).padStart(4, "0");
 
 function usbId(mouse: MouseInfo): string {
@@ -35,6 +42,7 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
     `Firmware: ${mouse.firmware.map((f) => `${f.name} ${f.version}`).join(", ")}`,
     `Profiles: ${onboard.profile_count}, buttons: ${onboard.button_count}`,
     `Memory: model ${onboard.memory_model}, profile format ${onboard.profile_format}, macro format ${onboard.macro_format}, ${onboard.sector_count} sectors of ${onboard.sector_size} bytes, ${onboard.rom_profile_count} factory profiles`,
+    `Profile list: ${PROFILE_LIST[mouse.profile_list]}`,
     `G-Shift: ${onboard.has_gshift ? "yes" : "no"}, DPI shift: ${onboard.has_dpi_shift ? "yes" : "no"}`,
     `DPI: ${dpiRange(mouse)}`,
     `Polling (ms): ${mouse.report_rates_ms.join(", ") || "none reported"}`,
@@ -45,6 +53,7 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
 /** The test form on GitHub with the fields filled in that PeriHub knows. */
 export function testFormUrl(mouse: MouseInfo, version: string, system: string): string {
   const fields = {
+    title: `${mouse.model} test report`,
     model: mouse.model,
     "usb-id": usbId(mouse),
     connection: mouse.receiver ? "LIGHTSPEED receiver" : "USB cable",
@@ -68,6 +77,7 @@ export interface DeviceTestFields {
 
 export function deviceTestFormUrl(fields: DeviceTestFields, version: string, system: string): string {
   const values = {
+    title: `${fields.model} test report`,
     model: fields.model,
     "usb-id": fields.usbId,
     connection: fields.connection,

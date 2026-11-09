@@ -55,6 +55,7 @@ const info: MouseInfo = {
     has_dpi_shift: true,
   },
   writable: true,
+  profile_list: "own",
 };
 
 const settings = (): ProfileSettings => ({
@@ -72,6 +73,7 @@ const state = (): MouseState => ({
   active_dpi_index: 0,
   current_dpi: 800,
   macro_space: 2032,
+  profile_list: "own",
   profiles: [
     { number: 1, enabled: true, settings: settings() },
     { number: 2, enabled: true, settings: settings() },
@@ -222,6 +224,62 @@ describe("the experimental notice", () => {
 
     await open();
     expect(screen.queryByRole("button", { name: "Copy test report" })).toBeNull();
+  });
+});
+
+describe("enabling and disabling profiles", () => {
+  it("puts the box back when the mouse refuses the change", async () => {
+    api.setProfileEnabled.mockRejectedValue("at least one profile must stay enabled");
+    await open();
+    const box = (screen.getAllByRole("checkbox", { name: "Enabled" }) as HTMLInputElement[])[1];
+    expect(box.checked).toBe(true);
+    await fireEvent.click(box);
+    await wait(0);
+    expect(api.setProfileEnabled).toHaveBeenCalledWith(2, false);
+    expect(screen.getByText(/at least one profile must stay enabled/)).toBeTruthy();
+    expect(box.checked).toBe(true);
+  });
+
+  it("shows the new state when the mouse takes it", async () => {
+    api.setProfileEnabled.mockImplementation(async () => {
+      const next = state();
+      next.profiles[1].enabled = false;
+      return next;
+    });
+    await open();
+    const box = (screen.getAllByRole("checkbox", { name: "Enabled" }) as HTMLInputElement[])[1];
+    await fireEvent.click(box);
+    await wait(0);
+    expect((screen.getAllByRole("checkbox", { name: "Enabled" }) as HTMLInputElement[])[1].checked).toBe(false);
+  });
+});
+
+describe("a mouse nothing was saved to", () => {
+  const blank = async (): Promise<MouseState> => ({ ...state(), profile_list: "factory" });
+
+  it("says that the factory profiles are shown and that the first save creates the list", async () => {
+    api.mouseState.mockImplementation(blank);
+    await open();
+    expect(screen.getByText(/Nothing has been saved to this mouse yet/)).toBeTruthy();
+    expect(screen.getByText(/Your first save also creates the mouse's own profile list/)).toBeTruthy();
+  });
+
+  it("tells the owner of an untested mouse how to get a profile list first", async () => {
+    api.mouseState.mockImplementation(blank);
+    await open({ ...info, verified: false, experimental: true });
+    expect(screen.getByText(/save a profile once with Logitech G HUB/)).toBeTruthy();
+  });
+
+  it("says that a damaged profile list is not saved over", async () => {
+    api.mouseState.mockImplementation(async (): Promise<MouseState> => ({ ...state(), profile_list: "damaged" }));
+    await open();
+    expect(screen.getByText(/The profile list in this mouse's memory is damaged/)).toBeTruthy();
+    expect(screen.queryByText(/Nothing has been saved to this mouse yet/)).toBeNull();
+  });
+
+  it("says nothing for a mouse with its own profile list", async () => {
+    await open();
+    expect(screen.queryByText(/Nothing has been saved to this mouse yet/)).toBeNull();
   });
 });
 

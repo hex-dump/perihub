@@ -212,9 +212,11 @@
     }
   }
 
-  async function toggleEnabled(number: number, enabled: boolean) {
-    const next = await run("Updating profiles…", () => api.setProfileEnabled(number, enabled));
+  async function toggleEnabled(number: number, box: HTMLInputElement) {
+    const next = await run("Updating profiles…", () => api.setProfileEnabled(number, box.checked));
     if (next) mouse = next;
+    // A change the mouse did not take: the box goes back to what the mouse has.
+    else box.checked = mouse?.profiles.find((p) => p.number === number)?.enabled ?? box.checked;
   }
 
   async function changeTab(next: typeof tab) {
@@ -314,8 +316,9 @@
       <p class="small">Experimental editing is on for this model, but it needs the USB cable: connect the mouse with it.</p>
     {:else if experimentalOn}
       <p class="small">
-        Experimental editing is on for this model, but its memory is not laid out like the G502 HERO's (profile format
-        {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors), so PeriHub keeps it read-only.
+        Experimental editing is on for this model, but PeriHub does not know how to write its memory yet (profile
+        format {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors), so it stays read-only. A mouse
+        test report helps add it.
       </p>
     {/if}
     <div class="row report">
@@ -348,6 +351,25 @@
   </div>
 {/if}
 
+{#if info && mouse?.profile_list === "damaged"}
+  <div class="notice error">
+    <b>The profile list in this mouse's memory is damaged</b> (its checksum does not match), so PeriHub cannot tell
+    which profiles the mouse uses and will not save to it. Restore a backup with <b>Backups…</b>, or save a profile
+    once with Logitech G HUB or Onboard Memory Manager. Please send a mouse test report too (Settings → Problems).
+  </div>
+{:else if info && mouse?.profile_list === "factory"}
+  <div class="notice info">
+    <b>Nothing has been saved to this mouse yet</b>, so it uses its factory profiles: those are the ones shown here.
+    {#if info.verified}
+      Your first save also creates the mouse's own profile list, with a copy of the factory profiles, so everything
+      you don't change stays as it is.
+    {:else if info.experimental}
+      PeriHub creates that first profile list only on tested models: save a profile once with Logitech G HUB or
+      Onboard Memory Manager, then PeriHub can save to this mouse.
+    {/if}
+  </div>
+{/if}
+
 {#if info && mouse && draft}
   <div class="profiles">
     {#each mouse.profiles as profile (profile.number)}
@@ -374,7 +396,7 @@
               checked={profile.enabled}
               disabled={!!busy || !info.writable || !info.verified}
               title={info.verified ? undefined : "Needs a tested mouse model"}
-              onchange={(e) => toggleEnabled(profile.number, (e.target as HTMLInputElement).checked)}
+              onchange={(e) => toggleEnabled(profile.number, e.target as HTMLInputElement)}
             />
             Enabled
           </label>

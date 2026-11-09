@@ -13,8 +13,10 @@ Sources studied (read only, for the protocol facts):
   (LGS) editing a G300s, and the meaning of the DPI shift byte.
 - [Issue #16](https://github.com/hex-dump/perihub/issues/16): the three profiles of a real G300,
   read with hidapitester and with PeriHub 0.6.1 on Windows, compared with screenshots of LGS.
+- [Issue #21](https://github.com/hex-dump/perihub/issues/21): the first saves to that G300, with
+  a test build of PeriHub on Windows.
 
-Facts checked on the G300 of issue #16 are marked **(#16)**.
+Facts checked on the G300 of issue #16 are marked **(#16)**, those from its first saves **(#21)**.
 
 ## Transport
 
@@ -131,6 +133,12 @@ was set to "previous profile", a function the G300 does not have.
   write, then reads the profile back (a few times, in case the mouse is still busy) and compares it
   byte by byte. A save is undone unless the user keeps it, as for other untested mice.
 - It never selects a profile or DPI level through `F0`.
+
+Saving this way worked on a real G300 **(#21)**: the report rate of profile 3 read back changed
+(`F5 02 03 …` became `F5 02 00 …`), and the tester saw the buttons and the light colour change. On
+that mouse every colour with blue in it showed without the blue (blue was dark, cyan green,
+magenta red), and LGS showed them the same way: its blue light does not work, the bytes were
+right.
 
 ## Not known yet
 

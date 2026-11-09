@@ -109,7 +109,7 @@ mod tests {
         let written = fake.written.clone();
         let mut dev = HidppDevice::behind_receiver(fake, None, 1, true).unwrap();
         assert!(dev.set_onboard_mode(1).is_err());
-        assert!(dev.set_active_profile(1).is_err());
+        assert!(dev.set_active_profile(false, 1).is_err());
         dev.onboard_mode().unwrap();
         // Every request went to slot 1 as HID++ 2.0 (a feature index), none as a receiver register
         // (sub ids 0x80–0x83 to the receiver itself, index 0xFF).

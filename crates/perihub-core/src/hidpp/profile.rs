@@ -399,6 +399,29 @@ pub fn parse_directory(sector: &[u8], profile_count: usize) -> Vec<bool> {
     enabled
 }
 
+/// A profile list sector nothing was ever written to: it starts with four blank bytes (the way
+/// Solaar tells), where a list has the address of its first profile.
+pub fn is_blank_directory(sector: &[u8]) -> bool {
+    sector.len() >= 4 && (sector[..4] == [0xFF; 4] || sector[..4] == [0x00; 4])
+}
+
+/// The factory profile list (sector 0x0100), which the mouse follows while it has no list of its
+/// own: the same entries, with factory addresses (0x0101 for the first profile). Solaar reads it
+/// the same way. `None` unless every entry is one of the `rom_count` factory profiles and at
+/// least one is enabled.
+pub fn parse_factory_directory(sector: &[u8], profile_count: usize, rom_count: usize) -> Option<Vec<bool>> {
+    let mut enabled = vec![false; profile_count];
+    for entry in sector.as_chunks::<4>().0.iter().take(profile_count) {
+        if entry[..2] == [0xFF, 0xFF] {
+            break;
+        }
+        let slot =
+            (entry[1] as usize).checked_sub(1).filter(|&i| entry[0] == 0x01 && i < rom_count.min(profile_count))?;
+        enabled[slot] = entry[2] != 0;
+    }
+    enabled.contains(&true).then_some(enabled)
+}
+
 /// Sectors the directory (sector 0x0000) lists as profiles: macros must never be written there.
 pub fn directory_sectors(sector: &[u8], profile_count: usize) -> Vec<u16> {
     sector
@@ -508,5 +531,29 @@ mod tests {
         let mut big = full.clone();
         settings.apply(&mut big).unwrap();
         assert_eq!(written[..253], big[..253]);
+    }
+
+    #[test]
+    fn the_factory_list_gives_the_enabled_profiles_only_when_it_makes_sense() {
+        let list = |entries: &[[u8; 4]]| {
+            let mut sector = vec![0xFF; 255];
+            for (i, entry) in entries.iter().enumerate() {
+                sector[4 * i..4 * i + 4].copy_from_slice(entry);
+            }
+            sector
+        };
+        // Two factory profiles for five profiles, like the G502 X Wireless.
+        let two = list(&[[0x01, 0x01, 0x01, 0x00], [0x01, 0x02, 0x00, 0x00], [0xFF, 0xFF, 0x00, 0x00]]);
+        assert_eq!(parse_factory_directory(&two, 5, 2), Some(vec![true, false, false, false, false]));
+        // No profile enabled, an address of the mouse's own memory, a profile past the factory ones.
+        let none = list(&[[0x01, 0x01, 0x00, 0x00], [0xFF, 0xFF, 0x00, 0x00]]);
+        assert_eq!(parse_factory_directory(&none, 5, 2), None);
+        let own = list(&[[0x00, 0x01, 0x01, 0x00], [0xFF, 0xFF, 0x00, 0x00]]);
+        assert_eq!(parse_factory_directory(&own, 5, 2), None);
+        let past = list(&[[0x01, 0x01, 0x01, 0x00], [0x01, 0x03, 0x01, 0x00], [0xFF, 0xFF, 0x00, 0x00]]);
+        assert_eq!(parse_factory_directory(&past, 5, 2), None);
+        // A blank or zeroed sector.
+        assert_eq!(parse_factory_directory(&[0xFF; 255], 5, 5), None);
+        assert_eq!(parse_factory_directory(&[0x00; 255], 5, 5), None);
     }
 }

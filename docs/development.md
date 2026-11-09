@@ -58,7 +58,8 @@ The command-line tool never uses experimental editing or experimental lighting.
 crates/perihub-core     Rust library: protocols, effects, device detection, configuration
   src/apex/             SteelSeries Apex 3 TKL: RGB (output reports) and key mapping (feature reports)
   src/hidpp/            Logitech HID++ 2.0, LIGHTSPEED receivers, the onboard profile format and the list of mice
-  src/g300.rs           Logitech G300 (feature reports, read only)
+                        (see docs/protocols/logitech-onboard-profiles.md)
+  src/g300.rs           Logitech G300 (feature reports; see docs/protocols/logitech-g300.md)
   src/corsair/          Corsair mice, keyboards and receivers (see docs/protocols/corsair-bragi.md)
   src/effects.rs        lighting effects rendered on the PC
   src/manager.rs        device hotplug

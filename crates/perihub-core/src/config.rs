@@ -78,8 +78,17 @@ impl Default for AppConfig {
     }
 }
 
+#[cfg(not(test))]
 pub fn config_dir() -> PathBuf {
     dirs::config_dir().unwrap_or_else(std::env::temp_dir).join("perihub")
+}
+
+/// Tests never touch the user's real settings and backups: each test gets a folder of its own.
+#[cfg(test)]
+pub fn config_dir() -> PathBuf {
+    let thread = std::thread::current();
+    let name = thread.name().unwrap_or("main").replace("::", "-");
+    std::env::temp_dir().join(format!("perihub-test-config-{}-{name}", std::process::id()))
 }
 
 fn config_path() -> PathBuf {

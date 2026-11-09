@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Experimental editing for mice like the G502 X Wireless.** **Edit anyway…** was offered only when the mouse's memory matched the G502 HERO's exactly (profile format 2, 256-byte sectors). It is now also offered for profile format 3 and for 255-byte sectors, which is what the G502 X Wireless reports: libratbag and Solaar write these with the same layout. As for every untested mouse, it needs the USB cable, every save is backed up and read back, and it is undone after 15 seconds unless you keep it. Saving has not been tried on such a mouse yet. Issue #15, thanks to Fomius.
+- The mouse test report says whether the mouse has a profile list of its own, and **Open test form** fills in the title too. The form has three boxes for those who tried saving with **Edit anyway…**.
+- `docs/protocols/logitech-onboard-profiles.md` describes the profile list and the factory profiles.
+
+### Changed
+- **Saving to the Logitech G300 has worked on a real mouse** (issue #21, thanks to omeggga): the light colour, the report rate and the buttons were saved. It stays experimental until someone confirms that a save is still there after the mouse is unplugged; the notices in the app say so.
+
+### Fixed
+- **The first save to a mouse nothing was ever saved to.** Such a mouse has no profile list in its memory and uses its factory profiles. PeriHub wrote the profile but not the list, and showed the profile as saved; going by what libratbag and Solaar do with these mice, the mouse goes on using its factory profiles until it has a list. Now the first save to a G502 HERO also creates the list, with a copy of the factory profiles, so everything you did not change stays as it is, and the mouse switches to its own copy of the profile it was on. Enabling or disabling a profile does the same. While there is no list PeriHub shows the factory profiles and which of them are enabled, says so on the mouse page, and selects profiles among the factory ones. On an untested mouse with **Edit anyway…** PeriHub does not create the list (the save could not be undone) and says how to get one. None of this has been tried on a real mouse with an empty memory yet: the mouse PeriHub is tested on has a list.
+- A profile that was never saved gets its factory copy before it is enabled, so the profile list never points to an empty sector.
+- A mouse that refuses to read its missing profile list (the G305 does, according to libratbag) is no longer reported as an error.
+- The **Enabled** box of a profile goes back when the mouse refuses the change (the last enabled profile, for example): it stayed unticked while the profile was still enabled.
+- A profile list whose checksum does not match is never overwritten: PeriHub says that the list is damaged and saves nothing, instead of writing a profile the mouse may not use.
+
 ## 0.6.2 — 2026-11-09
 
 The Logitech G300 can be edited at your own risk, and G502 HERO mice with 255-byte memory sectors can save.

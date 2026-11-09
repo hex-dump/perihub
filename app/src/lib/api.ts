@@ -208,7 +208,15 @@ export interface MouseState {
   profiles: MouseProfile[];
   /** Bytes free for new macros in the mouse's memory. */
   macro_space: number;
+  /** With "factory" the mouse uses its factory profiles, which are then the ones in `profiles`. */
+  profile_list: ProfileList;
 }
+
+/**
+ * The list in the mouse's memory that says which profiles it uses: its own, none yet (nothing was
+ * ever saved to the mouse, which uses its factory profiles), or one whose checksum does not match.
+ */
+export type ProfileList = "own" | "factory" | "damaged";
 
 export interface LedZone {
   index: number;
@@ -260,6 +268,8 @@ export interface MouseInfo {
     has_dpi_shift: boolean;
   };
   writable: boolean;
+  /** The mouse's profile list when it was connected (MouseState.profile_list is the state now). */
+  profile_list: ProfileList;
 }
 
 export interface KeyboardInfo {

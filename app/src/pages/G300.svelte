@@ -168,8 +168,8 @@
 
 {#if info?.experimental}
   <div class="notice error">
-    <b>Experimental editing is on.</b> PeriHub has never saved to a G300 before: you can change and save its profiles
-    at your own risk. Every save is backed up, and undone after 15 seconds unless you keep it. To check that a profile
+    <b>Experimental editing is on.</b> Saving has worked on the one G300 it was tried on so far: you can change and
+    save its profiles at your own risk. Every save is backed up, and undone after 15 seconds unless you keep it. To check that a profile
     stays, edit one that is not in use, keep it, switch to it with G8, then unplug the mouse and plug it back in. Then
     please send a test report.
     <div class="row report">

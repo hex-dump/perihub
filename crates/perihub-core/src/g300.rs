@@ -740,6 +740,11 @@ mod tests {
         root
     }
 
+    /// Removes a test's backup folder, so that test runs leave nothing in the temporary folder.
+    fn forget(backups: &std::path::Path) {
+        let _ = std::fs::remove_dir_all(backups);
+    }
+
     fn experimental(fake: &Fake, name: &str) -> G300Task {
         let mut task = G300Task::start(Connection::Write(Box::new(fake.clone())), temp_backups(name)).unwrap();
         task.settle = Duration::ZERO;
@@ -846,6 +851,7 @@ mod tests {
         // The same settings again: nothing is sent.
         task.save(2, &s).unwrap();
         assert_eq!(fake.state().sent.len(), 1);
+        forget(&task.backups);
     }
 
     #[test]
@@ -861,6 +867,7 @@ mod tests {
         assert_eq!(fake.state().sent.len(), 2);
         assert!(!task.pending_undo_path().exists());
         assert_eq!(task.info.profiles[2].dpi_levels, [1000, 1000, 1000, 1000]);
+        forget(&task.backups);
     }
 
     #[test]
@@ -876,6 +883,7 @@ mod tests {
         // The mouse still holds the old profile: the undo has nothing to write.
         assert_eq!(fake.state().sent.len(), 1);
         assert!(!task.pending_undo_path().exists());
+        forget(&task.backups);
     }
 
     #[test]
@@ -901,5 +909,6 @@ mod tests {
         assert!(!task.info.pending_undo);
         assert!(!backups.join("pending-undo").exists());
         assert!(task.info().unwrap().profiles[0].color == Rgb { r: 255, g: 255, b: 255 });
+        forget(&backups);
     }
 }
