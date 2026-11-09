@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.6.4 — 2026-11-09
+
+The Logitech G300 is supported, and a warning for Logitech Gaming Software.
 
 ### Changed
 - **The Logitech G300 is supported.** Its profiles can be edited straight away with **Edit**, without turning on experimental editing or accepting its warning. A user confirmed it on a real G300, on Windows: the changes took effect, they were still there after the mouse was unplugged and plugged back in, and a save that was not kept was undone. The safety net stays: a backup of the three profiles before every save, the save read back, and **Keep?** after each one, with the backup going back after 15 seconds without an answer. No G300 has been tried on Linux yet. Issue #21, thanks to omeggga.
