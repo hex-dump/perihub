@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.6.2 — 2026-11-09
+
+The Logitech G300 can be edited at your own risk, and G502 HERO mice with 255-byte memory sectors can save.
 
 ### Added
 - **Experimental editing for the Logitech G300.** **Edit anyway…** on the G300 page lets you change and save its three profiles at your own risk: light colour, report rate, the four DPI levels and the default one, the DPI shift, and what the wheel button and G4 to G9 do (mouse clicks, keyboard keys with Ctrl, Shift, Alt or Win, DPI functions, next profile). The left and right buttons stay as they are. PeriHub writes a profile the way libratbag does, changes only the fields you edited, accepts only values Logitech Gaming Software offers, backs up the three profiles before every save, reads each save back, and undoes it after 15 seconds unless you keep it. Saving has not been tried on a real G300 yet. The G300 page also shows the DPI shift. How the G300 works is described in `docs/protocols/logitech-g300.md`. Issue #16.

@@ -50,7 +50,7 @@
 | **Logitech G502 HERO** mouse | ✅ Fully supported, tested on real hardware |
 | 29 more **Logitech G mice** (G502 X, G Pro, G403, G703, G903, G305…) | 🧪 Experimental: read, and editable at your own risk with the USB cable |
 | 26 **Corsair mice** and 23 **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Experimental: read, and one colour of lighting for the session, at your own risk |
-| **Logitech G300** mouse | 🧪 Experimental: read, and editable at your own risk (from the next version; read-only in 0.6.1) |
+| **Logitech G300** mouse | 🧪 Experimental: read, and editable at your own risk |
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
 
@@ -103,7 +103,7 @@ Some devices have not been tested yet. PeriHub reads them and changes nothing, u
 > [!CAUTION]
 > **No warranty.** Experimental features have never been tried on your device. PeriHub is provided "as is", without any warranty, as its [license](LICENSE) says. If you turn one on, you use it at your own risk: the author of PeriHub is not responsible for any damage, malfunction or loss. PeriHub asks you to confirm this before each one is turned on.
 
-| | Logitech mice: **Edit anyway…** | Logitech G300: **Edit anyway…** (from the next version) | Corsair devices: **Try experimental lighting…** |
+| | Logitech mice: **Edit anyway…** | Logitech G300: **Edit anyway…** | Corsair devices: **Try experimental lighting…** |
 |---|---|---|---|
 | What you can change | Profiles: DPI, polling rate, buttons, lighting, macros | Profiles: light colour, report rate, DPI levels and shift, buttons | One colour on every LED or key, for this session |
 | When it is offered | USB cable, and a memory laid out like the G502 HERO's | Always | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |

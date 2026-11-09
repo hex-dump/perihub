@@ -78,7 +78,7 @@ Own one? Send a [mouse test report](https://github.com/hex-dump/perihub/issues/n
 
 | Device | USB ID | Level |
 |---|---|---|
-| G300 | `046d:c246` | 🧪 Experimental (from the next version; 👁 read-only in 0.6.1) |
+| G300 | `046d:c246` | 🧪 Experimental |
 
 The G300 has a protocol of its own ([how it works](protocols/logitech-g300.md)). PeriHub shows its
 three profiles: light colour, report rate, DPI levels and DPI shift, and what each button does (G4
