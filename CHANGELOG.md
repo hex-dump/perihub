@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.6.3 — 2026-11-09
+
+The first save to a mouse nothing was ever saved to, and experimental editing for mice like the G502 X Wireless.
 
 ### Added
 - **Experimental editing for mice like the G502 X Wireless.** **Edit anyway…** was offered only when the mouse's memory matched the G502 HERO's exactly (profile format 2, 256-byte sectors). It is now also offered for profile format 3 and for 255-byte sectors, which is what the G502 X Wireless reports: libratbag and Solaar write these with the same layout. As for every untested mouse, it needs the USB cable, every save is backed up and read back, and it is undone after 15 seconds unless you keep it. Saving has not been tried on such a mouse yet. Issue #15, thanks to Fomius.
