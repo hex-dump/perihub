@@ -15,6 +15,7 @@
 - A profile that was never saved gets its factory copy before it is enabled, so the profile list never points to an empty sector.
 - A mouse that refuses to read its missing profile list (the G305 does, according to libratbag) is no longer reported as an error.
 - The **Enabled** box of a profile goes back when the mouse refuses the change (the last enabled profile, for example): it stayed unticked while the profile was still enabled.
+- **Reset all to factory** on a keyboard whose keys are already the factory ones no longer saves a backup of nothing.
 - A profile list whose checksum does not match is never overwritten: PeriHub says that the list is damaged and saves nothing, instead of writing a profile the mouse may not use.
 
 ## 0.6.2 — 2026-11-09

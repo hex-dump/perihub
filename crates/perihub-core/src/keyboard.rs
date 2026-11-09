@@ -168,6 +168,10 @@ impl KeyboardTask {
 
     fn write_keymap(&mut self, changes: &[(u8, u8, KeyBinding)], label: &str) -> Result<Keymap> {
         let before = self.keymap()?;
+        // Nothing to write (a reset of a key map that is already the factory one): no backup either.
+        if changes.is_empty() {
+            return Ok(before);
+        }
         write_backup(BACKUPS, label, &[("keymap.json", serde_json::to_string_pretty(&before)?.as_bytes())])?;
         let [normal, steelseries] = self.dev.apply_changes(changes)?;
         let keymap = Keymap { normal, steelseries };
