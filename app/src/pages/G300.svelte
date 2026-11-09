@@ -24,9 +24,11 @@
 
   let live = $state<G300Info | null>(null);
   const info = $derived(live ?? initial);
-  // The mouse was opened again (experimental editing turned on or off): what was read before is old.
+  // The mouse was opened again with experimental editing turned on or off, or unplugged: what was
+  // read before is old. A new status for another device changes nothing here.
+  const opened = $derived(initial ? (initial.experimental ? "experimental" : "read-only") : "gone");
   $effect(() => {
-    void initial;
+    void opened;
     live = null;
     editing = null;
     confirmKeep = false;

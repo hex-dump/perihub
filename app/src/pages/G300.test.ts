@@ -108,4 +108,19 @@ describe("the G300 page", () => {
     });
     expect(await screen.findByRole("button", { name: /keep/i })).toBeTruthy();
   });
+
+  it("keeps asking to keep a save when a new status arrives for another device", async () => {
+    const experimental = { ...info, experimental: true };
+    api.g300Save.mockResolvedValue(experimental);
+    const { rerender } = render(G300, { props: { info: experimental, error: null } });
+    await fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await fireEvent.change(screen.getByRole("combobox", { name: "DPI level 1" }), { target: { value: "750" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Save to the mouse" }));
+    await screen.findByRole("button", { name: /keep/i });
+    await rerender({ info: { ...experimental }, error: null });
+    expect(screen.queryByRole("button", { name: /keep/i })).toBeTruthy();
+    // Experimental editing turned off: the mouse is opened again read-only.
+    await rerender({ info: { ...info }, error: null });
+    expect(screen.queryByRole("button", { name: /keep/i })).toBeNull();
+  });
 });
