@@ -636,7 +636,7 @@ impl HidppDevice {
         let [s_hi, s_lo] = sector.to_be_bytes();
         let [l_hi, l_lo] = (data.len() as u16).to_be_bytes();
         self.call(feature::ONBOARD_PROFILES, 6, &[s_hi, s_lo, 0, 0, l_hi, l_lo])?;
-        // Data goes in blocks of 16 bytes. When the size is not a multiple of 16 (255 bytes on newer
+        // Data goes in blocks of 16 bytes. When the size is not a multiple of 16 (255 bytes on some
         // firmware) the last block is shorter: the rest of its report is zeros, past the length
         // announced above.
         for chunk in data.chunks(16) {
@@ -863,7 +863,7 @@ pub(crate) mod tests {
         assert_eq!(sector_write_reports(256), expected);
     }
 
-    /// Newer firmware reports 255-byte sectors (issue #20): 255 bytes are announced, and the last
+    /// Some mice report 255-byte sectors (issue #20): 255 bytes are announced, and the last
     /// of the 16 blocks carries 15 of them.
     #[test]
     fn a_255_byte_sector_ends_with_a_shorter_block() {

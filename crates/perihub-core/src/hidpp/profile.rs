@@ -23,7 +23,7 @@ pub const BUTTON_SLOTS: usize = 16;
 pub const LED_SLOTS: usize = 2;
 /// Sector size of the G502 HERO PeriHub was verified on.
 pub const VERIFIED_SECTOR_SIZE: usize = 256;
-/// Smallest sector PeriHub writes. Newer firmware of the same mice reports 255 bytes instead of
+/// Smallest sector PeriHub writes. Some mice of the same models report 255 bytes instead of
 /// 256: the profile has the same layout, only the CRC is one byte earlier, in the last two bytes.
 pub const MIN_WRITE_SECTOR_SIZE: usize = 255;
 /// Smallest sector that holds every field PeriHub reads, and the CRC after them. Some mice
@@ -488,7 +488,7 @@ mod tests {
         assert!(settings.apply(&mut g502_x).unwrap_err().to_string().contains("240-byte sectors"));
     }
 
-    /// Newer firmware of the G502 HERO reports 255-byte sectors (issue #20): same fields, CRC one
+    /// Some G502 HERO mice (firmware U1 74.00) report 255-byte sectors (issue #20): same fields, CRC one
     /// byte earlier.
     #[test]
     fn a_255_byte_sector_is_saved_with_its_crc_in_the_last_two_bytes() {

@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Fixed
-- **G502 HERO with newer firmware could not save.** Some G502 HERO mice (firmware U1 74.00.0005, for example) report 255-byte memory sectors instead of 256, and PeriHub refused every save with "unsupported profile format: 255-byte sectors". The profile has the same layout, only the checksum is one byte earlier: PeriHub now writes these sectors too. Reading was not affected. Issue #20, thanks to danhetrick.
+- **Some G502 HERO mice could not save.** Some G502 HERO mice (firmware U1 74.00.0005, for example) report 255-byte memory sectors instead of 256, and PeriHub refused every save with "unsupported profile format: 255-byte sectors". The profile has the same layout, only the checksum is one byte earlier: PeriHub now writes these sectors too. Reading was not affected. Issue #20, thanks to danhetrick.
 
 ## 0.6.1 — 2026-11-08
 
