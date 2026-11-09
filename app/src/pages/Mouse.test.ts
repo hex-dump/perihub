@@ -227,6 +227,33 @@ describe("the experimental notice", () => {
   });
 });
 
+describe("a new device status", () => {
+  it("keeps unsaved changes when it is about another device", async () => {
+    const page = await open();
+    await changeFirstLevel(1000);
+    expect(api.mouseState).toHaveBeenCalledOnce();
+
+    // The keyboard was plugged in, or another program started: the same mouse, in a new status.
+    await page.rerender({ info: structuredClone(info), error: null, asleep: null });
+    await wait(0);
+    expect(api.mouseState).toHaveBeenCalledOnce();
+    expect(firstLevel().value).toBe("1000");
+  });
+
+  it("reads the mouse again when the mouse itself was opened again", async () => {
+    const page = await open({ ...info, verified: false, experimental: true });
+    await page.rerender({ info: { ...info, verified: false, experimental: false, writable: false }, error: null, asleep: null });
+    await wait(0);
+    expect(api.mouseState).toHaveBeenCalledTimes(2);
+
+    // Unplugged and plugged back in.
+    await page.rerender({ info: null, error: null, asleep: null });
+    await page.rerender({ info: structuredClone(info), error: null, asleep: null });
+    await wait(0);
+    expect(api.mouseState).toHaveBeenCalledTimes(3);
+  });
+});
+
 describe("enabling and disabling profiles", () => {
   it("puts the box back when the mouse refuses the change", async () => {
     api.setProfileEnabled.mockRejectedValue("at least one profile must stay enabled");

@@ -629,17 +629,22 @@ impl Manager {
                 let info = task.info.clone();
                 slots.g300 = Some((device.path().to_owned(), Worker::spawn("perihub-g300", task), info));
                 slots.g300_error = None;
+                true
             }
             Err(error) => {
                 let message = format!("G300: {}", open_error_message(error));
-                log::warn!("{message}");
+                // Without the udev rule it is tried again at every pass: said once, not every time.
+                let new = slots.g300_error.as_ref() != Some(&message);
+                if new {
+                    log::warn!("{message}");
+                }
                 if !message.contains("permission denied") {
                     slots.g300_failed = Some(device.path().to_owned());
                 }
                 slots.g300_error = Some(message);
+                changed | new
             }
         }
-        true
     }
 
     /// The open Corsair device with this USB product id.
@@ -719,17 +724,22 @@ impl Manager {
                     log::info!("Corsair {} connected (experimental support, read-only)", info.model);
                     slots.corsair.push((device.path().to_owned(), Worker::spawn("perihub-corsair", task), info));
                     slots.corsair_error = None;
+                    changed = true;
                 }
                 Err(error) => {
                     let message = format!("Corsair {}: {}", model.name, open_error_message(error));
-                    log::warn!("{message}");
+                    // Without the udev rule it is tried again at every pass: said once, not every time.
+                    let new = slots.corsair_error.as_ref() != Some(&message);
+                    if new {
+                        log::warn!("{message}");
+                    }
                     if !message.contains("permission denied") {
                         slots.corsair_failed.push(device.path().to_owned());
                     }
                     slots.corsair_error = Some(message);
+                    changed |= new;
                 }
             }
-            changed = true;
         }
         changed
     }
@@ -774,13 +784,15 @@ impl Manager {
             }
             Err(error) => {
                 let message = format!("Corsair receiver: {}", open_error_message(error));
-                log::warn!("{message}");
+                let changed = slots.corsair_error.as_ref() != Some(&message);
+                if changed {
+                    log::warn!("{message}");
+                }
                 if message.contains("permission denied") {
                     slots.corsair_waiting.insert(path, std::time::Instant::now());
                 } else {
                     slots.corsair_failed.push(path);
                 }
-                let changed = slots.corsair_error.as_ref() != Some(&message);
                 slots.corsair_error = Some(message);
                 changed
             }

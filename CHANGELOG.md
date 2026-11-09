@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- **Unsaved changes on the mouse page were lost when something else changed.** Plugging in the keyboard or another device, or a program such as G HUB starting or quitting, made the mouse page read the mouse again and drop the changes you had not saved yet. It now reads the mouse again only when the mouse itself was opened again or taken by another program.
+- A Logitech G300 or a Corsair device that cannot be opened for lack of the udev rule was reported every two seconds, to the window and in the log file, where it pushed everything else out within hours. It is reported once.
+
 ## 0.6.3 — 2026-11-09
 
 The first save to a mouse nothing was ever saved to, and experimental editing for mice like the G502 X Wireless.

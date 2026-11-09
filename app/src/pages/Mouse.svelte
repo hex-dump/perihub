@@ -124,10 +124,14 @@
     draft = clone(next.profiles.find((p) => p.number === selected)!.settings);
   }
 
-  let loadedFor: MouseInfo | null = null;
+  // The mouse as it was when its profiles were read. Every device status carries the mouse in a new
+  // object, also when it is about the keyboard or another program: only a mouse that changed (opened
+  // again, taken by another program) is read again, or unsaved changes would be lost.
+  let loadedFor: string | null = null;
   $effect(() => {
-    if (info && info !== loadedFor) {
-      loadedFor = info;
+    const now = info ? JSON.stringify(info) : null;
+    if (now && now !== loadedFor) {
+      loadedFor = now;
       // The mouse was opened again (experimental editing turned off): the core already undid a
       // save that was not kept.
       confirmKeep = false;
