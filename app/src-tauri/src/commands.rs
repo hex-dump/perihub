@@ -299,7 +299,7 @@ pub fn turn_off_experimental(app: &AppHandle) {
     });
 }
 
-// ---- Logitech G300 (read only, or experimental editing) ----
+// ---- Logitech G300 ----
 
 /// The G300's profiles, with the active profile and DPI level read again now.
 #[tauri::command]
@@ -308,7 +308,7 @@ pub async fn g300_info(state: State<'_, AppState>) -> CmdResult<G300Info> {
     blocking(move || manager.g300()?.call(|g| g.info())).await
 }
 
-/// Saves a G300 profile (experimental editing only). Undone unless kept.
+/// Saves a G300 profile. Undone unless kept.
 #[tauri::command]
 pub async fn g300_save(state: State<'_, AppState>, number: u8, settings: G300Settings) -> CmdResult<G300Info> {
     let manager = state.manager.clone();

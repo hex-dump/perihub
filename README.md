@@ -48,9 +48,9 @@
 |---|---|
 | **SteelSeries Apex 3 TKL** keyboard | ✅ Fully supported, tested on real hardware |
 | **Logitech G502 HERO** mouse | ✅ Fully supported, tested on real hardware |
+| **Logitech G300** mouse | ✅ Supported: its three profiles can be read and edited, confirmed by a user on a real G300 |
 | 29 more **Logitech G mice** (G502 X, G Pro, G403, G703, G903, G305…) | 🧪 Experimental: read, and editable at your own risk with the USB cable |
 | 26 **Corsair mice** and 23 **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Experimental: read, and one colour of lighting for the session, at your own risk |
-| **Logitech G300** mouse | 🧪 Experimental: read, and editable at your own risk |
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
 
@@ -79,6 +79,14 @@ Not on the list? Open a [device request](https://github.com/hex-dump/perihub/iss
 | Macros | Recorded from the keyboard or built step by step: keys, clicks, media keys, scrolling, pauses | **Mouse**: works without PeriHub, on any PC |
 | Software macros | What the mouse cannot do alone: repeat, type text, open a website or a program. Up to 8 | PC: PeriHub must be running |
 
+### Logitech G300
+
+| Feature | Details | Saved in |
+|---|---|---|
+| Profiles | 3 profiles: light colour (8 colours), report rate, 4 DPI levels with the default one, DPI shift | **Mouse** |
+| Buttons | The wheel button and G4 to G9: clicks, keys with Ctrl, Shift, Alt or Win, DPI functions, next profile. The left and right buttons stay as they are | Mouse |
+| Safety net | A backup of the three profiles before every save, every save read back, and **Keep?** after each one: without an answer the backup goes back after 15 seconds | |
+
 ### Everything else
 
 - **App profiles**: while a game or an app is in focus, PeriHub can switch the keyboard lighting and the mouse profile, and switch back afterwards. On Windows and on Hyprland. PeriHub only reads the app's identifier (the executable name or window class), never window titles or contents.
@@ -103,14 +111,14 @@ Some devices have not been tested yet. PeriHub reads them and changes nothing, u
 > [!CAUTION]
 > **No warranty.** Experimental features have never been tried on your device. PeriHub is provided "as is", without any warranty, as its [license](LICENSE) says. If you turn one on, you use it at your own risk: the author of PeriHub is not responsible for any damage, malfunction or loss. PeriHub asks you to confirm this before each one is turned on.
 
-| | Logitech mice: **Edit anyway…** | Logitech G300: **Edit anyway…** | Corsair devices: **Try experimental lighting…** |
-|---|---|---|---|
-| What you can change | Profiles: DPI, polling rate, buttons, lighting, macros | Profiles: light colour, report rate, DPI levels and shift, buttons | One colour on every LED or key, for this session |
-| When it is offered | USB cable, and a memory format PeriHub can write (profile format 2 or 3, 255- or 256-byte sectors) | Always | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |
-| What stays off | Enabling or disabling profiles, editing through a receiver | The left and right buttons | Everything else: DPI, polling rate, buttons, the device's memory |
-| Safety net | Only values the mouse accepts; a backup before every save; every write read back | Only values Logitech Gaming Software offers; only the edited fields change; a backup of the three profiles before every save; every write read back | Only the commands lighting needs; nothing is saved in the device |
-| If something looks wrong | Each save is undone after 15 seconds unless you keep it, also after PeriHub closed or the mouse was unplugged | The same | The device gets its own settings back after 15 seconds unless you keep it, when you quit PeriHub, and as soon as anything fails |
-| Turn it off | On the mouse page, or **Turn off experimental editing** in the tray menu | On the G300 page, or the tray menu | On the device page, or **Turn off experimental editing** in the tray menu |
+| | Logitech mice: **Edit anyway…** | Corsair devices: **Try experimental lighting…** |
+|---|---|---|
+| What you can change | Profiles: DPI, polling rate, buttons, lighting, macros | One colour on every LED or key, for this session |
+| When it is offered | USB cable, and a memory format PeriHub can write (profile format 2 or 3, 255- or 256-byte sectors) | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |
+| What stays off | Enabling or disabling profiles, editing through a receiver | Everything else: DPI, polling rate, buttons, the device's memory |
+| Safety net | Only values the mouse accepts; a backup before every save; every write read back | Only the commands lighting needs; nothing is saved in the device |
+| If something looks wrong | Each save is undone after 15 seconds unless you keep it, also after PeriHub closed or the mouse was unplugged | The device gets its own settings back after 15 seconds unless you keep it, when you quit PeriHub, and as soon as anything fails |
+| Turn it off | On the mouse page, or **Turn off experimental editing** in the tray menu | On the device page, or **Turn off experimental editing** in the tray menu |
 
 ### Help test your device
 
@@ -256,6 +264,7 @@ The interface is in English. More languages are planned.
 ## Known limitations
 
 - **Windows**: tested on a real Windows 11 PC (lighting, key remapping, mouse profiles and macros, app profiles, tray, autostart, updates, software macros). Creating software macros has been tried on Linux only.
+- **Logitech G300**: reading and saving were confirmed by one user, on Windows ([issue #21](https://github.com/hex-dump/perihub/issues/21)). No G300 has been tried on Linux yet.
 - **Logitech mice through a LIGHTSPEED receiver** are read-only and have not been tried on real hardware yet ([issue #4](https://github.com/hex-dump/perihub/issues/4)). Their buttons do not start software macros.
 - **Corsair devices** have not been tried on real hardware yet. With more than one device on the same receiver, only the first one is shown, and the Slipstream V2 receiver is not recognized.
 - **App profiles** work on Windows and Hyprland only. They switch lighting and mouse profiles, not key mappings.

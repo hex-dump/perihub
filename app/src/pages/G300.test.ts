@@ -4,9 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const api = vi.hoisted(() => ({
   g300Info: vi.fn(),
   appSettings: vi.fn(),
-  experimentalMice: vi.fn(),
-  setExperimental: vi.fn(),
-  onExperimental: vi.fn(),
   keyCatalog: vi.fn(),
   g300Save: vi.fn(),
   g300KeepChanges: vi.fn(),
@@ -27,7 +24,7 @@ const info: G300Info = {
   active_profile: 1,
   active_level: 1,
   active_raw: "f0 02 00 00",
-  experimental: false,
+  editable: true,
   pending_undo: false,
   profiles: [
     {
@@ -58,13 +55,11 @@ afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
   api.appSettings.mockResolvedValue({ system: "linux x86_64" });
-  api.experimentalMice.mockResolvedValue([]);
-  api.onExperimental.mockResolvedValue(() => {});
   api.keyCatalog.mockResolvedValue({ targets: [{ usage: 0x04 }, { usage: 0x06 }, { usage: 0x2b }], sources: [] });
 });
 
 describe("the G300 page", () => {
-  it("shows the stored profile with the names printed on the mouse, and nothing to edit", () => {
+  it("shows the stored profile with the names printed on the mouse, and no fields until Edit is pressed", () => {
     render(G300, { props: { info, error: null } });
     expect(screen.getByText("White")).toBeTruthy();
     expect(screen.getByText("1000 Hz")).toBeTruthy();
@@ -73,21 +68,26 @@ describe("the G300 page", () => {
     expect(row("G7")).toContain("Ctrl + C");
     expect(row("G8")).toContain("Next profile");
     expect(screen.queryAllByRole("textbox").length + screen.queryAllByRole("spinbutton").length).toBe(0);
+    expect(screen.queryAllByRole("combobox").length).toBe(0);
   });
 
-  it("offers experimental editing only behind a warning", async () => {
+  it("offers Edit straight away, with no experimental warning to accept", async () => {
     render(G300, { props: { info, error: null } });
+    expect(screen.queryByRole("button", { name: "Edit anyway…" })).toBeNull();
+    expect(screen.getByText(/asks whether to keep it/)).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByRole("combobox", { name: "G4 function" })).toBeTruthy();
+  });
+
+  it("offers nothing to edit on a read-only connection", () => {
+    render(G300, { props: { info: { ...info, editable: false }, error: null } });
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
-    expect(screen.queryAllByRole("combobox").length).toBe(0);
-    await fireEvent.click(screen.getByRole("button", { name: "Edit anyway…" }));
-    const confirm = screen.getByRole("button", { name: "Turn on experimental editing" }) as HTMLButtonElement;
-    expect(confirm.disabled).toBe(true);
+    expect(screen.getByText("Read-only")).toBeTruthy();
   });
 
   it("saves only what was changed, keeps left and right as they are, and asks to keep the save", async () => {
-    const experimental = { ...info, experimental: true };
-    api.g300Save.mockResolvedValue(experimental);
-    render(G300, { props: { info: experimental, error: null } });
+    api.g300Save.mockResolvedValue(info);
+    render(G300, { props: { info, error: null } });
     await fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(screen.queryByRole("combobox", { name: "Left button function" })).toBeNull();
     await fireEvent.change(screen.getByRole("combobox", { name: "G4 function" }), { target: { value: "mouse" } });
@@ -110,17 +110,16 @@ describe("the G300 page", () => {
   });
 
   it("keeps asking to keep a save when a new status arrives for another device", async () => {
-    const experimental = { ...info, experimental: true };
-    api.g300Save.mockResolvedValue(experimental);
-    const { rerender } = render(G300, { props: { info: experimental, error: null } });
+    api.g300Save.mockResolvedValue(info);
+    const { rerender } = render(G300, { props: { info, error: null } });
     await fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     await fireEvent.change(screen.getByRole("combobox", { name: "DPI level 1" }), { target: { value: "750" } });
     await fireEvent.click(screen.getByRole("button", { name: "Save to the mouse" }));
     await screen.findByRole("button", { name: /keep/i });
-    await rerender({ info: { ...experimental }, error: null });
-    expect(screen.queryByRole("button", { name: /keep/i })).toBeTruthy();
-    // Experimental editing turned off: the mouse is opened again read-only.
     await rerender({ info: { ...info }, error: null });
+    expect(screen.queryByRole("button", { name: /keep/i })).toBeTruthy();
+    // The mouse was unplugged: the core undoes the save when it is back.
+    await rerender({ info: null, error: null });
     expect(screen.queryByRole("button", { name: /keep/i })).toBeNull();
   });
 });

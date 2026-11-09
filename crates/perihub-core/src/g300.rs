@@ -3,9 +3,10 @@
 //! `docs/protocols/logitech-g300.md`, checked byte by byte against a real G300 and Logitech Gaming
 //! Software in issue #16.
 //!
-//! PeriHub only reads the G300, unless the user turned on experimental editing for it: only then is
-//! the task given a [`FeatureDevice`], the one type that can send a report. A save is backed up,
-//! read back, and undone unless the user keeps it, like on other untested mice.
+//! PeriHub reads the G300 and saves its profiles: saving was confirmed on a real G300 in issue #21
+//! (the changes took effect, stayed after the mouse was unplugged, and a save that was not kept
+//! was undone). A save is backed up, read back, and undone unless the user keeps it. Only a task
+//! given a [`FeatureDevice`] can send a report; with a [`FeatureSource`] it only reads.
 
 use std::path::PathBuf;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -60,7 +61,7 @@ pub trait FeatureSource: Send {
     fn get_feature(&self, buf: &mut [u8]) -> Result<usize>;
 }
 
-/// Reads and sends feature reports: given to the task only with experimental editing on.
+/// Reads and sends feature reports: what a task that saves profiles is given.
 pub trait FeatureDevice: FeatureSource {
     /// Sends a feature report, report id in byte 0.
     fn send_feature(&self, data: &[u8]) -> Result<()>;
@@ -303,14 +304,14 @@ pub struct G300Info {
     pub profiles: Vec<G300Profile>,
     /// Report 0xF0 as read, for test reports.
     pub active_raw: String,
-    /// Experimental editing is on: the profiles can be saved.
-    pub experimental: bool,
+    /// The profiles can be saved (always, unless the task was opened read-only).
+    pub editable: bool,
     /// A save was neither kept nor undone (PeriHub closed or the mouse unplugged during the
-    /// countdown), and the mouse is read-only now: turning experimental editing on puts the backup back.
+    /// countdown), and this connection is read-only, so it could not be undone.
     pub pending_undo: bool,
 }
 
-/// The connection to the mouse: only the experimental one can send reports.
+/// The connection to the mouse: only the second kind can send reports.
 enum Connection {
     Read(Box<dyn FeatureSource>),
     Write(Box<dyn FeatureDevice>),
@@ -335,8 +336,6 @@ pub struct G300Task {
     last_backup: Option<String>,
     /// When the last save is undone, unless it is kept.
     undo_at: Option<Instant>,
-    /// Set before the manager opens the mouse again: the thread stops at its next tick.
-    closed: bool,
     settle: Duration,
     read_back_wait: Duration,
 }
@@ -346,18 +345,18 @@ fn profile_file(number: u8) -> String {
 }
 
 impl G300Task {
-    /// Read only: nothing can be sent to the mouse.
-    pub fn open(dev: impl FeatureSource + 'static) -> Result<Self> {
-        Self::start(Connection::Read(Box::new(dev)), default_backups())
-    }
-
-    /// With experimental editing turned on: the profiles can be saved.
-    pub fn open_experimental(dev: impl FeatureDevice + 'static) -> Result<Self> {
+    /// The profiles can be read and saved.
+    pub fn open(dev: impl FeatureDevice + 'static) -> Result<Self> {
         Self::start(Connection::Write(Box::new(dev)), default_backups())
     }
 
+    /// Read only: nothing can be sent to the mouse.
+    pub fn open_read_only(dev: impl FeatureSource + 'static) -> Result<Self> {
+        Self::start(Connection::Read(Box::new(dev)), default_backups())
+    }
+
     fn start(dev: Connection, backups: PathBuf) -> Result<Self> {
-        let experimental = matches!(dev, Connection::Write(_));
+        let editable = matches!(dev, Connection::Write(_));
         let mut task = Self {
             dev,
             info: G300Info {
@@ -367,14 +366,13 @@ impl G300Task {
                 active_level: 0,
                 profiles: Vec::new(),
                 active_raw: String::new(),
-                experimental,
+                editable,
                 pending_undo: false,
             },
             last_refresh: Instant::now(),
             backups,
             last_backup: None,
             undo_at: None,
-            closed: false,
             settle: WRITE_SETTLE,
             read_back_wait: READ_BACK_WAIT,
         };
@@ -384,9 +382,9 @@ impl G300Task {
         }
         task.read_active()?;
         log::info!(
-            "Logitech G300: profile {} active, experimental editing {}, profiles {}",
+            "Logitech G300: profile {} active, {}, profiles {}",
             task.info.active_profile,
-            if experimental { "on" } else { "off" },
+            if editable { "can be saved to" } else { "read-only" },
             task.info.profiles.iter().map(|p| p.raw.clone()).collect::<Vec<_>>().join(" | ")
         );
         task.finish_pending_undo();
@@ -426,8 +424,8 @@ impl G300Task {
     /// (see [`Self::keep_changes`]).
     pub fn save(&mut self, number: u8, settings: &G300Settings) -> Result<G300Info> {
         Self::check_number(number)?;
-        if !self.info.experimental {
-            return Err(Error::Invalid("the G300 is read-only unless experimental editing is on".into()));
+        if !self.info.editable {
+            return Err(Error::Invalid("this connection to the G300 is read-only".into()));
         }
         let current = self.read_profile(number)?;
         let new = encode_profile(number, &current, settings)?;
@@ -454,7 +452,7 @@ impl G300Task {
     /// Sends a profile, then reads it back until it matches. The mouse needs time to store it.
     fn write_verified(&mut self, number: u8, data: &[u8]) -> Result<()> {
         let Connection::Write(dev) = &self.dev else {
-            return Err(Error::Invalid("the G300 is read-only unless experimental editing is on".into()));
+            return Err(Error::Invalid("this connection to the G300 is read-only".into()));
         };
         dev.send_feature(data)?;
         std::thread::sleep(self.settle);
@@ -522,8 +520,8 @@ impl G300Task {
         self.info()
     }
 
-    /// When the mouse is opened: a save that was neither kept nor undone is undone now, if
-    /// experimental editing is on. A day later the backup is too old to put back blindly.
+    /// When the mouse is opened: a save that was neither kept nor undone is undone now. A day
+    /// later the backup is too old to put back blindly.
     fn finish_pending_undo(&mut self) {
         let path = self.pending_undo_path();
         let Ok(id) = std::fs::read_to_string(&path) else { return };
@@ -535,7 +533,7 @@ impl G300Task {
             let _ = std::fs::remove_file(&path);
             return;
         }
-        if !self.info.experimental {
+        if !self.info.editable {
             self.info.pending_undo = true;
             return;
         }
@@ -545,19 +543,6 @@ impl G300Task {
             log::warn!("G300 undo failed: {e}");
         }
     }
-
-    /// Before the manager opens the mouse again (experimental editing turned on or off): a save
-    /// that was not kept is undone first, then the thread stops.
-    pub fn close(&mut self) -> Result<()> {
-        if self.undo_at.is_some() {
-            log::warn!("experimental editing turned off before a G300 save was kept: undoing it");
-            if let Err(e) = self.undo_last_write() {
-                log::warn!("G300 undo failed: {e}");
-            }
-        }
-        self.closed = true;
-        Ok(())
-    }
 }
 
 fn default_backups() -> PathBuf {
@@ -566,9 +551,6 @@ fn default_backups() -> PathBuf {
 
 impl DeviceTask for G300Task {
     fn tick(&mut self) -> Result<Duration> {
-        if self.closed {
-            return Err(Error::NotConnected);
-        }
         if self.undo_at.is_some_and(|at| Instant::now() >= at) {
             log::warn!("a G300 save was not kept: undoing it");
             if let Err(e) = self.undo_last_write() {
@@ -745,7 +727,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(backups);
     }
 
-    fn experimental(fake: &Fake, name: &str) -> G300Task {
+    fn editable(fake: &Fake, name: &str) -> G300Task {
         let mut task = G300Task::start(Connection::Write(Box::new(fake.clone())), temp_backups(name)).unwrap();
         task.settle = Duration::ZERO;
         task.read_back_wait = Duration::ZERO;
@@ -831,7 +813,7 @@ mod tests {
     fn a_save_is_backed_up_written_once_and_read_back() {
         let fake = Fake::new();
         fake.state().slow_reads = 2;
-        let mut task = experimental(&fake, "save");
+        let mut task = editable(&fake, "save");
         let mut s = settings(2);
         s.color = Rgb { r: 0, g: 0, b: 255 };
         let info = task.save(2, &s).unwrap();
@@ -857,7 +839,7 @@ mod tests {
     #[test]
     fn a_save_that_is_not_kept_is_undone() {
         let fake = Fake::new();
-        let mut task = experimental(&fake, "undo");
+        let mut task = editable(&fake, "undo");
         let mut s = settings(3);
         s.dpi_levels = vec![1000, 1250, 1500, 1750];
         task.save(3, &s).unwrap();
@@ -874,7 +856,7 @@ mod tests {
     fn a_write_the_mouse_does_not_keep_is_reported_and_nothing_else_is_sent() {
         let fake = Fake::new();
         fake.state().forgetful = true;
-        let mut task = experimental(&fake, "forgetful");
+        let mut task = editable(&fake, "forgetful");
         let mut s = settings(1);
         s.report_rate_hz = 250;
         let error = task.save(1, &s).unwrap_err().to_string();
@@ -890,7 +872,7 @@ mod tests {
     fn a_save_left_pending_is_undone_when_editing_is_on_again() {
         let fake = Fake::new();
         let name = "pending";
-        let mut task = experimental(&fake, name);
+        let mut task = editable(&fake, name);
         let mut s = settings(1);
         s.color = Rgb { r: 0, g: 255, b: 0 };
         task.save(1, &s).unwrap();

@@ -288,7 +288,7 @@ export interface DeviceStatus {
   unsupported_keyboard: string | null;
   /** Running programs that take control of the devices, such as "Logitech G HUB". */
   conflicts: string[];
-  /** A Logitech G300 (read only, or experimental editing). */
+  /** A Logitech G300. */
   g300: G300Info | null;
   g300_error: string | null;
   /** Corsair mice and keyboards (experimental support). */
@@ -338,9 +338,9 @@ export interface G300Info {
   active_level: number;
   profiles: G300Profile[];
   active_raw: string;
-  /** Experimental editing is on: the profiles can be saved. */
-  experimental: boolean;
-  /** A save was neither kept nor undone: turning experimental editing on puts the backup back. */
+  /** The profiles can be saved. */
+  editable: boolean;
+  /** A save was neither kept nor undone, and this read-only connection could not undo it. */
   pending_undo: boolean;
 }
 
@@ -456,7 +456,7 @@ export const api = {
   onExperimental: (handler: (ids: number[]) => void): Promise<UnlistenFn> =>
     listen<number[]>("experimental-changed", (event) => handler(event.payload)),
   g300Info: () => invoke<G300Info>("g300_info"),
-  /** Saves a G300 profile (experimental editing): undone unless kept. */
+  /** Saves a G300 profile: undone unless kept. */
   g300Save: (number: number, settings: G300Settings) => invoke<G300Info>("g300_save", { number, settings }),
   g300KeepChanges: () => invoke<void>("g300_keep_changes"),
   g300UndoLastWrite: () => invoke<G300Info>("g300_undo_last_write"),

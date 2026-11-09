@@ -120,10 +120,9 @@ was set to "previous profile", a function the G300 does not have.
 
 ## What PeriHub does with it
 
-- It reads `F3`, `F4`, `F5` and `F0`, and nothing else, unless the user turned on experimental
-  editing for the G300.
-- With experimental editing on, it saves a profile like libratbag: one SET_REPORT of the 35-byte
-  report, and none of the other LGS commands above. It changes only the fields being edited and
+- It reads `F3`, `F4`, `F5` and `F0`.
+- It saves a profile like libratbag: one SET_REPORT of the 35-byte report, and none of the other
+  LGS commands above. Until 0.6.3 this needed experimental editing to be turned on. It changes only the fields being edited and
   keeps every other bit as read: the unused bits of the light byte, the DPI value of a disabled
   shift, and button entries it does not change (key combinations, unknown functions).
 - It accepts only the values listed on this page: the 8 colours, the 4 report rates, DPI from 250
@@ -131,18 +130,22 @@ was set to "previous profile", a function the G300 does not have.
   keep what they have.
 - Before writing it saves the three profile reports as a backup, waits half a second after the
   write, then reads the profile back (a few times, in case the mouse is still busy) and compares it
-  byte by byte. A save is undone unless the user keeps it, as for other untested mice.
+  byte by byte. A save is undone unless the user keeps it, as for untested mice.
 - It never selects a profile or DPI level through `F0`.
 
 Saving this way worked on a real G300 **(#21)**: the report rate of profile 3 read back changed
 (`F5 02 03 …` became `F5 02 00 …`), and the tester saw the buttons and the light colour change. On
 that mouse every colour with blue in it showed without the blue (blue was dark, cyan green,
 magenta red), and LGS showed them the same way: its blue light does not work, the bytes were
-right.
+right. The changes were still there after the mouse was unplugged and plugged back in, and a save
+that was not kept was put back **(#21)**. All of this on Windows.
+
+LGS runs as `LCore.exe` ("Logitech Gaming Framework" in Task Manager) **(#21)**: PeriHub warns
+while it is running.
 
 ## Not known yet
 
-- Whether the profile written this way stays after the mouse is unplugged (libratbag #1202), and
-  whether a change to the active profile applies at once or only after switching profiles.
+- Whether a change to the active profile applies at once or only after switching profiles.
+- Whether reading and saving work the same on Linux (hidraw): no G300 has been tried there yet.
 - What `F1`, `F2` and the `F0 42 …` commands of LGS do.
 - What the high bits of the light byte and of the DPI bytes mean (they were 0 on every G300 seen).

@@ -7,26 +7,31 @@ use serde::Serialize;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum Conflict {
     LogitechGHub,
+    LogitechGamingSoftware,
 }
 
 impl Conflict {
     pub fn name(self) -> &'static str {
         match self {
             Self::LogitechGHub => "Logitech G HUB",
+            Self::LogitechGamingSoftware => "Logitech Gaming Software",
         }
     }
 
     /// Executable names, lowercase. Only names seen on a real PC: lghub_agent and
-    /// lghub_system_tray in the Windows test of 0.3.0, lghub is G HUB's window.
-    #[cfg_attr(not(windows), allow(dead_code))]
+    /// lghub_system_tray in the Windows test of 0.3.0, lghub is G HUB's window. Logitech Gaming
+    /// Software runs as LCore.exe ("Logitech Gaming Framework" in Task Manager, issue #21); its
+    /// LogiRegistryService.exe is a sound service that keeps running after it is quit, so it is
+    /// not listed.
     fn processes(self) -> &'static [&'static str] {
         match self {
             Self::LogitechGHub => &["lghub.exe", "lghub_agent.exe", "lghub_system_tray.exe"],
+            Self::LogitechGamingSoftware => &["lcore.exe"],
         }
     }
 }
 
-const ALL: &[Conflict] = &[Conflict::LogitechGHub];
+const ALL: &[Conflict] = &[Conflict::LogitechGHub, Conflict::LogitechGamingSoftware];
 
 /// Programs that drive Corsair mice, by executable name (lowercase). Two programs driving the same
 /// Corsair mouse can leave it unable to click (OpenRGB issue 4843), so PeriHub's experimental
@@ -54,9 +59,12 @@ fn corsair_programs_in(names: &[String]) -> Vec<&'static str> {
     found
 }
 
-/// Conflicting programs that are running now. G HUB only exists on Windows.
+/// Conflicting programs that are running now. They only exist on Windows.
 pub fn running() -> Vec<Conflict> {
-    let names = process_names();
+    running_in(&process_names())
+}
+
+fn running_in(names: &[String]) -> Vec<Conflict> {
     ALL.iter().copied().filter(|c| c.processes().iter().any(|p| names.iter().any(|n| n == p))).collect()
 }
 
@@ -110,6 +118,19 @@ mod tests {
         assert_eq!(corsair_programs_in(&names(&["openlinkhub", "icue.exe"])), ["OpenLinkHub", "Corsair iCUE"]);
         // Only whole names: a process that merely contains the name does not count.
         assert!(corsair_programs_in(&names(&["openrgb-helper"])).is_empty());
+    }
+
+    #[test]
+    fn logitech_programs_are_found_by_their_process() {
+        let names = |list: &[&str]| list.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert!(running_in(&names(&["explorer.exe", "perihub.exe"])).is_empty());
+        assert_eq!(running_in(&names(&["lghub_agent.exe", "lghub.exe"])), [Conflict::LogitechGHub]);
+        // The processes of the PC in issue #21, with Logitech Gaming Software open.
+        let lgs = names(&["lcore.exe", "logiregistryservice.exe", "logi_lamparray_service.amd64.exe"]);
+        assert_eq!(running_in(&lgs), [Conflict::LogitechGamingSoftware]);
+        // Its sound service alone, which stays after it is quit.
+        assert!(running_in(&names(&["logiregistryservice.exe"])).is_empty());
+        assert_eq!(Conflict::LogitechGamingSoftware.name(), "Logitech Gaming Software");
     }
 
     #[test]

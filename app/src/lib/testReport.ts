@@ -125,7 +125,7 @@ export function g300Test(
       `PeriHub ${version} on ${system}`,
       "Mouse: Logitech G300, USB ID 046d:c246",
       `Active profile: ${info.active_profile}, DPI level ${info.active_level + 1} (${info.active_raw})`,
-      `Experimental editing: ${info.experimental ? "on" : "off"}`,
+      `Saving: ${info.editable ? "available" : "off (read-only)"}`,
       ...info.profiles.map((p) => `Profile ${p.number}: ${describe(p)}\n  ${p.raw}`),
     ].join("\n"),
   };

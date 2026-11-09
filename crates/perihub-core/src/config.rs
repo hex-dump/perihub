@@ -97,13 +97,21 @@ fn config_path() -> PathBuf {
 
 impl AppConfig {
     pub fn load() -> Self {
-        match fs::read_to_string(config_path()) {
+        let mut config = match fs::read_to_string(config_path()) {
             Ok(text) => serde_json::from_str(&text).unwrap_or_else(|error| {
                 log::warn!("invalid config.json, using defaults: {error}");
                 Self::default()
             }),
             Err(_) => Self::default(),
-        }
+        };
+        config.forget_supported_devices();
+        config
+    }
+
+    /// The Logitech G300 was edited through experimental editing until 0.6.3: it is supported
+    /// now, so it no longer belongs in that list (which the tray menu offers to turn off).
+    fn forget_supported_devices(&mut self) {
+        self.experimental_mice.retain(|&id| id != crate::g300::PRODUCT_ID);
     }
 
     pub fn save(&self) -> Result<()> {
@@ -270,5 +278,12 @@ mod tests {
         }
         assert!(read_backup_file_in(&root, "1792438882-profile5", "missing.bin").is_err());
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn the_g300_leaves_the_experimental_list() {
+        let mut config = AppConfig { experimental_mice: vec![0xC08F, crate::g300::PRODUCT_ID], ..AppConfig::default() };
+        config.forget_supported_devices();
+        assert_eq!(config.experimental_mice, [0xC08F]);
     }
 }

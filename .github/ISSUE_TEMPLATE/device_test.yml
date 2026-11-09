@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing! PeriHub only reads these devices; on Corsair devices it can also try one colour of lighting for the session, if you turn it on. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
+        Thanks for testing! PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session, if you turn it on. On the Logitech G300 it reads and saves the three profiles. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
   - type: input
     id: model
     attributes:
@@ -59,6 +59,7 @@ body:
         - label: Polling rate (report rate)
         - label: DPI (mice)
         - label: "G300: profiles, DPI levels, light colour and buttons"
+        - label: "G300: a profile I saved took effect and was still there after unplugging the mouse"
         - label: "Corsair: experimental lighting showed the colour, and the device went back to its own lighting when it was turned off"
         - label: "Corsair: every button or key kept working while experimental lighting was on"
   - type: textarea

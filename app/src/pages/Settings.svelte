@@ -114,7 +114,7 @@
       <div>{status.mouse?.model ?? "Mouse"}: {status.mouse ? status.mouse.firmware.map((f) => `${f.name} ${f.version}`).join(", ") : status.mouse_error ?? (status.mouse_asleep ? "asleep" : "not connected")}</div>
     </div>
     <p class="muted small">
-      Quit SteelSeries GG and Logitech G HUB while using PeriHub: two programs talking to the same device get in each other's way.
+      Quit SteelSeries GG, Logitech G HUB and Logitech Gaming Software while using PeriHub: two programs talking to the same device get in each other's way.
     </p>
   </div>
 

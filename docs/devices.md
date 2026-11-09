@@ -84,7 +84,7 @@ Own one? Send a [mouse test report](https://github.com/hex-dump/perihub/issues/n
 
 | Device | USB ID | Level |
 |---|---|---|
-| G300 | `046d:c246` | 🧪 Experimental |
+| G300 | `046d:c246` | ✅ Supported |
 
 The G300 has a protocol of its own ([how it works](protocols/logitech-g300.md)). PeriHub shows its
 three profiles: light colour, report rate, DPI levels and DPI shift, and what each button does (G4
@@ -93,13 +93,14 @@ against a real G300 and Logitech Gaming Software in
 [issue #16](https://github.com/hex-dump/perihub/issues/16), and PeriHub 0.6.1 read it correctly on
 Windows.
 
-**Edit anyway…** on the G300 page turns on experimental editing: light colour, report rate, DPI
-levels, default level and shift, and the buttons except left and right, with only the values
-Logitech Gaming Software offers. PeriHub backs up the three profiles before every save, reads the
-save back, and undoes it after 15 seconds unless you keep it. Saving was first tried on a real
-G300 in [issue #21](https://github.com/hex-dump/perihub/issues/21): the light colour, the report
-rate and the buttons were saved. Whether a save stays after the mouse is unplugged has not been
-confirmed yet. Own one? Send a
+**Edit** on a profile changes it: light colour, report rate, DPI levels, default level and shift,
+and the buttons except left and right, with only the values Logitech Gaming Software offers.
+PeriHub backs up the three profiles before every save, reads the save back, and asks whether to
+keep it: without an answer the backup goes back after 15 seconds. Until 0.6.3 this was an
+experimental feature. It was confirmed on a real G300 in
+[issue #21](https://github.com/hex-dump/perihub/issues/21), on Windows: the changes took effect,
+they were still there after the mouse was unplugged and plugged back in, and a save that was not
+kept was undone. No G300 has been tried on Linux yet. Something does not work on yours? Send a
 [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
 
 ## Corsair

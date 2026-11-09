@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Logitech G300: its three profiles as stored in the mouse. Read only, unless the user turns on
-  // experimental editing: then a profile can be saved, and the save is undone unless it is kept.
+  // Logitech G300: its three profiles as stored in the mouse. A profile can be edited and saved, and
+  // the save is undone unless it is kept.
   import { onDestroy } from "svelte";
   import {
     api, errorText, type G300Button, type G300Info, type G300Profile, type G300Settings, type KeyInfo,
@@ -8,7 +8,6 @@
   import { keyLabel } from "../lib/keys";
   import { g300Test } from "../lib/testReport";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
-  import ExperimentalDialog from "../components/ExperimentalDialog.svelte";
   import G300ProfileEditor from "../components/G300ProfileEditor.svelte";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
 
@@ -24,9 +23,9 @@
 
   let live = $state<G300Info | null>(null);
   const info = $derived(live ?? initial);
-  // The mouse was opened again with experimental editing turned on or off, or unplugged: what was
-  // read before is old. A new status for another device changes nothing here.
-  const opened = $derived(initial ? (initial.experimental ? "experimental" : "read-only") : "gone");
+  // The mouse was unplugged or opened again: what was read before is old. A new status for another
+  // device changes nothing here.
+  const opened = $derived(initial ? (initial.editable ? "editable" : "read-only") : "gone");
   $effect(() => {
     void opened;
     live = null;
@@ -40,8 +39,6 @@
   }, LIVE_MS);
   onDestroy(() => clearInterval(timer));
 
-  let experimentalOn = $state(false);
-  let showExperimental = $state(false);
   /** The profile being edited. */
   let editing = $state<number | null>(null);
   /** A save waits to be kept or undone. */
@@ -51,9 +48,6 @@
   let message = $state<string | null>(null);
   let keys = $state<KeyInfo[]>([]);
 
-  api.experimentalMice().then((ids) => (experimentalOn = ids.includes(0xc246))).catch(() => {});
-  const unlistenExperimental = api.onExperimental((ids) => (experimentalOn = ids.includes(0xc246)));
-  onDestroy(() => unlistenExperimental.then((off) => off()));
   api.keyCatalog().then((c) => (keys = c.targets)).catch(() => {});
 
   async function run(label: string, task: () => Promise<void>) {
@@ -66,15 +60,6 @@
     } finally {
       busy = null;
     }
-  }
-
-  function setExperimental(enabled: boolean) {
-    showExperimental = false;
-    // The G300 is opened again: the page reloads when the new status arrives.
-    return run(enabled ? "Turning on experimental editing…" : "Turning off experimental editing…", async () => {
-      const ids = await api.setExperimental(0xc246, enabled);
-      experimentalOn = ids.includes(0xc246);
-    });
   }
 
   function save(number: number, settings: G300Settings) {
@@ -161,46 +146,31 @@
 
 <header>
   <h1>Logitech G300</h1>
-  <span class="chip test">{info?.experimental ? "Experimental editing" : "Read-only"}</span>
+  {#if info && !info.editable}<span class="chip test">Read-only</span>{/if}
 </header>
 
 {#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
 
-{#if info?.experimental}
-  <div class="notice error">
-    <b>Experimental editing is on.</b> Saving has worked on the one G300 it was tried on so far: you can change and
-    save its profiles at your own risk. Every save is backed up, and undone after 15 seconds unless you keep it. To check that a profile
-    stays, edit one that is not in use, keep it, switch to it with G8, then unplug the mouse and plug it back in. Then
-    please send a test report.
+{#if info?.editable}
+  <div class="notice info">
+    <b>Press Edit on a profile to change it.</b> PeriHub backs up the three profiles before every save, reads the save
+    back and asks whether to keep it: without an answer the backup goes back after 15 seconds. Quit Logitech Gaming
+    Software first, which keeps its own copy of the profiles. Saving was confirmed on a real G300; if something does
+    not work on yours, please send a test report.
     <div class="row report">
       <DeviceTestReport fields={(version, system) => g300Test(info!, describe, version, system)} />
-      <button class="tiny" disabled={!!busy} onclick={() => setExperimental(false)}>Turn off</button>
     </div>
   </div>
 {:else if info}
   <div class="notice info">
-    <b>Read-only support.</b> PeriHub shows the three profiles stored in the G300 and changes nothing. Please check that
-    they match Logitech Gaming Software and send a test report.
+    <b>Read-only.</b> PeriHub shows the three profiles stored in the G300 and changes nothing.
     {#if info.pending_undo}
-      <p class="small">
-        <b>A save to this mouse was not kept</b> before PeriHub closed or the mouse was unplugged. Turn experimental
-        editing on again to put the backup back.
-      </p>
+      <p class="small"><b>A save to this mouse was not kept</b> before PeriHub closed or the mouse was unplugged.</p>
     {/if}
     <div class="row report">
       <DeviceTestReport fields={(version, system) => g300Test(info!, describe, version, system)} />
-      {#if experimentalOn}
-        <button class="tiny" disabled={!!busy} onclick={() => setExperimental(false)}>Turn off experimental editing</button>
-      {:else if info.pending_undo}
-        <button class="tiny" disabled={!!busy} onclick={() => setExperimental(true)}>Turn on and undo</button>
-      {:else}
-        <button class="tiny" disabled={!!busy} onclick={() => (showExperimental = true)}>Edit anyway…</button>
-      {/if}
     </div>
   </div>
-{/if}
-{#if showExperimental}
-  <ExperimentalDialog model="G300" g300 onconfirm={() => setExperimental(true)} onclose={() => (showExperimental = false)} />
 {/if}
 {#if confirmKeep}
   <KeepChangesDialog model="G300" checkText="move it, try the buttons and DPI you changed" onkeep={keep} onundo={undo} />
@@ -218,7 +188,7 @@
         <h2>
           Profile {profile.number}
           {#if active}<span class="chip ok">Active</span>{/if}
-          {#if info.experimental && editing === null}
+          {#if info.editable && editing === null}
             <button class="tiny edit" disabled={!!busy || confirmKeep} onclick={() => (editing = profile.number)}>Edit</button>
           {/if}
         </h2>

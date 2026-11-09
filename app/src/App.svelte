@@ -95,7 +95,7 @@
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Logitech G300</span>
-          <span class="state" class:on={!!status.g300}>{status.g300 ? (status.g300.experimental ? "Experimental editing" : "Read-only") : "Not connected"}</span>
+          <span class="state" class:on={!!status.g300}>{status.g300 ? "Connected" : "Not connected"}</span>
         </span>
       </button>
     {/if}
@@ -137,9 +137,15 @@
     <div class="content">
       {#each status.conflicts as name (name)}
         <div class="notice error conflict">
-          <b>{name} is running.</b> It can take control of your devices when it starts and after every wake-up, so the
-          mouse stops using its onboard profiles, buttons and macros. Quit it from its tray icon and turn off its
-          autostart (Task Manager → Startup apps).
+          {#if name === "Logitech Gaming Software"}
+            <b>{name} is running.</b> It keeps its own copy of a mouse's profiles and may write it back to the mouse,
+            or take control of it, while you use PeriHub. Quit it from its tray icon and turn off its autostart (Task
+            Manager → Startup apps).
+          {:else}
+            <b>{name} is running.</b> It can take control of your devices when it starts and after every wake-up, so the
+            mouse stops using its onboard profiles, buttons and macros. Quit it from its tray icon and turn off its
+            autostart (Task Manager → Startup apps).
+          {/if}
         </div>
       {/each}
       {#if page === "keyboard"}

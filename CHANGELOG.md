@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+- **The Logitech G300 is supported.** Its profiles can be edited straight away with **Edit**, without turning on experimental editing or accepting its warning. A user confirmed it on a real G300, on Windows: the changes took effect, they were still there after the mouse was unplugged and plugged back in, and a save that was not kept was undone. The safety net stays: a backup of the three profiles before every save, the save read back, and **Keep?** after each one, with the backup going back after 15 seconds without an answer. No G300 has been tried on Linux yet. Issue #21, thanks to omeggga.
+- PeriHub warns when **Logitech Gaming Software** is running, as it does for G HUB: it keeps its own copy of a mouse's profiles and may write it back, or take control of the mouse.
+
 ### Fixed
 - **Unsaved changes on the mouse page were lost when something else changed.** Plugging in the keyboard or another device, or a program such as G HUB starting or quitting, made the mouse page read the mouse again and drop the changes you had not saved yet. It now reads the mouse again only when the mouse itself was opened again or taken by another program.
 - A Logitech G300 or a Corsair device that cannot be opened for lack of the udev rule was reported every two seconds, to the window and in the log file, where it pushed everything else out within hours. It is reported once.
