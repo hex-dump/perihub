@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.6.5 — 2026-11-09
+
+The Logitech G502 X Wireless is supported.
 
 ### Added
 - **The Logitech G502 X Wireless is supported.** Its profiles, DPI levels, buttons and macros can be edited straight away with **Edit**, without turning on experimental editing or accepting a warning. A user confirmed it on a real G502 X Wireless (format 3, 255-byte sectors), on Windows: the changes took effect, persisted across unplugging and over wireless, the 15-second undo restored the backup when not kept, macros worked, and backups restored cleanly. Issue #15, thanks to Fomius.
