@@ -21,10 +21,13 @@ const LED_LEN: usize = 11;
 pub const DPI_SLOTS: usize = 5;
 pub const BUTTON_SLOTS: usize = 16;
 pub const LED_SLOTS: usize = 2;
-/// Sector size of the profiles PeriHub writes, verified on the G502 HERO.
-pub const WRITE_SECTOR_SIZE: usize = 256;
+/// Sector size of the G502 HERO PeriHub was verified on.
+pub const VERIFIED_SECTOR_SIZE: usize = 256;
+/// Smallest sector PeriHub writes. Newer firmware of the same mice reports 255 bytes instead of
+/// 256: the profile has the same layout, only the CRC is one byte earlier, in the last two bytes.
+pub const MIN_WRITE_SECTOR_SIZE: usize = 255;
 /// Smallest sector that holds every field PeriHub reads, and the CRC after them. Some mice
-/// (the G502 X) report sectors smaller than 256 bytes: they can be read, not written.
+/// (the G502 X) report sectors smaller than 255 bytes: they can be read, not written.
 const READ_SECTOR_SIZE: usize = OFF_LEDS + LED_LEN * LED_SLOTS + 2;
 
 pub fn crc_ccitt(data: &[u8]) -> u16 {
@@ -331,7 +334,7 @@ impl ProfileSettings {
     /// Writes the settings on top of an existing sector and recomputes the CRC.
     pub fn apply(&self, sector: &mut [u8]) -> Result<()> {
         let button_count = self.buttons.len();
-        check_layout(sector, button_count, WRITE_SECTOR_SIZE)?;
+        check_layout(sector, button_count, MIN_WRITE_SECTOR_SIZE)?;
         if self.dpi_levels.len() > DPI_SLOTS
             || self.gshift_buttons.len() != button_count
             || self.leds.len() != LED_SLOTS
@@ -426,7 +429,7 @@ mod tests {
 
     /// A 256-byte profile with valid CRC, every button disabled.
     fn blank_sector() -> Vec<u8> {
-        let mut sector = vec![0xFF; WRITE_SECTOR_SIZE];
+        let mut sector = vec![0xFF; VERIFIED_SECTOR_SIZE];
         sector[OFF_REPORT_RATE] = 1;
         sector[OFF_DEFAULT_DPI] = 0;
         sector[OFF_SHIFT_DPI] = 0;
@@ -480,5 +483,30 @@ mod tests {
         let err = ProfileSettings::parse(too_small, 11).unwrap_err().to_string();
         assert!(err.contains("231-byte sectors"), "{err}");
         assert!(ProfileSettings::parse(&full, 17).unwrap_err().to_string().contains("17 buttons"));
+        let mut g502_x = full[..240].to_vec();
+        write_crc(&mut g502_x);
+        assert!(settings.apply(&mut g502_x).unwrap_err().to_string().contains("240-byte sectors"));
+    }
+
+    /// Newer firmware of the G502 HERO reports 255-byte sectors (issue #20): same fields, CRC one
+    /// byte earlier.
+    #[test]
+    fn a_255_byte_sector_is_saved_with_its_crc_in_the_last_two_bytes() {
+        let full = blank_sector();
+        let mut sector = full[..255].to_vec();
+        write_crc(&mut sector);
+        let mut settings = ProfileSettings::parse(&sector, 11).unwrap();
+        settings.dpi_levels = vec![400, 1600];
+        settings.leds[0] = LedEffect::Fixed { color: Rgb { r: 0x12, g: 0x34, b: 0x56 } };
+
+        let mut written = sector.clone();
+        settings.apply(&mut written).unwrap();
+        assert_eq!(written.len(), 255);
+        assert!(crc_is_valid(&written));
+        assert_eq!(ProfileSettings::parse(&written, 11).unwrap(), settings);
+        // The same change on a 256-byte sector gives the same bytes, apart from where the CRC goes.
+        let mut big = full.clone();
+        settings.apply(&mut big).unwrap();
+        assert_eq!(written[..253], big[..253]);
     }
 }

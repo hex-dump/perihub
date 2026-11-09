@@ -82,8 +82,9 @@ Own one? Send a [mouse test report](https://github.com/hex-dump/perihub/issues/n
 
 The G300 has a protocol of its own. PeriHub shows its three profiles: light colour, report rate,
 DPI levels, and what each button does (G4 to G9 as printed on the mouse), with the active profile
-and DPI level. The format was checked against a real G300 in
-[issue #16](https://github.com/hex-dump/perihub/issues/16). Own one? Send a
+and DPI level. The format was checked against a real G300 and Logitech Gaming Software in
+[issue #16](https://github.com/hex-dump/perihub/issues/16), and PeriHub 0.6.1 read it correctly on
+Windows. Own one? Send a
 [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
 
 ## Corsair

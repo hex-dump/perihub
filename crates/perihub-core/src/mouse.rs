@@ -124,7 +124,7 @@ pub fn experimental_allowed(enabled: bool, onboard: &OnboardInfo, receiver: bool
     enabled
         && !receiver
         && WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
-        && onboard.sector_size as usize == profile::WRITE_SECTOR_SIZE
+        && onboard.sector_size as usize == profile::VERIFIED_SECTOR_SIZE
 }
 
 /// Whether `new` changes an LED slot of the profile that is not one of the mouse's LED zones.

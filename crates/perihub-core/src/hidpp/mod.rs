@@ -627,7 +627,7 @@ impl HidppDevice {
         if sector >= info.sector_count as u16 {
             return Err(Error::Invalid(format!("sector {sector:#06x} is not writable")));
         }
-        if data.len() != info.sector_size as usize || !data.len().is_multiple_of(16) {
+        if data.len() != info.sector_size as usize {
             return Err(Error::Invalid("wrong sector size".into()));
         }
         if !profile::crc_is_valid(data) {
@@ -636,7 +636,10 @@ impl HidppDevice {
         let [s_hi, s_lo] = sector.to_be_bytes();
         let [l_hi, l_lo] = (data.len() as u16).to_be_bytes();
         self.call(feature::ONBOARD_PROFILES, 6, &[s_hi, s_lo, 0, 0, l_hi, l_lo])?;
-        for chunk in data.as_chunks::<16>().0 {
+        // Data goes in blocks of 16 bytes. When the size is not a multiple of 16 (255 bytes on newer
+        // firmware) the last block is shorter: the rest of its report is zeros, past the length
+        // announced above.
+        for chunk in data.chunks(16) {
             self.call(feature::ONBOARD_PROFILES, 7, chunk)?;
         }
         self.call(feature::ONBOARD_PROFILES, 8, &[])?;
@@ -815,6 +818,64 @@ pub(crate) mod tests {
         let started = Instant::now();
         assert!(matches!(dev.firmware(), Err(Error::Unreachable)));
         assert!(started.elapsed() < TIMEOUT);
+    }
+
+    /// The reports `write_sector` sends for a sector of `size` bytes, after the feature lookup.
+    fn sector_write_reports(size: usize) -> Vec<Vec<u8>> {
+        const FEATURES: &[u16] = &[feature::ROOT, feature::ONBOARD_PROFILES];
+        let fake = fake_mouse(FEATURES, |_, _| vec![]);
+        let written = fake.written.clone();
+        let mut dev = HidppDevice::new(fake, models::WIRED_INDEX, false).unwrap();
+        let info = OnboardInfo {
+            memory_model: 1,
+            profile_format: 2,
+            macro_format: 1,
+            profile_count: 5,
+            rom_profile_count: 5,
+            button_count: 11,
+            sector_count: 16,
+            sector_size: size as u16,
+            has_gshift: true,
+            has_dpi_shift: true,
+        };
+        let mut data: Vec<u8> = (0..size).map(|i| i as u8).collect();
+        profile::write_crc(&mut data);
+        dev.write_sector(3, &data, &info).unwrap();
+        let reports = written.lock().unwrap();
+        reports.iter().filter(|r| r[2] == 1).cloned().collect()
+    }
+
+    /// A report to feature index 1 (onboard profiles) of the fake mouse.
+    fn onboard_report(function: u8, params: &[u8]) -> Vec<u8> {
+        let mut report = vec![0u8; LONG_LEN];
+        report[..4].copy_from_slice(&[REPORT_LONG, models::WIRED_INDEX, 1, (function << 4) | SOFTWARE_ID]);
+        report[4..4 + params.len()].copy_from_slice(params);
+        report
+    }
+
+    #[test]
+    fn a_256_byte_sector_is_written_in_sixteen_full_blocks() {
+        let mut data: Vec<u8> = (0..256).map(|i| i as u8).collect();
+        profile::write_crc(&mut data);
+        let mut expected = vec![onboard_report(6, &[0, 3, 0, 0, 0x01, 0x00])];
+        expected.extend(data.chunks(16).map(|block| onboard_report(7, block)));
+        expected.push(onboard_report(8, &[]));
+        assert_eq!(sector_write_reports(256), expected);
+    }
+
+    /// Newer firmware reports 255-byte sectors (issue #20): 255 bytes are announced, and the last
+    /// of the 16 blocks carries 15 of them.
+    #[test]
+    fn a_255_byte_sector_ends_with_a_shorter_block() {
+        let reports = sector_write_reports(255);
+        assert_eq!(reports.len(), 18);
+        assert_eq!(reports[0], onboard_report(6, &[0, 3, 0, 0, 0x00, 0xFF]));
+        let mut data: Vec<u8> = (0..255).map(|i| i as u8).collect();
+        profile::write_crc(&mut data);
+        let sent: Vec<u8> = reports[1..17].iter().flat_map(|r| r[4..20].to_vec()).collect();
+        assert_eq!(sent[..255], data[..]);
+        assert_eq!(sent[255], 0, "padding after the announced length");
+        assert_eq!(reports[17], onboard_report(8, &[]));
     }
 
     #[test]
