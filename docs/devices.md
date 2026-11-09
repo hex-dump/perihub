@@ -32,16 +32,18 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
 [libratbag](https://github.com/libratbag/libratbag).
 
 - **Logitech G502 HERO** (`046d:c08b`): ✅ supported.
+- **Logitech G502 X Wireless** (`046d:c098`): ✅ supported with the USB cable, confirmed by a user
+  on a real mouse ([issue #15](https://github.com/hex-dump/perihub/issues/15)).
 - **Every other mouse below**: 🧪 experimental. PeriHub shows their profiles, DPI levels, buttons,
   lighting and battery. With **Edit anyway…** on the mouse page you can also change and save them,
   at your own risk, if the mouse is connected with its USB cable and its memory uses a format
-  PeriHub can write: profile format 2 (the G502 HERO's) or 3 (the G502 X Wireless's), in 255- or
+  PeriHub can write: profile format 2 (the G502 HERO's) or 3 (the G502 X's), in 255- or
   256-byte sectors. Otherwise, and always through a receiver, they are read-only. The test report
   shows the format of your mouse.
 - **A mouse nothing was ever saved to** has no profile list of its own and uses its factory
-  profiles: PeriHub shows those. On the G502 HERO the first save creates the list, with a copy of
-  the factory profiles. On an untested mouse PeriHub does not create it: save a profile once
-  with Logitech G HUB or Onboard Memory Manager first.
+  profiles: PeriHub shows those. On the G502 HERO and G502 X Wireless the first save creates the
+  list, with a copy of the factory profiles. On an untested mouse PeriHub does not create it: save
+  a profile once with Logitech G HUB or Onboard Memory Manager first.
 - **Wireless models** are also recognized through their LIGHTSPEED receiver (`046d:c539`, `c53a`,
   `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`), read-only. The receiver support has not
   been tried on real hardware yet: reports are welcome in

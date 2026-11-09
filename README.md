@@ -48,8 +48,9 @@
 |---|---|
 | **SteelSeries Apex 3 TKL** keyboard | ✅ Fully supported, tested on real hardware |
 | **Logitech G502 HERO** mouse | ✅ Fully supported, tested on real hardware |
+| **Logitech G502 X Wireless** mouse | ✅ Supported: profiles, DPI, buttons and macros, confirmed by a user on a real mouse |
 | **Logitech G300** mouse | ✅ Supported: its three profiles can be read and edited, confirmed by a user on a real G300 |
-| 29 more **Logitech G mice** (G502 X, G Pro, G403, G703, G903, G305…) | 🧪 Experimental: read, and editable at your own risk with the USB cable |
+| 28 more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | 🧪 Experimental: read, and editable at your own risk with the USB cable |
 | 26 **Corsair mice** and 23 **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Experimental: read, and one colour of lighting for the session, at your own risk |
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).

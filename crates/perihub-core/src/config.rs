@@ -108,10 +108,12 @@ impl AppConfig {
         config
     }
 
-    /// The Logitech G300 was edited through experimental editing until 0.6.3: it is supported
-    /// now, so it no longer belongs in that list (which the tray menu offers to turn off).
+    /// The Logitech G300 and G502 X Wireless were edited through experimental editing until
+    /// 0.6.3 / 0.6.4: they are supported now, so they no longer belong in that list (which
+    /// the tray menu offers to turn off).
     fn forget_supported_devices(&mut self) {
-        self.experimental_mice.retain(|&id| id != crate::g300::PRODUCT_ID);
+        self.experimental_mice
+            .retain(|&id| id != crate::g300::PRODUCT_ID && id != crate::hidpp::models::G502_X_WIRELESS);
     }
 
     pub fn save(&self) -> Result<()> {
@@ -281,8 +283,11 @@ mod tests {
     }
 
     #[test]
-    fn the_g300_leaves_the_experimental_list() {
-        let mut config = AppConfig { experimental_mice: vec![0xC08F, crate::g300::PRODUCT_ID], ..AppConfig::default() };
+    fn supported_devices_leave_the_experimental_list() {
+        let mut config = AppConfig {
+            experimental_mice: vec![0xC08F, crate::g300::PRODUCT_ID, crate::hidpp::models::G502_X_WIRELESS],
+            ..AppConfig::default()
+        };
         config.forget_supported_devices();
         assert_eq!(config.experimental_mice, [0xC08F]);
     }

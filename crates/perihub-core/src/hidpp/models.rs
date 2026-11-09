@@ -7,7 +7,8 @@
 /// HID++ device index for devices connected directly over USB (no receiver).
 pub const WIRED_INDEX: u8 = 0xFF;
 
-const G502_HERO: u16 = 0xC08B;
+pub const G502_HERO: u16 = 0xC08B;
+pub const G502_X_WIRELESS: u16 = 0xC098;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MouseModel {
@@ -54,7 +55,7 @@ pub const MODELS: &[MouseModel] = &[
     model(0xC332, "G502 Proteus Spectrum"),
     wireless(0xC08D, 0x407F, "G502 HERO Wireless"),
     model(0xC099, "G502 X"),
-    wireless(0xC098, 0x409F, "G502 X Wireless"),
+    MouseModel { verified: true, ..wireless(G502_X_WIRELESS, 0x409F, "G502 X Wireless") },
     wireless(0xC095, 0x4099, "G502 X PLUS"),
     model(0xC085, "G Pro"),
     model(0xC08C, "G Pro"),
@@ -116,10 +117,11 @@ mod tests {
     }
 
     #[test]
-    fn only_the_g502_hero_is_verified() {
+    fn verified_models() {
         let verified: Vec<_> = MODELS.iter().filter(|m| m.verified).map(|m| m.product_id).collect();
-        assert_eq!(verified, [G502_HERO]);
+        assert_eq!(verified, [G502_HERO, G502_X_WIRELESS]);
         assert_eq!(find(G502_HERO).unwrap().backup_dir(), "g502");
+        assert_eq!(find(G502_X_WIRELESS).unwrap().backup_dir(), "logitech-c098");
         assert_eq!(find(0xC094).unwrap().backup_dir(), "logitech-c094");
     }
 }

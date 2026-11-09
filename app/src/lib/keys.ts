@@ -174,8 +174,13 @@ export const LAYOUT_HEIGHT = 6.25;
 // ---- Mouse ----
 
 export const G502_HERO = 0xc08b;
+export const G502_X_WIRELESS = 0xc098;
 
-/** Labels of the G502 HERO's buttons; other models get generic names. */
+export function isG502(productId: number): boolean {
+  return productId === G502_HERO || productId === G502_X_WIRELESS;
+}
+
+/** Labels of the G502 family buttons; other models get generic names. */
 const G502_BUTTON_NAMES = [
   "Left click",
   "Right click",
@@ -191,7 +196,7 @@ const G502_BUTTON_NAMES = [
 ];
 
 export function mouseButtonName(productId: number, index: number): string {
-  return (productId === G502_HERO ? G502_BUTTON_NAMES[index] : undefined) ?? `Button ${index + 1}`;
+  return (isG502(productId) ? G502_BUTTON_NAMES[index] : undefined) ?? `Button ${index + 1}`;
 }
 
 export const MOUSE_CLICKS: { button: number; label: string }[] = [

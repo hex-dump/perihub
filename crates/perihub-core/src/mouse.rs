@@ -1487,6 +1487,7 @@ mod tests {
 
     const G502_HERO: u16 = 0xC08B;
     const G502_X_WIRELESS: u16 = 0xC098;
+    const G502_X_PLUS: u16 = 0xC095;
 
     /// PeriHub's connection to the simulated mouse.
     fn open_sim(sim: Sim, product_id: u16, experimental: bool) -> (MouseTask, Arc<Mutex<Sim>>) {
@@ -1712,7 +1713,7 @@ mod tests {
 
     #[test]
     fn an_untested_mouse_with_format_3_and_255_byte_sectors_is_read_only_until_editing_is_turned_on() {
-        let (mut task, sim) = open_sim(g502_x(), G502_X_WIRELESS, false);
+        let (mut task, sim) = open_sim(g502_x(), G502_X_PLUS, false);
         assert!(!task.info.writable && !task.info.experimental);
         let state = task.state().unwrap();
         assert!(task.save_profile(2, &edited(&state, 2)).is_err());
@@ -1723,7 +1724,7 @@ mod tests {
 
     #[test]
     fn an_experimental_save_to_255_byte_sectors_can_be_kept_or_undone() {
-        let (mut task, sim) = open_sim(g502_x(), G502_X_WIRELESS, true);
+        let (mut task, sim) = open_sim(g502_x(), G502_X_PLUS, true);
         assert!(task.info.writable && task.info.experimental);
         let before = sim.lock().unwrap().user.clone();
         let state = task.state().unwrap();
@@ -1756,9 +1757,21 @@ mod tests {
     }
 
     #[test]
+    fn the_g502_x_wireless_is_supported_straight_away() {
+        let (mut task, sim) = open_sim(g502_x(), G502_X_WIRELESS, false);
+        assert!(task.info.verified && task.info.writable && !task.info.experimental);
+        let state = task.state().unwrap();
+        let saved = task.save_profile(2, &edited(&state, 2)).unwrap();
+        assert_eq!(saved.profiles[1].settings.dpi_levels[0], 3250);
+        assert!(!task.pending_undo_path().exists(), "verified mice do not need a 15-second undo");
+        assert_eq!(sim.lock().unwrap().written, [2]);
+        forget_test_files();
+    }
+
+    #[test]
     fn a_macro_longer_than_a_255_byte_sector_is_saved_and_read_back() {
         use crate::hidpp::macros::{MacroKind, MacroStep};
-        let (mut task, sim) = open_sim(g502_x(), G502_X_WIRELESS, true);
+        let (mut task, sim) = open_sim(g502_x(), G502_X_WIRELESS, false);
         let state = task.state().unwrap();
         // 120 key presses: more than one sector of 253 bytes of macro.
         let press: Vec<MacroStep> = (0..120u8)
@@ -1792,7 +1805,7 @@ mod tests {
 
     #[test]
     fn an_untested_mouse_without_a_profile_list_is_not_saved_to() {
-        let (mut task, sim) = open_sim(g502_x().blank(), G502_X_WIRELESS, true);
+        let (mut task, sim) = open_sim(g502_x().blank(), G502_X_PLUS, true);
         let state = task.state().unwrap();
         assert_eq!(state.profile_list, ProfileList::Factory);
         let error = task.save_profile(1, &edited(&state, 1)).unwrap_err().to_string();

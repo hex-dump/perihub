@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **The Logitech G502 X Wireless is supported.** Its profiles, DPI levels, buttons and macros can be edited straight away with **Edit**, without turning on experimental editing or accepting a warning. A user confirmed it on a real G502 X Wireless (format 3, 255-byte sectors), on Windows: the changes took effect, persisted across unplugging and over wireless, the 15-second undo restored the backup when not kept, macros worked, and backups restored cleanly. Issue #15, thanks to Fomius.
+- Labels for the 11 buttons of the G502 family on the buttons page (Left/Right/Wheel click, Back, Forward, Sniper / DPI Shift, DPI –/+, Profile switch, Wheel tilt left/right) now apply to the G502 X Wireless as well.
+
 ## 0.6.4 — 2026-11-09
 
 The Logitech G300 is supported, and a warning for Logitech Gaming Software.
