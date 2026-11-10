@@ -54,6 +54,7 @@ const info: MouseInfo = {
   },
   writable: true,
   writable_format: true,
+  switches_back: true,
   profile_list: "own",
 };
 
@@ -482,6 +483,24 @@ describe("a memory format nobody has tested", () => {
     expect(screen.getByText(/memory format PeriHub cannot write yet/)).toBeTruthy();
     expect(firstLevel().matches(":disabled")).toBe(true);
     expect((screen.getByRole("button", { name: "Save to mouse" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe("another program in control of the mouse", () => {
+  it("is said to give the mouse back only on a model tested as a whole", async () => {
+    const page = await open({ ...info, host_mode: true });
+    expect(screen.getByText(/PeriHub gives the mouse back its profiles within a few\s+seconds/)).toBeTruthy();
+    page.unmount();
+
+    // Another model with the G502 HERO's memory format: tested, but PeriHub leaves its mode alone.
+    await open({ ...info, model: "G403", product_id: 0xc083, host_mode: true, switches_back: false });
+    expect(screen.queryByText(/gives the mouse back/)).toBeNull();
+    expect(screen.getByText(/PeriHub does not take the mouse back by itself/)).toBeTruthy();
+  });
+
+  it("is also said on a mouse with experimental saves", async () => {
+    await open({ ...info, verified: false, experimental: true, switches_back: false, host_mode: true });
+    expect(screen.getByText(/what you save may seem to do nothing/)).toBeTruthy();
   });
 });
 

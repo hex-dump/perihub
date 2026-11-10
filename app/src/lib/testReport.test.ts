@@ -33,6 +33,7 @@ const cable: MouseInfo = {
   },
   writable: true,
   writable_format: true,
+  switches_back: true,
   profile_list: "own",
 };
 

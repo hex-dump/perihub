@@ -11,6 +11,7 @@ Logitech mice are supported by the format of their memory, not by model.
   - **any other format** stays read-only.
 - **Edit anyway…** and **Turn off experimental editing** are gone: there is nothing to turn on any more. The tray menu entry that remains is **Turn off experimental lighting**, for Corsair devices. The list of mice with experimental editing in `config.json` is ignored.
 - **Nothing is saved through a LIGHTSPEED receiver**, on any mouse: a write over the radio has never been tried, and the documentation already promised it. Since 0.6.5 the G502 X Wireless could be saved to through its receiver too; now it needs its USB cable, like every other mouse. Through the receiver PeriHub still switches profiles and DPI levels of a mouse with a tested memory format.
+- When another program such as G HUB controls the mouse, the mouse page says so on every mouse, experimental ones included. Only on a model tested as a whole (G502 HERO, G502 X Wireless) does PeriHub give the mouse its profiles back by itself, and only there does the notice promise it.
 - The HID++ connection to a mouse is always opened read-only, and gets more only after PeriHub has read the mouse's memory format: RAM changes (active profile, DPI level, previews) for a tested format through a receiver, saves to the memory with the USB cable. A memory format PeriHub cannot write is refused by the HID++ layer itself, not only by the mouse page.
 
 ## 0.6.6 — 2026-11-10

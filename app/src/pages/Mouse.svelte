@@ -377,11 +377,6 @@
       <TestReport mouse={info} />
     </div>
   </div>
-  {#if info.host_mode}
-    <div class="notice info">
-      Another program, such as G HUB, left this mouse under software control: it is not using the profiles shown here.
-    </div>
-  {/if}
 {:else if info && !info.writable}
   <div class="notice info">
     {#if info.receiver}
@@ -406,11 +401,17 @@
     onclose={() => (pendingWrite = null)}
   />
 {/if}
-{#if info?.verified && info.host_mode}
-  <div class="notice error">
-    Another program controls the mouse right now, so it is not using the profiles shown here: buttons, macros and DPI
-    levels may not work as saved. When that program is closed, PeriHub gives the mouse back its profiles within a few
-    seconds.
+{#if info?.host_mode}
+  <div class="notice" class:error={editable} class:info={!editable}>
+    {#if info.switches_back}
+      Another program controls the mouse right now, so it is not using the profiles shown here: buttons, macros and DPI
+      levels may not work as saved. When that program is closed, PeriHub gives the mouse back its profiles within a few
+      seconds.
+    {:else}
+      Another program, such as G HUB, left this mouse under software control: it is not using the profiles shown here,
+      so what you save may seem to do nothing. Close that program. PeriHub does not take the mouse back by itself on a
+      model nobody has tested as a whole.
+    {/if}
   </div>
 {/if}
 

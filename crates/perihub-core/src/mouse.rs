@@ -64,6 +64,9 @@ pub struct MouseInfo {
     pub link: Option<ReceiverLink>,
     /// Another program left the mouse under software control, so its onboard profiles are not in use.
     pub host_mode: bool,
+    /// PeriHub gives the mouse its onboard profiles back by itself once no other program controls
+    /// it: models tested as a whole only (see [`mode_action`]).
+    pub switches_back: bool,
     pub firmware: Vec<FirmwareEntity>,
     pub dpi: DpiCapabilities,
     pub report_rates_ms: Vec<u8>,
@@ -286,6 +289,7 @@ impl MouseTask {
             receiver: dev.is_behind_receiver(),
             link: None,
             host_mode: false,
+            switches_back: model.verified,
             firmware: dev.firmware()?,
             dpi: dev.dpi_capabilities(0)?,
             report_rates_ms: missing_as_empty(dev.report_rates())?,

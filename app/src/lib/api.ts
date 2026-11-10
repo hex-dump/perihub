@@ -271,6 +271,9 @@ export interface MouseInfo {
   writable: boolean;
   /** PeriHub knows how to write the memory format the mouse reports (with its USB cable). */
   writable_format: boolean;
+  /** PeriHub gives the mouse its onboard profiles back by itself once no other program controls it
+   * (models tested as a whole only). */
+  switches_back: boolean;
   /** The mouse's profile list when it was connected (MouseState.profile_list is the state now). */
   profile_list: ProfileList;
 }
