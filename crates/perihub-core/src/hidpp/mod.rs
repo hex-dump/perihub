@@ -77,6 +77,8 @@ const ALLOWED_FEATURES: &[u16] = &[
 /// The only (feature, function) pairs allowed on a read-only device: they read state and
 /// change nothing, not even in RAM.
 const READ_ONLY_CALLS: &[(u16, u8)] = &[
+    (feature::FEATURE_SET, 0),
+    (feature::FEATURE_SET, 1),
     (feature::DEVICE_INFO, 0),
     (feature::DEVICE_INFO, 1),
     (feature::DEVICE_NAME, 0),
@@ -141,6 +143,15 @@ pub struct FirmwareEntity {
     pub kind: u8,
     pub name: String,
     pub version: String,
+}
+
+/// One entry of a device's feature table (0x0001 function 1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct FeatureEntry {
+    pub id: u16,
+    /// Flags: 0x80 obsolete, 0x40 hidden, 0x20 engineering.
+    pub kind: u8,
+    pub version: u8,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -427,8 +438,25 @@ impl HidppDevice {
     /// for each way the mouse connects, in the order of the transport bits: Bluetooth (bit 0),
     /// Bluetooth Low Energy (1), receiver (2), USB (3).
     pub fn wireless_id(&mut self) -> Result<Option<u16>> {
-        let r = self.call(feature::DEVICE_INFO, 0, &[])?;
-        Ok(wireless_id_from_device_info(&r))
+        Ok(wireless_id_from_device_info(&self.device_info()?))
+    }
+
+    /// 0x0003 function 0 as the device sends it: firmware entity count, unit id, transport bits
+    /// and the product ids.
+    pub fn device_info(&mut self) -> Result<[u8; 16]> {
+        self.call(feature::DEVICE_INFO, 0, &[])
+    }
+
+    /// The device's feature table (0x0001). It only lists the features: none of them is called.
+    pub fn feature_table(&mut self) -> Result<Vec<FeatureEntry>> {
+        // The count leaves out the root feature, which has index 0.
+        let count = self.call(feature::FEATURE_SET, 0, &[])?[0];
+        let mut out = Vec::with_capacity(count as usize);
+        for index in 1..=count {
+            let r = self.call(feature::FEATURE_SET, 1, &[index])?;
+            out.push(FeatureEntry { id: u16::from_be_bytes([r[0], r[1]]), kind: r[2], version: r[3] });
+        }
+        Ok(out)
     }
 
     /// The battery, from whichever battery feature the mouse has, or `None` without one.

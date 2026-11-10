@@ -1,4 +1,4 @@
-import type { CorsairInfo, G300Info, G300Profile } from "./api";
+import type { CorsairInfo, G300Info, G300Profile, ReceiverReport, UnsupportedReceiverDevice } from "./api";
 import type { MouseInfo } from "./api";
 
 const LOGITECH = "046d";
@@ -87,6 +87,44 @@ export function deviceTestFormUrl(fields: DeviceTestFields, version: string, sys
   };
   const query = Object.entries(values).map(([name, value]) => `${name}=${encodeURIComponent(value)}`);
   return `${DEVICE_TEST_FORM}&${query.join("&")}`;
+}
+
+/** What a tester sends about a Logitech receiver and a device paired with it that PeriHub does not
+ * support yet (`null`: none answered). */
+export function receiverTest(
+  receiver: ReceiverReport,
+  device: UnsupportedReceiverDevice | null,
+  version: string,
+  system: string,
+): DeviceTestFields {
+  const id = `${LOGITECH}:${hex(receiver.product_id)}`;
+  const lines = [
+    `PeriHub ${version} on ${system}`,
+    `Receiver: ${receiver.name}, USB ID ${id}`,
+    `HID collections: ${receiver.collections.join("; ") || "none"}`,
+    `PeriHub reaches its paired devices: ${receiver.reachable ? "yes" : "no"}`,
+    `Slots: ${receiver.slots.join("; ") || "not asked"}`,
+  ];
+  if (device) {
+    const features = device.features.map(
+      (f) => `${hex(f.id)} v${f.version}${f.kind ? ` (flags ${f.kind.toString(16).padStart(2, "0")})` : ""}`,
+    );
+    lines.push(
+      `Slot ${device.slot}: ${device.name ?? "name not read"}, HID++ ${device.protocol}`,
+      `Device info (0x0003): ${device.device_info ?? "not read"}`,
+      `Firmware: ${device.firmware.join(", ") || "not read"}`,
+      `Features: ${features.join(", ") || "not read"}`,
+      `Could not read: ${device.read_errors.join("; ") || "nothing"}`,
+    );
+  } else {
+    lines.push("Paired device: none answered");
+  }
+  return {
+    model: device?.name ? `Logitech ${device.name}` : receiver.name,
+    usbId: id,
+    connection: receiver.name,
+    report: lines.join("\n"),
+  };
 }
 
 /** What a tester sends about a Corsair device. */

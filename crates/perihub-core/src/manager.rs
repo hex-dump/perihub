@@ -18,7 +18,7 @@ use crate::corsair::{self, BragiDevice};
 use crate::error::{Error, Result};
 use crate::g300::{self, G300Info, G300Task};
 use crate::hidpp::models::{self, MouseModel};
-use crate::hidpp::receiver::{self, Presence};
+use crate::hidpp::receiver::{self, Presence, UnsupportedDevice};
 use crate::hidpp::{HidppDevice, Transport};
 use crate::keyboard::{KeyInterfaces, KeyboardInfo, KeyboardTask};
 use crate::mouse::{MouseInfo, MouseTask, ReceiverLink};
@@ -88,8 +88,8 @@ fn pick_collections<T: Copy>(devices: &[DeviceInfo], known: impl Fn(&DeviceInfo)
     found
 }
 
-/// HID++ collection of a LIGHTSPEED receiver: usage 2 is the long one, 1 the short one. On Linux
-/// both are the same hidraw node.
+/// HID++ collection of a receiver: usage 2 is the long one, 1 the short one. On Linux both are the
+/// same hidraw node.
 fn receiver_collection(d: &DeviceInfo, usage: u16) -> bool {
     d.vendor_id() == LOGITECH
         && receiver::is_receiver(d.product_id())
@@ -106,6 +106,8 @@ struct Probe {
     online: Vec<u8>,
     /// A paired device is turned off or asleep.
     asleep: bool,
+    /// What each slot answered, for test reports.
+    answers: Vec<String>,
 }
 
 fn open_channel(api: &HidApi, info: &DeviceInfo) -> Result<hidapi::HidDevice> {
@@ -120,13 +122,25 @@ fn probe(api: &HidApi, (long, short): &ReceiverPaths) -> Result<Probe> {
         None => &long_dev,
     };
     let mut found = Probe::default();
+    let mut timeouts = 0;
     for slot in receiver::SLOTS {
-        match receiver::ping(channel, slot) {
-            Ok(Presence::Online) => found.online.push(slot),
-            Ok(Presence::Asleep) => found.asleep = true,
-            Ok(Presence::Empty) => {}
-            // A receiver that does not answer: nothing more to ask it in this pass.
-            Err(Error::Timeout) => break,
+        match receiver::ping_answer(channel, slot) {
+            Ok((presence, answer)) => {
+                found.answers.push(format!("slot {slot}: {answer}"));
+                match presence {
+                    Presence::Online => found.online.push(slot),
+                    Presence::Asleep => found.asleep = true,
+                    Presence::Empty => {}
+                }
+            }
+            Err(Error::Timeout) => {
+                found.answers.push(format!("slot {slot}: no answer"));
+                // A receiver that does not answer twice: nothing more to ask it in this pass.
+                timeouts += 1;
+                if timeouts == 2 {
+                    break;
+                }
+            }
             Err(error) => return Err(error),
         }
     }
@@ -142,16 +156,62 @@ fn open_behind(api: &HidApi, (long, short): &ReceiverPaths, slot: u8, read_only:
 }
 
 /// The model of the device in `slot`, or a description of a device PeriHub does not support.
-fn identify(api: &HidApi, paths: &ReceiverPaths, slot: u8) -> Result<std::result::Result<&'static MouseModel, String>> {
+fn identify(
+    api: &HidApi,
+    paths: &ReceiverPaths,
+    slot: u8,
+) -> Result<std::result::Result<&'static MouseModel, UnsupportedDevice>> {
     let mut dev = open_behind(api, paths, slot, true)?;
-    let id = dev.wireless_id()?;
-    Ok(id.and_then(models::find_wireless).ok_or_else(|| {
-        let name = dev.device_name().unwrap_or_else(|_| "a device".into());
-        match id {
-            Some(id) => format!("{name} ({id:04x})"),
-            None => name,
+    let model = match dev.wireless_id() {
+        Ok(id) => id.and_then(models::find_wireless),
+        Err(Error::Unreachable) => return Err(Error::Unreachable),
+        // Without the list of ids (on a Logi Bolt receiver it can lack the LIGHTSPEED one) the
+        // device is not one PeriHub knows: the test report shows what it has.
+        Err(_) => None,
+    };
+    match model {
+        Some(model) => Ok(Ok(model)),
+        None => Ok(Err(UnsupportedDevice::read(&mut dev, slot)?)),
+    }
+}
+
+/// The HID collections of every Logitech receiver connected, by product id, for test reports:
+/// they show why PeriHub cannot reach a receiver.
+fn receiver_collections(api: &HidApi) -> Vec<(u16, Vec<String>)> {
+    let mut found: Vec<(u16, Vec<String>)> = Vec::new();
+    for d in api.device_list().filter(|d| d.vendor_id() == LOGITECH && receiver::is_receiver(d.product_id())) {
+        let collection =
+            format!("interface {}, usage page {:04x}, usage {:04x}", d.interface_number(), d.usage_page(), d.usage());
+        match found.iter_mut().find(|(id, _)| *id == d.product_id()) {
+            Some((_, list)) if list.contains(&collection) => {}
+            Some((_, list)) => list.push(collection),
+            None => found.push((d.product_id(), vec![collection])),
         }
-    }))
+    }
+    for (_, list) in &mut found {
+        list.sort();
+    }
+    found.sort_by_key(|(id, _)| *id);
+    found
+}
+
+/// A Logitech receiver that is connected, for the test report that helps support what is paired
+/// with it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ReceiverReport {
+    pub product_id: u16,
+    /// "LIGHTSPEED receiver" or "Logi Bolt receiver".
+    pub name: &'static str,
+    /// Its HID collections, such as "interface 2, usage page ff00, usage 0002".
+    pub collections: Vec<String>,
+    /// A Logi Bolt receiver: nothing paired with it is supported yet.
+    pub bolt: bool,
+    /// PeriHub found the collection it talks to the paired devices through.
+    pub reachable: bool,
+    /// What each of its slots answered the last time PeriHub asked, or why it could not ask.
+    pub slots: Vec<String>,
+    /// Paired devices that answer and that PeriHub does not support yet.
+    pub unsupported: Vec<UnsupportedDevice>,
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -174,6 +234,8 @@ pub struct DeviceStatus {
     /// Corsair mice and keyboards (experimental support).
     pub corsair: Vec<CorsairInfo>,
     pub corsair_error: Option<String>,
+    /// Connected Logitech receivers (LIGHTSPEED and Logi Bolt).
+    pub receivers: Vec<ReceiverReport>,
 }
 
 #[derive(Default)]
@@ -209,7 +271,11 @@ struct Slots {
     /// Model last seen behind each receiver (by path), to name it while it sleeps.
     receiver_models: HashMap<CString, &'static str>,
     /// Devices PeriHub does not support, by receiver and slot: not identified again.
-    receiver_unsupported: HashMap<(CString, u8), String>,
+    receiver_unsupported: HashMap<(CString, u8), UnsupportedDevice>,
+    /// Connected Logitech receivers, for test reports.
+    receivers: Vec<ReceiverReport>,
+    /// What each receiver's slots answered (by path), for test reports.
+    receiver_answers: HashMap<CString, Vec<String>>,
     /// Interfaces of the connected keyboard that report key presses.
     key_interfaces: KeyInterfaces,
     /// Keys of the connected keyboard's map that start software macros, kept by its thread.
@@ -368,6 +434,7 @@ impl Manager {
                 slots.mouse_failed = None;
             }
             slots.receiver_models.retain(|path, _| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
+            slots.receiver_answers.retain(|path, _| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
             slots
                 .receiver_unsupported
                 .retain(|(path, _), _| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
@@ -396,6 +463,14 @@ impl Manager {
             let mut slots = self.slots.lock().unwrap();
             if slots.mouse.is_some() || receivers.is_empty() {
                 changed |= slots.mouse_asleep.take().is_some() | slots.receiver_note.take().is_some();
+            }
+        }
+        let reports = self.receiver_reports(api, &receivers);
+        {
+            let mut slots = self.slots.lock().unwrap();
+            if slots.receivers != reports {
+                slots.receivers = reports;
+                changed = true;
             }
         }
         // The mouse's thread notices when another program takes the mouse or gives it back.
@@ -462,7 +537,41 @@ impl Manager {
         changed
     }
 
-    /// Looks for a mouse behind the LIGHTSPEED receivers and opens the first one that answers,
+    /// The connected receivers, with the devices PeriHub found behind them and does not support.
+    fn receiver_reports(&self, api: &HidApi, receivers: &[ReceiverPaths]) -> Vec<ReceiverReport> {
+        let slots = self.slots.lock().unwrap();
+        receiver_collections(api)
+            .into_iter()
+            .map(|(product_id, collections)| {
+                let paths: Vec<&CStr> =
+                    receivers.iter().filter(|(d, _)| d.product_id() == product_id).map(|(d, _)| d.path()).collect();
+                let mut unsupported: Vec<UnsupportedDevice> = slots
+                    .receiver_unsupported
+                    .iter()
+                    .filter(|((path, _), _)| paths.contains(&path.as_c_str()))
+                    .map(|(_, device)| device.clone())
+                    .collect();
+                unsupported.sort_by_key(|d| d.slot);
+                let answers = slots
+                    .receiver_answers
+                    .iter()
+                    .filter(|(path, _)| paths.contains(&path.as_c_str()))
+                    .flat_map(|(_, answers)| answers.iter().cloned())
+                    .collect();
+                ReceiverReport {
+                    product_id,
+                    name: receiver::name(product_id),
+                    collections,
+                    bolt: product_id == receiver::BOLT,
+                    reachable: !paths.is_empty(),
+                    slots: answers,
+                    unsupported,
+                }
+            })
+            .collect()
+    }
+
+    /// Looks for a mouse behind the receivers and opens the first one that answers,
     /// read-only until its model has been tested. Returns `true` if the status changed.
     fn watch_receivers(&self, api: &HidApi, receivers: &[ReceiverPaths]) -> bool {
         let failed = self.slots.lock().unwrap().mouse_failed.clone();
@@ -470,14 +579,20 @@ impl Manager {
         let mut note = None;
         for paths in receivers.iter().filter(|(long, _)| Some(long.path()) != failed.as_deref()) {
             let path = paths.0.path().to_owned();
-            let found = match probe(api, paths) {
+            let found = probe(api, paths);
+            let answers = match &found {
+                Ok(found) => found.answers.clone(),
+                Err(error) => vec![format!("could not ask: {error}")],
+            };
+            self.slots.lock().unwrap().receiver_answers.insert(path.clone(), answers);
+            let found = match found {
                 Ok(found) => found,
                 Err(error) => {
-                    note = Some(format!("LIGHTSPEED receiver: {}", open_error_message(error)));
+                    note = Some(format!("{}: {}", receiver::name(paths.0.product_id()), open_error_message(error)));
                     continue;
                 }
             };
-            let receiver = format!("LIGHTSPEED receiver {:04x}", paths.0.product_id());
+            let receiver = format!("{} {:04x}", receiver::name(paths.0.product_id()), paths.0.product_id());
             if found.asleep {
                 let seen = self.slots.lock().unwrap().receiver_models.get(&path).copied();
                 if asleep.is_none() {
@@ -493,13 +608,13 @@ impl Manager {
                 let model = match identity {
                     Ok(Ok(model)) => model,
                     Ok(Err(device)) => {
-                        note = Some(format!("{receiver}, slot {slot}: {device} is not supported yet"));
+                        note = Some(format!("{receiver}, slot {slot}: {} is not supported yet", device.label()));
                         self.slots.lock().unwrap().receiver_unsupported.insert((path.clone(), slot), device);
                         continue;
                     }
                     Err(Error::Unreachable) => continue,
                     Err(error) => {
-                        note = Some(format!("LIGHTSPEED receiver: {}", open_error_message(error)));
+                        note = Some(format!("{receiver}: {}", open_error_message(error)));
                         continue;
                     }
                 };
@@ -565,6 +680,7 @@ impl Manager {
             g300: slots.g300.as_ref().map(|(_, _, info)| info.clone()),
             g300_error: slots.g300_error.clone(),
             corsair_error: slots.corsair_error.clone(),
+            receivers: slots.receivers.clone(),
         }
     }
 

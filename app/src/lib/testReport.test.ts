@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./api", () => ({}));
 
-import type { MouseInfo } from "./api";
-import { testFormUrl, testReport } from "./testReport";
+import type { MouseInfo, ReceiverReport } from "./api";
+import { deviceTestFormUrl, receiverTest, testFormUrl, testReport } from "./testReport";
 
 const cable: MouseInfo = {
   product_id: 0xc08b,
@@ -77,7 +77,12 @@ describe("testReport", () => {
 
   it("lists fixed DPI values and says when a mouse reports no LEDs or polling rates", () => {
     const report = testReport(
-      { ...cable, dpi: { min: 400, max: 1600, step: 0, list: [400, 800, 1600] }, led_zones: [], report_rates_ms: [] },
+      {
+        ...cable,
+        dpi: { min: 400, max: 1600, step: 0, list: [400, 800, 1600] },
+        led_zones: [],
+        report_rates_ms: [],
+      },
       "0.5.2",
       "linux x86_64",
     );
@@ -114,5 +119,66 @@ describe("testFormUrl", () => {
     const query = fields(testFormUrl({ ...cable, name: 'a&model=b "c"' }, "0.5.2", "linux x86_64"));
     expect(query.get("model")).toBe("G502 HERO");
     expect(query.get("report")).toContain('reports itself as "a&model=b "c""');
+  });
+});
+
+describe("receiverTest", () => {
+  const bolt: ReceiverReport = {
+    product_id: 0xc548,
+    name: "Logi Bolt receiver",
+    collections: ["interface 2, usage page ff00, usage 0001", "interface 2, usage page ff00, usage 0002"],
+    bolt: true,
+    reachable: true,
+    slots: ["slot 1: HID++ 4.5", "slot 2: HID++ 1.0 error 0x08"],
+    unsupported: [
+      {
+        slot: 1,
+        name: "MX Master 3S",
+        protocol: "4.5",
+        wireless_id: null,
+        device_info: "02 xx xx xx xx 00 02 12 34 00 00 00 00 00 00 00",
+        firmware: ["RBM 12.01.0008"],
+        features: [
+          { id: 0x0001, kind: 0, version: 1 },
+          { id: 0x2201, kind: 0x40, version: 2 },
+        ],
+        read_errors: [],
+      },
+    ],
+  };
+
+  it("describes the receiver and the device paired with it", () => {
+    const fields = receiverTest(bolt, bolt.unsupported[0], "0.6.6", "windows x86_64");
+    expect(fields.model).toBe("Logitech MX Master 3S");
+    expect(fields.usbId).toBe("046d:c548");
+    expect(fields.connection).toBe("Logi Bolt receiver");
+    expect(fields.report.split("\n")).toEqual([
+      "PeriHub 0.6.6 on windows x86_64",
+      "Receiver: Logi Bolt receiver, USB ID 046d:c548",
+      "HID collections: interface 2, usage page ff00, usage 0001; interface 2, usage page ff00, usage 0002",
+      "PeriHub reaches its paired devices: yes",
+      "Slots: slot 1: HID++ 4.5; slot 2: HID++ 1.0 error 0x08",
+      "Slot 1: MX Master 3S, HID++ 4.5",
+      "Device info (0x0003): 02 xx xx xx xx 00 02 12 34 00 00 00 00 00 00 00",
+      "Firmware: RBM 12.01.0008",
+      "Features: 0001 v1, 2201 v2 (flags 40)",
+      "Could not read: nothing",
+    ]);
+    const query = new URL(deviceTestFormUrl(fields, "0.6.6", "windows x86_64")).searchParams;
+    expect(query.get("title")).toBe("Logitech MX Master 3S test report");
+  });
+
+  it("still describes a receiver PeriHub cannot reach", () => {
+    const fields = receiverTest(
+      { ...bolt, collections: [], reachable: false, slots: [], unsupported: [] },
+      null,
+      "0.6.6",
+      "linux x86_64",
+    );
+    expect(fields.model).toBe("Logi Bolt receiver");
+    expect(fields.report).toContain("HID collections: none");
+    expect(fields.report).toContain("PeriHub reaches its paired devices: no");
+    expect(fields.report).toContain("Slots: not asked");
+    expect(fields.report).toContain("Paired device: none answered");
   });
 });

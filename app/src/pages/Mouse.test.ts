@@ -227,6 +227,60 @@ describe("the experimental notice", () => {
   });
 });
 
+describe("a device on a receiver that PeriHub does not support", () => {
+  const bolt = {
+    product_id: 0xc548,
+    name: "Logi Bolt receiver",
+    collections: ["interface 2, usage page ff00, usage 0002"],
+    bolt: true,
+    reachable: true,
+    slots: ["slot 1: HID++ 4.5"],
+    unsupported: [
+      {
+        slot: 1,
+        name: "MX Master 3S",
+        protocol: "4.5",
+        wireless_id: null,
+        device_info: null,
+        firmware: [],
+        features: [],
+        read_errors: [],
+      },
+    ],
+  };
+  const note = "Logi Bolt receiver c548, slot 1: MX Master 3S is not supported yet";
+
+  it("is described with its test report instead of an error", async () => {
+    render(Mouse, { props: { info: null, error: note, asleep: null, receivers: [bolt] } });
+    await wait(0);
+    expect(screen.getByText("MX Master 3S is paired with your Logi Bolt receiver.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Copy test report" })).toBeTruthy();
+    expect(screen.queryByText(note)).toBeNull();
+  });
+
+  it("still offers a report when the Bolt receiver is reached but nothing answered", async () => {
+    render(Mouse, {
+      props: { info: null, error: null, asleep: null, receivers: [{ ...bolt, slots: [], unsupported: [] }] },
+    });
+    await wait(0);
+    expect(screen.getByText(/nothing paired with it has answered/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open test form" })).toBeTruthy();
+  });
+
+  it("says nothing about a LIGHTSPEED receiver that is reached", async () => {
+    const lightspeed = { ...bolt, product_id: 0xc539, name: "LIGHTSPEED receiver", bolt: false, unsupported: [] };
+    render(Mouse, { props: { info: null, error: null, asleep: null, receivers: [lightspeed] } });
+    await wait(0);
+    expect(screen.queryByRole("button", { name: "Open test form" })).toBeNull();
+  });
+
+  it("is not shown while a supported mouse is open", async () => {
+    render(Mouse, { props: { info, error: null, asleep: null, receivers: [bolt] } });
+    await wait(0);
+    expect(screen.queryByText(/is paired with your/)).toBeNull();
+  });
+});
+
 describe("a new device status", () => {
   it("keeps unsaved changes when it is about another device", async () => {
     const page = await open();

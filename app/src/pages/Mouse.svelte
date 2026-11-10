@@ -1,11 +1,21 @@
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
-  import { api, errorText, type Battery, type MouseInfo, type MouseState, type ProfileSettings } from "../lib/api";
+  import {
+    api,
+    errorText,
+    type Battery,
+    type MouseInfo,
+    type MouseState,
+    type ProfileSettings,
+    type ReceiverReport,
+  } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
   import BackupsDialog from "../components/BackupsDialog.svelte";
   import ConfirmButton from "../components/ConfirmButton.svelte";
   import { mouseRestoreMessage } from "../lib/backups";
   import TestReport from "../components/TestReport.svelte";
+  import DeviceTestReport from "../components/DeviceTestReport.svelte";
+  import { receiverTest } from "../lib/testReport";
   import ExperimentalDialog from "../components/ExperimentalDialog.svelte";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import MousePerformance from "./MousePerformance.svelte";
@@ -17,10 +27,14 @@
     error: string | null;
     /** A wireless mouse that is turned off or asleep behind its receiver. */
     asleep: string | null;
+    /** Connected Logitech receivers, with the paired devices PeriHub does not support yet. */
+    receivers?: ReceiverReport[];
     initialTab?: string;
   }
 
-  let { info, error: connectError, asleep, initialTab }: Props = $props();
+  let { info, error: connectError, asleep, receivers = [], initialTab }: Props = $props();
+  /** Paired devices PeriHub can only describe: their notice replaces the connection error. */
+  const unsupported = $derived(receivers.some((r) => r.unsupported.length > 0));
 
   const MESSAGE_MS = 4000;
 
@@ -292,7 +306,34 @@
     or move it: PeriHub finds it again within a few seconds.
   </div>
 {/if}
-{#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
+{#if connectError && !info && !unsupported}<div class="notice error">{connectError}</div>{/if}
+{#if !info}
+  {#each receivers as receiver (receiver.product_id)}
+    {#each receiver.unsupported as device (device.slot)}
+      <div class="notice info">
+        <b>{device.name ?? "A device"} is paired with your {receiver.name}.</b> PeriHub does not support it yet, so it
+        only reads what the device is and changes nothing. A test report on PeriHub's GitHub page helps add it.
+        <div class="row report">
+          <DeviceTestReport fields={(version, system) => receiverTest(receiver, device, version, system)} />
+        </div>
+      </div>
+    {/each}
+    {#if receiver.unsupported.length === 0 && (receiver.bolt || !receiver.reachable)}
+      <div class="notice info">
+        {#if receiver.reachable}
+          <b>PeriHub sees your {receiver.name}, but nothing paired with it has answered.</b> Move the mouse to wake it up.
+          If this stays, a test report on PeriHub's GitHub page helps find out why.
+        {:else}
+          <b>PeriHub sees your {receiver.name} but cannot reach what is paired with it.</b> A test report on PeriHub's
+          GitHub page helps find out why.
+        {/if}
+        <div class="row report">
+          <DeviceTestReport fields={(version, system) => receiverTest(receiver, null, version, system)} />
+        </div>
+      </div>
+    {/if}
+  {/each}
+{/if}
 {#if info && !info.verified && info.experimental}
   <div class="notice error">
     <b>Experimental editing is on.</b> PeriHub has not been tested on the {info.model} yet: you can change and save its

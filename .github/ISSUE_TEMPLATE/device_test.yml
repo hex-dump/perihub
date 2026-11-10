@@ -1,11 +1,11 @@
 name: Device test report
-description: Tell us how PeriHub works with a Corsair device or the Logitech G300
+description: Tell us how PeriHub works with a Corsair device, the Logitech G300 or a device on a Logi Bolt receiver
 labels: ["device test"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing! PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session, if you turn it on. On the Logitech G300 it reads and saves the three profiles. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
+        Thanks for testing! PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session, if you turn it on. On the Logitech G300 it reads and saves the three profiles. For a device on a Logi Bolt receiver it only reads what the device is. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
   - type: input
     id: model
     attributes:
@@ -66,7 +66,7 @@ body:
     id: notices
     attributes:
       label: Messages and errors
-      description: Any message PeriHub shows on the device page, or an error if the device does not appear.
+      description: Any message PeriHub shows on the device page, or an error if the device does not appear. Also say which official software was running, such as Logi Options+.
   - type: textarea
     id: details
     attributes:

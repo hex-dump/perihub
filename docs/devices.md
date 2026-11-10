@@ -48,6 +48,10 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`), read-only. The receiver support has not
   been tried on real hardware yet: reports are welcome in
   [issue #4](https://github.com/hex-dump/perihub/issues/4).
+- **The Logi Bolt receiver** (`046d:c548`) is recognized, but no mouse paired with it is supported
+  yet. PeriHub reads what the paired device is, without changing anything, and the mouse page offers
+  a test report with it: that is the first step for the MX Master 3S
+  ([issue #17](https://github.com/hex-dump/perihub/issues/17)).
 
 | Mouse | USB ID | Through a receiver |
 |---|---|---|

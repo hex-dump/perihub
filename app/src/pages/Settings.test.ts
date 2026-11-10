@@ -41,6 +41,7 @@ const status: DeviceStatus = {
   g300: null,
   g300_error: null,
   corsair_error: null,
+  receivers: [],
 };
 
 const autostartBox = () => screen.getByRole("checkbox", { name: /Start PeriHub when I log in/ }) as HTMLInputElement;

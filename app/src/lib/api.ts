@@ -294,12 +294,49 @@ export interface DeviceStatus {
   /** Corsair mice and keyboards (experimental support). */
   corsair: CorsairInfo[];
   corsair_error: string | null;
+  /** Connected Logitech receivers (LIGHTSPEED and Logi Bolt). */
+  receivers: ReceiverReport[];
+}
+
+/** A device paired with a receiver that PeriHub does not support yet, as far as it could be read. */
+export interface UnsupportedReceiverDevice {
+  slot: number;
+  name: string | null;
+  /** HID++ version, such as "4.5". */
+  protocol: string;
+  /** The id it reports through a LIGHTSPEED receiver, if it lists one. */
+  wireless_id: number | null;
+  /** HID++ 0x0003 function 0 as read, in hex, with the unit id left out ("xx"). */
+  device_info: string | null;
+  firmware: string[];
+  /** Its HID++ feature table: kind holds the flags (0x80 obsolete, 0x40 hidden, 0x20 engineering). */
+  features: { id: number; kind: number; version: number }[];
+  read_errors: string[];
+}
+
+/** A connected Logitech receiver, for the test report that helps support what is paired with it. */
+export interface ReceiverReport {
+  product_id: number;
+  /** "LIGHTSPEED receiver" or "Logi Bolt receiver". */
+  name: string;
+  /** Its HID collections, such as "interface 2, usage page ff00, usage 0002". */
+  collections: string[];
+  /** A Logi Bolt receiver: nothing paired with it is supported yet. */
+  bolt: boolean;
+  /** PeriHub found the collection it talks to the paired devices through. */
+  reachable: boolean;
+  /** What each of its slots answered the last time PeriHub asked, or why it could not ask. */
+  slots: string[];
+  /** Paired devices that answer and that PeriHub does not support yet. */
+  unsupported: UnsupportedReceiverDevice[];
 }
 
 export type G300Button =
   | { type: "none" }
   | { type: "mouse"; button: number }
-  | { type: "dpi_up" | "dpi_down" | "dpi_cycle" | "profile_cycle" | "dpi_shift" | "dpi_default" }
+  | {
+      type: "dpi_up" | "dpi_down" | "dpi_cycle" | "profile_cycle" | "dpi_shift" | "dpi_default";
+    }
   | { type: "key"; modifiers: number; key: number }
   | { type: "unknown"; code: number; modifiers: number; key: number };
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **The Logi Bolt receiver (`046d:c548`) is recognized**, as a first step towards the MX Master 3S and other mice paired with it (issue #17). PeriHub cannot change those mice yet: it reads what the paired device is (name, firmware, the HID++ features it has), with read commands only, and the mouse page offers a test report with it. When PeriHub cannot reach a receiver at all, the report lists the receiver's HID collections, to find out why. As for the LIGHTSPEED receivers, the receiver's own commands, which pair and unpair devices, are never sent. On Linux the udev rule opens only the receiver's HID++ interface.
+
 ## 0.6.5 — 2026-11-09
 
 The Logitech G502 X Wireless is supported.

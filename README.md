@@ -267,6 +267,7 @@ The interface is in English. More languages are planned.
 - **Windows**: tested on a real Windows 11 PC (lighting, key remapping, mouse profiles and macros, app profiles, tray, autostart, updates, software macros). Creating software macros has been tried on Linux only.
 - **Logitech G300**: reading and saving were confirmed by one user, on Windows ([issue #21](https://github.com/hex-dump/perihub/issues/21)). No G300 has been tried on Linux yet.
 - **Logitech mice through a LIGHTSPEED receiver** are read-only and have not been tried on real hardware yet ([issue #4](https://github.com/hex-dump/perihub/issues/4)). Their buttons do not start software macros.
+- **Mice on a Logi Bolt receiver**, such as the MX Master 3S, are not supported yet. PeriHub only reads what they are, for a test report ([issue #17](https://github.com/hex-dump/perihub/issues/17)).
 - **Corsair devices** have not been tried on real hardware yet. With more than one device on the same receiver, only the first one is shown, and the Slipstream V2 receiver is not recognized.
 - **App profiles** work on Windows and Hyprland only. They switch lighting and mouse profiles, not key mappings.
 - **Software macros** on Linux skip characters the keyboard layout cannot type. On Windows many games ignore typed text, but not keys.

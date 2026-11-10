@@ -41,6 +41,7 @@
     g300: null,
     g300_error: null,
     corsair_error: null,
+    receivers: [],
   });
 
   const hex = (id: number) => id.toString(16).padStart(4, "0");
@@ -156,7 +157,13 @@
             initialTab={tab}
           />{/key}
       {:else if page === "mouse"}
-        {#key tab}<Mouse info={status.mouse} error={status.mouse_error} asleep={status.mouse_asleep} initialTab={tab} />{/key}
+        {#key tab}<Mouse
+            info={status.mouse}
+            error={status.mouse_error}
+            asleep={status.mouse_asleep}
+            receivers={status.receivers}
+            initialTab={tab}
+          />{/key}
       {:else if page === "g300"}
         <G300 info={status.g300} error={status.g300_error} />
       {:else if page === "corsair"}
