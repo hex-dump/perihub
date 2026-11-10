@@ -1,7 +1,7 @@
 //! The Linux udev rule must grant access to exactly the mice and receivers PeriHub recognizes.
 
 use perihub_core::hidpp::models::MODELS;
-use perihub_core::hidpp::receiver::RECEIVERS;
+use perihub_core::hidpp::receiver::{RECEIVERS, UNIFYING};
 
 const RULE: &str = include_str!("../../../packaging/linux/70-perihub.rules");
 
@@ -34,8 +34,22 @@ fn udev_rule_opens_only_the_hidpp_interface_of_the_receivers() {
         assert!(line.contains(r#"ENV{ID_USB_INTERFACE_NUM}=="02""#), "{line}");
     }
     let in_rule = lines.iter().map(|line| line.split("0003:046D:").nth(1).unwrap()[..4].to_lowercase()).collect();
-    let in_list = RECEIVERS.iter().map(|id| format!("{id:04x}")).collect();
+    let in_list = RECEIVERS.iter().filter(|id| !UNIFYING.contains(id)).map(|id| format!("{id:04x}")).collect();
     assert_eq!(sorted(in_rule), sorted(in_list));
+}
+
+#[test]
+fn udev_rule_never_opens_a_unifying_receiver() {
+    // In DJ mode, which Linux turns on for Unifying receivers, what is typed on the keyboards
+    // paired with them comes through the same interface as HID++: opening it to the user would let
+    // any program read it.
+    for id in UNIFYING {
+        let upper = format!("{id:04X}");
+        let lower = format!("{id:04x}");
+        for line in RULE.lines().filter(|line| !line.trim_start().starts_with('#')) {
+            assert!(!line.contains(&upper) && !line.contains(&lower), "{line}");
+        }
+    }
 }
 
 #[test]

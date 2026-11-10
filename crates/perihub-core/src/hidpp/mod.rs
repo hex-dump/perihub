@@ -83,6 +83,7 @@ const READ_ONLY_CALLS: &[(u16, u8)] = &[
     (feature::DEVICE_INFO, 1),
     (feature::DEVICE_NAME, 0),
     (feature::DEVICE_NAME, 1),
+    (feature::DEVICE_NAME, 2),
     (feature::BATTERY_STATUS, 0),
     (feature::BATTERY_VOLTAGE, 0),
     (feature::UNIFIED_BATTERY, 1),
@@ -107,7 +108,7 @@ fn is_read_call(feature: u16, function: u8) -> bool {
 /// Mouse memory sectors reserved for the factory profiles (read-only).
 pub const ROM_SECTOR_BASE: u16 = 0x0100;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct DpiCapabilities {
     pub min: u16,
     pub max: u16,
@@ -124,7 +125,7 @@ pub struct LedZone {
     pub effects: Vec<u16>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct OnboardInfo {
     pub memory_model: u8,
     pub profile_format: u8,
@@ -462,6 +463,13 @@ impl HidppDevice {
             name.extend_from_slice(&chunk[..take]);
         }
         Ok(String::from_utf8_lossy(&name).trim_end_matches('\0').to_string())
+    }
+
+    /// 0x0005 function 2: what kind of device it is. Logitech's HID++ 2.0 specification lists 0
+    /// keyboard, 1 remote control, 2 numpad, 3 mouse, 4 touchpad, 5 trackball, 6 presenter and 7
+    /// receiver; newer devices may report other values.
+    pub fn device_type(&mut self) -> Result<u8> {
+        Ok(self.call(feature::DEVICE_NAME, 2, &[])?[0])
     }
 
     /// The id the mouse has behind a LIGHTSPEED receiver. 0x0003 function 0 lists one product id

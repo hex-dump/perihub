@@ -230,29 +230,52 @@ describe("a device on a receiver that PeriHub does not support", () => {
     name: "Logi Bolt receiver",
     collections: ["interface 2, usage page ff00, usage 0002"],
     bolt: true,
+    unifying: false,
     reachable: true,
+    denied: false,
     slots: ["slot 1: HID++ 4.5"],
     unsupported: [
       {
         slot: 1,
         name: "MX Master 3S",
+        kind: 3,
         protocol: "4.5",
         wireless_id: null,
         device_info: null,
         firmware: [],
         features: [],
+        dpi: null,
+        report_rates_ms: [],
+        onboard: null,
         read_errors: [],
       },
     ],
   };
   const note = "Logi Bolt receiver c548, slot 1: MX Master 3S is not supported yet";
 
-  it("is described with its test report instead of an error", async () => {
+  it("is pointed to its own page instead of an error", async () => {
     render(Mouse, { props: { info: null, error: note, asleep: null, receivers: [bolt] } });
     await wait(0);
     expect(screen.getByText("MX Master 3S is paired with your Logi Bolt receiver.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Copy test report" })).toBeTruthy();
+    expect(screen.getByText(/Its page in the sidebar shows what it can do/)).toBeTruthy();
     expect(screen.queryByText(note)).toBeNull();
+  });
+
+  it("explains why a Unifying receiver stays closed on Linux", async () => {
+    const unifying = {
+      ...bolt,
+      product_id: 0xc52b,
+      name: "Unifying receiver",
+      bolt: false,
+      unifying: true,
+      denied: true,
+      slots: ["could not ask: Permission denied"],
+      unsupported: [],
+    };
+    render(Mouse, { props: { info: null, error: null, asleep: null, receivers: [unifying] } });
+    await wait(0);
+    expect(screen.getByText("PeriHub cannot open your Unifying receiver.")).toBeTruthy();
+    expect(screen.getByText(/any program\s+you run could read your typing/)).toBeTruthy();
   });
 
   it("still offers a report when the Bolt receiver is reached but nothing answered", async () => {

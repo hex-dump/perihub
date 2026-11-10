@@ -1,5 +1,6 @@
 import type { CorsairInfo, G300Info, G300Profile, ReceiverReport, UnsupportedReceiverDevice } from "./api";
 import type { MouseInfo } from "./api";
+import { kindName } from "./logitechFeatures";
 
 const LOGITECH = "046d";
 const TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml";
@@ -17,11 +18,18 @@ function usbId(mouse: MouseInfo): string {
   return `${LOGITECH}:${hex(mouse.link?.receiver_id ?? mouse.product_id)}`;
 }
 
+/** What a Logitech receiver is called, from its USB product id (as the core names it). */
+export function receiverName(productId: number | undefined): string {
+  if (productId === 0xc548) return "Logi Bolt receiver";
+  if (productId === 0xc52b || productId === 0xc532) return "Unifying receiver";
+  return "LIGHTSPEED receiver";
+}
+
 function connection(mouse: MouseInfo): string {
   if (!mouse.receiver) return "USB cable";
-  if (!mouse.link) return "LIGHTSPEED receiver";
+  if (!mouse.link) return receiverName(undefined);
   const { receiver_id, slot, wireless_id } = mouse.link;
-  return `LIGHTSPEED receiver ${LOGITECH}:${hex(receiver_id)}, slot ${slot}, wireless id ${hex(wireless_id)}`;
+  return `${receiverName(receiver_id)} ${LOGITECH}:${hex(receiver_id)}, slot ${slot}, wireless id ${hex(wireless_id)}`;
 }
 
 function support(mouse: MouseInfo): string {
@@ -62,7 +70,7 @@ export function testFormUrl(mouse: MouseInfo, version: string, system: string): 
     title: `${mouse.model} test report`,
     model: mouse.model,
     "usb-id": usbId(mouse),
-    connection: mouse.receiver ? "LIGHTSPEED receiver" : "USB cable",
+    connection: mouse.receiver ? receiverName(mouse.link?.receiver_id) : "USB cable",
     version,
     os: system.toLowerCase().startsWith("windows") ? "Windows" : "Linux",
     report: testReport(mouse, version, system),
@@ -108,18 +116,30 @@ export function receiverTest(
     `PeriHub ${version} on ${system}`,
     `Receiver: ${receiver.name}, USB ID ${id}`,
     `HID collections: ${receiver.collections.join("; ") || "none"}`,
-    `PeriHub reaches its paired devices: ${receiver.reachable ? "yes" : "no"}`,
+    `PeriHub reaches its paired devices: ${receiver.denied ? "no (the system refused to open it)" : receiver.reachable ? "yes" : "no"}`,
     `Slots: ${receiver.slots.join("; ") || "not asked"}`,
   ];
   if (device) {
     const features = device.features.map(
       (f) => `${hex(f.id)} v${f.version}${f.kind ? ` (flags ${f.kind.toString(16).padStart(2, "0")})` : ""}`,
     );
+    const dpi = device.dpi
+      ? device.dpi.list.length
+        ? device.dpi.list.join(", ")
+        : `${device.dpi.min}-${device.dpi.max}, step ${device.dpi.step}`
+      : "no 0x2201";
+    const onboard = device.onboard
+      ? `profile format ${device.onboard.profile_format}, ${device.onboard.sector_count} sectors of ${device.onboard.sector_size} bytes`
+      : "none";
     lines.push(
       `Slot ${device.slot}: ${device.name ?? "name not read"}, HID++ ${device.protocol}`,
+      `Kind: ${kindName(device.kind)}${device.kind === null ? "" : ` (${device.kind})`}`,
       `Device info (0x0003): ${device.device_info ?? "not read"}`,
       `Firmware: ${device.firmware.join(", ") || "not read"}`,
       `Features: ${features.join(", ") || "not read"}`,
+      `DPI: ${dpi}`,
+      `Polling (ms): ${device.report_rates_ms.join(", ") || "none reported"}`,
+      `Onboard memory: ${onboard}`,
       `Could not read: ${device.read_errors.join("; ") || "nothing"}`,
     );
   } else {

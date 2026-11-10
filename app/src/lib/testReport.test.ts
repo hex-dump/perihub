@@ -144,12 +144,15 @@ describe("receiverTest", () => {
     name: "Logi Bolt receiver",
     collections: ["interface 2, usage page ff00, usage 0001", "interface 2, usage page ff00, usage 0002"],
     bolt: true,
+    unifying: false,
     reachable: true,
+    denied: false,
     slots: ["slot 1: HID++ 4.5", "slot 2: HID++ 1.0 error 0x08"],
     unsupported: [
       {
         slot: 1,
         name: "MX Master 3S",
+        kind: 3,
         protocol: "4.5",
         wireless_id: null,
         device_info: "02 xx xx xx xx 00 02 12 34 00 00 00 00 00 00 00",
@@ -158,6 +161,9 @@ describe("receiverTest", () => {
           { id: 0x0001, kind: 0, version: 1 },
           { id: 0x2201, kind: 0x40, version: 2 },
         ],
+        dpi: { min: 200, max: 8000, step: 50, list: [] },
+        report_rates_ms: [],
+        onboard: null,
         read_errors: [],
       },
     ],
@@ -175,9 +181,13 @@ describe("receiverTest", () => {
       "PeriHub reaches its paired devices: yes",
       "Slots: slot 1: HID++ 4.5; slot 2: HID++ 1.0 error 0x08",
       "Slot 1: MX Master 3S, HID++ 4.5",
+      "Kind: Mouse (3)",
       "Device info (0x0003): 02 xx xx xx xx 00 02 12 34 00 00 00 00 00 00 00",
       "Firmware: RBM 12.01.0008",
       "Features: 0001 v1, 2201 v2 (flags 40)",
+      "DPI: 200-8000, step 50",
+      "Polling (ms): none reported",
+      "Onboard memory: none",
       "Could not read: nothing",
     ]);
     const query = new URL(deviceTestFormUrl(fields, "0.6.6", "windows x86_64")).searchParams;
@@ -196,5 +206,12 @@ describe("receiverTest", () => {
     expect(fields.report).toContain("PeriHub reaches its paired devices: no");
     expect(fields.report).toContain("Slots: not asked");
     expect(fields.report).toContain("Paired device: none answered");
+  });
+
+  it("says when the system refused to open a Unifying receiver", () => {
+    const unifying = { ...bolt, product_id: 0xc52b, name: "Unifying receiver", bolt: false, unifying: true };
+    const fields = receiverTest({ ...unifying, denied: true, unsupported: [] }, null, "0.6.7", "linux x86_64");
+    expect(fields.usbId).toBe("046d:c52b");
+    expect(fields.report).toContain("PeriHub reaches its paired devices: no (the system refused to open it)");
   });
 });

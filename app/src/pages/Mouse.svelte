@@ -15,7 +15,7 @@
   import { mouseRestoreMessage } from "../lib/backups";
   import TestReport from "../components/TestReport.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
-  import { receiverTest } from "../lib/testReport";
+  import { receiverName, receiverTest } from "../lib/testReport";
   import ExperimentalDialog from "../components/ExperimentalDialog.svelte";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
@@ -288,7 +288,7 @@
     <span class="muted small">
       {#if info}
         Firmware {info.firmware.map((f) => `${f.name} ${f.version}`).join(" · ")}
-        {#if info.receiver}· through its LIGHTSPEED receiver{/if}
+        {#if info.receiver}· through its {receiverName(info.link?.receiver_id)}{/if}
       {:else if asleep}
         Turned off or asleep
       {:else}
@@ -322,13 +322,18 @@
     {#each receiver.unsupported as device (device.slot)}
       <div class="notice info">
         <b>{device.name ?? "A device"} is paired with your {receiver.name}.</b> PeriHub does not support it yet, so it
-        only reads what the device is and changes nothing. A test report on PeriHub's GitHub page helps add it.
-        <div class="row report">
-          <DeviceTestReport fields={(version, system) => receiverTest(receiver, device, version, system)} />
-        </div>
+        only reads it and changes nothing. Its page in the sidebar shows what it can do, with a test report that helps
+        add it.
       </div>
     {/each}
-    {#if receiver.unsupported.length === 0 && (receiver.bolt || !receiver.reachable)}
+    {#if receiver.unifying && receiver.denied}
+      <div class="notice info">
+        <b>PeriHub cannot open your Unifying receiver.</b> On Linux, what you type on the keyboards paired with it comes
+        through the same channel PeriHub would read, so PeriHub's own udev rule leaves it closed: otherwise any program
+        you run could read your typing. If Solaar is installed, its rule already opens it, and PeriHub can read what is
+        paired with it.
+      </div>
+    {:else if receiver.unsupported.length === 0 && (receiver.bolt || receiver.unifying || !receiver.reachable)}
       <div class="notice info">
         {#if receiver.reachable}
           <b>PeriHub sees your {receiver.name}, but nothing paired with it has answered.</b> Move the mouse to wake it up.
@@ -380,8 +385,8 @@
 {:else if info && !info.writable}
   <div class="notice info">
     {#if info.receiver}
-      Through its LIGHTSPEED receiver PeriHub switches profiles and DPI levels, but it does not save: a write over the
-      radio has never been tried. Connect the {info.model} with its USB cable to save.
+      Through its {receiverName(info.link?.receiver_id)} PeriHub switches profiles and DPI levels, but it does not save:
+      a write over the radio has never been tried. Connect the {info.model} with its USB cable to save.
     {:else}
       This mouse now reports a memory format PeriHub cannot write (profile format {info.onboard.profile_format},
       {info.onboard.sector_size}-byte sectors): saving is disabled. A mouse test report helps add it.

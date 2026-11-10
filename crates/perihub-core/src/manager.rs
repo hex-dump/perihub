@@ -1,6 +1,6 @@
 //! Detects supported devices when they are plugged in or unplugged.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ffi::{CStr, CString};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -200,14 +200,19 @@ fn receiver_collections(api: &HidApi) -> Vec<(u16, Vec<String>)> {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ReceiverReport {
     pub product_id: u16,
-    /// "LIGHTSPEED receiver" or "Logi Bolt receiver".
+    /// "LIGHTSPEED receiver", "Logi Bolt receiver" or "Unifying receiver".
     pub name: &'static str,
     /// Its HID collections, such as "interface 2, usage page ff00, usage 0002".
     pub collections: Vec<String>,
     /// A Logi Bolt receiver: nothing paired with it is supported yet.
     pub bolt: bool,
+    /// A Unifying receiver: nothing paired with it is supported yet, and on Linux PeriHub's udev
+    /// rule does not open it (see [`receiver::UNIFYING`]).
+    pub unifying: bool,
     /// PeriHub found the collection it talks to the paired devices through.
     pub reachable: bool,
+    /// The system refused to open it (on Linux, no udev rule gives access to it).
+    pub denied: bool,
     /// What each of its slots answered the last time PeriHub asked, or why it could not ask.
     pub slots: Vec<String>,
     /// Paired devices that answer and that PeriHub does not support yet.
@@ -276,6 +281,8 @@ struct Slots {
     receivers: Vec<ReceiverReport>,
     /// What each receiver's slots answered (by path), for test reports.
     receiver_answers: HashMap<CString, Vec<String>>,
+    /// Receivers the system refused to open (by path).
+    receiver_denied: HashSet<CString>,
     /// Interfaces of the connected keyboard that report key presses.
     key_interfaces: KeyInterfaces,
     /// Keys of the connected keyboard's map that start software macros, kept by its thread.
@@ -435,6 +442,7 @@ impl Manager {
             }
             slots.receiver_models.retain(|path, _| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
             slots.receiver_answers.retain(|path, _| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
+            slots.receiver_denied.retain(|path| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
             slots
                 .receiver_unsupported
                 .retain(|(path, _), _| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
@@ -563,7 +571,9 @@ impl Manager {
                     name: receiver::name(product_id),
                     collections,
                     bolt: product_id == receiver::BOLT,
+                    unifying: receiver::is_unifying(product_id),
                     reachable: !paths.is_empty(),
+                    denied: paths.iter().any(|path| slots.receiver_denied.contains(*path)),
                     slots: answers,
                     unsupported,
                 }
@@ -584,7 +594,15 @@ impl Manager {
                 Ok(found) => found.answers.clone(),
                 Err(error) => vec![format!("could not ask: {error}")],
             };
-            self.slots.lock().unwrap().receiver_answers.insert(path.clone(), answers);
+            {
+                let mut slots = self.slots.lock().unwrap();
+                slots.receiver_answers.insert(path.clone(), answers);
+                if matches!(&found, Err(error) if is_permission_error(error)) {
+                    slots.receiver_denied.insert(path.clone());
+                } else {
+                    slots.receiver_denied.remove(&path);
+                }
+            }
             let found = match found {
                 Ok(found) => found,
                 Err(error) => {

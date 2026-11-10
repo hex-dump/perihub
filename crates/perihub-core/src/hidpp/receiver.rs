@@ -1,5 +1,5 @@
-//! LIGHTSPEED and Logi Bolt receivers. A wireless mouse is reached through the receiver, with the
-//! receiver's slot (1–6) as the HID++ device index.
+//! LIGHTSPEED, Logi Bolt and Unifying receivers. A wireless mouse is reached through the receiver,
+//! with the receiver's slot (1–6) as the HID++ device index.
 //!
 //! PeriHub only talks to the mice behind a receiver, with the same rules as for a mouse on a
 //! cable. It never sends the receiver's own commands (HID++ 1.0 registers), which also pair and
@@ -11,12 +11,19 @@ use std::time::{Duration, Instant};
 use serde::Serialize;
 
 use super::{
-    FeatureEntry, HIDPP10_ERROR, HidppDevice, REPORT_LONG, REPORT_SHORT, SHORT_LEN, SOFTWARE_ID, Transport,
-    unreachable_code,
+    DpiCapabilities, FeatureEntry, HIDPP10_ERROR, HidppDevice, OnboardInfo, REPORT_LONG, REPORT_SHORT, SHORT_LEN,
+    SOFTWARE_ID, Transport, feature, unreachable_code,
 };
 use crate::error::{Error, Result};
 
-pub const RECEIVERS: &[u16] = &[0xC539, 0xC53A, 0xC53D, 0xC53F, 0xC541, 0xC543, 0xC545, 0xC547, 0xC54D, BOLT];
+pub const RECEIVERS: &[u16] =
+    &[0xC539, 0xC53A, 0xC53D, 0xC53F, 0xC541, 0xC543, 0xC545, 0xC547, 0xC54D, BOLT, UNIFYING[0], UNIFYING[1]];
+
+/// Unifying receivers, for the MX, M and K mice and keyboards (ids from Linux's hid-logitech-dj).
+/// On Linux their HID++ interface also carries what is typed on the keyboards paired with them
+/// (hid-logitech-dj puts them in DJ mode), so PeriHub's udev rule does not open it: see
+/// `packaging/linux/70-perihub.rules`.
+pub const UNIFYING: [u16; 2] = [0xC52B, 0xC532];
 
 /// The Logi Bolt receiver, for the MX and other office mice and keyboards. PeriHub does not support
 /// any device behind it yet: it only describes them in a test report (issue #17).
@@ -32,9 +39,19 @@ pub fn is_receiver(product_id: u16) -> bool {
     RECEIVERS.contains(&product_id)
 }
 
+pub fn is_unifying(product_id: u16) -> bool {
+    UNIFYING.contains(&product_id)
+}
+
 /// What the receiver is called in messages and test reports.
 pub fn name(product_id: u16) -> &'static str {
-    if product_id == BOLT { "Logi Bolt receiver" } else { "LIGHTSPEED receiver" }
+    if product_id == BOLT {
+        "Logi Bolt receiver"
+    } else if is_unifying(product_id) {
+        "Unifying receiver"
+    } else {
+        "LIGHTSPEED receiver"
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -88,12 +105,15 @@ pub fn ping_answer(channel: &dyn Transport, slot: u8) -> Result<(Presence, Strin
     }
 }
 
-/// A device in a receiver's slot that PeriHub does not support, as far as it can be read without
-/// changing anything: what a test report needs to add it.
+/// A device in a receiver's slot that PeriHub does not support yet: what it is and what it can do,
+/// as far as it can be read without changing anything. Its page shows it, and its test report
+/// carries it. Only what does not change while the device is in use is read here.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct UnsupportedDevice {
     pub slot: u8,
     pub name: Option<String>,
+    /// What kind of device it is (0x0005 function 2): see [`HidppDevice::device_type`].
+    pub kind: Option<u8>,
     /// HID++ version, such as "4.5".
     pub protocol: String,
     /// The id it reports through a LIGHTSPEED receiver, if it lists one.
@@ -103,6 +123,12 @@ pub struct UnsupportedDevice {
     pub device_info: Option<String>,
     pub firmware: Vec<String>,
     pub features: Vec<FeatureEntry>,
+    /// The DPI it accepts (0x2201), if it has that feature.
+    pub dpi: Option<DpiCapabilities>,
+    /// The polling rates it offers, in milliseconds (0x8060), if it has that feature.
+    pub report_rates_ms: Vec<u8>,
+    /// Its onboard profile memory (0x8100), if it has one.
+    pub onboard: Option<OnboardInfo>,
     /// What could not be read.
     pub read_errors: Vec<String>,
 }
@@ -115,11 +141,15 @@ impl UnsupportedDevice {
         let mut device = Self {
             slot,
             name: None,
+            kind: None,
             protocol: format!("{major}.{minor}"),
             wireless_id: None,
             device_info: None,
             firmware: Vec::new(),
             features: Vec::new(),
+            dpi: None,
+            report_rates_ms: Vec::new(),
+            onboard: None,
             read_errors: Vec::new(),
         };
         let mut failed = |what: &str, error: Error| match error {
@@ -149,6 +179,37 @@ impl UnsupportedDevice {
         match dev.feature_table() {
             Ok(features) => device.features = features,
             Err(error) => failed("features", error)?,
+        }
+        let has = |id: u16| device.features.iter().any(|f| f.id == id);
+        let (kind, dpi, rates, onboard) = (
+            has(feature::DEVICE_NAME),
+            has(feature::ADJUSTABLE_DPI),
+            has(feature::REPORT_RATE),
+            has(feature::ONBOARD_PROFILES),
+        );
+        if kind {
+            match dev.device_type() {
+                Ok(kind) => device.kind = Some(kind),
+                Err(error) => failed("type", error)?,
+            }
+        }
+        if dpi {
+            match dev.dpi_capabilities(0) {
+                Ok(dpi) => device.dpi = Some(dpi),
+                Err(error) => failed("DPI", error)?,
+            }
+        }
+        if rates {
+            match dev.report_rates() {
+                Ok(rates) => device.report_rates_ms = rates,
+                Err(error) => failed("polling rates", error)?,
+            }
+        }
+        if onboard {
+            match dev.onboard_info() {
+                Ok(info) => device.onboard = Some(info),
+                Err(error) => failed("onboard memory", error)?,
+            }
         }
         Ok(device)
     }
@@ -227,6 +288,10 @@ mod tests {
                 (Some(feature::DEVICE_INFO), 1) => vec![0, b'R', b'B', b'M', 0x12, 0x01, 0x00, 0x08],
                 (Some(feature::DEVICE_NAME), 0) => vec![NAME.len() as u8],
                 (Some(feature::DEVICE_NAME), 1) => NAME[param..(param + 16).min(NAME.len())].to_vec(),
+                // A mouse.
+                (Some(feature::DEVICE_NAME), 2) => vec![3],
+                // Sensor 0: 200 to 4000 DPI in steps of 50.
+                (Some(0x2201), 1) => vec![0, 0x00, 0xC8, 0xE0, 0x32, 0x0F, 0xA0],
                 _ => {
                     return vec![vec![
                         REPORT_LONG,
@@ -257,10 +322,15 @@ mod tests {
     }
 
     #[test]
-    fn a_bolt_receiver_is_named_apart_from_the_lightspeed_ones() {
+    fn bolt_and_unifying_receivers_are_named_apart_from_the_lightspeed_ones() {
         assert!(is_receiver(BOLT));
         assert_eq!(name(BOLT), "Logi Bolt receiver");
         assert_eq!(name(0xC539), "LIGHTSPEED receiver");
+        for id in [0xC52B, 0xC532] {
+            assert!(is_receiver(id) && is_unifying(id));
+            assert_eq!(name(id), "Unifying receiver");
+        }
+        assert!(!is_unifying(0xC539) && !is_unifying(BOLT));
     }
 
     #[test]
@@ -281,12 +351,17 @@ mod tests {
         assert_eq!(device.features[3].kind, 0x40);
         assert!(device.read_errors.is_empty(), "{:?}", device.read_errors);
         assert_eq!(device.label(), "Office mouse with a long name");
+        assert_eq!(device.kind, Some(3));
+        let dpi = device.dpi.as_ref().unwrap();
+        assert_eq!((dpi.min, dpi.max, dpi.step), (200, 4000, 50));
+        assert!(device.report_rates_ms.is_empty() && device.onboard.is_none(), "features it does not list");
 
-        // Only the root, the feature table, device info and name were asked; 0x2201 (DPI) was
-        // listed but never called, and no request went to the receiver itself.
+        // Read functions only, all to the device in slot 2: none to the receiver itself, and of
+        // 0x2201 (DPI, index 4) only the list of values it accepts.
         for request in written.lock().unwrap().iter() {
             assert_eq!(request[1], 2);
-            assert!(request[2] <= 3, "feature index {} was called", request[2]);
+            let (index, function) = (request[2], request[3] >> 4);
+            assert!(index <= 3 || (index, function) == (4, 1), "feature index {index}, function {function}");
         }
     }
 

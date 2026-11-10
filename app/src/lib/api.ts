@@ -308,6 +308,9 @@ export interface DeviceStatus {
 export interface UnsupportedReceiverDevice {
   slot: number;
   name: string | null;
+  /** HID++ 0x0005 function 2: 0 keyboard, 1 remote control, 2 numpad, 3 mouse, 4 touchpad, 5 trackball,
+   * 6 presenter, 7 receiver; newer devices may report other values. */
+  kind: number | null;
   /** HID++ version, such as "4.5". */
   protocol: string;
   /** The id it reports through a LIGHTSPEED receiver, if it lists one. */
@@ -317,20 +320,31 @@ export interface UnsupportedReceiverDevice {
   firmware: string[];
   /** Its HID++ feature table: kind holds the flags (0x80 obsolete, 0x40 hidden, 0x20 engineering). */
   features: { id: number; kind: number; version: number }[];
+  /** The DPI it accepts (0x2201), if it has that feature. */
+  dpi: { min: number; max: number; step: number; list: number[] } | null;
+  /** The polling rates it offers, in milliseconds (0x8060). */
+  report_rates_ms: number[];
+  /** Its onboard profile memory (0x8100), if it has one. */
+  onboard: MouseInfo["onboard"] | null;
   read_errors: string[];
 }
 
 /** A connected Logitech receiver, for the test report that helps support what is paired with it. */
 export interface ReceiverReport {
   product_id: number;
-  /** "LIGHTSPEED receiver" or "Logi Bolt receiver". */
+  /** "LIGHTSPEED receiver", "Logi Bolt receiver" or "Unifying receiver". */
   name: string;
   /** Its HID collections, such as "interface 2, usage page ff00, usage 0002". */
   collections: string[];
   /** A Logi Bolt receiver: nothing paired with it is supported yet. */
   bolt: boolean;
+  /** A Unifying receiver: nothing paired with it is supported yet, and on Linux PeriHub's udev rule
+   * does not open it. */
+  unifying: boolean;
   /** PeriHub found the collection it talks to the paired devices through. */
   reachable: boolean;
+  /** The system refused to open it (on Linux, no udev rule gives access to it). */
+  denied: boolean;
   /** What each of its slots answered the last time PeriHub asked, or why it could not ask. */
   slots: string[];
   /** Paired devices that answer and that PeriHub does not support yet. */

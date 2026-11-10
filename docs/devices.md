@@ -58,10 +58,18 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   with a tested memory format PeriHub switches the profile and DPI level, otherwise it only reads. The receiver support has not
   been tried on real hardware yet: reports are welcome in
   [issue #4](https://github.com/hex-dump/perihub/issues/4).
-- **The Logi Bolt receiver** (`046d:c548`) is recognized, but no mouse paired with it is supported
-  yet. PeriHub reads what the paired device is, without changing anything, and the mouse page offers
-  a test report with it: that is the first step for the MX Master 3S
-  ([issue #17](https://github.com/hex-dump/perihub/issues/17)).
+- **The Logi Bolt receiver** (`046d:c548`) and **the Unifying receivers** (`046d:c52b`, `c532`)
+  are recognized, but nothing paired with them is supported yet: 👁 read-only. Every device that
+  answers, mouse or keyboard, gets a page of its own in the sidebar, built from the HID++ features it
+  reports: what kind of device it is, what it can do (battery, DPI, SmartShift wheel, programmable
+  buttons…), the DPI and polling rates it accepts, and a test report. Nothing is changed on it.
+  Changing settings comes next, starting with the DPI: the MX Master 3S of
+  [issue #17](https://github.com/hex-dump/perihub/issues/17) is the first one. For now PeriHub
+  looks behind the receivers only while no supported Logitech mouse is connected with its cable.
+- **On Linux PeriHub's udev rule does not open the Unifying receivers.** Linux puts them in DJ mode,
+  where what is typed on the keyboards paired with them arrives on the same interface as HID++:
+  opening it would let any program running as the user read that typing. PeriHub reads them only
+  where another rule already opens them, such as Solaar's. Windows is not affected.
 
 | Mouse | USB ID | Through a receiver |
 |---|---|---|

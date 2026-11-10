@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-Logitech mice are supported by the format of their memory, not by model.
+Logitech mice are supported by the format of their memory, not by model, and every device on a Bolt or Unifying receiver gets a page of its own.
+
+### Added
+- **Unifying receivers (`046d:c52b`, `c532`) are recognized**, like the Logi Bolt one. Nothing paired with them is supported yet: PeriHub reads them with read commands only, and never sends the receiver's own commands, which pair and unpair devices.
+- **Every device that answers behind a Bolt or Unifying receiver gets a page of its own** in the sidebar, mouse or keyboard, built from the HID++ features it reports: what kind of device it is (HID++ 0x0005), what it can do (battery, DPI, SmartShift wheel, high-resolution and thumb wheels, programmable buttons, Easy-Switch, lighting, onboard profiles…), the DPI and polling rates it accepts, its onboard memory format if it has one, and a test report. Nothing on it is changed: this is the first step towards changing their settings, starting with the DPI (issue #17).
+- On Linux the udev rule does **not** open the Unifying receivers, on purpose: Linux puts them in DJ mode, where what is typed on the keyboards paired with them arrives on the same interface as HID++, so opening it would let any program read that typing. PeriHub reads them where another rule already opens them, such as Solaar's, and says why otherwise.
 
 ### Changed
 - **Logitech mice with onboard profiles are supported by memory format.** What decides how a save is laid out is the format of the mouse's memory, which many models share, not the model. PeriHub reads it from the mouse every time it connects (a firmware update can change it), and:

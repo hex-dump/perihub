@@ -6,12 +6,15 @@
   import AppProfiles from "./pages/AppProfiles.svelte";
   import Mouse from "./pages/Mouse.svelte";
   import CorsairDevice from "./pages/CorsairDevice.svelte";
+  import LogitechDevice from "./pages/LogitechDevice.svelte";
+  import { kindIcon, kindName } from "./lib/logitechFeatures";
+  import type { ReceiverReport, UnsupportedReceiverDevice } from "./lib/api";
   import G300 from "./pages/G300.svelte";
   import Settings from "./pages/Settings.svelte";
   import Icon from "./components/Icon.svelte";
 
-  type Page = "keyboard" | "mouse" | "g300" | "corsair" | "profiles" | "settings";
-  const PAGES: Page[] = ["keyboard", "mouse", "g300", "corsair", "profiles", "settings"];
+  type Page = "keyboard" | "mouse" | "g300" | "corsair" | "logitech" | "profiles" | "settings";
+  const PAGES: Page[] = ["keyboard", "mouse", "g300", "corsair", "logitech", "profiles", "settings"];
 
   // Navigation through the URL hash (#page or #page:tab), so a page can be opened directly.
   function fromHash(): [Page, string | undefined] {
@@ -45,6 +48,19 @@
   });
 
   const hex = (id: number) => id.toString(16).padStart(4, "0");
+  /** Logitech devices behind a receiver that PeriHub only reads, each with a page of its own. */
+  const logitechDevices = $derived(
+    status.receivers.flatMap((receiver) => receiver.unsupported.map((device) => ({ receiver, device }))),
+  );
+  const logitechKey = (receiver: ReceiverReport, device: UnsupportedReceiverDevice) =>
+    `${hex(receiver.product_id)}-${device.slot}`;
+  /** The one on screen: the one in the address, or the first one. */
+  const logitechShown = $derived(
+    logitechDevices.find((d) => logitechKey(d.receiver, d.device) === tab) ??
+      (page === "logitech" ? logitechDevices[0] : undefined) ??
+      null,
+  );
+
   /** The Corsair device on screen: the one in the address, or the first one. */
   const corsairShown = $derived(
     status.corsair.find((d) => hex(d.product_id) === tab) ?? (page === "corsair" ? status.corsair[0] : undefined) ?? null,
@@ -100,6 +116,18 @@
         </span>
       </button>
     {/if}
+    {#each logitechDevices as { receiver, device } (logitechKey(receiver, device))}
+      <button
+        class:active={page === "logitech" && logitechShown?.device === device}
+        onclick={() => go("logitech", logitechKey(receiver, device))}
+      >
+        <Icon name={kindIcon(device.kind)} />
+        <span class="col tight">
+          <span class="name">Logitech {device.name ?? kindName(device.kind)}</span>
+          <span class="state">Read-only</span>
+        </span>
+      </button>
+    {/each}
     {#each status.corsair as device (device.product_id)}
       <button
         class:active={page === "corsair" && corsairShown?.product_id === device.product_id}
@@ -166,6 +194,11 @@
           />{/key}
       {:else if page === "g300"}
         <G300 info={status.g300} error={status.g300_error} />
+      {:else if page === "logitech"}
+        {#key logitechShown ? logitechKey(logitechShown.receiver, logitechShown.device) : null}<LogitechDevice
+            receiver={logitechShown?.receiver ?? null}
+            device={logitechShown?.device ?? null}
+          />{/key}
       {:else if page === "corsair"}
         {#key corsairShown?.product_id}<CorsairDevice info={corsairShown} error={status.corsair_error} />{/key}
       {:else if page === "profiles"}
