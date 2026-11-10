@@ -75,14 +75,14 @@ and the name of the firmware in ASCII (`U127.03_B0010`): the same entries with a
 - **Reading.** Without a list PeriHub shows the factory profiles, with the enabled flags of the
   factory list (every profile enabled if that list cannot be read or makes no sense), and selects
   profiles by their factory address.
-- **The first save** (tested models only). PeriHub writes, in this order: the macros of the saved
+- **The first save** (tested memory formats only). PeriHub writes, in this order: the macros of the saved
   profile, the factory copy of every other profile, the saved profile, and last the list, with the
   flags of the factory list. Until the list is there the mouse keeps using its factory profiles,
   so a save that stops halfway changes nothing. Then it selects, in the mouse's own memory, the
   profile that was active. Every sector is read back after it is written.
 - **Enabling a profile** whose sector was never written: its factory copy is written first, so
   the list never points to an empty sector.
-- **Untested models** (experimental editing): PeriHub does not create the list, because the
+- **Untested memory formats** (experimental saves): PeriHub does not create the list, because the
   backup taken before the save would hold no list to put back. The save is refused with an
   explanation; a profile saved once with Logitech G HUB or Onboard Memory Manager creates it.
 - A backup taken while the mouse had no list cannot be restored: there is nothing in it the mouse

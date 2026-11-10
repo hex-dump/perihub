@@ -8,11 +8,13 @@ devices listed here: it never sends anything to a device it does not recognize.
 | Level | What PeriHub does |
 |---|---|
 | ✅ **Supported** | Everything works, tested on real hardware. |
-| 🧪 **Experimental** | Recognized, not tested yet. PeriHub reads it, and you can turn on experimental changes at your own risk (see each section). |
+| 🧪 **Experimental** | Recognized, not tested yet. PeriHub reads it, and you can make experimental changes at your own risk (see each section). |
 | 👁 **Read-only** | Recognized, not tested yet. PeriHub reads it and changes nothing. |
 
 A device moves up a level when its owner sends a test report: **Open test form** on its page in
-PeriHub opens the report on GitHub already filled in.
+PeriHub opens the report on GitHub already filled in. For Logitech mice with onboard profiles the
+level follows the memory format the mouse reports, so one report moves up every mouse that uses
+the same format.
 
 - [SteelSeries](#steelseries)
 - [Logitech mice with onboard profiles](#logitech-mice-with-onboard-profiles)
@@ -34,18 +36,26 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
 - **Logitech G502 HERO** (`046d:c08b`): ✅ supported.
 - **Logitech G502 X Wireless** (`046d:c098`): ✅ supported with the USB cable, confirmed by a user
   on a real mouse ([issue #15](https://github.com/hex-dump/perihub/issues/15)).
-- **Every other mouse below**: 🧪 experimental. PeriHub shows their profiles, DPI levels, buttons,
-  lighting and battery. With **Edit anyway…** on the mouse page you can also change and save them,
-  at your own risk, if the mouse is connected with its USB cable and its memory uses a format
-  PeriHub can write: profile format 2 (the G502 HERO's) or 3 (the G502 X's), in 255- or
-  256-byte sectors. Otherwise, and always through a receiver, they are read-only. The test report
-  shows the format of your mouse.
+- **Every other mouse below**: the level depends on the format of the mouse's onboard memory,
+  which PeriHub reads from the mouse every time it connects. Many models share a format, and the
+  same model can change format with a firmware update, so the level is not fixed per model:
+  - ✅ **a tested format**: profile format 2 in 256-byte sectors (the G502 HERO's) or format 3 in
+    255-byte sectors (the G502 X Wireless's). The mouse is supported, whatever the model.
+  - 🧪 **a format PeriHub can write but nobody has tried yet** (format 2 or 3, in 255- or 256-byte
+    sectors): you can save at your own risk with the USB cable. Before the first save to that
+    mouse PeriHub asks you to tick a **No warranty** box, and each save is undone after 15 seconds
+    unless you keep it. Enabling or disabling profiles stays off.
+  - 👁 **any other format**: read-only.
+
+  The test report shows the format of your mouse, and one report makes a format tested for every
+  mouse that uses it.
 - **A mouse nothing was ever saved to** has no profile list of its own and uses its factory
-  profiles: PeriHub shows those. On the G502 HERO and G502 X Wireless the first save creates the
-  list, with a copy of the factory profiles. On an untested mouse PeriHub does not create it: save
-  a profile once with Logitech G HUB or Onboard Memory Manager first.
+  profiles: PeriHub shows those. With a tested format the first save creates the list, with a copy
+  of the factory profiles. With an untested one PeriHub does not create it: save a profile once
+  with Logitech G HUB or Onboard Memory Manager first.
 - **Wireless models** are also recognized through their LIGHTSPEED receiver (`046d:c539`, `c53a`,
-  `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`), read-only. The receiver support has not
+  `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`). Nothing is saved over the radio:
+  with a tested memory format PeriHub switches the profile and DPI level, otherwise it only reads. The receiver support has not
   been tried on real hardware yet: reports are welcome in
   [issue #4](https://github.com/hex-dump/perihub/issues/4).
 - **The Logi Bolt receiver** (`046d:c548`) is recognized, but no mouse paired with it is supported
@@ -82,6 +92,18 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
 | G305 | wireless only | `4074` |
 | G603 | wireless only | `406c` |
 | G604 | wireless only | `4085` |
+
+**Memory formats known so far.** What other projects found, for mice PeriHub has not seen yet:
+the format a mouse reports in PeriHub's test report is what counts.
+
+| Mouse | Profile format | Sector size | Source |
+|---|---|---|---|
+| G502 HERO | 2 | 256 bytes, 255 on newer firmware | PeriHub ([issue #20](https://github.com/hex-dump/perihub/issues/20)) |
+| G502 X Wireless | 3 | 255 bytes | PeriHub ([issue #15](https://github.com/hex-dump/perihub/issues/15)) |
+| G900 | 3 | | libratbag ([PR #1676](https://github.com/libratbag/libratbag/pull/1676)) |
+| G203 | 4 | | libratbag ([PR #1676](https://github.com/libratbag/libratbag/pull/1676)) |
+| G502 X PLUS | 5 | | libratbag ([issue #1344](https://github.com/libratbag/libratbag/issues/1344)) |
+| G Pro X Superlight 2 (not recognized yet) | 6, then 7 after a firmware update | | libratbag ([issue #1572](https://github.com/libratbag/libratbag/issues/1572)) |
 
 Own one? Send a [mouse test report](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml)
 (**Open test form** on the mouse page fills it in).

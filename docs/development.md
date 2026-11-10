@@ -50,7 +50,8 @@ cargo run -p perihub-cli -- mouse backups
 cargo run -p perihub-cli -- keyboard light '{"type":"wave","period_ms":3000,"reverse":false}' 10
 ```
 
-The command-line tool never uses experimental editing or experimental lighting.
+The command-line tool never saves to a mouse whose memory format is untested, and never uses
+experimental lighting.
 
 ## Architecture
 

@@ -238,12 +238,13 @@ export interface MouseInfo {
   model: string;
   /** Name reported by the mouse itself. */
   name: string;
-  /** Tested with PeriHub: unverified models are read-only. */
+  /** Tested: its memory format (profile format and sector size), or the model itself, was tested on a
+   * real mouse. Profiles and DPI levels can be switched, also through a receiver. */
   verified: boolean;
-  /** Untested model that the user chose to edit anyway, and that meets every condition for it:
-   * the G502 HERO's profile format and sector size, connected with its cable. */
+  /** Its memory format can be written but nobody has tested it yet: saves are experimental, and each
+   * one is undone unless it is kept. With the cable only. */
   experimental: boolean;
-  /** A save that was neither kept nor undone waits for experimental editing to be turned on again. */
+  /** A save that was neither kept nor undone waits for the mouse to be connected with its cable. */
   pending_undo: boolean;
   /** Connected through a LIGHTSPEED receiver instead of its cable. */
   receiver: boolean;
@@ -268,6 +269,8 @@ export interface MouseInfo {
     has_dpi_shift: boolean;
   };
   writable: boolean;
+  /** PeriHub knows how to write the memory format the mouse reports (with its USB cable). */
+  writable_format: boolean;
   /** The mouse's profile list when it was connected (MouseState.profile_list is the state now). */
   profile_list: ProfileList;
 }
@@ -486,12 +489,6 @@ export const api = {
   previewDpi: (dpi: number) => invoke<void>("mouse_preview_dpi", { dpi }),
   previewLed: (zone: number, effect: LedEffect) => invoke<void>("mouse_preview_led", { zone, effect }),
   revertPreview: () => invoke<void>("mouse_revert_preview"),
-  /** USB product ids of untested mice with experimental editing turned on. */
-  experimentalMice: () => invoke<number[]>("mouse_experimental"),
-  setExperimental: (productId: number, enabled: boolean) =>
-    invoke<number[]>("mouse_set_experimental", { productId, enabled }),
-  onExperimental: (handler: (ids: number[]) => void): Promise<UnlistenFn> =>
-    listen<number[]>("experimental-changed", (event) => handler(event.payload)),
   g300Info: () => invoke<G300Info>("g300_info"),
   /** Saves a G300 profile: undone unless kept. */
   g300Save: (number: number, settings: G300Settings) => invoke<G300Info>("g300_save", { number, settings }),
@@ -503,7 +500,7 @@ export const api = {
   corsairLightingOff: (productId: number) => invoke<void>("corsair_lighting_off", { productId }),
   /** The mouse still works: the core stops counting down to give it back. */
   corsairKeepLighting: (productId: number) => invoke<void>("corsair_keep_lighting", { productId }),
-  /** Keeps a save to an untested mouse: the core stops counting down to undo it. */
+  /** Keeps an experimental save: the core stops counting down to undo it. */
   keepChanges: () => invoke<void>("mouse_keep_changes"),
   /** Puts back the mouse memory saved before the last write. */
   undoLastWrite: () => invoke<MouseRestore>("mouse_undo_last_write"),

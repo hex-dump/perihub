@@ -124,7 +124,10 @@
           <p class="muted small">To change the keyboard lighting, first save a lighting on the Apex 3 TKL page (Lighting → Saved lightings).</p>
         {/if}
         {#if mouse && !mouse.verified}
-          <p class="muted small">The {mouse.model} is read-only in PeriHub for now, so its profile cannot be switched.</p>
+          <p class="muted small">
+            PeriHub switches profiles by itself only on mice whose memory format has been tested, so the {mouse.model}'s
+            profile cannot be switched here yet.
+          </p>
         {/if}
       </div>
     {/if}

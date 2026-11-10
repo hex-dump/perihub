@@ -130,7 +130,7 @@
           two of them at once can leave a {noun} unable to {info.kind === "keyboard" ? "type" : "click"}.
         </p>
         <p>
-          <b>To get out:</b> <b>Turn off</b> here, <b>Turn off experimental editing</b> in the tray menu, or quit
+          <b>To get out:</b> <b>Turn off</b> here, <b>Turn off experimental lighting</b> in the tray menu, or quit
           PeriHub. If the {noun} still behaves oddly, unplug it and plug it back in. The confirmation that follows gives it
           back by itself after 15 seconds, without any key or click.
         </p>

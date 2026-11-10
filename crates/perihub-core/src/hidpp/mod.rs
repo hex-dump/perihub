@@ -282,10 +282,27 @@ fn unreachable_code(code: u8) -> bool {
     matches!(code, 0x04 | 0x08 | 0x09)
 }
 
+/// What PeriHub may send to a device.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Access {
+    /// Only [`READ_ONLY_CALLS`]: nothing changes, not even in RAM.
+    ReadOnly,
+    /// Also changes that stay in the device's RAM (active profile, DPI level, previews), but
+    /// nothing written to its onboard memory.
+    Ram,
+    /// Everything in [`ALLOWED_FEATURES`], onboard memory writes included.
+    Full,
+}
+
+/// Onboard memory writes (0x8100 functions 6, 7 and 8): the calls that outlast a power cycle.
+fn is_memory_write(feature: u16, function: u8) -> bool {
+    feature == feature::ONBOARD_PROFILES && matches!(function, 6..=8)
+}
+
 pub struct HidppDevice {
     dev: Box<dyn Transport>,
     device_index: u8,
-    read_only: bool,
+    access: Access,
     /// Feature indexes, 0 for a feature the device does not have.
     features: HashMap<u16, u8>,
     /// Reached through a LIGHTSPEED receiver, in the slot `device_index`.
@@ -295,7 +312,7 @@ pub struct HidppDevice {
 }
 
 impl HidppDevice {
-    /// `read_only` limits the device to [`READ_ONLY_CALLS`] for the whole session.
+    /// `read_only` limits the device to [`READ_ONLY_CALLS`] until [`Self::grant`] says otherwise.
     pub fn new(dev: impl Transport + 'static, device_index: u8, read_only: bool) -> Result<Self> {
         Self::open(Box::new(dev), None, device_index, false, read_only)
     }
@@ -318,7 +335,8 @@ impl HidppDevice {
         behind_receiver: bool,
         read_only: bool,
     ) -> Result<Self> {
-        let mut device = Self { dev, device_index, read_only, features: HashMap::new(), behind_receiver, short };
+        let access = if read_only { Access::ReadOnly } else { Access::Full };
+        let mut device = Self { dev, device_index, access, features: HashMap::new(), behind_receiver, short };
         let (major, _) = device.protocol_version()?;
         if major < 2 {
             return Err(Error::Protocol(format!("HID++ {major}.x is not supported")));
@@ -328,6 +346,12 @@ impl HidppDevice {
 
     pub fn is_behind_receiver(&self) -> bool {
         self.behind_receiver
+    }
+
+    /// Changes what PeriHub may send. A mouse is opened read-only, and [`crate::mouse::MouseTask`]
+    /// grants more once it has read which memory format the mouse uses.
+    pub fn grant(&mut self, access: Access) {
+        self.access = access;
     }
 
     fn transact(&mut self, index: u8, function: u8, params: &[u8]) -> Result<[u8; 16]> {
@@ -407,8 +431,14 @@ impl HidppDevice {
     }
 
     fn call(&mut self, feature: u16, function: u8, params: &[u8]) -> Result<[u8; 16]> {
-        if self.read_only && !is_read_call(feature, function) {
-            return Err(Error::Invalid("this mouse model is read-only until it has been tested with PeriHub".into()));
+        match self.access {
+            Access::ReadOnly if !is_read_call(feature, function) => {
+                return Err(Error::Invalid("PeriHub only reads this mouse".into()));
+            }
+            Access::Ram if is_memory_write(feature, function) => {
+                return Err(Error::Invalid("PeriHub does not save to this mouse's memory".into()));
+            }
+            _ => {}
         }
         let index = self.feature_index(feature)?;
         self.transact(index, function, params)
@@ -927,5 +957,51 @@ pub(crate) mod tests {
             assert!(!is_read_call(feature, function), "{feature:#06x}/{function}");
         }
         assert!(READ_ONLY_CALLS.iter().all(|(feature, _)| ALLOWED_FEATURES.contains(feature)));
+    }
+
+    #[test]
+    fn access_decides_what_reaches_the_device() {
+        let sent = Arc::new(Mutex::new(Vec::new()));
+        let log = sent.clone();
+        let fake = FakeDevice::new(move |request| {
+            log.lock().unwrap().push((request[2], request[3] >> 4));
+            // IRoot: HID++ 4.2, and every feature at index 1.
+            match (request[2], request[3] >> 4) {
+                (0, 1) => vec![reply(request, &[4, 2, request[6]])],
+                (0, _) => vec![reply(request, &[1])],
+                _ => vec![reply(request, &[])],
+            }
+        });
+        let mut dev = HidppDevice::new(fake, models::WIRED_INDEX, true).unwrap();
+        let info = OnboardInfo {
+            memory_model: 1,
+            profile_format: 2,
+            macro_format: 1,
+            profile_count: 5,
+            rom_profile_count: 5,
+            button_count: 11,
+            sector_count: 16,
+            sector_size: 256,
+            has_gshift: false,
+            has_dpi_shift: false,
+        };
+        let mut sector = vec![0u8; 256];
+        profile::write_crc(&mut sector);
+        let sent_calls = |sent: &Arc<Mutex<Vec<(u8, u8)>>>| sent.lock().unwrap().iter().filter(|c| c.0 != 0).count();
+
+        // Read-only: neither a RAM change nor a memory write leaves PeriHub.
+        assert!(dev.set_active_profile(false, 2).is_err());
+        assert!(dev.write_sector(1, &sector, &info).is_err());
+        assert_eq!(sent_calls(&sent), 0);
+
+        // RAM: the profile is switched, the memory is not written.
+        dev.grant(Access::Ram);
+        dev.set_active_profile(false, 2).unwrap();
+        assert!(dev.write_sector(1, &sector, &info).is_err());
+        assert_eq!(sent_calls(&sent), 1);
+
+        dev.grant(Access::Full);
+        dev.write_sector(1, &sector, &info).unwrap();
+        assert_eq!(sent_calls(&sent), 1 + 1 + 16 + 1);
     }
 }

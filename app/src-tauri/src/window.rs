@@ -60,13 +60,12 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         items.push(MenuItem::with_id(app, "update", format!("Update to {version}…"), true, None::<&str>)?);
     }
     items.push(MenuItem::with_id(app, "stop", "Stop software macros", true, None::<&str>)?);
-    // A way out that does not need the window, in case an untested mouse stops clicking.
-    let experimental = app.try_state::<crate::AppState>().is_some_and(|state| {
-        !state.config.lock().unwrap().experimental_mice.is_empty()
-            || state.manager.status().corsair.iter().any(|d| d.lighting.is_some())
-    });
+    // A way out that does not need the window, in case a Corsair mouse stops clicking.
+    let experimental = app
+        .try_state::<crate::AppState>()
+        .is_some_and(|state| state.manager.status().corsair.iter().any(|d| d.lighting.is_some()));
     if experimental {
-        items.push(MenuItem::with_id(app, "experimental-off", "Turn off experimental editing", true, None::<&str>)?);
+        items.push(MenuItem::with_id(app, "experimental-off", "Turn off experimental lighting", true, None::<&str>)?);
     }
     items.push(MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?);
     let refs: Vec<&dyn IsMenuItem<Wry>> = items.iter().map(|i| i as &dyn IsMenuItem<Wry>).collect();

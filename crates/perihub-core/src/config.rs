@@ -60,8 +60,6 @@ pub struct AppConfig {
     pub check_updates: bool,
     /// Macros run by PeriHub, started by buttons that send their trigger key.
     pub software_macros: Vec<crate::softmacro::SoftwareMacro>,
-    /// USB product ids of untested mice that the user chose to edit anyway (experimental editing).
-    pub experimental_mice: Vec<u16>,
 }
 
 impl Default for AppConfig {
@@ -73,7 +71,6 @@ impl Default for AppConfig {
             app_profiles: AppProfiles::default(),
             check_updates: true,
             software_macros: Vec::new(),
-            experimental_mice: Vec::new(),
         }
     }
 }
@@ -97,23 +94,13 @@ fn config_path() -> PathBuf {
 
 impl AppConfig {
     pub fn load() -> Self {
-        let mut config = match fs::read_to_string(config_path()) {
+        match fs::read_to_string(config_path()) {
             Ok(text) => serde_json::from_str(&text).unwrap_or_else(|error| {
                 log::warn!("invalid config.json, using defaults: {error}");
                 Self::default()
             }),
             Err(_) => Self::default(),
-        };
-        config.forget_supported_devices();
-        config
-    }
-
-    /// The Logitech G300 and G502 X Wireless were edited through experimental editing until
-    /// 0.6.3 / 0.6.4: they are supported now, so they no longer belong in that list (which
-    /// the tray menu offers to turn off).
-    fn forget_supported_devices(&mut self) {
-        self.experimental_mice
-            .retain(|&id| id != crate::g300::PRODUCT_ID && id != crate::hidpp::models::G502_X_WIRELESS);
+        }
     }
 
     pub fn save(&self) -> Result<()> {
@@ -283,12 +270,10 @@ mod tests {
     }
 
     #[test]
-    fn supported_devices_leave_the_experimental_list() {
-        let mut config = AppConfig {
-            experimental_mice: vec![0xC08F, crate::g300::PRODUCT_ID, crate::hidpp::models::G502_X_WIRELESS],
-            ..AppConfig::default()
-        };
-        config.forget_supported_devices();
-        assert_eq!(config.experimental_mice, [0xC08F]);
+    fn the_old_list_of_experimental_mice_is_ignored() {
+        // Until 0.6.6 untested mice were edited after "Edit anyway…": the memory format decides now.
+        let config: AppConfig =
+            serde_json::from_str(r#"{"start_hidden": true, "experimental_mice": [49283]}"#).unwrap();
+        assert!(config.start_hidden);
     }
 }

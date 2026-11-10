@@ -50,7 +50,7 @@
 | **Logitech G502 HERO** mouse | ✅ Fully supported, tested on real hardware |
 | **Logitech G502 X Wireless** mouse | ✅ Supported: profiles, DPI, buttons and macros, confirmed by a user on a real mouse |
 | **Logitech G300** mouse | ✅ Supported: its three profiles can be read and edited, confirmed by a user on a real G300 |
-| 28 more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | 🧪 Experimental: read, and editable at your own risk with the USB cable |
+| 28 more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
 | 26 **Corsair mice** and 23 **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Experimental: read, and one colour of lighting for the session, at your own risk |
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
@@ -107,19 +107,30 @@ Not on the list? Open a [device request](https://github.com/hex-dump/perihub/iss
 
 ## Experimental features
 
-Some devices have not been tested yet. PeriHub reads them and changes nothing, unless you turn on an experimental feature on the device's page.
+Some devices have not been tested yet. PeriHub reads them and changes nothing, unless you use an experimental feature on the device's page.
+
+### Logitech mice: supported by memory format
+
+What decides how PeriHub saves a Logitech mouse's profiles is the format of its onboard memory, not the model: many models share one format, and the same model can change format with a firmware update. So PeriHub reads the format from the mouse every time it connects:
+
+- **A format tested on a real mouse** (format 2 in 256-byte sectors, from the G502 HERO; format 3 in 255-byte sectors, from the G502 X Wireless): the mouse is supported, whatever the model.
+- **A format PeriHub can write but nobody has tried yet** (format 2 or 3, in 255- or 256-byte sectors): the mouse page says so, and you can save at your own risk with the USB cable. Before your first save to that mouse PeriHub asks you to tick the **No warranty** box below. Each save is undone after 15 seconds unless you keep it.
+- **Any other format** (4, 5 and newer): read-only.
+- **Through a receiver** nothing is saved: a write over the radio has never been tried. With a tested format PeriHub still switches profiles and DPI levels there.
+
+One test report is enough to make a format tested for every mouse that uses it: see [Help test your device](#help-test-your-device).
 
 > [!CAUTION]
-> **No warranty.** Experimental features have never been tried on your device. PeriHub is provided "as is", without any warranty, as its [license](LICENSE) says. If you turn one on, you use it at your own risk: the author of PeriHub is not responsible for any damage, malfunction or loss. PeriHub asks you to confirm this before each one is turned on.
+> **No warranty.** Experimental features have never been tried on your device. PeriHub is provided "as is", without any warranty, as its [license](LICENSE) says. If you use one, you do so at your own risk: the author of PeriHub is not responsible for any damage, malfunction or loss. PeriHub asks you to confirm this before each one is turned on, and before the first save to a mouse whose memory format is untested.
 
-| | Logitech mice: **Edit anyway…** | Corsair devices: **Try experimental lighting…** |
+| | Logitech mice with an untested memory format | Corsair devices: **Try experimental lighting…** |
 |---|---|---|
 | What you can change | Profiles: DPI, polling rate, buttons, lighting, macros | One colour on every LED or key, for this session |
 | When it is offered | USB cable, and a memory format PeriHub can write (profile format 2 or 3, 255- or 256-byte sectors) | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |
-| What stays off | Enabling or disabling profiles, editing through a receiver | Everything else: DPI, polling rate, buttons, the device's memory |
+| What stays off | Enabling or disabling profiles, creating the profile list of a mouse nothing was saved to, saving through a receiver | Everything else: DPI, polling rate, buttons, the device's memory |
 | Safety net | Only values the mouse accepts; a backup before every save; every write read back | Only the commands lighting needs; nothing is saved in the device |
 | If something looks wrong | Each save is undone after 15 seconds unless you keep it, also after PeriHub closed or the mouse was unplugged | The device gets its own settings back after 15 seconds unless you keep it, when you quit PeriHub, and as soon as anything fails |
-| Turn it off | On the mouse page, or **Turn off experimental editing** in the tray menu | On the device page, or **Turn off experimental editing** in the tray menu |
+| Turn it off | Nothing to turn off: just don't save | On the device page, or **Turn off experimental lighting** in the tray menu |
 
 ### Help test your device
 
@@ -129,7 +140,7 @@ If you own a device marked 🧪 or 👁:
 2. Open the device's page in PeriHub and press **Open test form**. It opens a report on GitHub with what PeriHub read already filled in: no key presses, apps or log lines.
 3. Check that what PeriHub shows matches your device, and send it. You need a free GitHub account.
 
-Once someone confirms a model, it becomes fully supported for everyone.
+Once someone confirms a model, it becomes fully supported for everyone. For a Logitech mouse, the confirmation counts for its memory format, so for every other mouse that uses it too.
 
 ## Download and install
 
@@ -219,7 +230,7 @@ Software macros type and click through a virtual keyboard and mouse (`/dev/uinpu
 PeriHub never touches firmware. It uses the same settings commands as the official apps, with more safeguards:
 
 - **Only known commands.** The code can send only commands that have been checked, and refuses the others before they reach the device. The command that restarts the Apex into its firmware updater cannot even be written. On Logitech mice only a short list of HID++ features is used, and a receiver's pairing commands are never sent. On Corsair devices only property reads, and with experimental lighting the commands lighting needs, can get through.
-- **Untested devices are only read**, unless you turn on an [experimental feature](#experimental-features).
+- **Untested devices are only read**, unless you use an [experimental feature](#experimental-features). A Logitech mouse whose memory format is untested is saved to only after the No warranty box, with the USB cable, and each save is undone unless you keep it.
 - **Every write is checked.** Mouse profiles are changed on top of their original bytes and read back byte by byte. The keyboard's key mapping is tried in RAM first and saved only if the read-back matches.
 - **Backups** before every write: in `~/.config/perihub/backups/` on Linux and `%APPDATA%\perihub\backups\` on Windows. **Backups…** puts one back, writing only what differs.
 - **Factory profiles are never written**: they are only read, to restore a profile.
@@ -266,7 +277,7 @@ The interface is in English. More languages are planned.
 
 - **Windows**: tested on a real Windows 11 PC (lighting, key remapping, mouse profiles and macros, app profiles, tray, autostart, updates, software macros). Creating software macros has been tried on Linux only.
 - **Logitech G300**: reading and saving were confirmed by one user, on Windows ([issue #21](https://github.com/hex-dump/perihub/issues/21)). No G300 has been tried on Linux yet.
-- **Logitech mice through a LIGHTSPEED receiver** are read-only and have not been tried on real hardware yet ([issue #4](https://github.com/hex-dump/perihub/issues/4)). Their buttons do not start software macros.
+- **Logitech mice through a LIGHTSPEED receiver** are never saved to: use the USB cable. With a tested memory format PeriHub switches their profile and DPI level. The receivers have not been tried on real hardware yet ([issue #4](https://github.com/hex-dump/perihub/issues/4)), and their buttons do not start software macros.
 - **Mice on a Logi Bolt receiver**, such as the MX Master 3S, are not supported yet. PeriHub only reads what they are, for a test report ([issue #17](https://github.com/hex-dump/perihub/issues/17)).
 - **Corsair devices** have not been tried on real hardware yet. With more than one device on the same receiver, only the first one is shown, and the Slipstream V2 receiver is not recognized.
 - **App profiles** work on Windows and Hyprland only. They switch lighting and mouse profiles, not key mappings.

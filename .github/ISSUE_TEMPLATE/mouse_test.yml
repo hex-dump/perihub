@@ -1,11 +1,11 @@
 name: Mouse test report
-description: Tell us how PeriHub works with one of the experimental Logitech mice
+description: Tell us how PeriHub works with your Logitech mouse
 labels: ["mouse test"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing! PeriHub only reads an experimental mouse and changes nothing, unless you turn on **Edit anyway…** yourself, so testing is safe. A model becomes fully supported once someone confirms that what PeriHub shows matches the mouse and that saving works.
+        Thanks for testing! Sending a report only reads the mouse, so it is safe. On a mouse whose memory format is untested PeriHub saves only if you choose to, after a **No warranty** box, and each save is undone after 15 seconds unless you keep it. Once someone confirms that what PeriHub shows matches the mouse and that saving works, the mouse's memory format becomes tested, for every mouse that uses it.
   - type: input
     id: model
     attributes:
@@ -64,7 +64,7 @@ body:
   - type: checkboxes
     id: saving
     attributes:
-      label: Saving, if you turned on Edit anyway…
+      label: Saving, if you tried it
       description: Optional, and at your own risk. Leave these empty if you only read the mouse.
       options:
         - label: A change I saved took effect on the mouse

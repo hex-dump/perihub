@@ -84,7 +84,8 @@ fn main() {
             let (slot, soft_listener) = (profiles_slot.clone(), soft_slot.clone());
             let manager = Manager::start(
                 config.keyboard.clone(),
-                &config.experimental_mice,
+                // The interface asks whether to keep every save to a mouse whose memory format is untested.
+                true,
                 Box::new(move |status| {
                     if let Some(profiles) = slot.get() {
                         profiles.devices_changed(status);
@@ -161,8 +162,6 @@ fn main() {
             commands::mouse_preview_dpi,
             commands::mouse_preview_led,
             commands::mouse_revert_preview,
-            commands::mouse_experimental,
-            commands::mouse_set_experimental,
             commands::mouse_undo_last_write,
             commands::mouse_keep_changes,
             commands::g300_info,

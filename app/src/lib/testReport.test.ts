@@ -32,6 +32,7 @@ const cable: MouseInfo = {
     has_dpi_shift: true,
   },
   writable: true,
+  writable_format: true,
   profile_list: "own",
 };
 
@@ -40,6 +41,7 @@ const wireless: MouseInfo = {
   product_id: 0x4093,
   model: "G502 X Lightspeed",
   verified: false,
+  writable: false,
   receiver: true,
   link: { receiver_id: 0xc547, slot: 1, wireless_id: 0x4093 },
 };
@@ -72,7 +74,20 @@ describe("testReport", () => {
     const report = testReport(wireless, "0.5.2", "windows x86_64");
     expect(report).toContain("USB ID: 046d:c547");
     expect(report).toContain("Connection: LIGHTSPEED receiver 046d:c547, slot 1, wireless id 4093");
-    expect(report).toContain("Support: read-only");
+    expect(report).toContain("Support: read-only on this connection");
+  });
+
+  it("says how far PeriHub goes with the mouse's memory format", () => {
+    const support = (mouse: MouseInfo) => testReport(mouse, "0.6.7", "linux x86_64");
+    expect(support({ ...cable, verified: false, experimental: true })).toContain(
+      "Support: experimental (memory format not tested yet)",
+    );
+    expect(support({ ...cable, receiver: true, writable: false })).toContain(
+      "Support: tested, no saves on this connection",
+    );
+    expect(support({ ...cable, verified: false, writable: false, writable_format: false })).toContain(
+      "Support: read-only (memory format PeriHub cannot write)",
+    );
   });
 
   it("lists fixed DPI values and says when a mouse reports no LEDs or polling rates", () => {

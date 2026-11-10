@@ -264,36 +264,10 @@ pub async fn mouse_preview_led(state: State<'_, AppState>, zone: u8, effect: Led
     blocking(move || manager.mouse()?.call(move |m| m.preview_led(zone, &effect))).await
 }
 
-/// Untested mouse models with experimental editing turned on (USB product ids).
-#[tauri::command]
-pub fn mouse_experimental(state: State<'_, AppState>) -> Vec<u16> {
-    state.config.lock().unwrap().experimental_mice.clone()
-}
-
-/// Turns experimental editing on or off for an untested mouse model. The connected mouse is
-/// opened again, and the interface hears about it from `devices-changed`.
-/// Turning it off first undoes a save that was not kept, which takes a few seconds: off the main thread.
-#[tauri::command]
-pub async fn mouse_set_experimental(app: AppHandle, product_id: u16, enabled: bool) -> CmdResult<Vec<u16>> {
-    tauri::async_runtime::spawn_blocking(move || {
-        set_experimental(&app, |list| {
-            list.retain(|&id| id != product_id);
-            if enabled {
-                list.push(product_id);
-            }
-        })
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-/// "Turn off experimental editing" in the tray menu: Logitech mice and Corsair lighting.
+/// "Turn off experimental lighting" in the tray menu: every Corsair device back to its own settings.
 pub fn turn_off_experimental(app: &AppHandle) {
     let app = app.clone();
     std::thread::spawn(move || {
-        if let Err(error) = set_experimental(&app, Vec::clear) {
-            log::warn!("turning off experimental editing: {error}");
-        }
         app.state::<AppState>().manager.release_corsair();
         corsair_changed(&app);
     });
@@ -387,21 +361,7 @@ pub async fn corsair_lighting_off(app: AppHandle, product_id: u16) -> CmdResult<
     Ok(())
 }
 
-fn set_experimental(app: &AppHandle, change: impl FnOnce(&mut Vec<u16>)) -> CmdResult<Vec<u16>> {
-    let state = app.state::<AppState>();
-    let mut config = state.config.lock().unwrap();
-    change(&mut config.experimental_mice);
-    config.save().map_err(|e| e.to_string())?;
-    let list = config.experimental_mice.clone();
-    drop(config);
-    log::info!("experimental editing: {}", list.iter().map(|id| format!("{id:04x}")).collect::<Vec<_>>().join(", "));
-    state.manager.set_experimental_mice(&list);
-    crate::window::refresh_menu(app);
-    let _ = app.emit("experimental-changed", &list);
-    Ok(list)
-}
-
-/// The user keeps a save to an untested mouse: the core stops counting down to undo it.
+/// The user keeps an experimental save: the core stops counting down to undo it.
 #[tauri::command]
 pub async fn mouse_keep_changes(state: State<'_, AppState>) -> CmdResult<()> {
     let manager = state.manager.clone();

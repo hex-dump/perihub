@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+Logitech mice are supported by the format of their memory, not by model.
+
+### Changed
+- **Logitech mice with onboard profiles are supported by memory format.** What decides how a save is laid out is the format of the mouse's memory, which many models share, not the model. PeriHub reads it from the mouse every time it connects (a firmware update can change it), and:
+  - a **tested format** makes the mouse supported, whatever the model: format 2 in 256-byte sectors (G502 HERO) and format 3 in 255-byte sectors (G502 X Wireless, issue #15). Profiles can be saved, enabled and disabled, and switched by app profiles, with no warning and no 15-second undo, as on the G502 HERO;
+  - a format PeriHub can write but **nobody has tried yet** (format 2 or 3, in 255- or 256-byte sectors) can be edited straight away, with the USB cable: the mouse page says it is experimental and asks for a test report. Before the first save to that mouse PeriHub asks to tick the **No warranty** box, once; every save is still backed up, read back, and undone after 15 seconds unless it is kept;
+  - **any other format** stays read-only.
+- **Edit anyway…** and **Turn off experimental editing** are gone: there is nothing to turn on any more. The tray menu entry that remains is **Turn off experimental lighting**, for Corsair devices. The list of mice with experimental editing in `config.json` is ignored.
+- **Nothing is saved through a LIGHTSPEED receiver**, on any mouse: a write over the radio has never been tried, and the documentation already promised it. Since 0.6.5 the G502 X Wireless could be saved to through its receiver too; now it needs its USB cable, like every other mouse. Through the receiver PeriHub still switches profiles and DPI levels of a mouse with a tested memory format.
+- The HID++ connection to a mouse is always opened read-only, and gets more only after PeriHub has read the mouse's memory format: RAM changes (active profile, DPI level, previews) for a tested format through a receiver, saves to the memory with the USB cable. A memory format PeriHub cannot write is refused by the HID++ layer itself, not only by the mouse page.
+
 ## 0.6.6 — 2026-11-10
 
 The Logi Bolt receiver is recognized, a first step for the MX Master 3S.

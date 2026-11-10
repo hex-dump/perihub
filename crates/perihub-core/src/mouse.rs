@@ -13,23 +13,29 @@ use crate::error::{Error, HidppErrorCode, Result};
 use crate::hidpp::macros::{self, Macro, Packer};
 use crate::hidpp::models::MouseModel;
 use crate::hidpp::profile::{self, ButtonAction, LedEffect, ProfileSettings};
-use crate::hidpp::{Battery, DpiCapabilities, FirmwareEntity, HidppDevice, LedZone, OnboardInfo, ROM_SECTOR_BASE};
+use crate::hidpp::{
+    Access, Battery, DpiCapabilities, FirmwareEntity, HidppDevice, LedZone, OnboardInfo, ROM_SECTOR_BASE,
+};
 use crate::worker::DeviceTask;
 
-/// Profile formats PeriHub writes. Format 2 was verified byte by byte on the G502 HERO. Format 3
-/// (the G502 X Wireless of issue #15) is written the same way by libratbag and Solaar, which use
-/// one layout for all their formats: PeriHub has never saved one, so it is only reached through
-/// experimental editing, like every untested model. The others can be read but not written.
+/// Profile formats PeriHub writes, with one layout for both, as libratbag and Solaar do. The others
+/// can be read but not written.
 const WRITABLE_PROFILE_FORMATS: &[u8] = &[2, 3];
-/// Sector sizes PeriHub writes: 256 bytes on the G502 HERO it was verified on, 255 on other mice
-/// and on newer G502 HERO firmware (issue #20), with the CRC one byte earlier.
+/// Sector sizes PeriHub writes: 256 bytes, or 255 with the CRC one byte earlier (other mice, and
+/// newer G502 HERO firmware: issue #20).
 const WRITABLE_SECTOR_SIZES: std::ops::RangeInclusive<usize> =
     profile::MIN_WRITE_SECTOR_SIZE..=profile::VERIFIED_SECTOR_SIZE;
+/// Memories PeriHub has saved to on real mice, with their USB cable: (profile format, sector size).
+/// Format 2 in 256-byte sectors on the G502 HERO, format 3 in 255-byte sectors on the G502 X
+/// Wireless of issue #15. The memory format decides how a save is laid out, not the model: any
+/// mouse whose memory reports one of these counts as tested. The same model can change format
+/// with its firmware, so it is read from the mouse every time.
+const TESTED_MEMORY: &[(u8, u16)] = &[(2, 256), (3, 255)];
 const ONBOARD_MODE: u8 = 1;
 const HOST_MODE: u8 = 2;
 /// How often the mouse is checked for another program having taken control of it.
 const MODE_CHECK: Duration = Duration::from_secs(5);
-/// After a save to an untested model, the backup goes back by itself unless the change is kept
+/// After an experimental save, the backup goes back by itself unless the change is kept
 /// (see [`MouseTask::keep_changes`]). The interface counts down 15 seconds and undoes it itself;
 /// this is the fallback if the window was closed or stopped answering.
 const UNDO_AFTER: Duration = Duration::from_secs(20);
@@ -43,14 +49,14 @@ pub struct MouseInfo {
     pub model: String,
     /// Name reported by the mouse itself.
     pub name: String,
-    /// Tested with PeriHub: unverified models are read-only.
+    /// Tested: its memory format (or the model itself) was tested on a real mouse. See [`support`].
     pub verified: bool,
-    /// Untested model that the user chose to edit anyway, and that meets every condition for it
-    /// (see [`experimental_allowed`]).
+    /// Its memory uses a format PeriHub can write but has never saved to on a real mouse:
+    /// saves are experimental, and each one is undone unless the user keeps it.
     pub experimental: bool,
-    /// A save to this untested mouse was neither kept nor undone (PeriHub was closed, or the mouse
-    /// unplugged, during the countdown), and the mouse is read-only now: turning experimental
-    /// editing on again puts the backup back.
+    /// A save to this mouse was neither kept nor undone (PeriHub was closed, or the mouse
+    /// unplugged, during the countdown), and the mouse cannot be written to now (it came back
+    /// through its receiver): the backup goes back when it is connected with its cable.
     pub pending_undo: bool,
     /// Connected through a LIGHTSPEED receiver instead of its cable.
     pub receiver: bool,
@@ -64,6 +70,9 @@ pub struct MouseInfo {
     pub led_zones: Vec<LedZone>,
     pub onboard: OnboardInfo,
     pub writable: bool,
+    /// PeriHub knows how to write the memory format the mouse reports: with its cable (and in the
+    /// interface, for an untested format) it can be saved to.
+    pub writable_format: bool,
     /// The mouse's profile list when it was connected (for test reports;
     /// [`MouseState::profile_list`] is the state now).
     pub profile_list: ProfileList,
@@ -136,22 +145,52 @@ pub struct MouseTask {
     previewing: bool,
     /// Backup taken before the last write, to undo it (see [`MouseTask::undo_last_write`]).
     last_backup: Option<String>,
-    /// When the last save to an untested model is undone, unless it is kept.
+    /// When the last experimental save is undone, unless it is kept.
     undo_at: Option<Instant>,
-    /// Set before the manager opens the mouse again: the thread stops at its next tick.
-    closed: bool,
     /// The mouse's profile list, as last read (see [`MouseTask::read_directory`]).
     list: ProfileList,
 }
 
-/// Whether an untested model may be edited after the user turned experimental editing on. Only
-/// a mouse whose memory PeriHub knows how to write: one of the profile formats and sector sizes
-/// above. And only with its cable: a write over the radio that stops halfway has never been tried.
-pub fn experimental_allowed(enabled: bool, onboard: &OnboardInfo, receiver: bool) -> bool {
-    enabled
-        && !receiver
-        && WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
-        && WRITABLE_SECTOR_SIZES.contains(&(onboard.sector_size as usize))
+/// How far PeriHub goes with a mouse.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Support {
+    /// Tested (see [`MouseInfo::verified`]): the profile list can be created and changed, and the
+    /// active profile and DPI level switched, also through a receiver.
+    pub tested: bool,
+    /// Saves are possible but untested: each one can be undone (see [`MouseInfo::experimental`]).
+    pub experimental: bool,
+    /// Profiles can be saved to the mouse's memory.
+    pub writable: bool,
+    /// PeriHub knows how to write the mouse's memory format (with the cable, and a tested format or
+    /// the interface's undo).
+    pub writable_format: bool,
+}
+
+impl Support {
+    fn access(&self) -> Access {
+        if self.writable {
+            Access::Full
+        } else if self.tested {
+            Access::Ram
+        } else {
+            Access::ReadOnly
+        }
+    }
+}
+
+/// What PeriHub does with a mouse, from the memory format it reports:
+/// - a tested memory (see [`TESTED_MEMORY`]), or a model tested as a whole: supported;
+/// - another memory PeriHub can write: experimental saves, if `untested_saves` (the interface asks
+///   whether to keep each one; the command line never saves to such a mouse);
+/// - any other memory: read-only.
+///
+/// Saves only with the USB cable: a write over the radio that stops halfway has never been tried.
+pub fn support(model: &MouseModel, onboard: &OnboardInfo, receiver: bool, untested_saves: bool) -> Support {
+    let known = WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
+        && WRITABLE_SECTOR_SIZES.contains(&(onboard.sector_size as usize));
+    let tested = model.verified || (known && TESTED_MEMORY.contains(&(onboard.profile_format, onboard.sector_size)));
+    let writable = known && !receiver && (tested || untested_saves);
+    Support { tested, experimental: writable && !tested, writable, writable_format: known }
 }
 
 /// Whether `new` changes an LED slot of the profile that is not one of the mouse's LED zones.
@@ -170,8 +209,9 @@ enum ModeAction {
     SwitchBack,
 }
 
-/// Untested models are only read, and a program that is running (G HUB) takes the mouse again
-/// at once, so only a verified mouse that nothing else controls is switched back.
+/// The switch back happens by itself as soon as the mouse is connected, so it stays on models
+/// tested as a whole; and a program that is running (G HUB) takes the mouse again at once, so
+/// only a mouse that nothing else controls is switched back.
 fn mode_action(mode: u8, verified: bool, conflict_running: bool) -> ModeAction {
     if mode == ONBOARD_MODE {
         ModeAction::Fine
@@ -226,20 +266,22 @@ fn missing_as_empty<T>(result: Result<Vec<T>>) -> Result<Vec<T>> {
 }
 
 impl MouseTask {
-    /// `experimental`: the user turned experimental editing on for this untested model. It is used
-    /// only if the mouse meets [`experimental_allowed`].
-    pub fn open(mut dev: HidppDevice, model: &'static MouseModel, experimental: bool) -> Result<Self> {
+    /// `dev` comes read-only: what else PeriHub may send depends on the memory format the mouse
+    /// reports (see [`support`]). `untested_saves`: whether a mouse whose memory format is untested
+    /// may be saved to (only the interface, which asks whether to keep each save).
+    pub fn open(mut dev: HidppDevice, model: &'static MouseModel, untested_saves: bool) -> Result<Self> {
         let onboard = dev.onboard_info()?;
         if onboard.memory_model != 1 || onboard.macro_format != 1 {
             return Err(Error::Protocol("onboard profile memory uses an unknown format".into()));
         }
-        let experimental = !model.verified && experimental_allowed(experimental, &onboard, dev.is_behind_receiver());
+        let support = support(model, &onboard, dev.is_behind_receiver(), untested_saves);
+        dev.grant(support.access());
         let info = MouseInfo {
             product_id: model.product_id,
             model: model.name.into(),
             name: dev.device_name()?,
-            verified: model.verified,
-            experimental,
+            verified: support.tested,
+            experimental: support.experimental,
             pending_undo: false,
             receiver: dev.is_behind_receiver(),
             link: None,
@@ -248,9 +290,8 @@ impl MouseTask {
             dpi: dev.dpi_capabilities(0)?,
             report_rates_ms: missing_as_empty(dev.report_rates())?,
             led_zones: missing_as_empty(dev.led_zones())?,
-            writable: (model.verified || experimental)
-                && WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
-                && WRITABLE_SECTOR_SIZES.contains(&(onboard.sector_size as usize)),
+            writable: support.writable,
+            writable_format: support.writable_format,
             profile_list: ProfileList::Own,
             onboard,
         };
@@ -264,7 +305,6 @@ impl MouseTask {
             previewing: false,
             last_backup: None,
             undo_at: None,
-            closed: false,
             list: ProfileList::Own,
         };
         task.read_directory()?;
@@ -335,23 +375,23 @@ impl MouseTask {
         }
     }
 
-    /// Changes that stay in the mouse's RAM (active profile, DPI level, previews): a tested model,
-    /// or an untested one with experimental editing.
+    /// Changes that stay in the mouse's RAM (active profile, DPI level, previews): a tested mouse,
+    /// or one with experimental saves.
     fn check_controllable(&self) -> Result<()> {
-        if self.model.verified || self.info.experimental {
+        if self.info.verified || self.info.experimental {
             Ok(())
         } else {
-            Err(Error::Invalid("this mouse model is read-only until it has been tested".into()))
+            Err(Error::Invalid("PeriHub only reads this mouse: its memory format is not one it can write yet".into()))
         }
     }
 
-    /// The list of enabled profiles (sector 0) is written only on tested models: restoring it has
-    /// not been tried on real hardware yet.
+    /// The list of enabled profiles (sector 0) is written only on tested mice: on an experimental
+    /// one a list that went wrong could not be put back with the usual undo.
     fn check_tested(&self) -> Result<()> {
-        if self.model.verified {
+        if self.info.verified {
             Ok(())
         } else {
-            Err(Error::Invalid("enabling or disabling profiles needs a tested mouse model".into()))
+            Err(Error::Invalid("enabling or disabling profiles needs a tested memory format".into()))
         }
     }
 
@@ -420,16 +460,16 @@ impl MouseTask {
     }
 
     /// Before a save, with the profile list just read. A damaged list is left alone. Creating the
-    /// list of a mouse that has none is for tested models: on an untested one the save could not be
-    /// undone, since the backup holds no list to put back.
+    /// list of a mouse that has none is for tested mice: on an experimental one the save could not
+    /// be undone, since the backup holds no list to put back.
     fn check_list_for_saving(&self) -> Result<()> {
         match self.list {
             ProfileList::Own => Ok(()),
-            ProfileList::Factory if self.model.verified => Ok(()),
+            ProfileList::Factory if self.info.verified => Ok(()),
             ProfileList::Factory => Err(Error::Invalid(
                 "nothing was saved: this mouse has never had profiles saved to its memory and uses its factory ones. \
-                 PeriHub creates that first profile list only on tested models: save a profile once with Logitech \
-                 G HUB (or Onboard Memory Manager), then try again"
+                 PeriHub creates that first profile list only on mice whose memory format has been tested: save a \
+                 profile once with Logitech G HUB (or Onboard Memory Manager), then try again"
                     .into(),
             )),
             ProfileList::Damaged => Err(Error::Invalid(
@@ -804,7 +844,7 @@ impl MouseTask {
         self.state()
     }
 
-    /// Backs up the memory before a save. On an untested model the backup must be one PeriHub can
+    /// Backs up the memory before a save. On an experimental mouse the backup must be one PeriHub can
     /// put back, and the undo is armed before the first write, so that a save that stops halfway
     /// is undone too, also if PeriHub is closed or the mouse unplugged (see [`Self::finish_pending_undo`]).
     fn backup_before_writing(&mut self, label: &str) -> Result<()> {
@@ -821,7 +861,7 @@ impl MouseTask {
         Ok(())
     }
 
-    /// On an untested model a failed save is undone at once.
+    /// On an experimental mouse a failed save is undone at once.
     fn after_writing(&mut self, written: Result<()>) -> Result<()> {
         let Err(error) = written else { return Ok(()) };
         if !self.info.experimental {
@@ -835,7 +875,7 @@ impl MouseTask {
         }
     }
 
-    /// File that marks a save to an untested model that was neither kept nor undone yet. It keeps
+    /// File that marks an experimental save that was neither kept nor undone yet. It keeps
     /// the backup's id, so that the save is undone even after PeriHub was closed.
     fn pending_undo_path(&self) -> std::path::PathBuf {
         config::config_dir().join("backups").join(self.model.backup_dir()).join("pending-undo")
@@ -872,21 +912,8 @@ impl MouseTask {
         }
     }
 
-    /// Before the manager opens the mouse again (experimental editing turned off): a save that was
-    /// not kept is undone while the mouse can still be written to, then the thread stops.
-    pub fn close(&mut self) -> Result<()> {
-        if self.undo_at.is_some() {
-            log::warn!("experimental editing turned off before a save was kept: undoing it");
-            if let Err(e) = self.undo_last_write() {
-                log::warn!("undo failed: {e}");
-            }
-        }
-        self.closed = true;
-        Ok(())
-    }
-
-    /// On an untested model, LED slots that the mouse does not report as zones keep their bytes:
-    /// PeriHub only knows what they mean on the G502 HERO.
+    /// On a model not tested as a whole, LED slots that the mouse does not report as zones keep
+    /// their bytes: PeriHub only knows what they mean on the G502 HERO.
     fn check_led_slots(&self, sector: &[u8], settings: &ProfileSettings) -> Result<()> {
         let current = ProfileSettings::parse(sector, self.info.onboard.button_count as usize)?;
         let zones: Vec<u8> = self.info.led_zones.iter().map(|z| z.index).collect();
@@ -897,7 +924,7 @@ impl MouseTask {
     }
 
     /// Puts back the memory saved before the last write: the "Keep these changes?" countdown on an
-    /// untested model calls this when it is not confirmed.
+    /// experimental mouse calls this when it is not confirmed.
     pub fn undo_last_write(&mut self) -> Result<MouseRestore> {
         self.undo_at = None;
         let id = self.last_backup.clone().ok_or_else(|| Error::Invalid("nothing to undo".into()))?;
@@ -1076,11 +1103,8 @@ impl MouseTask {
 
 impl DeviceTask for MouseTask {
     fn tick(&mut self) -> Result<Duration> {
-        if self.closed {
-            return Err(Error::NotConnected);
-        }
         if self.undo_at.is_some_and(|at| Instant::now() >= at) {
-            log::warn!("a save to an untested mouse was not kept: undoing it");
+            log::warn!("an experimental save was not kept: undoing it");
             if let Err(e) = self.undo_last_write() {
                 log::warn!("undo failed: {e}");
             }
@@ -1212,23 +1236,45 @@ mod tests {
     }
 
     #[test]
-    fn experimental_editing_needs_a_memory_perihub_can_write_and_the_cable() {
+    fn support_follows_the_memory_format_not_the_model() {
         let (_, g502) = g502_memory();
-        assert!(experimental_allowed(true, &g502, false));
-        assert!(!experimental_allowed(false, &g502, false), "turned off");
-        assert!(!experimental_allowed(true, &g502, true), "behind a receiver");
-        // The G502 X Wireless of issue #15: profile format 3, 255-byte sectors.
-        let g502_x = OnboardInfo { profile_format: 3, sector_size: 255, rom_profile_count: 2, ..g502.clone() };
-        assert!(experimental_allowed(true, &g502_x, false));
-        assert!(!experimental_allowed(true, &g502_x, true), "behind a receiver");
-        for format in [0, 1, 4, 5] {
-            let other_format = OnboardInfo { profile_format: format, ..g502.clone() };
-            assert!(!experimental_allowed(true, &other_format, false), "profile format {format}");
+        let g403 = model_of(0xC083);
+        let hero = model_of(G502_HERO);
+        let supported = Support { tested: true, experimental: false, writable: true, writable_format: true };
+        let experimental = Support { tested: false, experimental: true, writable: true, writable_format: true };
+        let read_only = Support { tested: false, experimental: false, writable: false, writable_format: true };
+        let unknown = Support { writable_format: false, ..read_only };
+
+        // The two tested memories make any model supported: format 2 in 256-byte sectors (G502
+        // HERO), format 3 in 255-byte ones (G502 X Wireless, issue #15).
+        let format_3 = OnboardInfo { profile_format: 3, sector_size: 255, ..g502.clone() };
+        for memory in [&g502, &format_3] {
+            assert_eq!(support(g403, memory, false, false), supported);
+            assert_eq!(support(g403, memory, false, true), supported);
         }
-        let small_sectors = OnboardInfo { sector_size: 240, ..g502.clone() };
-        assert!(!experimental_allowed(true, &small_sectors, false), "smaller sectors");
-        let big_sectors = OnboardInfo { sector_size: 512, ..g502 };
-        assert!(!experimental_allowed(true, &big_sectors, false), "bigger sectors");
+        // Through a receiver: nothing is saved, the profile is switched.
+        let over_radio = support(g403, &g502, true, true);
+        assert_eq!(over_radio, Support { writable: false, ..supported });
+        assert_eq!(over_radio.access(), Access::Ram);
+
+        // A memory PeriHub can write but never saved to: experimental, only where saves can be undone.
+        let untested = OnboardInfo { sector_size: 255, ..g502.clone() };
+        assert_eq!(support(g403, &untested, false, true), experimental);
+        assert_eq!(support(g403, &untested, false, false), read_only, "the command line");
+        assert_eq!(support(g403, &untested, true, true), read_only, "through a receiver");
+        assert_eq!(read_only.access(), Access::ReadOnly);
+        // A model tested as a whole stays tested: the G502 HERO with 255-byte sectors (issue #20).
+        assert_eq!(support(hero, &untested, false, false), supported);
+
+        // Memories PeriHub cannot write.
+        for format in [0, 1, 4, 5, 6, 7] {
+            let other = OnboardInfo { profile_format: format, ..g502.clone() };
+            assert_eq!(support(g403, &other, false, true), unknown, "profile format {format}");
+        }
+        for size in [240, 512] {
+            let other = OnboardInfo { sector_size: size, ..g502.clone() };
+            assert_eq!(support(g403, &other, false, true), unknown, "{size}-byte sectors");
+        }
     }
 
     #[test]
@@ -1489,8 +1535,19 @@ mod tests {
     const G502_X_WIRELESS: u16 = 0xC098;
     const G502_X_PLUS: u16 = 0xC095;
 
-    /// PeriHub's connection to the simulated mouse.
-    fn open_sim(sim: Sim, product_id: u16, experimental: bool) -> (MouseTask, Arc<Mutex<Sim>>) {
+    /// PeriHub's connection to the simulated mouse, with its cable.
+    fn open_sim(sim: Sim, product_id: u16, untested_saves: bool) -> (MouseTask, Arc<Mutex<Sim>>) {
+        open_sim_through(sim, product_id, untested_saves, false)
+    }
+
+    /// PeriHub's connection to the simulated mouse, with its cable or through a receiver. The
+    /// connection starts read-only, as the manager opens it.
+    fn open_sim_through(
+        sim: Sim,
+        product_id: u16,
+        untested_saves: bool,
+        receiver: bool,
+    ) -> (MouseTask, Arc<Mutex<Sim>>) {
         let sim = Arc::new(Mutex::new(sim));
         let mouse = sim.clone();
         let fake = FakeDevice::new(move |request| {
@@ -1512,8 +1569,12 @@ mod tests {
                 }
             }
         });
-        let dev = HidppDevice::new(fake, models::WIRED_INDEX, false).unwrap();
-        let task = MouseTask::open(dev, model_of(product_id), experimental).unwrap();
+        let dev = if receiver {
+            HidppDevice::behind_receiver(fake, None, 1, true).unwrap()
+        } else {
+            HidppDevice::new(fake, models::WIRED_INDEX, true).unwrap()
+        };
+        let task = MouseTask::open(dev, model_of(product_id), untested_saves).unwrap();
         (task, sim)
     }
 
@@ -1711,21 +1772,93 @@ mod tests {
         Sim::new(memory, OnboardInfo { rom_profile_count: 2, ..onboard }).resized(255, 3)
     }
 
+    /// A memory PeriHub can write but has never saved to on a real mouse: format 2 in 255-byte
+    /// sectors, on a model that was not tested as a whole.
+    fn untested_memory() -> Sim {
+        let (memory, onboard) = g502_memory();
+        Sim::new(memory, OnboardInfo { rom_profile_count: 2, ..onboard }).resized(255, 2)
+    }
+
     #[test]
-    fn an_untested_mouse_with_format_3_and_255_byte_sectors_is_read_only_until_editing_is_turned_on() {
+    fn a_model_nobody_tested_is_supported_when_its_memory_format_was_tested() {
+        // The G502 X PLUS with the G502 X Wireless's memory: format 3, 255-byte sectors.
         let (mut task, sim) = open_sim(g502_x(), G502_X_PLUS, false);
-        assert!(!task.info.writable && !task.info.experimental);
+        assert!(task.info.verified && task.info.writable && !task.info.experimental);
+        let state = task.state().unwrap();
+        task.save_profile(2, &edited(&state, 2)).unwrap();
+        assert!(!task.pending_undo_path().exists(), "no 15-second undo");
+        task.set_profile_enabled(3, false).unwrap();
+        task.set_active_profile(2).unwrap();
+        let mouse = sim.lock().unwrap();
+        assert_eq!(mouse.written, [2, 0]);
+        assert_eq!(mouse.selected, [[0, 2]]);
+        drop(mouse);
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_memory_format_perihub_cannot_write_is_locked_down_to_the_hidpp_layer() {
+        let (memory, onboard) = g502_memory();
+        let format_4 = Sim::new(memory, onboard).resized(256, 4);
+        let (mut task, sim) = open_sim(format_4, G502_X_PLUS, true);
+        assert!(!task.info.verified && !task.info.writable && !task.info.experimental);
         let state = task.state().unwrap();
         assert!(task.save_profile(2, &edited(&state, 2)).is_err());
         assert!(task.set_active_profile(2).is_err());
+        // Not even a call straight to the device gets through.
+        assert!(task.dev.set_active_profile(false, 2).is_err());
+        assert!(task.dev.set_onboard_mode(HOST_MODE).is_err());
         let mouse = sim.lock().unwrap();
         assert!(mouse.written.is_empty() && mouse.selected.is_empty());
     }
 
     #[test]
+    fn nothing_is_saved_through_a_receiver() {
+        // A tested memory: the profile is switched, nothing is written.
+        let (mut task, sim) = open_sim_through(g502_x(), G502_X_WIRELESS, true, true);
+        assert!(task.info.verified && !task.info.writable && !task.info.experimental);
+        let state = task.state().unwrap();
+        assert!(task.save_profile(2, &edited(&state, 2)).is_err());
+        assert!(task.set_profile_enabled(2, false).is_err());
+        let sector = sim.lock().unwrap().user[2].clone();
+        assert!(task.dev.write_sector(2, &sector, &task.info.onboard).is_err());
+        task.set_active_profile(2).unwrap();
+        assert!(sim.lock().unwrap().written.is_empty());
+        assert_eq!(sim.lock().unwrap().selected, [[0, 2]]);
+
+        // An untested one: only read.
+        let (mut task, sim) = open_sim_through(untested_memory(), G502_X_PLUS, true, true);
+        assert!(!task.info.verified && !task.info.writable && !task.info.experimental);
+        assert!(task.set_active_profile(2).is_err());
+        assert!(sim.lock().unwrap().selected.is_empty());
+    }
+
+    #[test]
+    fn the_command_line_does_not_save_to_an_untested_memory() {
+        let (mut task, sim) = open_sim(untested_memory(), G502_X_PLUS, false);
+        assert!(!task.info.writable && !task.info.experimental);
+        let state = task.state().unwrap();
+        assert!(task.save_profile(2, &edited(&state, 2)).is_err());
+        assert!(sim.lock().unwrap().written.is_empty());
+    }
+
+    #[test]
+    fn the_g502_hero_with_255_byte_sectors_still_creates_its_profile_list() {
+        let sim = Sim::g502().resized(255, 2).blank();
+        let (mut task, sim) = open_sim(sim, G502_HERO, false);
+        assert!(task.info.verified && task.info.writable && !task.info.experimental);
+        let state = task.state().unwrap();
+        assert_eq!(state.profile_list, ProfileList::Factory);
+        let state = task.save_profile(2, &edited(&state, 2)).unwrap();
+        assert_eq!(state.profile_list, ProfileList::Own);
+        assert_eq!(sim.lock().unwrap().written.last(), Some(&0));
+        forget_test_files();
+    }
+
+    #[test]
     fn an_experimental_save_to_255_byte_sectors_can_be_kept_or_undone() {
-        let (mut task, sim) = open_sim(g502_x(), G502_X_PLUS, true);
-        assert!(task.info.writable && task.info.experimental);
+        let (mut task, sim) = open_sim(untested_memory(), G502_X_PLUS, true);
+        assert!(task.info.writable && task.info.experimental && !task.info.verified);
         let before = sim.lock().unwrap().user.clone();
         let state = task.state().unwrap();
 
@@ -1746,7 +1879,7 @@ mod tests {
         assert_eq!(sim.lock().unwrap().user, before);
         assert!(!task.pending_undo_path().exists());
 
-        // The profile list stays as it is on an untested model.
+        // The profile list stays as it is on an experimental mouse.
         assert!(task.set_profile_enabled(2, false).is_err());
 
         task.save_profile(2, &edited(&state, 2)).unwrap();
@@ -1804,8 +1937,8 @@ mod tests {
     }
 
     #[test]
-    fn an_untested_mouse_without_a_profile_list_is_not_saved_to() {
-        let (mut task, sim) = open_sim(g502_x().blank(), G502_X_PLUS, true);
+    fn an_experimental_mouse_without_a_profile_list_is_not_saved_to() {
+        let (mut task, sim) = open_sim(untested_memory().blank(), G502_X_PLUS, true);
         let state = task.state().unwrap();
         assert_eq!(state.profile_list, ProfileList::Factory);
         let error = task.save_profile(1, &edited(&state, 1)).unwrap_err().to_string();

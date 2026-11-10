@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const api = vi.hoisted(() => ({
@@ -15,9 +15,6 @@ const api = vi.hoisted(() => ({
   openTestForm: vi.fn(),
   mouseBackups: vi.fn(),
   restoreMouseBackup: vi.fn(),
-  experimentalMice: vi.fn(),
-  setExperimental: vi.fn(),
-  onExperimental: vi.fn(),
   keepChanges: vi.fn(),
   undoLastWrite: vi.fn(),
 }));
@@ -26,6 +23,7 @@ vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import(".
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.5.2" }));
 
 import type { MouseInfo, MouseState, ProfileSettings } from "../lib/api";
+import { acceptNoWarranty } from "../lib/noWarranty";
 import Mouse from "./Mouse.svelte";
 
 const info: MouseInfo = {
@@ -55,6 +53,7 @@ const info: MouseInfo = {
     has_dpi_shift: true,
   },
   writable: true,
+  writable_format: true,
   profile_list: "own",
 };
 
@@ -108,9 +107,6 @@ beforeEach(() => {
   api.saveProfile.mockImplementation(async () => state());
   api.setActiveProfile.mockImplementation(async () => ({ ...state(), active_profile: 2 }));
   api.appSettings.mockResolvedValue({ system: "linux x86_64" });
-  api.experimentalMice.mockResolvedValue([]);
-  api.setExperimental.mockImplementation(async (id: number, on: boolean) => (on ? [id] : []));
-  api.onExperimental.mockResolvedValue(() => {});
   api.keepChanges.mockResolvedValue(undefined);
   api.undoLastWrite.mockImplementation(async () => ({ state: state(), profiles: [1], macros: false, directory: false }));
 });
@@ -217,7 +213,7 @@ describe("the saved message", () => {
 
 describe("the experimental notice", () => {
   it("offers the test report for a mouse not tested yet, and not for a tested one", async () => {
-    const page = await open({ ...info, verified: false, writable: false });
+    const page = await open({ ...info, verified: false, writable: false, writable_format: false });
     await wait(0);
     expect(screen.getByRole("button", { name: "Copy test report" })).toBeTruthy();
     page.unmount();
@@ -364,70 +360,147 @@ describe("a mouse nothing was saved to", () => {
   });
 });
 
-describe("experimental editing", () => {
-  const untested = { ...info, model: "G403 HERO", product_id: 0xc08f, verified: false, writable: false };
-  const experimental = { ...untested, experimental: true, writable: true };
+describe("a memory format nobody has tested", () => {
+  const onboard = { ...info.onboard, sector_size: 255 };
+  const experimental = {
+    ...info,
+    model: "G403 HERO",
+    product_id: 0xc08f,
+    onboard,
+    verified: false,
+    experimental: true,
+    writable: true,
+  };
 
-  it("is off by default: the editor stays read-only", async () => {
-    await open(untested);
-    expect(firstLevel().matches(":disabled")).toBe(true);
-    expect((screen.getByRole("button", { name: "Save to mouse" }) as HTMLButtonElement).disabled).toBe(true);
-  });
+  /** A mouse nobody has saved to with PeriHub yet, so that the "No warranty" box was never ticked. */
+  const firstTime = (productId: number) => ({ ...experimental, model: "G402", product_id: productId });
 
-  it("turns on only after the risk is acknowledged", async () => {
-    await open(untested);
-    await fireEvent.click(screen.getByRole("button", { name: "Edit anyway…" }));
-    const turnOn = screen.getByRole("button", { name: "Turn on experimental editing" }) as HTMLButtonElement;
-    expect(turnOn.disabled).toBe(true);
-    expect(screen.getByRole("note").textContent).toContain("accepts no responsibility for any damage");
-    await fireEvent.click(screen.getByRole("checkbox", { name: /I have read this/ }));
-    expect(turnOn.disabled).toBe(false);
-    await fireEvent.click(turnOn);
+  async function clickSave() {
+    await fireEvent.click(screen.getByRole("button", { name: "Save to mouse" }));
     await wait(0);
-    expect(api.setExperimental).toHaveBeenCalledWith(0xc08f, true);
-  });
+  }
 
-  it("is not offered behind a LIGHTSPEED receiver", async () => {
-    await open({ ...untested, receiver: true });
-    expect(screen.queryByRole("button", { name: "Edit anyway…" })).toBeNull();
-  });
-
-  it("enables the editor but not enabling or disabling profiles", async () => {
+  it("can be edited straight away, with a notice that asks for feedback", async () => {
     await open(experimental);
     expect(firstLevel().matches(":disabled")).toBe(false);
+    expect(screen.queryByRole("button", { name: "Edit anyway…" })).toBeNull();
+    expect(screen.getByText(/Experimental: not tested yet/)).toBeTruthy();
+    expect(screen.getByText(/profile\s+format 2, 255-byte sectors/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Copy test report" })).toBeTruthy();
+  });
+
+  it("asks for the No warranty box before the first save only", async () => {
+    await open(firstTime(0xc07e));
+    await changeFirstLevel(1000);
+    await clickSave();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain("Save to the G402?");
+    expect(screen.getByRole("note").textContent).toContain("accepts no responsibility for any damage");
+    expect(api.saveProfile).not.toHaveBeenCalled();
+    const confirm = within(dialog).getByRole("button", { name: "Save to mouse" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    await fireEvent.click(screen.getByRole("checkbox", { name: /I have read this/ }));
+    expect(confirm.disabled).toBe(false);
+    await fireEvent.click(confirm);
+    await wait(0);
+    expect(api.saveProfile).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await fireEvent.click(screen.getByRole("button", { name: "Keep changes" }));
+
+    // The second save goes straight to the mouse.
+    await changeFirstLevel(1200);
+    await clickSave();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(api.saveProfile).toHaveBeenCalledTimes(2);
+  });
+
+  it("saves nothing when the box is cancelled", async () => {
+    await open(firstTime(0xc07f));
+    await changeFirstLevel(1000);
+    await clickSave();
+    await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await wait(0);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(api.saveProfile).not.toHaveBeenCalled();
+  });
+
+  it("asks before a factory reset too", async () => {
+    await open(firstTime(0xc080));
+    await fireEvent.click(screen.getByRole("button", { name: "Factory settings" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Reset this profile?" }));
+    await wait(0);
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Reset this profile" })).toBeTruthy();
+    expect(api.restoreFactory).not.toHaveBeenCalled();
+  });
+
+  it("does not enable or disable profiles", async () => {
+    await open(experimental);
     const enabled = screen.getAllByRole("checkbox", { name: "Enabled" }) as HTMLInputElement[];
     expect(enabled.every((c) => c.disabled)).toBe(true);
   });
 
-  it("asks to keep a save, and undoes it after 15 seconds without an answer", async () => {
-    await open(experimental);
-    await changeFirstLevel(1000);
-    await fireEvent.click(screen.getByRole("button", { name: "Save to mouse" }));
-    await wait(0);
-    expect(screen.getByRole("alertdialog").textContent).toContain("Keep these changes?");
-    await wait(15_000);
-    expect(api.undoLastWrite).toHaveBeenCalledOnce();
-    expect(screen.queryByRole("alertdialog")).toBeNull();
-    expect(screen.getByText("Changes undone: the backup is back on the mouse.")).toBeTruthy();
+  describe("after the No warranty box", () => {
+    beforeEach(() => acceptNoWarranty(experimental.product_id));
+
+    it("asks to keep a save, and undoes it after 15 seconds without an answer", async () => {
+      await open(experimental);
+      await changeFirstLevel(1000);
+      await clickSave();
+      expect(screen.getByRole("alertdialog").textContent).toContain("Keep these changes?");
+      await wait(15_000);
+      expect(api.undoLastWrite).toHaveBeenCalledOnce();
+      expect(screen.queryByRole("alertdialog")).toBeNull();
+      expect(screen.getByText("Changes undone: the backup is back on the mouse.")).toBeTruthy();
+    });
+
+    it("keeps a save when asked", async () => {
+      await open(experimental);
+      await changeFirstLevel(1000);
+      await clickSave();
+      await fireEvent.click(screen.getByRole("button", { name: "Keep changes" }));
+      await wait(20_000);
+      expect(api.keepChanges).toHaveBeenCalledOnce();
+      expect(api.undoLastWrite).not.toHaveBeenCalled();
+    });
   });
 
-  it("keeps a save when asked", async () => {
-    await open(experimental);
-    await changeFirstLevel(1000);
-    await fireEvent.click(screen.getByRole("button", { name: "Save to mouse" }));
-    await wait(0);
-    await fireEvent.click(screen.getByRole("button", { name: "Keep changes" }));
-    await wait(20_000);
-    expect(api.keepChanges).toHaveBeenCalledOnce();
-    expect(api.undoLastWrite).not.toHaveBeenCalled();
+  it("is read-only through a receiver, and says to use the cable", async () => {
+    await open({ ...experimental, experimental: false, writable: false, receiver: true });
+    expect(screen.getByText(/Read-only through the receiver/)).toBeTruthy();
+    expect(firstLevel().matches(":disabled")).toBe(true);
   });
 
-  it("does not ask on a tested mouse", async () => {
+  it("stays read-only when PeriHub cannot write the format", async () => {
+    await open({
+      ...experimental,
+      experimental: false,
+      writable: false,
+      writable_format: false,
+      onboard: { ...onboard, profile_format: 4 },
+    });
+    expect(screen.getByText(/memory format PeriHub cannot write yet/)).toBeTruthy();
+    expect(firstLevel().matches(":disabled")).toBe(true);
+    expect((screen.getByRole("button", { name: "Save to mouse" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe("a tested mouse", () => {
+  it("saves without asking anything", async () => {
     await open();
     await changeFirstLevel(1000);
     await fireEvent.click(screen.getByRole("button", { name: "Save to mouse" }));
     await wait(0);
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(api.saveProfile).toHaveBeenCalledOnce();
+  });
+
+  it("switches profiles through its receiver but does not save there", async () => {
+    await open({ ...info, receiver: true, writable: false });
+    expect(screen.getByText(/it does not save: a write over the\s+radio has never been tried/)).toBeTruthy();
+    expect(firstLevel().matches(":disabled")).toBe(false);
+    expect((screen.getByRole("button", { name: "Save to mouse" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
 

@@ -17,6 +17,7 @@
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import { receiverTest } from "../lib/testReport";
   import ExperimentalDialog from "../components/ExperimentalDialog.svelte";
+  import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import MousePerformance from "./MousePerformance.svelte";
   import MouseButtons from "./MouseButtons.svelte";
@@ -53,28 +54,28 @@
   let previewEpoch = $state(0);
   let battery = $state<Battery | null>(null);
 
-  /** Untested models with experimental editing turned on (USB product ids). */
-  let experimentalMice = $state<number[]>([]);
-  let showExperimental = $state(false);
-  /** A save to an untested mouse waits to be kept or undone. */
+  /** A write to an untested memory format that waits for the "No warranty" box (first save only). */
+  let pendingWrite = $state<{ action: string; write: () => Promise<void> } | null>(null);
+  /** An experimental save waits to be kept or undone. */
   let confirmKeep = $state(false);
-  /** Tested, or untested with experimental editing: the controls are enabled. */
+  /** A tested mouse, or one with experimental saves: the controls are enabled. */
   const editable = $derived(!!info && (info.verified || info.experimental));
-  const experimentalOn = $derived(!!info && experimentalMice.includes(info.product_id));
 
-  api.experimentalMice().then((ids) => (experimentalMice = ids)).catch(() => {});
-  const unlistenExperimental = api.onExperimental((ids) => (experimentalMice = ids));
-  onDestroy(() => unlistenExperimental.then((off) => off()));
-
-  async function setExperimental(enabled: boolean) {
-    showExperimental = false;
-    await run(enabled ? "Turning on experimental editing…" : "Turning off experimental editing…", async () => {
-      // The mouse is opened again: the page reloads when the new status arrives.
-      experimentalMice = await api.setExperimental(info!.product_id, enabled);
-    });
+  /** Runs a write, after the "No warranty" box the first time the mouse's memory format is untested. */
+  function guarded(action: string, write: () => Promise<void>) {
+    if (info?.experimental && !noWarrantyAccepted(info.product_id)) pendingWrite = { action, write };
+    else write();
   }
 
-  /** After a save or a factory reset on an untested mouse. */
+  function confirmWrite() {
+    const pending = pendingWrite;
+    pendingWrite = null;
+    if (!pending || !info) return;
+    acceptNoWarranty(info.product_id);
+    pending.write();
+  }
+
+  /** After an experimental save or factory reset. */
   function askToKeep() {
     if (info?.experimental) confirmKeep = true;
   }
@@ -146,9 +147,10 @@
     const now = info ? JSON.stringify(info) : null;
     if (now && now !== loadedFor) {
       loadedFor = now;
-      // The mouse was opened again (experimental editing turned off): the core already undid a
-      // save that was not kept.
+      // The mouse was opened again (unplugged, or back through its receiver): the core undoes a
+      // save that was not kept when it can.
       confirmKeep = false;
+      pendingWrite = null;
       run("Reading profiles from the mouse…", api.mouseState).then((s) => s && adopt(s, false));
     }
     if (!info) {
@@ -173,7 +175,11 @@
     message = null;
   }
 
-  async function save() {
+  function save() {
+    guarded("Save to mouse", saveNow);
+  }
+
+  async function saveNow() {
     if (!draft) return;
     previewEpoch++;
     const settings = clone(draft);
@@ -193,7 +199,11 @@
     await revertPreview();
   }
 
-  async function factory() {
+  function factory() {
+    guarded("Reset this profile", factoryNow);
+  }
+
+  async function factoryNow() {
     previewEpoch++;
     const next = await run(`Restoring profile ${selected}…`, () => api.restoreFactory(selected));
     if (next) {
@@ -334,47 +344,37 @@
     {/if}
   {/each}
 {/if}
-{#if info && !info.verified && info.experimental}
+{#if info?.experimental}
   <div class="notice error">
-    <b>Experimental editing is on.</b> PeriHub has not been tested on the {info.model} yet: you can change and save its
-    profiles at your own risk. Every save is backed up, and undone after 15 seconds unless you keep it. If it works,
-    please send a mouse test report.
+    <b>Experimental: not tested yet.</b> PeriHub has never saved to a mouse whose memory uses this format (profile
+    format {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors). You can change and save the
+    {info.model}'s profiles at your own risk: every save is backed up, and undone after 15 seconds unless you keep it.
+    Whether it works or not, please send your feedback with a mouse test report: one report makes this format tested
+    for every mouse that uses it.
     <div class="row report">
       <TestReport mouse={info} />
-      <button class="tiny" disabled={!!busy} onclick={() => setExperimental(false)}>Turn off</button>
     </div>
   </div>
 {:else if info && !info.verified}
   <div class="notice info">
-    <b>Experimental support.</b> PeriHub has not been tested on the {info.model}
-    {info.receiver ? "through its LIGHTSPEED receiver" : ""} yet, so it only reads the mouse: you can look at its
-    profiles, but nothing can be changed. A mouse test report on PeriHub's GitHub page{info.receiver
-      ? " (issue #4)"
-      : ""} helps get it fully supported.
+    {#if info.receiver && info.writable_format}
+      <b>Read-only through the receiver.</b> PeriHub has not been tested on this mouse's memory format yet (profile
+      format {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors), and it never saves over the radio.
+      Connect the {info.model} with its USB cable to change and save its profiles, as an experimental feature.
+    {:else}
+      <b>Read-only.</b> The {info.model} keeps its profiles in a memory format PeriHub cannot write yet (profile format
+      {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors), so it only reads the mouse: you can look
+      at its profiles, but nothing can be changed.
+    {/if}
+    A mouse test report on PeriHub's GitHub page helps get it supported.
     {#if info.pending_undo}
       <p class="small">
-        <b>A save to this mouse was not kept</b> before PeriHub closed or the mouse was unplugged. Turn experimental
-        editing on again to put the backup back.
-      </p>
-    {/if}
-    {#if experimentalOn && info.receiver}
-      <p class="small">Experimental editing is on for this model, but it needs the USB cable: connect the mouse with it.</p>
-    {:else if experimentalOn}
-      <p class="small">
-        Experimental editing is on for this model, but PeriHub does not know how to write its memory yet (profile
-        format {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors), so it stays read-only. A mouse
-        test report helps add it.
+        <b>A save to this mouse was not kept</b> before PeriHub closed or the mouse was unplugged. Connect it with its USB
+        cable: PeriHub puts the backup back.
       </p>
     {/if}
     <div class="row report">
       <TestReport mouse={info} />
-      {#if experimentalOn}
-        <button class="tiny" disabled={!!busy} onclick={() => setExperimental(false)}>Turn off experimental editing</button>
-      {:else if info.pending_undo && !info.receiver}
-        <button class="tiny" disabled={!!busy} onclick={() => setExperimental(true)}>Turn on and undo</button>
-      {:else if !info.receiver}
-        <button class="tiny" disabled={!!busy} onclick={() => (showExperimental = true)}>Edit anyway…</button>
-      {/if}
     </div>
   </div>
   {#if info.host_mode}
@@ -383,10 +383,28 @@
     </div>
   {/if}
 {:else if info && !info.writable}
-  <div class="notice error">This model uses a profile format that has not been verified yet: editing is disabled.</div>
+  <div class="notice info">
+    {#if info.receiver}
+      Through its LIGHTSPEED receiver PeriHub switches profiles and DPI levels, but it does not save: a write over the
+      radio has never been tried. Connect the {info.model} with its USB cable to save.
+    {:else}
+      This mouse now reports a memory format PeriHub cannot write (profile format {info.onboard.profile_format},
+      {info.onboard.sector_size}-byte sectors): saving is disabled. A mouse test report helps add it.
+      <div class="row report">
+        <TestReport mouse={info} />
+      </div>
+    {/if}
+  </div>
 {/if}
-{#if info && showExperimental}
-  <ExperimentalDialog model={info.model} onconfirm={() => setExperimental(true)} onclose={() => (showExperimental = false)} />
+{#if info && pendingWrite}
+  <ExperimentalDialog
+    model={info.model}
+    profileFormat={info.onboard.profile_format}
+    sectorSize={info.onboard.sector_size}
+    action={pendingWrite.action}
+    onconfirm={confirmWrite}
+    onclose={() => (pendingWrite = null)}
+  />
 {/if}
 {#if info?.verified && info.host_mode}
   <div class="notice error">
@@ -409,8 +427,8 @@
       Your first save also creates the mouse's own profile list, with a copy of the factory profiles, so everything
       you don't change stays as it is.
     {:else if info.experimental}
-      PeriHub creates that first profile list only on tested models: save a profile once with Logitech G HUB or
-      Onboard Memory Manager, then PeriHub can save to this mouse.
+      PeriHub creates that first profile list only on mice whose memory format has been tested: save a profile once
+      with Logitech G HUB or Onboard Memory Manager, then PeriHub can save to this mouse.
     {/if}
   </div>
 {/if}
@@ -440,7 +458,7 @@
               type="checkbox"
               checked={profile.enabled}
               disabled={!!busy || !info.writable || !info.verified}
-              title={info.verified ? undefined : "Needs a tested mouse model"}
+              title={info.verified ? undefined : "Needs a tested memory format"}
               onchange={(e) => toggleEnabled(profile.number, e.target as HTMLInputElement)}
             />
             Enabled
@@ -458,7 +476,7 @@
     <button class:active={tab === "lighting"} onclick={() => changeTab("lighting")}>Lighting</button>
   </div>
 
-  <!-- Unverified models are read-only unless experimental editing is on: every control in the editor is disabled. -->
+  <!-- A read-only mouse (memory format PeriHub cannot write): every control in the editor is disabled. -->
   <fieldset disabled={!editable}>
     {#if tab === "performance"}
       {#key previewEpoch}

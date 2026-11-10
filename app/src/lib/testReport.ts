@@ -24,6 +24,12 @@ function connection(mouse: MouseInfo): string {
   return `LIGHTSPEED receiver ${LOGITECH}:${hex(receiver_id)}, slot ${slot}, wireless id ${hex(wireless_id)}`;
 }
 
+function support(mouse: MouseInfo): string {
+  if (mouse.experimental) return "experimental (memory format not tested yet)";
+  if (mouse.verified) return mouse.writable ? "tested" : "tested, no saves on this connection";
+  return mouse.writable_format ? "read-only on this connection" : "read-only (memory format PeriHub cannot write)";
+}
+
 function dpiRange({ dpi }: MouseInfo): string {
   return dpi.list.length ? dpi.list.join(", ") : `${dpi.min}-${dpi.max}, step ${dpi.step}`;
 }
@@ -37,7 +43,7 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
     `Mouse: ${mouse.model} (reports itself as "${mouse.name}")`,
     `USB ID: ${usbId(mouse)}`,
     `Connection: ${connection(mouse)}`,
-    `Support: ${mouse.verified ? "tested" : mouse.experimental ? "experimental editing on" : "read-only"}`,
+    `Support: ${support(mouse)}`,
     `Software control: ${mouse.host_mode ? "yes" : "no"}`,
     `Firmware: ${mouse.firmware.map((f) => `${f.name} ${f.version}`).join(", ")}`,
     `Profiles: ${onboard.profile_count}, buttons: ${onboard.button_count}`,
