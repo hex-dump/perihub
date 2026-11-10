@@ -605,6 +605,9 @@ impl Manager {
             }
             let found = match found {
                 Ok(found) => found,
+                // On Linux the udev rule leaves a Unifying receiver closed on purpose: the page says
+                // why, instead of asking for the rule.
+                Err(error) if receiver::is_unifying(paths.0.product_id()) && is_permission_error(&error) => continue,
                 Err(error) => {
                     note = Some(format!("{}: {}", receiver::name(paths.0.product_id()), open_error_message(error)));
                     continue;

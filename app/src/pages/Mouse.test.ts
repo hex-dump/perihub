@@ -272,8 +272,10 @@ describe("a device on a receiver that PeriHub does not support", () => {
       slots: ["could not ask: Permission denied"],
       unsupported: [],
     };
+    // The core no longer reports the refusal as a connection error: only another mouse's error can be there.
     render(Mouse, { props: { info: null, error: null, asleep: null, receivers: [unifying] } });
     await wait(0);
+    expect(screen.queryByText(/install the PeriHub udev rule/)).toBeNull();
     expect(screen.getByText("PeriHub cannot open your Unifying receiver.")).toBeTruthy();
     expect(screen.getByText(/any program\s+you run could read your typing/)).toBeTruthy();
   });
