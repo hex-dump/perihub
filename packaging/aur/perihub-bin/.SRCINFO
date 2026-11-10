@@ -1,6 +1,6 @@
 pkgbase = perihub-bin
 	pkgdesc = PeriHub for your peripherals: gaming keyboards and mice without SteelSeries GG, Logitech G HUB or Corsair iCUE
-	pkgver = 0.6.5
+	pkgver = 0.6.6
 	pkgrel = 1
 	url = https://github.com/hex-dump/perihub
 	arch = x86_64
@@ -22,9 +22,9 @@ pkgbase = perihub-bin
 	conflicts = perihub
 	options = !strip
 	options = !debug
-	source = https://github.com/hex-dump/perihub/releases/download/v0.6.5/PeriHub_0.6.5_amd64.deb
-	source = LICENSE-0.6.5::https://raw.githubusercontent.com/hex-dump/perihub/v0.6.5/LICENSE
-	sha256sums = f7e8dd3c3117acfd730fe39064210f863255fba8ef539dcc02133ccc9ca8a457
+	source = https://github.com/hex-dump/perihub/releases/download/v0.6.6/PeriHub_0.6.6_amd64.deb
+	source = LICENSE-0.6.6::https://raw.githubusercontent.com/hex-dump/perihub/v0.6.6/LICENSE
+	sha256sums = 2c5006168b91b8d0af72cb25296c4fd666fdf77aab3c1c291f828bcdfb89a5a7
 	sha256sums = 440e353d7bb443f50c947eacbc5a437d4707c6f0595b7fa509d530bab1aef67f
 
 pkgname = perihub-bin
