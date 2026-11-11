@@ -94,6 +94,8 @@ jobs:
         with:
           name: flatpak
           path: packaging/flatpak/.build/*.flatpak
+          # .build is a hidden folder, which upload-artifact leaves out by default.
+          include-hidden-files: true
           if-no-files-found: error
 
   # The draft release exists once the other bundles are built.

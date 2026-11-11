@@ -99,4 +99,6 @@ jobs:
         with:
           name: perihub-flatpak-test-${{ github.sha }}
           path: packaging/flatpak/.build/*.flatpak
+          # .build is a hidden folder, which upload-artifact leaves out by default.
+          include-hidden-files: true
           if-no-files-found: error

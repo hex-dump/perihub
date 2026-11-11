@@ -3,7 +3,8 @@
 # (.build/PeriHub_<version>_x86_64.flatpak). The release workflow runs it too.
 #
 # Needs flatpak, flatpak-builder and git. The GNOME runtime and the Rust and Node SDK extensions come
-# from Flathub: the Flathub remote is added for the current user if it is missing.
+# from Flathub, installed without asking: the Flathub remote is added for the current user if it is
+# missing.
 #   --no-install  only build the bundle; by default it is also installed for the current user.
 #   --system      use the system installation and its flathub remote (the release workflow's container
 #                 has the GNOME runtime there); implies --no-install.
@@ -34,7 +35,7 @@ fi
 
 version=$(sed -n 's/^version = "\(.*\)"/\1/p' "$here/../../Cargo.toml" | head -1)
 mkdir -p "$work"
-flatpak-builder "$installation" $install --force-clean --install-deps-from=flathub \
+flatpak-builder "$installation" $install --force-clean --install-deps-from=flathub --assumeyes \
     --state-dir="$work/state" --repo="$work/repo" "$work/build" "$here/io.github.hex_dump.perihub.yml"
 flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
     "$work/repo" "$work/PeriHub_${version}_x86_64.flatpak" io.github.hex_dump.perihub

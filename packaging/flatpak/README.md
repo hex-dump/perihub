@@ -1,8 +1,9 @@
 # PeriHub as a Flatpak
 
 Each release has a Flatpak bundle, `PeriHub_X.Y.Z_x86_64.flatpak`, built from this repository by the
-release workflow. PeriHub is not on Flathub: Flathub does not accept manifests or submissions written with
-AI tools, and much of PeriHub is. Flathub only provides the GNOME runtime the bundle runs on.
+release workflow. PeriHub is not on Flathub: Flathub does not accept manifests written with AI tools or
+submissions made with them, and PeriHub's manifest, like much of its code, was written with Claude. Flathub
+only provides the GNOME runtime the bundle runs on.
 
 The Flatpak's application ID is `io.github.hex_dump.perihub`, in the form Flathub uses for GitHub projects
 (the user `hex-dump`, with the dash written as an underscore). The Tauri app keeps
