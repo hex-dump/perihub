@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.hex_dump.perihub</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>PeriHub</name>
+  <summary>Configure gaming keyboards and mice without the vendors' apps</summary>
+  <developer id="io.github.hex_dump">
+    <name>hex-dump</name>
+  </developer>
+
+  <description>
+    <p>
+      PeriHub configures SteelSeries, Logitech and Corsair keyboards and mice without SteelSeries GG,
+      Logitech G HUB or Corsair iCUE. It has no account and no telemetry, and it never touches firmware.
+    </p>
+    <ul>
+      <li>SteelSeries Apex 3 TKL: lighting with reactive effects, brightness and key remapping</li>
+      <li>Logitech G mice with onboard memory: profiles, DPI, polling rate, buttons, lighting and macros, saved in the mouse</li>
+      <li>Logitech G300: its three profiles</li>
+      <li>Logitech devices on a Bolt or Unifying receiver: battery, and DPI as an experimental setting</li>
+      <li>Corsair mice and keyboards: firmware, polling rate and DPI, with experimental lighting</li>
+      <li>App profiles that switch lighting and mouse profile with the game in focus, and software macros</li>
+      <li>A backup before every write to a device</li>
+    </ul>
+    <p>
+      Untested devices are only read until someone confirms them: each device page offers a test report.
+    </p>
+    <p>
+      PeriHub needs a udev rule to reach the devices, which a Flatpak cannot install by itself. The project
+      page gives the one-line command to install it.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">io.github.hex_dump.perihub.desktop</launchable>
+
+  <url type="homepage">https://hex-dump.github.io/perihub/</url>
+  <url type="bugtracker">https://github.com/hex-dump/perihub/issues</url>
+  <url type="vcs-browser">https://github.com/hex-dump/perihub</url>
+  <url type="help">https://github.com/hex-dump/perihub#readme</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/hex-dump/perihub/v0.6.7/docs/screenshots/mouse-dpi.png</image>
+      <caption>DPI levels and polling rate of a Logitech mouse</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/hex-dump/perihub/v0.6.7/docs/screenshots/mouse-buttons.png</image>
+      <caption>Buttons and macros of a Logitech mouse</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/hex-dump/perihub/v0.6.7/docs/screenshots/keyboard-lighting.png</image>
+      <caption>Keyboard lighting</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/hex-dump/perihub/v0.6.7/docs/screenshots/keyboard-keys.png</image>
+      <caption>Key remapping</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/hex-dump/perihub/v0.6.7/docs/screenshots/mouse-lighting.png</image>
+      <caption>Mouse lighting</caption>
+    </screenshot>
+  </screenshots>
+
+  <categories>
+    <category>Settings</category>
+    <category>HardwareSettings</category>
+  </categories>
+
+  <keywords>
+    <keyword>keyboard</keyword>
+    <keyword>mouse</keyword>
+    <keyword>DPI</keyword>
+    <keyword>RGB</keyword>
+    <keyword>macros</keyword>
+    <keyword>Logitech</keyword>
+    <keyword>SteelSeries</keyword>
+    <keyword>Corsair</keyword>
+  </keywords>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#ffb08a</color>
+    <color type="primary" scheme_preference="dark">#7a2a07</color>
+  </branding>
+
+  <content_rating type="oars-1.1"/>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+
+  <releases>
+    <release version="0.6.7" date="2026-11-11">
+      <description>
+        <p>Logitech mice are supported by the format of their memory instead of by model, and the devices on a Bolt or Unifying receiver get a page of their own, with their DPI as a first experimental setting.</p>
+      </description>
+    </release>
+    <release version="0.6.6" date="2026-11-10">
+      <description>
+        <p>The Logi Bolt receiver is recognized, a first step for the MX Master 3S.</p>
+      </description>
+    </release>
+    <release version="0.6.5" date="2026-11-09">
+      <description>
+        <p>The Logitech G502 X Wireless is supported.</p>
+      </description>
+    </release>
+  </releases>
+</component>

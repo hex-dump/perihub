@@ -66,6 +66,11 @@ pub(crate) async fn as_root(script: String, input: &'static str) -> Result<(), S
     if !cfg!(target_os = "linux") {
         return Err("only needed on Linux".into());
     }
+    // The sandbox cannot install system files: the interface shows the commands to run instead.
+    #[cfg(target_os = "linux")]
+    if crate::flatpak::active() {
+        return Err("PeriHub runs as a Flatpak, which cannot install system rules: run this in a terminal".into());
+    }
     tauri::async_runtime::spawn_blocking(move || run_as_root(&script, input)).await.map_err(|e| e.to_string())?
 }
 

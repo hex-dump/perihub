@@ -10,9 +10,11 @@
   interface Props {
     info: CorsairInfo | null;
     error: string | null;
+    /** PeriHub runs as a Flatpak and cannot see whether another Corsair program runs. */
+    sandboxed?: boolean;
   }
 
-  let { info, error: connectError }: Props = $props();
+  let { info, error: connectError, sandboxed = false }: Props = $props();
 
   let busy = $state<string | null>(null);
   let error = $state<string | null>(null);
@@ -129,6 +131,12 @@
           It stays off while another program that drives Corsair mice runs (iCUE, OpenRGB, ckb-next, OpenLinkHub):
           two of them at once can leave a {noun} unable to {info.kind === "keyboard" ? "type" : "click"}.
         </p>
+        {#if sandboxed}
+          <p>
+            <b>PeriHub runs as a Flatpak and cannot see the other programs running:</b> quit OpenRGB, ckb-next and
+            OpenLinkHub yourself before you turn it on.
+          </p>
+        {/if}
         <p>
           <b>To get out:</b> <b>Turn off</b> here, <b>Turn off experimental lighting</b> in the tray menu, or quit
           PeriHub. If the {noun} still behaves oddly, unplug it and plug it back in. The confirmation that follows gives it

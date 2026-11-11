@@ -17,9 +17,11 @@
     device: UnsupportedReceiverDevice | null;
     /** Running programs that set Logitech devices' settings themselves, such as "Solaar". */
     programs?: string[];
+    /** PeriHub runs as a Flatpak and cannot see whether such a program runs. */
+    sandboxed?: boolean;
   }
 
-  let { receiver, device, programs = [] }: Props = $props();
+  let { receiver, device, programs = [], sandboxed = false }: Props = $props();
 
   const LIVE_MS = 2000;
 
@@ -198,6 +200,12 @@
         </div>
         {#if live?.saved_dpi}
           <p class="small muted">PeriHub sets {live.saved_dpi} DPI every time the {name} connects.</p>
+        {/if}
+        {#if sandboxed}
+          <p class="small muted">
+            PeriHub runs as a Flatpak and cannot see whether Solaar or logiops runs: they set their own DPI and may undo
+            PeriHub's, so quit them for this device.
+          </p>
         {/if}
         {#if asking}
           <div class="ask col">

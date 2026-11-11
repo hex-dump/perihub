@@ -47,6 +47,12 @@ const CORSAIR_PROGRAMS: &[(&str, &str)] = &[
     ("icue.exe", "Corsair iCUE"),
 ];
 
+/// PeriHub runs in a Flatpak sandbox, which shows it only its own processes: the programs listed
+/// here cannot be seen, and the interface asks the user to quit them instead.
+pub fn sandboxed() -> bool {
+    std::path::Path::new("/.flatpak-info").exists()
+}
+
 /// Programs that drive Corsair mice and are running now, by name, without repeats.
 pub fn corsair_programs_running() -> Vec<&'static str> {
     corsair_programs_in(&process_names())

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=PeriHub
+Comment=Configure gaming keyboards and mice without SteelSeries GG, Logitech G HUB or Corsair iCUE
+Exec=perihub
+Icon=io.github.hex_dump.perihub
+Terminal=false
+Categories=Settings;HardwareSettings;
+Keywords=keyboard;mouse;peripherals;Logitech;SteelSeries;Corsair;DPI;RGB;macros;
+StartupWMClass=perihub

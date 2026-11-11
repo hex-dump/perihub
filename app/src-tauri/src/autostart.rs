@@ -11,7 +11,8 @@
 //! The Run value is written with quotes around the exe path: without them, with a space in the
 //! path like `C:\Users\Mario Rossi\…`, Windows may split the command at the first space. The
 //! value in `Explorer\StartupApproved\Run` that Task Manager needs to show the entry as enabled
-//! is written too, like auto-launch does. Linux keeps tauri-plugin-autostart.
+//! is written too, like auto-launch does. Linux keeps tauri-plugin-autostart, except in a Flatpak,
+//! where the Background portal writes the entry (see `crate::flatpak`).
 
 use tauri::AppHandle;
 
@@ -117,6 +118,10 @@ pub fn is_enabled(app: &AppHandle) -> bool {
 pub fn is_enabled(app: &AppHandle) -> bool {
     use tauri_plugin_autostart::ManagerExt;
 
+    #[cfg(target_os = "linux")]
+    if crate::flatpak::active() {
+        return crate::flatpak::autostart_requested();
+    }
     app.autolaunch().is_enabled().unwrap_or(false)
 }
 
@@ -132,6 +137,12 @@ pub fn set_enabled(app: &AppHandle, enabled: bool) -> Result<(), String> {
 pub fn set_enabled(app: &AppHandle, enabled: bool) -> Result<(), String> {
     use tauri_plugin_autostart::ManagerExt;
 
+    // In a Flatpak the desktop reads the host's autostart folder, not the sandbox's: the portal
+    // writes the entry there.
+    #[cfg(target_os = "linux")]
+    if crate::flatpak::active() {
+        return crate::flatpak::request_autostart(enabled);
+    }
     let launcher = app.autolaunch();
     let result = if enabled { launcher.enable() } else { launcher.disable() };
     result.map_err(|e| e.to_string())

@@ -304,6 +304,8 @@ export interface DeviceStatus {
   receivers: ReceiverReport[];
   /** Running programs that set Logitech devices' settings themselves, such as "Solaar". */
   logitech_programs: string[];
+  /** PeriHub runs as a Flatpak and cannot see the other programs running. */
+  sandboxed: boolean;
 }
 
 /** A device paired with a receiver that PeriHub does not support yet, as far as it could be read. */

@@ -46,6 +46,7 @@
     corsair_error: null,
     receivers: [],
     logitech_programs: [],
+    sandboxed: false,
   });
 
   const hex = (id: number) => id.toString(16).padStart(4, "0");
@@ -206,9 +207,14 @@
             receiver={logitechShown?.receiver ?? null}
             device={logitechShown?.device ?? null}
             programs={status.logitech_programs}
+            sandboxed={status.sandboxed}
           />{/key}
       {:else if page === "corsair"}
-        {#key corsairShown?.product_id}<CorsairDevice info={corsairShown} error={status.corsair_error} />{/key}
+        {#key corsairShown?.product_id}<CorsairDevice
+            info={corsairShown}
+            error={status.corsair_error}
+            sandboxed={status.sandboxed}
+          />{/key}
       {:else if page === "profiles"}
         <AppProfiles {status} />
       {:else}

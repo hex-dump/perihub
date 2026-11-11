@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Ready for Flathub**, as `io.github.hex_dump.perihub`: a manifest that builds PeriHub from source (`packaging/flatpak`), and the desktop file and AppStream metainfo Flathub requires (`packaging/linux`). Inside the Flatpak, autostart goes through the Background portal; the optional udev rules, which a sandbox cannot install, come with the commands to run instead; and since the sandbox cannot see the other programs running, the Corsair lighting and Logitech DPI pages ask to quit OpenRGB, ckb-next, OpenLinkHub, Solaar and logiops.
+
 ## 0.6.7 — 2026-11-11
 
 Logitech mice are supported by the format of their memory, not by model, and the devices on a Bolt or Unifying receiver get a page of their own, with their DPI as a first experimental setting.

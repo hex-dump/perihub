@@ -3,6 +3,8 @@
 
 mod autostart;
 mod commands;
+#[cfg(target_os = "linux")]
+mod flatpak;
 mod key_access;
 mod logfile;
 mod macro_files;

@@ -250,6 +250,9 @@ pub struct DeviceStatus {
     /// Running programs that set their own DPI and other settings on Logitech devices (Solaar,
     /// logiops): they may undo what PeriHub sets on the devices it knows by their features.
     pub logitech_programs: Vec<String>,
+    /// PeriHub runs in a Flatpak sandbox and cannot see the other programs running (see
+    /// [`conflicts::sandboxed`]).
+    pub sandboxed: bool,
 }
 
 #[derive(Default)]
@@ -844,6 +847,7 @@ impl Manager {
             corsair_error: slots.corsair_error.clone(),
             receivers: slots.receivers.clone(),
             logitech_programs: slots.logitech_programs.iter().map(|name| name.to_string()).collect(),
+            sandboxed: conflicts::sandboxed(),
         }
     }
 
