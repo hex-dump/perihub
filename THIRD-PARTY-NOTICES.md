@@ -20,7 +20,10 @@ goes with every PeriHub package.
   `docs/protocols/sinowealth-glorious.md`);
 - the Logitech G600's profile format (`src/driver-logitech-g600.c`, Copyright © 2018 Thomas Hindoe
   Paaboel Andersen), rewritten in Rust in `crates/perihub-core/src/peripheral/logitech_g600.rs` (see
-  `docs/protocols/logitech-g600.md`).
+  `docs/protocols/logitech-g600.md`);
+- the Roccat Kone Pure, Kone XTD and Kone EMP settings (`src/driver-roccat-kone-pure.c`, `src/driver-roccat.c`,
+  Copyright © 2015 Red Hat, Inc., and `src/driver-roccat-kone-emp.c`, Copyright © 2021 Alexandre Laurent),
+  read in `crates/perihub-core/src/peripheral/roccat.rs` (see `docs/protocols/roccat-kone.md`).
 
 ```
 Copyright © 2015-2017 Red Hat, Inc.
@@ -28,6 +31,7 @@ Copyright © 2015 David Herrmann <dh.herrmann@gmail.com>
 Copyright (C) 2021 Kyoken, kyoken@kyoken.ninja
 Copyright © 2020 Marian Beermann
 Copyright © 2018 Thomas Hindoe Paaboel Andersen
+Copyright © 2021 Alexandre Laurent
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -109,6 +113,8 @@ was copied.
   Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and
   that a reading right after a write is incomplete, and the interface and usage page of the Logitech
   G600's.
+- The [Linux kernel](https://github.com/torvalds/linux) (GPL-2.0): that the Roccat Kone mice are configured
+  through their boot mouse interface (`drivers/hid/hid-roccat-konepure.c`, `hid-roccat-koneplus.c`).
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse
   its USB interface, transaction ids and maximum DPI, read as text by `tools/openrazer_facts.py` (see
   `docs/protocols/razer-mice.md`).

@@ -1,5 +1,5 @@
 name: Device test report
-description: Tell us how PeriHub works with a Corsair, ASUS, SteelSeries, Razer or Glorious device, a QMK keyboard (Vial, VIA), the Logitech G300 or G600 or a Logitech device on a Bolt or Unifying receiver
+description: Tell us how PeriHub works with a Corsair, ASUS, SteelSeries, Razer, Glorious or Roccat device, a QMK keyboard (Vial, VIA), the Logitech G300 or G600 or a Logitech device on a Bolt or Unifying receiver
 labels: ["device test"]
 body:
   - type: markdown

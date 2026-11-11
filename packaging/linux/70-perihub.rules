@@ -617,3 +617,14 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="3794", ATTRS{idProduct}=="a000", TAG+="uacc
 # which holds its profiles. It also carries the keys the mouse's own side buttons send, never what is
 # typed on a keyboard.
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c24a", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+
+# Roccat mice (read only, untested; protocol from libratbag): interface 0, the boot mouse interface,
+# where the kernel's own Roccat drivers find their configuration. Interface 1, with the keys the
+# mouse's buttons can send, stays closed.
+# Roccat Kone Pure
+KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2dbe", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2dc2", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Roccat Kone XTD
+KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2e22", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Roccat Kone EMP
+KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2e24", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"

@@ -26,6 +26,7 @@ the same format.
 - [Razer mice](#razer-mice)
 - [Glorious mice](#glorious-mice)
 - [Logitech G600](#logitech-g600)
+- [Roccat mice](#roccat-mice)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
 ## SteelSeries
@@ -419,6 +420,23 @@ described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md
 | Mouse | USB ID | Opened on Linux |
 |---|---|---|
 | G600 | `046d:c24a` | interface 1 (with the keys its own side buttons send) |
+
+## Roccat mice
+
+👁 Read-only: nobody has tried PeriHub on one yet. Their protocol comes from
+[libratbag](https://github.com/libratbag/libratbag) (MIT), and is described in
+[protocols/roccat-kone.md](protocols/roccat-kone.md). PeriHub reads the profile in use, the DPI of each slot that is
+on, the slot in use and the polling rate, and changes nothing: the sources disagree on what a write needs. The only
+report it sends chooses which profile the next read returns.
+
+| Mouse | USB ID | Opened on Linux |
+|---|---|---|
+| Kone Pure | `1e7d:2dbe`, `1e7d:2dc2` | interface 0 (the boot mouse) |
+| Kone XTD | `1e7d:2e22` | interface 0 |
+| Kone EMP | `1e7d:2e24` | interface 0 |
+
+`1e7d:2dcb`, which libratbag also lists as a Kone Pure, is left out: its interfaces are laid out differently and no
+source says where its configuration is.
 
 ## Keyboards with QMK firmware (Vial, VIA)
 
