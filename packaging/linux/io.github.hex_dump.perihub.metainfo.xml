@@ -94,6 +94,11 @@
   </requires>
 
   <releases>
+    <release version="0.6.8" date="2026-11-11">
+      <description>
+        <p>First version as a Flatpak. Inside it, autostart goes through the desktop's Background portal, and the optional udev rules come with the commands to run.</p>
+      </description>
+    </release>
     <release version="0.6.7" date="2026-11-11">
       <description>
         <p>Logitech mice are supported by the format of their memory instead of by model, and the devices on a Bolt or Unifying receiver get a page of their own, with their DPI as a first experimental setting.</p>

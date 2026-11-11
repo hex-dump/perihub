@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.6.8 — 2026-11-11
+
+PeriHub comes as a Flatpak too.
 
 ### Added
 - **A Flatpak**, `PeriHub_0.6.8_x86_64.flatpak`, attached to the release like the other packages and built from source by the release workflow (`packaging/flatpak`). It works on any distribution with Flatpak, on the GNOME 51 runtime, which Flatpak downloads from Flathub when PeriHub is installed. PeriHub itself is not on Flathub, so the Flatpak does not update by itself: install the next release's file the same way. Like the AppImage, it needs the udev rule installed by hand (README, USB permissions).
