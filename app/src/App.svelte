@@ -127,7 +127,7 @@
           <span class="name">Logitech {device.name ?? kindName(device.kind)}</span>
           {#if !receiver.open_slots.includes(device.slot)}
             <span class="state">Asleep</span>
-          {:else if device.dpi}
+          {:else if device.dpi && !device.onboard}
             <span class="state on">Experimental</span>
           {:else}
             <span class="state on">Read-only</span>

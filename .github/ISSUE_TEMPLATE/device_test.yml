@@ -1,11 +1,11 @@
 name: Device test report
-description: Tell us how PeriHub works with a Corsair device, the Logitech G300 or a device on a Logi Bolt receiver
+description: Tell us how PeriHub works with a Corsair device, the Logitech G300 or a Logitech device on a Bolt or Unifying receiver
 labels: ["device test"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing! PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session, if you turn it on. On the Logitech G300 it reads and saves the three profiles. For a device on a Logi Bolt receiver it only reads what the device is. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
+        Thanks for testing! PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session, if you turn it on. On the Logitech G300 it reads and saves the three profiles. For a Logitech device on a Bolt or Unifying receiver it reads what the device is, and can set its DPI, if you choose to. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
   - type: input
     id: model
     attributes:
@@ -62,6 +62,10 @@ body:
         - label: "G300: a profile I saved took effect and was still there after unplugging the mouse"
         - label: "Corsair: experimental lighting showed the colour, and the device went back to its own lighting when it was turned off"
         - label: "Corsair: every button or key kept working while experimental lighting was on"
+        - label: "Bolt or Unifying: Set DPI took effect (the pointer moved faster or slower)"
+        - label: "Bolt or Unifying: after the device slept or was turned off and on, PeriHub set the DPI again"
+        - label: "Bolt or Unifying: without PeriHub running, the device kept the DPI after it slept or was turned off and on"
+        - label: "Bolt or Unifying: Back to the device's own DPI worked"
   - type: textarea
     id: notices
     attributes:

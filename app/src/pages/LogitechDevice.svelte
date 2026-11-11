@@ -28,6 +28,9 @@
   const kind = $derived(kindName(device?.kind ?? null).toLowerCase());
   /** PeriHub has the device open: it answers, and its DPI can be read and changed. */
   const open = $derived(!!device && !!receiver && receiver.open_slots.includes(device.slot));
+  /** The DPI can be changed: adjustable DPI and no onboard profiles, whose active profile sets the DPI
+   * (as in the core's `dpi_changeable`). */
+  const changeable = $derived(!!device?.dpi && !device.onboard);
   /** The "No warranty" box is asked once per model. */
   const warrantyKey = $derived(`dpi:${name}`);
 
@@ -135,7 +138,7 @@
 
 {#if device && receiver && found}
   <div class="notice info">
-    {#if device.dpi}
+    {#if changeable}
       <b>Experimental.</b> PeriHub knows the {name} by the features it reports. It can change its DPI, which nobody has
       tried on such a {kind} yet; everything else is only read. Whether it works or not, a test report on PeriHub's
       GitHub page helps.
@@ -144,7 +147,7 @@
       is changed. A test report on PeriHub's GitHub page helps: it tells what this {kind} has.
     {/if}
     <div class="row report">
-      <DeviceTestReport fields={(version, system) => receiverTest(receiver!, device!, version, system)} />
+      <DeviceTestReport fields={(version, system) => receiverTest(receiver!, device!, version, system, live)} />
     </div>
   </div>
 
@@ -155,7 +158,7 @@
     </div>
   {/each}
 
-  {#if device.dpi}
+  {#if changeable && device.dpi}
     <section class="card">
       <h2>DPI <span class="chip test">Experimental</span></h2>
       {#if !open}

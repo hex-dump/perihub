@@ -63,15 +63,18 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   its own in the sidebar, built from the HID++ features it reports: what kind of device it is, what
   it can do (battery, DPI, SmartShift wheel, programmable buttons…), its battery and DPI as they
   are now, the DPI and polling rates it accepts, and a test report.
-  - 🧪 **DPI**, on a device that has adjustable DPI (HID++ 0x2201): PeriHub sets it in the
-    device's RAM, never in its memory, and only to values the device says it accepts. Such devices
-    forget it when they are turned off or fall asleep, so PeriHub sets it again every time the
-    device connects, while PeriHub is running. Before the first change PeriHub asks you to tick
+  - 🧪 **DPI**, on a device that has adjustable DPI (HID++ 0x2201) and no onboard profiles (with
+    them, the active profile sets the DPI): PeriHub sets it in the device's RAM, never in its
+    memory, and only to values the device says it accepts. Such devices forget it when they are
+    turned off or fall asleep, so PeriHub sets it again when the device connects or wakes up (it
+    checks every 10 seconds; a very short nap can go unnoticed), while PeriHub is running. Before the first change PeriHub asks you to tick
     the **No warranty** box. Nobody has tried it on a real device yet: the MX Master 3S of
     [issue #17](https://github.com/hex-dump/perihub/issues/17) is the first candidate.
   - 👁 Everything else is only read.
   - **Solaar and logiops** set their own DPI and may undo PeriHub's: the device page says so when
     one of them runs.
+  - Logitech devices PeriHub does not know behind a **LIGHTSPEED** receiver get the same page,
+    read-only if they have onboard profiles (most gaming mice).
 - **On Linux PeriHub's udev rule does not open the Unifying receivers.** Linux puts them in DJ mode,
   where what is typed on the keyboards paired with them arrives on the same interface as HID++:
   opening it would let any program running as the user read that typing. The mouse page explains

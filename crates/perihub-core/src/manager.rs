@@ -775,6 +775,12 @@ impl Manager {
                 }
                 // Asleep again: opened when it answers.
                 Err(Error::Unreachable) => {}
+                // Another device was paired in that slot: read it again before anything is set on it.
+                Err(Error::OtherDevice) => {
+                    log::info!("{}, slot {slot}: a different device answers now", receiver::name(receiver_id));
+                    self.slots.lock().unwrap().receiver_unsupported.remove(&(paths.0.path().to_owned(), slot));
+                    changed = true;
+                }
                 Err(error) => log::debug!("{}, slot {slot}: {error}", receiver::name(receiver_id)),
             }
         }

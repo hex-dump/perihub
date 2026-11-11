@@ -159,6 +159,9 @@ describe("a Logitech device PeriHub knows by its features", () => {
     };
     await open({ device: { ...device, onboard } });
     expect(screen.getByText(/5 profiles, profile format 5,\s+255-byte sectors/)).toBeTruthy();
+    // Its active profile sets the DPI: PeriHub does not change it.
+    expect(screen.queryByRole("button", { name: "Set DPI" })).toBeNull();
+    expect(screen.getByText(/Not supported yet/)).toBeTruthy();
   });
 
   it("says when the device is gone", async () => {

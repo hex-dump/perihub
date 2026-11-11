@@ -19,6 +19,10 @@ pub enum Error {
     Invalid(String),
     #[error("device not connected")]
     NotConnected,
+    /// Another device now answers where PeriHub knew a different one (a receiver slot paired again):
+    /// what was read about the old one no longer applies.
+    #[error("a different device answers in this receiver slot")]
+    OtherDevice,
     #[error("file error: {0}")]
     Io(#[from] std::io::Error),
     #[error("format error: {0}")]

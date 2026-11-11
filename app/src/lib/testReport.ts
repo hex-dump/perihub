@@ -1,4 +1,4 @@
-import type { CorsairInfo, G300Info, G300Profile, ReceiverReport, UnsupportedReceiverDevice } from "./api";
+import type { CorsairInfo, G300Info, G300Profile, LogitechLive, ReceiverReport, UnsupportedReceiverDevice } from "./api";
 import type { MouseInfo } from "./api";
 import { kindName } from "./logitechFeatures";
 
@@ -110,6 +110,7 @@ export function receiverTest(
   device: UnsupportedReceiverDevice | null,
   version: string,
   system: string,
+  live: LogitechLive | null = null,
 ): DeviceTestFields {
   const id = `${LOGITECH}:${hex(receiver.product_id)}`;
   const lines = [
@@ -140,8 +141,14 @@ export function receiverTest(
       `DPI: ${dpi}`,
       `Polling (ms): ${device.report_rates_ms.join(", ") || "none reported"}`,
       `Onboard memory: ${onboard}`,
-      `Could not read: ${device.read_errors.join("; ") || "nothing"}`,
     );
+    if (live) {
+      lines.push(
+        `DPI now: ${live.dpi ?? "not read"}`,
+        `DPI set by PeriHub at every connection: ${live.saved_dpi ?? "none"}`,
+      );
+    }
+    lines.push(`Could not read: ${device.read_errors.join("; ") || "nothing"}`);
   } else {
     lines.push("Paired device: none answered");
   }

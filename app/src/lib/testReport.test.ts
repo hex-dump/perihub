@@ -209,6 +209,14 @@ describe("receiverTest", () => {
     expect(fields.report).toContain("Paired device: none answered");
   });
 
+  it("adds the DPI now and the DPI PeriHub sets, for a device that is open", () => {
+    const live = { battery: null, dpi: 1600, saved_dpi: 1600 };
+    const report = receiverTest(bolt, bolt.unsupported[0], "0.6.7", "linux x86_64", live).report;
+    expect(report).toContain("DPI now: 1600");
+    expect(report).toContain("DPI set by PeriHub at every connection: 1600");
+    expect(receiverTest(bolt, bolt.unsupported[0], "0.6.7", "linux x86_64").report).not.toContain("DPI now");
+  });
+
   it("says when the system refused to open a Unifying receiver", () => {
     const unifying = { ...bolt, product_id: 0xc52b, name: "Unifying receiver", bolt: false, unifying: true };
     const fields = receiverTest({ ...unifying, denied: true, unsupported: [] }, null, "0.6.7", "linux x86_64");

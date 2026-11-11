@@ -37,6 +37,13 @@ pub struct LogitechTask {
     last_check: Instant,
 }
 
+/// The DPI can be changed: the device has adjustable DPI (0x2201) and no onboard profiles. With
+/// onboard profiles the DPI comes from the active profile, and a 0x2201 change is only a preview that
+/// the next profile or DPI level change overrides.
+pub fn dpi_changeable(device: &UnsupportedDevice) -> bool {
+    device.dpi.is_some() && device.onboard.is_none()
+}
+
 /// Whether `dpi` is one the device accepts, from what it reports.
 fn check_dpi(caps: &DpiCapabilities, dpi: u16) -> Result<()> {
     let accepted = if caps.list.is_empty() {
@@ -48,10 +55,21 @@ fn check_dpi(caps: &DpiCapabilities, dpi: u16) -> Result<()> {
 }
 
 impl LogitechTask {
-    /// `dev` comes read-only; it gets RAM changes only if the device has 0x2201. `saved_dpi` is set
-    /// at once: the device has just connected or woken up, and has forgotten it.
+    /// `dev` comes read-only; it gets RAM changes only if the DPI can be changed (see
+    /// [`dpi_changeable`]). `saved_dpi` is set at once: the device has just connected or woken up, and
+    /// has forgotten it.
+    ///
+    /// `device` was read earlier, maybe from another device in the same receiver slot: the unit id is
+    /// checked first, and a different device gives [`Error::OtherDevice`] with nothing sent to it but
+    /// reads.
     pub fn open(mut dev: HidppDevice, device: UnsupportedDevice, saved_dpi: Option<u16>) -> Result<Self> {
-        if device.dpi.is_some() {
+        if let Some(unit) = device.unit_id {
+            let info = dev.device_info()?;
+            if info[1..5] != unit {
+                return Err(Error::OtherDevice);
+            }
+        }
+        if dpi_changeable(&device) {
             dev.grant(Access::Ram);
         }
         let mut task = Self { dev, device, saved_dpi, last_check: Instant::now() };
@@ -79,6 +97,9 @@ impl LogitechTask {
     }
 
     fn apply_dpi(&mut self, dpi: u16) -> Result<()> {
+        if !dpi_changeable(&self.device) {
+            return Err(Error::Invalid("PeriHub does not change the DPI of this device".into()));
+        }
         let caps = self.device.dpi.as_ref().ok_or(Error::FeatureMissing(feature::ADJUSTABLE_DPI))?;
         check_dpi(caps, dpi)?;
         self.dev.set_sensor_dpi(0, dpi)
@@ -145,9 +166,22 @@ mod tests {
         asleep: bool,
     }
 
-    const FEATURES: &[u16] = &[feature::ROOT, feature::UNIFIED_BATTERY, feature::ADJUSTABLE_DPI];
+    const FEATURES: &[u16] = &[feature::ROOT, feature::UNIFIED_BATTERY, feature::ADJUSTABLE_DPI, feature::DEVICE_INFO];
+
+    /// The unit id the simulated mouse reports.
+    const UNIT: [u8; 4] = [0x12, 0x34, 0x56, 0x78];
 
     fn open(saved: Option<u16>, dpi_feature: bool) -> (Result<LogitechTask>, Arc<Mutex<Mouse>>) {
+        open_with(saved, dpi_feature, None, UNIT)
+    }
+
+    /// `known_unit`: the unit id read earlier from the device in that slot.
+    fn open_with(
+        saved: Option<u16>,
+        dpi_feature: bool,
+        onboard: Option<crate::hidpp::OnboardInfo>,
+        known_unit: [u8; 4],
+    ) -> (Result<LogitechTask>, Arc<Mutex<Mouse>>) {
         let mouse = Arc::new(Mutex::new(Mouse { dpi: 1000, set: Vec::new(), asleep: false }));
         let state = mouse.clone();
         let fake = FakeDevice::new(move |request| {
@@ -163,6 +197,7 @@ mod tests {
                     vec![FEATURES.iter().position(|&f| f == id).unwrap_or(0) as u8]
                 }
                 (Some(feature::UNIFIED_BATTERY), 1) => vec![80, 0x04, 0, 0],
+                (Some(feature::DEVICE_INFO), 0) => [&[1][..], &UNIT, &[0, 0x02, 0xB0, 0x34]].concat(),
                 (Some(feature::ADJUSTABLE_DPI), 2) => {
                     let [h, l] = m.dpi.to_be_bytes();
                     vec![0, h, l, 0x03, 0xE8]
@@ -184,16 +219,45 @@ mod tests {
             kind: Some(3),
             protocol: "4.5".into(),
             wireless_id: None,
-            unit_id: Some([0x12, 0x34, 0x56, 0x78]),
+            unit_id: Some(known_unit),
             device_info: None,
             firmware: Vec::new(),
             features: Vec::new(),
             dpi: dpi_feature.then(|| DpiCapabilities { min: 200, max: 8000, step: 50, list: Vec::new() }),
             report_rates_ms: Vec::new(),
-            onboard: None,
+            onboard,
             read_errors: Vec::new(),
         };
         (LogitechTask::open(dev, device, saved), mouse)
+    }
+
+    #[test]
+    fn the_saved_dpi_of_a_device_is_never_set_on_another_one_in_its_slot() {
+        let (task, mouse) = open_with(Some(1600), true, None, [0xAA, 0xBB, 0xCC, 0xDD]);
+        assert!(matches!(task, Err(Error::OtherDevice)));
+        assert!(mouse.lock().unwrap().set.is_empty());
+    }
+
+    #[test]
+    fn the_dpi_of_a_device_with_onboard_profiles_is_left_to_its_profiles() {
+        let onboard = crate::hidpp::OnboardInfo {
+            memory_model: 1,
+            profile_format: 5,
+            macro_format: 1,
+            profile_count: 5,
+            rom_profile_count: 5,
+            button_count: 13,
+            sector_count: 16,
+            sector_size: 255,
+            has_gshift: false,
+            has_dpi_shift: true,
+        };
+        let (task, mouse) = open_with(Some(1600), true, Some(onboard), UNIT);
+        let mut task = task.unwrap();
+        assert!(task.set_dpi(1600).is_err());
+        assert!(task.dev.set_sensor_dpi(0, 1600).is_err(), "read-only at the HID++ layer");
+        assert!(mouse.lock().unwrap().set.is_empty());
+        assert_eq!(task.live().unwrap().dpi, Some(1000), "still read");
     }
 
     #[test]
