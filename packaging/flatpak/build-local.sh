@@ -7,17 +7,19 @@
 # missing.
 #   --no-install  only build the bundle; by default it is also installed for the current user.
 #   --system      use the system installation and its flathub remote (the release workflow's container
-#                 has the GNOME runtime there); implies --no-install.
+#                 has the GNOME runtime there), without rofiles-fuse, which a container cannot start;
+#                 implies --no-install.
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
 work="$here/.build"
 installation="--user"
 install="--install"
+container=""
 for arg in "$@"; do
     case "$arg" in
         --no-install) install="" ;;
-        --system) installation="--system"; install="" ;;
+        --system) installation="--system"; install=""; container="--disable-rofiles-fuse" ;;
         *) echo "unknown option: $arg" >&2; exit 2 ;;
     esac
 done
@@ -35,7 +37,7 @@ fi
 
 version=$(sed -n 's/^version = "\(.*\)"/\1/p' "$here/../../Cargo.toml" | head -1)
 mkdir -p "$work"
-flatpak-builder "$installation" $install --force-clean --install-deps-from=flathub --assumeyes \
+flatpak-builder "$installation" $install $container --force-clean --install-deps-from=flathub --assumeyes \
     --state-dir="$work/state" --repo="$work/repo" "$work/build" "$here/io.github.hex_dump.perihub.yml"
 flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
     "$work/repo" "$work/PeriHub_${version}_x86_64.flatpak" io.github.hex_dump.perihub
