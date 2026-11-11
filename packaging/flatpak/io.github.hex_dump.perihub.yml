@@ -14,8 +14,7 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --share=ipc
-  - --device=dri
-  # The keyboards and mice are reached through hidraw, and software macros type through
+  # The GPU, and the keyboards and mice, which are reached through hidraw; software macros type through
   # /dev/uinput. The host's udev rule still decides which devices the user may open: PeriHub's
   # rule opens only the configuration interfaces (packaging/linux/70-perihub.rules).
   - --device=all

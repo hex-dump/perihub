@@ -50,7 +50,7 @@ pub fn request_autostart(enabled: bool) -> Result<(), String> {
         .output()
         .map_err(|e| format!("cannot ask the desktop: {e}"))?;
     if !output.status.success() {
-        return Err(format!("the desktop refused: {}", String::from_utf8_lossy(&output.stderr).trim()));
+        return Err(refusal(&String::from_utf8_lossy(&output.stderr)));
     }
     let mark = autostart_mark();
     if enabled {
@@ -66,6 +66,21 @@ pub fn request_autostart(enabled: bool) -> Result<(), String> {
     }
 }
 
+/// What to tell the user when the portal does not start PeriHub. Some desktops, Hyprland's portal
+/// for one, offer no Background portal at all: then the desktop's own autostart has to do it.
+fn refusal(stderr: &str) -> String {
+    let missing = ["org.freedesktop.DBus.Error.UnknownMethod", "org.freedesktop.DBus.Error.ServiceUnknown"];
+    if missing.iter().any(|name| stderr.contains(name)) {
+        format!(
+            "this desktop does not let Flatpak apps start at sign-in (it has no Background portal): add \
+             `flatpak run io.github.hex_dump.perihub {}` to its own autostart instead (on Hyprland, an exec-once line)",
+            crate::HIDDEN_ARG
+        )
+    } else {
+        format!("the desktop refused: {}", stderr.trim())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -78,5 +93,15 @@ mod tests {
              'reason': <'Start PeriHub at sign-in, in the system tray'>}"
         );
         assert!(background_options(false).starts_with("{'autostart': <false>"));
+    }
+
+    #[test]
+    fn a_desktop_without_the_background_portal_gets_the_command_to_add() {
+        // What gdbus printed on Hyprland, in Italian: only the error name is not translated.
+        let hyprland = "Errore: GDBus.Error:org.freedesktop.DBus.Error.UnknownMethod: Interfaccia \
+                        «org.freedesktop.portal.Background» inesistente sull'oggetto";
+        let message = refusal(hyprland);
+        assert!(message.contains("flatpak run io.github.hex_dump.perihub --hidden"), "{message}");
+        assert!(refusal("Error: denied\n").starts_with("the desktop refused: Error: denied"));
     }
 }

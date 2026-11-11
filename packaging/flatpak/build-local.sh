@@ -41,5 +41,5 @@ for line in lines:
 open(target, "w").write("\n".join(out) + "\n")
 EOF
 
-flatpak-builder --user --install --force-clean --install-deps-from=flathub "$work/build" "$work/io.github.hex_dump.perihub.yml"
+flatpak-builder --user --install --force-clean --install-deps-from=flathub --repo="$work/repo" "$work/build" "$work/io.github.hex_dump.perihub.yml"
 echo "Installed: flatpak run io.github.hex_dump.perihub"
