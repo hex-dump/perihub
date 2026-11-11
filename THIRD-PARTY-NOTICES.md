@@ -1,0 +1,78 @@
+# Third-party notices
+
+PeriHub is released under the MIT license (`LICENSE`). Parts of it come from other projects under
+licenses that ask for their notices to go with every copy. They are listed here, and this file
+goes with every PeriHub package.
+
+## Taken from permissively licensed projects
+
+### libratbag
+
+<https://github.com/libratbag/libratbag>, MIT license. PeriHub takes from it:
+
+- the list of Logitech mice and their HID++ details, and the Logitech G300's profile format;
+- the ASUS ROG and TUF mouse table (`data/devices/asus-*.device`) and the ASUS protocol
+  (`src/asus.c`, `src/asus.h`, `src/driver-asus.c`, Copyright (C) 2021 Kyoken), rewritten in Rust
+  in `crates/perihub-core/src/peripheral/asus.rs` (see `docs/protocols/asus-rog.md`).
+
+```
+Copyright © 2015-2017 Red Hat, Inc.
+Copyright © 2015 David Herrmann <dh.herrmann@gmail.com>
+Copyright (C) 2021 Kyoken, kyoken@kyoken.ninja
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice (including the next
+paragraph) shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+### apex-3-tkl
+
+<https://github.com/gorkemgun/apex-3-tkl>, MIT license: the SteelSeries Apex 3 TKL key mapping.
+
+```
+Copyright (c) 2026 gorkemgun
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## Facts only, no code
+
+These projects are under the GPL. PeriHub took only facts from them (commands, byte layouts, USB ids,
+interface numbers), described in its own words in `docs/protocols`, and wrote its own code. No code
+was copied.
+
+- [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later): the Apex 8-zone lighting
+  protocol, and the interface and usage page of each ASUS mouse's configuration collection.
+- [ckb-next](https://github.com/ckb-next/ckb-next) (GPL-2.0-only) and
+  [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub) (GPL-3.0): Corsair's protocol.

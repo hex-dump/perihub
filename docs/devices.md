@@ -20,6 +20,7 @@ the same format.
 - [Logitech mice with onboard profiles](#logitech-mice-with-onboard-profiles)
 - [Logitech G300](#logitech-g300)
 - [Corsair](#corsair)
+- [ASUS](#asus)
 
 ## SteelSeries
 
@@ -179,6 +180,49 @@ protocol and are not recognized.
 
 Own one? Send a [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml)
 (**Open test form** on the device page fills it in).
+
+## ASUS
+
+🧪 Experimental: 21 ASUS ROG and TUF mice, on their USB cable and through their own wireless
+receiver. Nobody has tried PeriHub on one yet. Their protocol comes from
+[libratbag](https://github.com/libratbag/libratbag) (MIT), and is described in
+[protocols/asus-rog.md](protocols/asus-rog.md).
+
+- PeriHub reads the active profile, firmware, DPI levels, polling rate, button response, angle
+  snapping, lighting and what each button does.
+- **Apply** changes the DPI levels, polling rate, button response, angle snapping and lighting of
+  the active profile without saving them to the mouse's memory, under a warning. **Save to
+  memory** also stores them, after the No warranty box the first time. Every change is backed up
+  first, read back after, and undone after 15 seconds unless you keep it.
+- Not offered yet: switching profiles, button bindings, battery.
+- The ROG Omni receiver (`0b05:1ace`) and the Strix Impact III Wireless, which uses it, are left
+  out: that receiver is shared with other devices and may carry a keyboard's typing.
+- On Linux the udev rule opens, where a source says which, only the interface of the configuration
+  collection; elsewhere the whole mouse, as for the Logitech mice.
+
+| Mouse | USB ID | Opened on Linux | Notes |
+|---|---|---|---|
+| ROG GX860 Buzzard | `0b05:1816` | whole mouse | no lighting |
+| ROG Chakram Core | `0b05:1958` | interface 0 | — |
+| ROG Chakram | `0b05:18e3`, `0b05:18e5` | interface 0 | — |
+| ROG Chakram X | `0b05:1a18`, `0b05:1a1a` | interface 0 | DPI shown, not changed (separate X and Y); LED brightness kept as it is |
+| ROG Gladius II | `0b05:1845` | interface 2 | — |
+| ROG Gladius II Origin | `0b05:1877` | interface 2 | — |
+| ROG Gladius II Origin PNK LTD | `0b05:18cd` | interface 2 | — |
+| ROG Harpe Wireless | `0b05:1a92` | whole mouse | — |
+| ROG Keris | `0b05:195c` | interface 0 | — |
+| ROG Keris Wireless AimPoint | `0b05:1a66`, `0b05:1a68` | interface 0 | — |
+| ROG Keris Wireless | `0b05:195e`, `0b05:1960` | interface 0 | — |
+| ROG Pugio | `0b05:1846` | interface 2 | — |
+| ROG Spatha X | `0b05:1979`, `0b05:1977` | interface 0 | — |
+| ROG Strix Carry | `0b05:18b4` | whole mouse | no lighting |
+| ROG Strix Impact II | `0b05:18e1` | interface 0 | — |
+| ROG Strix Impact II Wireless | `0b05:1947`, `0b05:1949` | interface 0 | — |
+| ROG Strix Impact III | `0b05:1a88` | interface 0 | — |
+| ROG Strix Impact | `0b05:1847` | interface 2 | — |
+| TUF Gaming M3 Gen II | `0b05:1a9b` | interface 2 | — |
+| TUF Gaming M4 Air | `0b05:1a03` | whole mouse | no lighting |
+| TUF Gaming Mini WL Mouse Miku | `0b05:1c56`, `0b05:1c57` | whole mouse | DPI shown, not changed (separate X and Y); LED brightness kept as it is |
 
 ## Something else?
 

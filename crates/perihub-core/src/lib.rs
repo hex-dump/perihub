@@ -15,6 +15,7 @@ pub mod keyboard;
 pub mod logitech;
 pub mod manager;
 pub mod mouse;
+pub mod peripheral;
 #[cfg(windows)]
 pub mod rawinput;
 pub mod softmacro;

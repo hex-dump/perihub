@@ -58,3 +58,4 @@ modules:
       - install -Dm644 app/src-tauri/icons/128x128@2x.png /app/share/icons/hicolor/256x256/apps/io.github.hex_dump.perihub.png
       - install -Dm644 app/src-tauri/icons/icon.png /app/share/icons/hicolor/512x512/apps/io.github.hex_dump.perihub.png
       - install -Dm644 LICENSE /app/share/licenses/io.github.hex_dump.perihub/LICENSE
+      - install -Dm644 THIRD-PARTY-NOTICES.md /app/share/licenses/io.github.hex_dump.perihub/THIRD-PARTY-NOTICES.md

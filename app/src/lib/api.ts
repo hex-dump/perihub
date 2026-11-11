@@ -300,6 +300,9 @@ export interface DeviceStatus {
   /** Corsair mice and keyboards (experimental support). */
   corsair: CorsairInfo[];
   corsair_error: string | null;
+  /** Mice and keyboards of other brands, from published protocol documentation (experimental). */
+  peripherals: PeripheralInfo[];
+  peripheral_error: string | null;
   /** Connected Logitech receivers (LIGHTSPEED, Logi Bolt and Unifying). */
   receivers: ReceiverReport[];
   /** Running programs that set Logitech devices' settings themselves, such as "Solaar". */
@@ -426,6 +429,70 @@ export interface G300Info {
   pending_undo: boolean;
 }
 
+/** The settings PeriHub shows and changes on a device of another brand. */
+export interface PeripheralSettings {
+  dpi_levels: number[];
+  polling_hz: number | null;
+  /** Other settings with a few values, by id (see PeripheralChoice). */
+  options: Record<string, number>;
+  leds: PeripheralLed[];
+}
+
+export interface PeripheralLed {
+  /** The device's own mode number. */
+  mode: number;
+  /** Percent, where the device has a brightness. */
+  brightness: number | null;
+  /** "#rrggbb". */
+  color: string;
+}
+
+export interface PeripheralChoice {
+  id: string;
+  label: string;
+  /** Stored value and how it reads. */
+  values: [number, string][];
+}
+
+/** What may be changed: something missing is shown but not changed. */
+export interface PeripheralLimits {
+  dpi: { min: number; max: number; step: number } | null;
+  /** Empty: the polling rate is not changed. */
+  polling_hz: number[];
+  options: PeripheralChoice[];
+  leds: { name: string; modes: [number, string][]; brightness_step: number | null; color: boolean }[];
+}
+
+export interface PeripheralInfo {
+  /** "vvvv:pppp". */
+  key: string;
+  vendor_id: number;
+  product_id: number;
+  brand: string;
+  model: string;
+  kind: "mouse" | "keyboard";
+  /** Where PeriHub knows the protocol from, e.g. "libratbag (MIT)". */
+  source: string;
+  profiles: number;
+  firmware: string | null;
+  /** From 1. */
+  active_profile: number | null;
+  active_dpi: number | null;
+  settings: PeripheralSettings;
+  limits: PeripheralLimits;
+  buttons: { name: string; action: string }[];
+  /** Changes may be tried: PeriHub's app, and everything read looked as documented. */
+  editable: boolean;
+  /** The device can store its settings in its memory. */
+  can_save: boolean;
+  /** Something did not look as documented: nothing is changed on it. */
+  problem: string | null;
+  /** A change was neither kept nor undone, and could not be undone on this connection. */
+  pending_undo: boolean;
+  /** Requests and answers of the last reading, for test reports. */
+  raw: string[];
+}
+
 export interface CorsairInfo {
   product_id: number;
   model: string;
@@ -545,6 +612,13 @@ export const api = {
   g300Save: (number: number, settings: G300Settings) => invoke<G300Info>("g300_save", { number, settings }),
   g300KeepChanges: () => invoke<void>("g300_keep_changes"),
   g300UndoLastWrite: () => invoke<G300Info>("g300_undo_last_write"),
+  /** A device of another brand, read again now. */
+  peripheralInfo: (key: string) => invoke<PeripheralInfo>("peripheral_info", { key }),
+  /** Experimental change, also saved to the device's memory if `save`: undone unless kept. */
+  peripheralChange: (key: string, settings: PeripheralSettings, save: boolean) =>
+    invoke<PeripheralInfo>("peripheral_change", { key, settings, save }),
+  peripheralKeepChanges: (key: string) => invoke<void>("peripheral_keep_changes", { key }),
+  peripheralUndo: (key: string) => invoke<PeripheralInfo>("peripheral_undo", { key }),
   /** Experimental lighting on a Corsair mouse: one colour on every LED, for this session. */
   corsairSetLighting: (productId: number, color: string) =>
     invoke<CorsairInfo>("corsair_set_lighting", { productId, color }),

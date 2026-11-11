@@ -23,6 +23,7 @@ use crate::hidpp::{HidppDevice, Transport};
 use crate::keyboard::{KeyInterfaces, KeyboardInfo, KeyboardTask};
 use crate::logitech::LogitechTask;
 use crate::mouse::{MouseInfo, MouseTask, ReceiverLink};
+use crate::peripheral::{self, PeripheralInfo, task::PeripheralTask};
 use crate::softmacro::KeyboardTriggers;
 use crate::worker::Worker;
 
@@ -87,6 +88,30 @@ fn pick_collections<T: Copy>(devices: &[DeviceInfo], known: impl Fn(&DeviceInfo)
             Some(i) if found[i].0.usage_page() < 0xFF00 && d.usage_page() >= 0xFF00 => found[i] = (d.clone(), model),
             Some(_) => {}
             None => found.push((d.clone(), model)),
+        }
+    }
+    found
+}
+
+/// The configuration collection of each device of another brand PeriHub knows, one per device: the
+/// one with the usage page its driver talks to, or else the interface a source names. Devices of a
+/// brand PeriHub has no driver for, and models missing from the tables, are never opened.
+fn peripheral_collections(devices: &[DeviceInfo]) -> Vec<(DeviceInfo, &'static peripheral::Model)> {
+    let same = |a: &DeviceInfo, b: &DeviceInfo| {
+        a.vendor_id() == b.vendor_id() && a.product_id() == b.product_id() && a.serial_number() == b.serial_number()
+    };
+    let mut found: Vec<(DeviceInfo, &'static peripheral::Model)> = Vec::new();
+    for by_usage in [true, false] {
+        for d in devices {
+            let Some(model) = peripheral::find(d.vendor_id(), d.product_id()) else { continue };
+            let matches = if by_usage {
+                d.usage_page() == model.usage_page
+            } else {
+                model.interface == Some(d.interface_number())
+            };
+            if matches && !found.iter().any(|(o, _)| same(o, d)) {
+                found.push((d.clone(), model));
+            }
         }
     }
     found
@@ -245,6 +270,9 @@ pub struct DeviceStatus {
     /// Corsair mice and keyboards (experimental support).
     pub corsair: Vec<CorsairInfo>,
     pub corsair_error: Option<String>,
+    /// Mice and keyboards of other brands, from published protocol documentation (experimental).
+    pub peripherals: Vec<PeripheralInfo>,
+    pub peripheral_error: Option<String>,
     /// Connected Logitech receivers (LIGHTSPEED and Logi Bolt).
     pub receivers: Vec<ReceiverReport>,
     /// Running programs that set their own DPI and other settings on Logitech devices (Solaar,
@@ -271,6 +299,13 @@ struct Slots {
     corsair_failed: Vec<CString>,
     /// Corsair receivers without a connected device, and when they were last asked.
     corsair_waiting: HashMap<CString, std::time::Instant>,
+    /// Open devices of other brands, by the path of their configuration collection.
+    peripherals: Vec<(CString, Worker<PeripheralTask>, PeripheralInfo)>,
+    peripheral_error: Option<String>,
+    /// Devices of other brands that failed to open: not retried until they are plugged in again.
+    peripheral_failed: Vec<CString>,
+    /// Devices that did not answer (asleep, or away from their receiver), and when they were asked.
+    peripheral_waiting: HashMap<CString, std::time::Instant>,
     /// Set by the mouse's thread while another program controls the mouse.
     mouse_host_mode: Option<Arc<AtomicBool>>,
     reported_host_mode: bool,
@@ -362,6 +397,7 @@ impl Manager {
             let mut changed = self.poll(&mut api, pass.is_multiple_of(RECEIVER_SCAN_EVERY));
             changed |= self.poll_corsair(&api);
             changed |= self.poll_g300(&api);
+            changed |= self.poll_peripherals(&api);
             if pass.is_multiple_of(CONFLICT_CHECK_EVERY) {
                 changed |= self.check_conflicts();
             }
@@ -845,6 +881,8 @@ impl Manager {
             g300: slots.g300.as_ref().map(|(_, _, info)| info.clone()),
             g300_error: slots.g300_error.clone(),
             corsair_error: slots.corsair_error.clone(),
+            peripherals: slots.peripherals.iter().map(|(_, _, info)| info.clone()).collect(),
+            peripheral_error: slots.peripheral_error.clone(),
             receivers: slots.receivers.clone(),
             logitech_programs: slots.logitech_programs.iter().map(|name| name.to_string()).collect(),
             sandboxed: conflicts::sandboxed(),
@@ -908,6 +946,96 @@ impl Manager {
                 changed | new
             }
         }
+    }
+
+    /// The open device of another brand with this key ("vvvv:pppp").
+    pub fn peripheral(&self, key: &str) -> Result<Worker<PeripheralTask>> {
+        let slots = self.slots.lock().unwrap();
+        slots
+            .peripherals
+            .iter()
+            .find(|(_, _, info)| info.key == key)
+            .map(|(_, w, _)| w.clone())
+            .ok_or(Error::NotConnected)
+    }
+
+    /// Keeps the status in step with what a device of another brand shows after a change.
+    pub fn peripheral_changed(&self, info: &PeripheralInfo) {
+        let mut slots = self.slots.lock().unwrap();
+        if let Some((_, _, current)) = slots.peripherals.iter_mut().find(|(_, _, i)| i.key == info.key) {
+            *current = info.clone();
+        }
+    }
+
+    /// Opens new devices of other brands and forgets the ones that went away. Returns `true` if
+    /// the status changed.
+    fn poll_peripherals(&self, api: &HidApi) -> bool {
+        let devices: Vec<DeviceInfo> =
+            api.device_list().filter(|d| peripheral::vendors().any(|v| v == d.vendor_id())).cloned().collect();
+        let found = peripheral_collections(&devices);
+        let present = |path: &CStr| found.iter().any(|(d, _)| d.path() == path);
+        let mut changed = false;
+        let mut slots = self.slots.lock().unwrap();
+        let before = slots.peripherals.len();
+        slots.peripherals.retain(|(path, worker, info)| {
+            let keep = worker.is_alive() && present(path);
+            if !keep {
+                log::info!("{} {} disconnected", info.brand, info.model);
+            }
+            keep
+        });
+        changed |= slots.peripherals.len() != before;
+        slots.peripheral_failed.retain(|path| present(path));
+        slots.peripheral_waiting.retain(|path, _| present(path));
+        if found.is_empty() && slots.peripheral_error.take().is_some() {
+            changed = true;
+        }
+        let new: Vec<_> = found
+            .into_iter()
+            .filter(|(d, _)| {
+                let path = d.path();
+                !slots.peripherals.iter().any(|(p, _, _)| p.as_c_str() == path)
+                    && !slots.peripheral_failed.iter().any(|p| p.as_c_str() == path)
+                    && slots.peripheral_waiting.get(path).is_none_or(|at| at.elapsed() >= CORSAIR_RECEIVER_RETRY)
+            })
+            .collect();
+        drop(slots);
+        for (device, model) in new {
+            let changes = self.untested_saves;
+            let result = device
+                .open_device(api)
+                .map_err(Error::from)
+                .and_then(|dev| PeripheralTask::open(Box::new(dev), model, device.product_id(), changes));
+            let mut slots = self.slots.lock().unwrap();
+            let path = device.path().to_owned();
+            match result {
+                Ok(task) => {
+                    let info = task.info.clone();
+                    slots.peripherals.push((path.clone(), Worker::spawn("perihub-peripheral", task), info));
+                    slots.peripheral_waiting.remove(&path);
+                    slots.peripheral_error = None;
+                    changed = true;
+                }
+                // Asleep or away from its receiver: asked again later, without a message.
+                Err(Error::Unreachable | Error::Timeout) => {
+                    slots.peripheral_waiting.insert(path, std::time::Instant::now());
+                }
+                Err(error) => {
+                    let message = format!("{} {}: {}", model.brand, model.name, open_error_message(error));
+                    // Without the udev rule it is tried again at every pass: said once, not every time.
+                    let new = slots.peripheral_error.as_ref() != Some(&message);
+                    if new {
+                        log::warn!("{message}");
+                    }
+                    if !message.contains("permission denied") {
+                        slots.peripheral_failed.push(path);
+                    }
+                    slots.peripheral_error = Some(message);
+                    changed |= new;
+                }
+            }
+        }
+        changed
     }
 
     /// The open Corsair device with this USB product id.

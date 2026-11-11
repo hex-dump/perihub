@@ -53,6 +53,7 @@
 | 28 more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
 | Logitech devices on a **Logi Bolt** or **Unifying** receiver (MX Master, MX Anywhere, MX Keys…) | 🧪 Experimental: recognized by the features they report; the DPI of those without onboard memory can be changed, everything else is read |
 | 26 **Corsair mice** and 23 **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Experimental: read, and one colour of lighting for the session, at your own risk |
+| 21 **ASUS ROG and TUF mice** (Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3…) | 🧪 Experimental: read; DPI, polling rate, button response, angle snapping and lighting can be changed at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
 
@@ -132,6 +133,15 @@ One test report is enough to make a format tested for every mouse that uses it: 
 | Safety net | Only values the mouse accepts; a backup before every save; every write read back | Only the commands lighting needs; nothing is saved in the device |
 | If something looks wrong | Each save is undone after 15 seconds unless you keep it, also after PeriHub closed or the mouse was unplugged | The device gets its own settings back after 15 seconds unless you keep it, when you quit PeriHub, and as soon as anything fails |
 | Turn it off | Nothing to turn off: just don't save | On the device page, or **Turn off experimental lighting** in the tray menu |
+
+### Mice and keyboards of other brands
+
+ASUS mice are supported from the published documentation of their protocol ([libratbag](https://github.com/libratbag/libratbag)), not from a test on a real device. PeriHub reads them; their page can change the active profile's settings:
+
+- **Apply** sends a change without saving it to the device's memory. It should last until the device is turned off, but that is not confirmed, so the page always shows a warning next to it.
+- **Save to memory** also stores it in the device, after the **No warranty** box the first time.
+- Either way PeriHub sends only the commands in its list for that device (never anything that touches firmware) and only values the device accepts. It saves a backup of the settings first and reads them back after, and the change is undone after 15 seconds unless you keep it, also after PeriHub closed or the device was unplugged.
+- If anything the device answers does not look as documented, PeriHub changes nothing on it and the test report shows exactly what it answered.
 
 ### Help test your device
 
@@ -323,5 +333,8 @@ The protocols were worked out thanks to:
 - [libratbag](https://github.com/libratbag/libratbag) (MIT): Logitech HID++ 2.0, onboard profiles, the list of Logitech mice and the G300's format.
 - [gorkemgun/apex-3-tkl](https://github.com/gorkemgun/apex-3-tkl) (MIT): the Apex 3 TKL key mapping.
 - [ckb-next](https://github.com/ckb-next/ckb-next) and [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub): Corsair's protocol, described in our own words in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md). No code was copied.
+- [libratbag](https://github.com/libratbag/libratbag) (MIT), and OpenRGB for each mouse's interface: the ASUS ROG and TUF mice and their protocol, in [docs/protocols/asus-rog.md](docs/protocols/asus-rog.md).
+
+The notices of the projects PeriHub takes code or data from are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which comes with every package.
 
 PeriHub is released under the [MIT license](LICENSE). It is not affiliated with SteelSeries, Logitech or Corsair; product names belong to their owners.

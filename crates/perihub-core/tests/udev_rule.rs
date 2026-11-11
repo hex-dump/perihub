@@ -90,3 +90,37 @@ fn udev_rule_opens_only_interface_1_of_the_g300() {
     assert_eq!(lines.len(), 1);
     assert!(lines[0].contains(r#"ENV{ID_USB_INTERFACE_NUM}=="01""#));
 }
+
+#[test]
+fn udev_rule_matches_the_other_brands_tables() {
+    use perihub_core::peripheral::models;
+    for vendor in perihub_core::peripheral::vendors() {
+        let tag = format!(r#"ATTRS{{idVendor}}=="{vendor:04x}""#);
+        let lines: Vec<&str> = RULE.lines().filter(|l| !l.trim_start().starts_with('#') && l.contains(&tag)).collect();
+        let mut in_rule: Vec<String> =
+            lines.iter().map(|l| l.split(r#"ATTRS{idProduct}==""#).nth(1).unwrap()[..4].to_string()).collect();
+        let mut in_tables = Vec::new();
+        for model in models().filter(|m| m.vendor_id == vendor) {
+            for id in model.product_ids {
+                let id = format!("{id:04x}");
+                let line = lines.iter().find(|l| l.contains(&format!(r#"ATTRS{{idProduct}}=="{id}""#))).unwrap();
+                match model.interface {
+                    // Only the interface a source names.
+                    Some(n) => assert!(line.contains(&format!(r#"ENV{{ID_USB_INTERFACE_NUM}}=="{n:02}""#)), "{line}"),
+                    None => assert!(!line.contains("ID_USB_INTERFACE_NUM"), "{line}"),
+                }
+                in_tables.push(id);
+            }
+        }
+        in_rule.sort();
+        in_tables.sort();
+        assert_eq!(in_rule, in_tables, "vendor {vendor:04x}");
+    }
+}
+
+#[test]
+fn udev_rule_never_opens_the_asus_omni_receiver() {
+    for line in RULE.lines().filter(|l| !l.trim_start().starts_with('#')) {
+        assert!(!line.contains(r#"ATTRS{idProduct}=="1ace""#), "{line}");
+    }
+}

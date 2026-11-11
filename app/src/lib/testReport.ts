@@ -1,4 +1,6 @@
-import type { CorsairInfo, G300Info, G300Profile, LogitechLive, ReceiverReport, UnsupportedReceiverDevice } from "./api";
+import type {
+  CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
+} from "./api";
 import type { MouseInfo } from "./api";
 import { kindName } from "./logitechFeatures";
 
@@ -199,5 +201,35 @@ export function g300Test(
       `Saving: ${info.editable ? "available" : "off (read-only)"}`,
       ...info.profiles.map((p) => `Profile ${p.number}: ${describe(p)}\n  ${p.raw}`),
     ].join("\n"),
+  };
+}
+
+/** What a tester sends about a device of another brand, with every request and answer of the last
+ * reading. */
+export function peripheralTest(info: PeripheralInfo, version: string, system: string): DeviceTestFields {
+  const usbId = info.key;
+  const set = info.settings;
+  const options = info.limits.options
+    .map((c) => `${c.label}: ${c.values.find(([v]) => v === set.options[c.id])?.[1] ?? set.options[c.id] ?? "not read"}`)
+    .join(", ");
+  return {
+    model: `${info.brand} ${info.model}`,
+    usbId,
+    connection: "",
+    report: [
+      `PeriHub ${version} on ${system}`,
+      `Device: ${info.brand} ${info.model} (${info.kind}), USB ID ${usbId}, protocol from ${info.source}`,
+      `Firmware: ${info.firmware ?? "not read"}`,
+      `Active profile: ${info.active_profile ?? "-"} of ${info.profiles}, DPI level ${info.active_dpi ?? "-"}`,
+      `DPI levels: ${set.dpi_levels.join(" / ") || "-"}, polling: ${set.polling_hz ?? "not read"} Hz`,
+      options ? `Other settings: ${options}` : null,
+      ...set.leds.map((l, i) => `LED ${i + 1}: mode ${l.mode}, brightness ${l.brightness ?? "-"}, ${l.color}`),
+      ...info.buttons.map((b) => `Button ${b.name}: ${b.action}`),
+      `Changes: ${info.problem ? `off (${info.problem})` : info.editable ? "available (experimental)" : "off (read-only)"}`,
+      "Requests and answers:",
+      ...info.raw.map((line) => `  ${line}`),
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n"),
   };
 }

@@ -10,11 +10,12 @@
   import { kindIcon, kindName } from "./lib/logitechFeatures";
   import type { ReceiverReport, UnsupportedReceiverDevice } from "./lib/api";
   import G300 from "./pages/G300.svelte";
+  import Peripheral from "./pages/Peripheral.svelte";
   import Settings from "./pages/Settings.svelte";
   import Icon from "./components/Icon.svelte";
 
-  type Page = "keyboard" | "mouse" | "g300" | "corsair" | "logitech" | "profiles" | "settings";
-  const PAGES: Page[] = ["keyboard", "mouse", "g300", "corsair", "logitech", "profiles", "settings"];
+  type Page = "keyboard" | "mouse" | "g300" | "corsair" | "logitech" | "peripheral" | "profiles" | "settings";
+  const PAGES: Page[] = ["keyboard", "mouse", "g300", "corsair", "logitech", "peripheral", "profiles", "settings"];
 
   // Navigation through the URL hash (#page or #page:tab), so a page can be opened directly.
   function fromHash(): [Page, string | undefined] {
@@ -44,6 +45,8 @@
     g300: null,
     g300_error: null,
     corsair_error: null,
+    peripherals: [],
+    peripheral_error: null,
     receivers: [],
     logitech_programs: [],
     sandboxed: false,
@@ -66,6 +69,14 @@
   /** The Corsair device on screen: the one in the address, or the first one. */
   const corsairShown = $derived(
     status.corsair.find((d) => hex(d.product_id) === tab) ?? (page === "corsair" ? status.corsair[0] : undefined) ?? null,
+  );
+
+  /** The device of another brand on screen: the one in the address ("vvvv-pppp"), or the first one. */
+  const peripheralTab = (key: string) => key.replace(":", "-");
+  const peripheralShown = $derived(
+    status.peripherals.find((d) => peripheralTab(d.key) === tab) ??
+      (page === "peripheral" ? status.peripherals[0] : undefined) ??
+      null,
   );
 
   onMount(() => {
@@ -148,6 +159,27 @@
         </span>
       </button>
     {/each}
+    {#each status.peripherals as device (device.key)}
+      <button
+        class:active={page === "peripheral" && peripheralShown?.key === device.key}
+        onclick={() => go("peripheral", peripheralTab(device.key))}
+      >
+        <Icon name={device.kind} />
+        <span class="col tight">
+          <span class="name">{device.brand} {device.model}</span>
+          <span class="state on">{device.editable ? "Experimental" : "Read-only"}</span>
+        </span>
+      </button>
+    {/each}
+    {#if status.peripherals.length === 0 && status.peripheral_error}
+      <button class:active={page === "peripheral"} onclick={() => go("peripheral")}>
+        <Icon name="mouse" />
+        <span class="col tight">
+          <span class="name">Other device</span>
+          <span class="state">Not opened</span>
+        </span>
+      </button>
+    {/if}
     {#if status.corsair.length === 0 && (status.corsair_error || page === "corsair")}
       <button class:active={page === "corsair"} onclick={() => go("corsair")}>
         <Icon name="mouse" />
@@ -215,6 +247,8 @@
             error={status.corsair_error}
             sandboxed={status.sandboxed}
           />{/key}
+      {:else if page === "peripheral"}
+        {#key peripheralShown?.key}<Peripheral info={peripheralShown} error={status.peripheral_error} />{/key}
       {:else if page === "profiles"}
         <AppProfiles {status} />
       {:else}

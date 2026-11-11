@@ -12,6 +12,7 @@ use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
 use perihub_core::keyboard::{Keymap, KeymapRestore};
 use perihub_core::logitech::LogitechLive;
 use perihub_core::mouse::{MouseLive, MouseRestore, MouseState};
+use perihub_core::peripheral::{PeripheralInfo, Settings};
 use perihub_core::{DeviceStatus, Error};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -342,6 +343,66 @@ pub async fn g300_keep_changes(state: State<'_, AppState>) -> CmdResult<()> {
 pub async fn g300_undo_last_write(state: State<'_, AppState>) -> CmdResult<G300Info> {
     let manager = state.manager.clone();
     blocking(move || manager.g300()?.call(|g| g.undo_last_write())).await
+}
+
+// ---- Mice and keyboards of other brands (experimental) ----
+
+/// Keeps the status the interface shows in step with a device of another brand.
+fn peripheral_changed(app: &AppHandle, info: &PeripheralInfo) {
+    let manager = &app.state::<AppState>().manager;
+    manager.peripheral_changed(info);
+    let _ = app.emit("devices-changed", manager.status());
+}
+
+/// A device of another brand, read again now.
+#[tauri::command]
+pub async fn peripheral_info(app: AppHandle, key: String) -> CmdResult<PeripheralInfo> {
+    let manager = app.state::<AppState>().manager.clone();
+    let info = blocking(move || manager.peripheral(&key)?.call(|p| p.info())).await?;
+    peripheral_changed(&app, &info);
+    Ok(info)
+}
+
+/// Changes a device of another brand (experimental), and saves to its memory if `save`. Undone
+/// unless kept.
+#[tauri::command]
+pub async fn peripheral_change(
+    app: AppHandle,
+    key: String,
+    settings: Settings,
+    save: bool,
+) -> CmdResult<PeripheralInfo> {
+    let manager = app.state::<AppState>().manager.clone();
+    let worker = manager.peripheral(&key).map_err(|e| e.to_string())?;
+    let result = blocking(move || worker.call(move |p| p.change(&settings, save))).await;
+    // Also after an error: the change may have been undone, and what the device shows changed.
+    let manager = app.state::<AppState>().manager.clone();
+    if let Ok(info) = blocking(move || manager.peripheral(&key)?.call(|p| Ok(p.info.clone()))).await {
+        peripheral_changed(&app, &info);
+    }
+    result
+}
+
+/// The user keeps a change to a device of another brand: the core stops counting down to undo it.
+#[tauri::command]
+pub async fn peripheral_keep_changes(state: State<'_, AppState>, key: String) -> CmdResult<()> {
+    let manager = state.manager.clone();
+    blocking(move || {
+        manager.peripheral(&key)?.call(|p| {
+            p.keep_changes();
+            Ok(())
+        })
+    })
+    .await
+}
+
+/// Puts back the settings from before the last change to a device of another brand.
+#[tauri::command]
+pub async fn peripheral_undo(app: AppHandle, key: String) -> CmdResult<PeripheralInfo> {
+    let manager = app.state::<AppState>().manager.clone();
+    let info = blocking(move || manager.peripheral(&key)?.call(|p| p.undo_last_change())).await?;
+    peripheral_changed(&app, &info);
+    Ok(info)
 }
 
 // ---- Corsair mice and keyboards (experimental) ----

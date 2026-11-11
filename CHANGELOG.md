@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **21 ASUS ROG and TUF mice (experimental)**, from the published documentation of their protocol (libratbag, MIT), on their cable and through their own wireless receiver: Chakram, Chakram Core, Chakram X, Gladius II (and Origin, PNK LTD), GX860 Buzzard, Harpe Wireless, Keris (and Wireless, Wireless AimPoint), Pugio, Spatha X, Strix Carry, Strix Impact (I, II, II Wireless, III), TUF Gaming M3 Gen II, M4 Air and Mini WL Mouse Miku. Nobody has tried them with PeriHub yet. Each gets a page with what PeriHub read: firmware, active profile, DPI levels, polling rate, button response, angle snapping, lighting and buttons, and a test report with every request and answer.
+- On those pages **Apply** changes the active profile's DPI levels, polling rate, button response, angle snapping and lighting without saving them to the mouse's memory, always under a warning, and **Save to memory** stores them, after the No warranty box the first time. Every change is checked against what the mouse accepts, backed up first, read back after and undone after 15 seconds unless kept, also when the mouse is connected again after PeriHub closed. DPI is not changed on mice with separate X and Y DPI, nor brightness on those whose scale is unknown.
+- A new layer for devices of other brands: every command goes through a list per protocol, which refuses anything else (firmware, profile switching, button bindings for now) and, on a connection that may not change anything, everything but reads. The command line only reads them. An answer that does not look as documented leaves the device read-only.
+- On Linux the udev rule opens only the configuration interface of each ASUS mouse, where a source names it, and never the ROG Omni receiver, which is left out because it is shared with other devices.
+- `THIRD-PARTY-NOTICES.md`, with the notices of libratbag and apex-3-tkl (MIT), now in every package with `LICENSE`.
+
 ## 0.6.8 — 2026-11-11
 
 PeriHub comes as a Flatpak too.

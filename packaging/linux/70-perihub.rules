@@ -232,3 +232,63 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b7f", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b81", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair IRONCLAW RGB WIRELESS receiver
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b66", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# ASUS ROG and TUF mice (experimental, untested; protocol from libratbag). The configuration collection
+# shares its interface with the mouse's movements and the keys assigned to its buttons, as on the
+# Logitech mice above. Where no source names that interface, the whole mouse is opened. The ROG Omni
+# receiver (0b05:1ace) is left out: it is shared with other devices and may carry a keyboard's typing.
+# ASUS ROG GX860 Buzzard
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1816", TAG+="uaccess"
+# ASUS ROG Chakram Core
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1958", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Chakram
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="18e3", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Chakram
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="18e5", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Chakram X
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a18", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Chakram X
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a1a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Gladius II
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1845", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+# ASUS ROG Gladius II Origin
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1877", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+# ASUS ROG Gladius II Origin PNK LTD
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="18cd", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+# ASUS ROG Harpe Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a92", TAG+="uaccess"
+# ASUS ROG Keris
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="195c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Keris Wireless AimPoint
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a66", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Keris Wireless AimPoint
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a68", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Keris Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="195e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Keris Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1960", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Pugio
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1846", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+# ASUS ROG Spatha X
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1979", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Spatha X
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1977", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Strix Carry
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="18b4", TAG+="uaccess"
+# ASUS ROG Strix Impact II
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="18e1", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Strix Impact II Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1947", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Strix Impact II Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1949", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Strix Impact III
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a88", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# ASUS ROG Strix Impact
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1847", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+# ASUS TUF Gaming M3 Gen II
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a9b", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+# ASUS TUF Gaming M4 Air
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a03", TAG+="uaccess"
+# ASUS TUF Gaming Mini WL Mouse Miku
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1c56", TAG+="uaccess"
+# ASUS TUF Gaming Mini WL Mouse Miku
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1c57", TAG+="uaccess"

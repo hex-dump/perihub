@@ -41,6 +41,8 @@ const status: DeviceStatus = {
   g300: null,
   g300_error: null,
   corsair_error: null,
+  peripherals: [],
+  peripheral_error: null,
   receivers: [],
   logitech_programs: [],
   sandboxed: false,
