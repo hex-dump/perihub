@@ -638,8 +638,9 @@ export const api = {
   /** A device of another brand, read again now. */
   peripheralInfo: (key: string) => invoke<PeripheralInfo>("peripheral_info", { key }),
   /** Experimental change, also saved to the device's memory if `save`: undone unless kept. */
-  peripheralChange: (key: string, settings: PeripheralSettings, save: boolean) =>
-    invoke<PeripheralInfo>("peripheral_change", { key, settings, save }),
+  /** `profile`: the active profile the settings were edited on; refused if the device switched since. */
+  peripheralChange: (key: string, settings: PeripheralSettings, save: boolean, profile: number | null) =>
+    invoke<PeripheralInfo>("peripheral_change", { key, settings, save, profile }),
   peripheralKeepChanges: (key: string) => invoke<void>("peripheral_keep_changes", { key }),
   peripheralUndo: (key: string) => invoke<PeripheralInfo>("peripheral_undo", { key }),
   /** Sends one setting to a device that cannot report its settings: not saved, not undone. */

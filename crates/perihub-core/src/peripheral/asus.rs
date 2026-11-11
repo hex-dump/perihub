@@ -684,7 +684,7 @@ mod tests {
         assert!(!task.info.editable);
         let mut wanted = task.info.settings.clone();
         wanted.dpi_levels[0] = 600;
-        assert!(task.change(&wanted, false).is_err());
+        assert!(task.change(&wanted, false, None).is_err());
         assert!(hid.sent().iter().all(|r| r[0] == 0x12));
     }
 
@@ -706,7 +706,7 @@ mod tests {
         wanted.polling_hz = Some(500);
         wanted.leds[1].color = Rgb::new(0, 255, 0);
         wanted.leds[1].brightness = Some(75);
-        let info = task.change(&wanted, false).unwrap();
+        let info = task.change(&wanted, false, None).unwrap();
         assert_eq!(info.settings, wanted);
         let changes: Vec<Vec<u8>> = hid.sent().into_iter().filter(|r| r[0] != 0x12).collect();
         assert_eq!(changes.len(), 3, "DPI level 2, polling rate, LED 2");
@@ -737,7 +737,7 @@ mod tests {
         ] {
             let mut wanted = task.info.settings.clone();
             change(&mut wanted);
-            assert!(task.change(&wanted, false).is_err(), "{wanted:?}");
+            assert!(task.change(&wanted, false, None).is_err(), "{wanted:?}");
         }
         assert!(hid.sent()[reads..].iter().all(|r| r[0] == 0x12), "nothing but reads");
         let _ = std::fs::remove_dir_all(task.backups());
@@ -751,7 +751,7 @@ mod tests {
             start_for_test(Box::new(fake(mouse.clone(), false)), keris(), 0x195C, true, temp("stubborn")).unwrap();
         let mut wanted = task.info.settings.clone();
         wanted.dpi_levels[0] = 600;
-        let error = task.change(&wanted, false).unwrap_err().to_string();
+        let error = task.change(&wanted, false, None).unwrap_err().to_string();
         assert!(error.contains("reads back"), "{error}");
         assert!(error.contains("put back"), "{error}");
         assert!(!task.backups().join("pending-undo").exists());
@@ -765,7 +765,7 @@ mod tests {
             start_for_test(Box::new(fake(mouse.clone(), false)), keris(), 0x195C, true, temp("save")).unwrap();
         let mut wanted = task.info.settings.clone();
         wanted.dpi_levels[3] = 6400;
-        task.change(&wanted, true).unwrap();
+        task.change(&wanted, true, None).unwrap();
         assert_eq!(mouse.lock().unwrap().saved.unwrap().0[3], 63);
         task.expire_undo();
         crate::worker::DeviceTask::tick(&mut task).unwrap();
@@ -784,7 +784,7 @@ mod tests {
             start_for_test(Box::new(fake(mouse.clone(), false)), keris(), 0x195C, true, backups.clone()).unwrap();
         let mut wanted = task.info.settings.clone();
         wanted.polling_hz = Some(125);
-        task.change(&wanted, false).unwrap();
+        task.change(&wanted, false, None).unwrap();
         drop(task);
         assert_eq!(mouse.lock().unwrap().rate, 0);
         let read_only =
@@ -807,7 +807,7 @@ mod tests {
         assert_eq!(task.info.settings.polling_hz, Some(1000));
         let mut wanted = task.info.settings.clone();
         wanted.polling_hz = Some(250);
-        task.change(&wanted, false).unwrap();
+        task.change(&wanted, false, None).unwrap();
         assert_eq!(mouse.lock().unwrap().rate, 1, "field 2 on a mouse with two levels");
         let _ = std::fs::remove_dir_all(task.backups());
     }
@@ -820,7 +820,41 @@ mod tests {
         assert!(task.info.limits.leds.iter().all(|l| l.brightness_step.is_none()), "RAW_BRIGHTNESS");
         let mut wanted = task.info.settings.clone();
         wanted.dpi_levels[0] += 100;
-        assert!(task.change(&wanted, false).is_err());
+        assert!(task.change(&wanted, false, None).is_err());
+        let _ = std::fs::remove_dir_all(task.backups());
+    }
+
+    #[test]
+    fn undoing_a_save_puts_back_what_the_memory_held_not_a_kept_apply() {
+        let mouse = standard();
+        let mut task =
+            start_for_test(Box::new(fake(mouse.clone(), false)), keris(), 0x195C, true, temp("memory")).unwrap();
+        let mut applied = task.info.settings.clone();
+        applied.polling_hz = Some(500);
+        task.change(&applied, false, None).unwrap();
+        task.keep_changes();
+        let mut saved = applied.clone();
+        saved.dpi_levels[0] = 600;
+        task.change(&saved, true, None).unwrap();
+        task.expire_undo();
+        crate::worker::DeviceTask::tick(&mut task).unwrap();
+        let m = mouse.lock().unwrap();
+        assert_eq!(m.saved.unwrap(), ([3, 7, 15, 31], 3), "the memory holds the settings from when PeriHub connected");
+        drop(m);
+        let _ = std::fs::remove_dir_all(task.backups());
+    }
+
+    #[test]
+    fn a_change_made_on_another_profile_is_refused() {
+        let hid = fake(standard(), false);
+        let mut task = start_for_test(Box::new(hid.clone()), keris(), 0x195C, true, temp("profile")).unwrap();
+        assert_eq!(task.info.active_profile, Some(2));
+        let mut wanted = task.info.settings.clone();
+        wanted.polling_hz = Some(250);
+        let error = task.change(&wanted, false, Some(1)).unwrap_err().to_string();
+        assert!(error.contains("switched to profile 2"), "{error}");
+        assert!(hid.sent().iter().all(|r| r[0] == 0x12), "nothing but reads");
+        task.change(&wanted, false, Some(2)).unwrap();
         let _ = std::fs::remove_dir_all(task.backups());
     }
 }

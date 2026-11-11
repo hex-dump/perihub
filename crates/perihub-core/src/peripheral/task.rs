@@ -73,6 +73,9 @@ pub struct PeripheralTask {
     last_saved: bool,
     undo_at: Option<Instant>,
     last_refresh: Instant,
+    /// What the device's memory is taken to hold: the settings read when PeriHub connected, until
+    /// a save is kept. The undo of a save puts this back, not what a kept Apply left in RAM.
+    in_memory: Option<Settings>,
 }
 
 impl PeripheralTask {
@@ -126,6 +129,7 @@ impl PeripheralTask {
             last_saved: false,
             undo_at: None,
             last_refresh: Instant::now(),
+            in_memory: None,
         };
         task.take(reading);
         log::info!(
@@ -140,6 +144,7 @@ impl PeripheralTask {
             }
         );
         task.finish_pending_undo();
+        task.in_memory = task.info.readable.then(|| task.info.settings.clone());
         Ok(task)
     }
 
@@ -196,8 +201,9 @@ impl PeripheralTask {
     }
 
     /// Changes the settings, and also saves them to the device's memory if `save`. Undone unless
-    /// kept (see [`Self::keep_changes`]).
-    pub fn change(&mut self, wanted: &Settings, save: bool) -> Result<PeripheralInfo> {
+    /// kept (see [`Self::keep_changes`]). `profile`: the active profile the settings were edited on;
+    /// if the device switched profile since, nothing is changed.
+    pub fn change(&mut self, wanted: &Settings, save: bool, profile: Option<u8>) -> Result<PeripheralInfo> {
         if !self.info.editable {
             return Err(Error::Invalid(match &self.info.problem {
                 Some(problem) => format!("nothing is changed on this device: {problem}"),
@@ -214,12 +220,20 @@ impl PeripheralTask {
         if !self.info.editable {
             return Err(Error::Invalid(format!("nothing is changed on this device: {:?}", self.info.problem)));
         }
+        if profile.is_some() && profile != self.info.active_profile {
+            return Err(Error::Invalid(format!(
+                "the device switched to profile {} since the page was edited: nothing was changed, check the page and try again",
+                self.info.active_profile.map(|p| p.to_string()).unwrap_or_else(|| "?".into())
+            )));
+        }
         let before = self.info.settings.clone();
         check_settings(&self.info.limits, &before, wanted)?;
         if *wanted == before && !save {
             return Ok(self.info.clone());
         }
-        let id = self.backup(&before)?;
+        // Undoing a save puts back what the memory held, not what a kept Apply left in RAM.
+        let restore = if save { self.in_memory.clone().unwrap_or_else(|| before.clone()) } else { before.clone() };
+        let id = self.backup(&restore)?;
         std::fs::write(self.backups.join(PENDING_FILE), format!("{id}\n{}", if save { "save" } else { "change" }))?;
         self.last_backup = Some(id);
         self.last_saved = save;
@@ -266,6 +280,9 @@ impl PeripheralTask {
 
     /// The user checked the device after a change and keeps it.
     pub fn keep_changes(&mut self) {
+        if self.last_saved && self.undo_at.is_some() {
+            self.in_memory = Some(self.info.settings.clone());
+        }
         self.undo_at = None;
         let _ = std::fs::remove_file(self.backups.join(PENDING_FILE));
     }

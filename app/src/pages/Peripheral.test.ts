@@ -106,7 +106,7 @@ describe("a mouse of another brand", () => {
     await setPolling(500);
     await fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     await wait(0);
-    expect(api.peripheralChange).toHaveBeenCalledWith("0b05:195c", { ...info.settings, polling_hz: 500 }, false);
+    expect(api.peripheralChange).toHaveBeenCalledWith("0b05:195c", { ...info.settings, polling_hz: 500 }, false, 2);
     expect(screen.queryByRole("checkbox")).toBeNull();
   });
 
@@ -142,7 +142,7 @@ describe("a mouse of another brand", () => {
     await fireEvent.click(screen.getByRole("checkbox"));
     await fireEvent.click(save);
     await wait(0);
-    expect(api.peripheralChange).toHaveBeenCalledWith("0b05:195c", info.settings, true);
+    expect(api.peripheralChange).toHaveBeenCalledWith("0b05:195c", info.settings, true, 2);
     await fireEvent.click(screen.getByRole("button", { name: "Keep changes" }));
     await wait(0);
     await fireEvent.click(screen.getByRole("button", { name: "Save to memory…" }));

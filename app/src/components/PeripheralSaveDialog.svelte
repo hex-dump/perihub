@@ -38,9 +38,9 @@
       </li>
       <li>
         <b>What PeriHub does to protect the device:</b> it sends only the commands in its list for this device, never
-        anything that touches firmware, and only values the device accepts. It saves a backup of the settings first and
-        reads them back after saving. Then it asks whether to keep the changes, and puts the backup back by itself after
-        15 seconds without an answer. If PeriHub is closed or the device unplugged before that, it does so the next time
+        anything that touches firmware, and only values the device accepts. It keeps the settings the device had when PeriHub connected and
+        reads the settings back after saving. Then it asks whether to keep the changes, and after 15 seconds without an
+        answer it saves those earlier settings back by itself. If PeriHub is closed or the device unplugged before that, it does so the next time
         the device is connected.
       </li>
     </ul>

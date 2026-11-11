@@ -371,10 +371,11 @@ pub async fn peripheral_change(
     key: String,
     settings: Settings,
     save: bool,
+    profile: Option<u8>,
 ) -> CmdResult<PeripheralInfo> {
     let manager = app.state::<AppState>().manager.clone();
     let worker = manager.peripheral(&key).map_err(|e| e.to_string())?;
-    let result = blocking(move || worker.call(move |p| p.change(&settings, save))).await;
+    let result = blocking(move || worker.call(move |p| p.change(&settings, save, profile))).await;
     // Also after an error: the change may have been undone, and what the device shows changed.
     let manager = app.state::<AppState>().manager.clone();
     if let Ok(info) = blocking(move || manager.peripheral(&key)?.call(|p| Ok(p.info.clone()))).await {

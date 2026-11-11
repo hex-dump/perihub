@@ -28,6 +28,8 @@
 
   /** The settings being edited; null until something is changed. */
   let draft = $state<PeripheralSettings | null>(null);
+  /** The profile the draft was made on: the core refuses the change if the device switched since. */
+  let draftProfile: number | null = null;
   const shown = $derived(draft ?? info?.settings ?? null);
   const changed = $derived(!!draft && !!info && JSON.stringify(draft) !== JSON.stringify(info.settings));
 
@@ -54,6 +56,7 @@
 
   function edit(change: (s: PeripheralSettings) => void) {
     if (!info) return;
+    if (!draft) draftProfile = info.active_profile;
     const next: PeripheralSettings = structuredClone($state.snapshot(draft ?? info.settings));
     change(next);
     draft = next;
@@ -78,7 +81,7 @@
     const key = info.key;
     const settings = $state.snapshot(shown) as PeripheralSettings;
     return run(save ? "Saving to the device's memory…" : "Sending the change…", async () => {
-      live = await api.peripheralChange(key, settings, save);
+      live = await api.peripheralChange(key, settings, save, draft ? draftProfile : (info?.active_profile ?? null));
       draft = null;
       confirmKeep = true;
     });
