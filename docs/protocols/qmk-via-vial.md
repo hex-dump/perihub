@@ -121,7 +121,7 @@ What QMK does with them:
 
 What PeriHub does:
 
-- **Backlight**: shown, never changed (breathing writes the memory; brightness does not read back).
+- **Backlight**: not read yet, never changed (breathing writes the memory; brightness does not read back).
 - **RGB light, RGB matrix, LED matrix**: effect off / on (the effect it saw), speed, colour; brightness in steps of
   10 %, read as the nearest step, so that a value that comes back a step or two off still reads as what was set.
 - Changes are sent effect first, then speed, colour, brightness. **Apply** sends them without saving; **Save to

@@ -1,7 +1,8 @@
 # Devices
 
 What PeriHub recognizes, and how far each device is supported. PeriHub only talks to the
-devices listed here: it never sends anything to a device it does not recognize.
+devices listed here, and to the keyboards with QMK firmware described at the end: it never sends
+anything to a device it does not recognize.
 
 **Support levels**
 
@@ -24,6 +25,7 @@ the same format.
 - [SteelSeries mice](#steelseries-mice)
 - [Razer mice](#razer-mice)
 - [Glorious mice](#glorious-mice)
+- [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
 ## SteelSeries
 
@@ -397,6 +399,31 @@ described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md
 | Model O/O- | `258a:0036` | `V103` | whole mouse |
 | Model D | `258a:0033` | `V102` | whole mouse |
 | Model O Eternal | `3794:a000` | `1009` | whole mouse |
+
+## Keyboards with QMK firmware (Vial, VIA)
+
+🧪 Experimental: nobody has tried PeriHub on one yet. The protocols come from facts found in the QMK
+and Vial sources, described in [protocols/qmk-via-vial.md](protocols/qmk-via-vial.md); no code was
+copied.
+
+These keyboards have no USB ids of their own: every keyboard has its own. PeriHub finds them by the
+raw HID channel QMK gives them for VIA and Vial (usage page `0xFF60`, usage `0x61`), and lists them
+on the **QMK keyboards** page.
+
+| Keyboard | How PeriHub knows it | What PeriHub does |
+|---|---|---|
+| Vial firmware | its USB serial number holds `vial:f64c2b3c` | reads it by itself: Vial and VIA protocol, layers, macros; with VialRGB, lighting (effect by name, speed, colour, brightness in steps of 5 %) |
+| Any other keyboard with the raw HID channel | nothing: it may be VIA, or firmware that answers that channel its own way | nothing until you turn it on as a VIA keyboard; then VIA protocol, layers, macros; with VIA protocol 12 or 13, lighting (per-key RGB, RGB light, per-key light: off or the effect in use, speed, colour, brightness in steps of 10 %) |
+| Vial's bootloader (serial `vibl:d4f8159c`) | | never opened |
+
+- **Apply** changes the lighting without storing it; **Save to memory** stores it, after the No warranty
+  box the first time. Both are read back and undone after 15 seconds unless kept.
+- Never sent: keymaps, macros, encoders, layout options, the keymap, macro and memory resets, the
+  bootloader jump, the state of the key matrix, Vial's unlock, the keyboard's own custom values, and the
+  backlight (its breathing setting writes the memory at once).
+- On Linux a keyboard needs a line in the optional rule `74-perihub-qmk.rules`, which PeriHub writes
+  from the **QMK keyboards** page: it opens only the interface whose descriptor holds the raw HID
+  collection and nothing else, checked in `/sys` first.
 
 ## Something else?
 

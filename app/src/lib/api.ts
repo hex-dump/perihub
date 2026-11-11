@@ -50,7 +50,9 @@ export interface AppProfiles {
   rules: AppRule[];
 }
 
-export type FocusSupport = { kind: "supported"; desktop: string } | { kind: "unsupported"; reason: string };
+export type FocusSupport =
+  | { kind: "supported"; desktop: string }
+  | { kind: "unsupported"; reason: string };
 
 export interface ProfilesInfo {
   support: FocusSupport;
@@ -110,10 +112,12 @@ export type MacroStep =
   | { type: "noop" };
 
 /** A step of a macro run by PeriHub: the device steps plus typing text and opening a website or program. */
-export type SoftStep = MacroStep | { type: "text"; text: string } | { type: "open"; target: string };
+export type SoftStep =
+  MacroStep | { type: "text"; text: string } | { type: "open"; target: string };
 
 /** once; repeat a number of times; toggle: again and again until the button is pressed again. */
-export type SoftMode = { type: "once" } | { type: "repeat"; times: number } | { type: "toggle" };
+export type SoftMode =
+  { type: "once" } | { type: "repeat"; times: number } | { type: "toggle" };
 
 /** Macro run by PeriHub; the buttons that start it send `key` (F19, F24, F13–F18). Key 0: new. */
 export interface SoftwareMacro {
@@ -303,6 +307,8 @@ export interface DeviceStatus {
   /** Mice and keyboards of other brands, from published protocol documentation (experimental). */
   peripherals: PeripheralInfo[];
   peripheral_error: string | null;
+  /** Keyboards with QMK firmware found by their raw HID channel, open or not. */
+  qmk: QmkKeyboard[];
   /** Connected Logitech receivers (LIGHTSPEED, Logi Bolt and Unifying). */
   receivers: ReceiverReport[];
   /** Running programs that set Logitech devices' settings themselves, such as "Solaar". */
@@ -346,6 +352,35 @@ export interface LogitechLive {
   saved_dpi: number | null;
 }
 
+/** A keyboard with QMK firmware, found by its raw HID channel (usage page 0xFF60). */
+export interface QmkKeyboard {
+  /** "vvvv:pppp", as in the peripherals. */
+  key: string;
+  vendor_id: number;
+  product_id: number;
+  brand: string;
+  name: string;
+  /** Vial firmware, by its serial number: read without asking. */
+  vial: boolean;
+  /** PeriHub may open it: a Vial keyboard, or one turned on as a VIA keyboard. */
+  enabled: boolean;
+  /** Open now, with a page of its own. */
+  open: boolean;
+  /** The system refused to open it: on Linux, no rule opens its raw HID channel. */
+  denied: boolean;
+}
+
+/** Linux: the optional udev rule that opens the raw HID channel of the QMK keyboards allowed. */
+export interface QmkAccess {
+  /** The keyboards ("vvvv:pppp") the rule opens. */
+  allowed: string[];
+  /** Linux: the rule is needed, and PeriHub can install it. */
+  supported: boolean;
+  /** Commands for a terminal, by keyboard, when the password window cannot be shown. */
+  manual_install: [string, string][];
+  manual_remove: string;
+}
+
 /** Linux: the optional udev rule that opens the Unifying receivers (see 73-perihub-unifying.rules). */
 export interface UnifyingAccess {
   rule_installed: boolean;
@@ -383,7 +418,13 @@ export type G300Button =
   | { type: "none" }
   | { type: "mouse"; button: number }
   | {
-      type: "dpi_up" | "dpi_down" | "dpi_cycle" | "profile_cycle" | "dpi_shift" | "dpi_default";
+      type:
+        | "dpi_up"
+        | "dpi_down"
+        | "dpi_cycle"
+        | "profile_cycle"
+        | "dpi_shift"
+        | "dpi_default";
     }
   | { type: "key"; modifiers: number; key: number }
   | { type: "unknown"; code: number; modifiers: number; key: number };
@@ -460,7 +501,12 @@ export interface PeripheralLimits {
   /** Empty: the polling rate is not changed. */
   polling_hz: number[];
   options: PeripheralChoice[];
-  leds: { name: string; modes: [number, string][]; brightness_step: number | null; color: boolean }[];
+  leds: {
+    name: string;
+    modes: [number, string][];
+    brightness_step: number | null;
+    color: boolean;
+  }[];
 }
 
 /** A setting of a device that cannot report it: PeriHub sends it, one at a time. */
@@ -471,7 +517,13 @@ export interface BlindSetting {
     | { type: "choice"; values: string[] }
     | { type: "color" }
     | { type: "range"; min: number; max: number; step: number }
-    | { type: "dpi"; min: number; max: number; step: number; max_presets: number };
+    | {
+        type: "dpi";
+        min: number;
+        max: number;
+        step: number;
+        max_presets: number;
+      };
   /** What PeriHub last sent since the device was connected. */
   last: BlindValue | null;
 }
@@ -593,91 +645,128 @@ export const api = {
     listen<DeviceStatus>("devices-changed", (event) => handler(event.payload)),
 
   keyboardConfig: () => invoke<KeyboardConfig>("kb_get_config"),
-  setLighting: (lighting: KeyboardLighting) => invoke<void>("kb_set_lighting", { lighting }),
-  setBrightness: (level: number) => invoke<void>("kb_set_brightness", { level }),
+  setLighting: (lighting: KeyboardLighting) =>
+    invoke<void>("kb_set_lighting", { lighting }),
+  setBrightness: (level: number) =>
+    invoke<void>("kb_set_brightness", { level }),
   readBrightness: () => invoke<number>("kb_read_brightness"),
   keymap: () => invoke<Keymap>("kb_get_keymap"),
-  applyKeymap: (changes: KeyChange[]) => invoke<Keymap>("kb_apply_keymap", { changes }),
+  applyKeymap: (changes: KeyChange[]) =>
+    invoke<Keymap>("kb_apply_keymap", { changes }),
   resetKeymap: () => invoke<Keymap>("kb_reset_keymap"),
   keyboardBackups: () => invoke<BackupEntry[]>("kb_backups"),
-  restoreKeyboardBackup: (id: string) => invoke<KeymapRestore>("kb_restore_backup", { id }),
+  restoreKeyboardBackup: (id: string) =>
+    invoke<KeymapRestore>("kb_restore_backup", { id }),
   keyCatalog: () => invoke<KeyCatalog>("kb_key_catalog"),
   keyAccess: () => invoke<KeyAccess>("kb_key_access"),
   grantKeyAccess: () => invoke<void>("kb_grant_key_access"),
   revokeKeyAccess: () => invoke<void>("kb_revoke_key_access"),
   /** Linux: the optional rule that opens the Unifying receivers, installed through the password window. */
+  /** QMK keyboards: turn one on or off as a VIA keyboard, and on Linux the optional rule for its raw HID channel. */
+  qmkSetEnabled: (key: string, on: boolean) =>
+    invoke<void>("qmk_set_enabled", { key, on }),
+  qmkAccess: () => invoke<QmkAccess>("qmk_access"),
+  grantQmkAccess: (key: string) => invoke<void>("qmk_grant_access", { key }),
+  revokeQmkAccess: (key: string) => invoke<void>("qmk_revoke_access", { key }),
   unifyingAccess: () => invoke<UnifyingAccess>("unifying_access"),
   grantUnifyingAccess: () => invoke<void>("unifying_grant_access"),
   revokeUnifyingAccess: () => invoke<void>("unifying_revoke_access"),
-  logitechLive: (receiverId: number, slot: number) => invoke<LogitechLive>("logitech_live", { receiverId, slot }),
+  logitechLive: (receiverId: number, slot: number) =>
+    invoke<LogitechLive>("logitech_live", { receiverId, slot }),
   /** Experimental: sets the DPI in the device's RAM, and again every time it connects. */
   logitechSetDpi: (receiverId: number, slot: number, dpi: number) =>
     invoke<void>("logitech_set_dpi", { receiverId, slot, dpi }),
-  logitechResetDpi: (receiverId: number, slot: number) => invoke<void>("logitech_reset_dpi", { receiverId, slot }),
+  logitechResetDpi: (receiverId: number, slot: number) =>
+    invoke<void>("logitech_reset_dpi", { receiverId, slot }),
   presets: () => invoke<LightingPreset[]>("kb_get_presets"),
   savePreset: (name: string, lighting: KeyboardLighting) =>
     invoke<LightingPreset[]>("kb_save_preset", { name, lighting }),
-  deletePreset: (name: string) => invoke<LightingPreset[]>("kb_delete_preset", { name }),
+  deletePreset: (name: string) =>
+    invoke<LightingPreset[]>("kb_delete_preset", { name }),
 
   mouseState: () => invoke<MouseState>("mouse_get_state"),
   mouseLive: () => invoke<MouseLive>("mouse_live"),
   saveProfile: (number: number, settings: ProfileSettings) =>
     invoke<MouseState>("mouse_save_profile", { number, settings }),
-  restoreFactory: (number: number) => invoke<MouseState>("mouse_restore_factory", { number }),
+  restoreFactory: (number: number) =>
+    invoke<MouseState>("mouse_restore_factory", { number }),
   mouseBackups: () => invoke<BackupEntry[]>("mouse_backups"),
-  restoreMouseBackup: (id: string) => invoke<MouseRestore>("mouse_restore_backup", { id }),
+  restoreMouseBackup: (id: string) =>
+    invoke<MouseRestore>("mouse_restore_backup", { id }),
   setProfileEnabled: (number: number, enabled: boolean) =>
     invoke<MouseState>("mouse_set_profile_enabled", { number, enabled }),
-  setActiveProfile: (number: number) => invoke<MouseState>("mouse_set_active_profile", { number }),
+  setActiveProfile: (number: number) =>
+    invoke<MouseState>("mouse_set_active_profile", { number }),
   previewDpi: (dpi: number) => invoke<void>("mouse_preview_dpi", { dpi }),
-  previewLed: (zone: number, effect: LedEffect) => invoke<void>("mouse_preview_led", { zone, effect }),
+  previewLed: (zone: number, effect: LedEffect) =>
+    invoke<void>("mouse_preview_led", { zone, effect }),
   revertPreview: () => invoke<void>("mouse_revert_preview"),
   g300Info: () => invoke<G300Info>("g300_info"),
   /** Saves a G300 profile: undone unless kept. */
-  g300Save: (number: number, settings: G300Settings) => invoke<G300Info>("g300_save", { number, settings }),
+  g300Save: (number: number, settings: G300Settings) =>
+    invoke<G300Info>("g300_save", { number, settings }),
   g300KeepChanges: () => invoke<void>("g300_keep_changes"),
   g300UndoLastWrite: () => invoke<G300Info>("g300_undo_last_write"),
   /** A device of another brand, read again now. */
-  peripheralInfo: (key: string) => invoke<PeripheralInfo>("peripheral_info", { key }),
+  peripheralInfo: (key: string) =>
+    invoke<PeripheralInfo>("peripheral_info", { key }),
   /** Experimental change, also saved to the device's memory if `save`: undone unless kept. */
   /** `profile`: the active profile the settings were edited on; refused if the device switched since. */
-  peripheralChange: (key: string, settings: PeripheralSettings, save: boolean, profile: number | null) =>
-    invoke<PeripheralInfo>("peripheral_change", { key, settings, save, profile }),
-  peripheralKeepChanges: (key: string) => invoke<void>("peripheral_keep_changes", { key }),
-  peripheralUndo: (key: string) => invoke<PeripheralInfo>("peripheral_undo", { key }),
+  peripheralChange: (
+    key: string,
+    settings: PeripheralSettings,
+    save: boolean,
+    profile: number | null,
+  ) =>
+    invoke<PeripheralInfo>("peripheral_change", {
+      key,
+      settings,
+      save,
+      profile,
+    }),
+  peripheralKeepChanges: (key: string) =>
+    invoke<void>("peripheral_keep_changes", { key }),
+  peripheralUndo: (key: string) =>
+    invoke<PeripheralInfo>("peripheral_undo", { key }),
   /** Sends one setting to a device that cannot report its settings: not saved, not undone. */
   peripheralSetBlind: (key: string, id: string, value: BlindValue) =>
     invoke<PeripheralInfo>("peripheral_set_blind", { key, id, value }),
   /** Experimental lighting on a Corsair mouse: one colour on every LED, for this session. */
   corsairSetLighting: (productId: number, color: string) =>
     invoke<CorsairInfo>("corsair_set_lighting", { productId, color }),
-  corsairLightingOff: (productId: number) => invoke<void>("corsair_lighting_off", { productId }),
+  corsairLightingOff: (productId: number) =>
+    invoke<void>("corsair_lighting_off", { productId }),
   /** The mouse still works: the core stops counting down to give it back. */
-  corsairKeepLighting: (productId: number) => invoke<void>("corsair_keep_lighting", { productId }),
+  corsairKeepLighting: (productId: number) =>
+    invoke<void>("corsair_keep_lighting", { productId }),
   /** Keeps an experimental save: the core stops counting down to undo it. */
   keepChanges: () => invoke<void>("mouse_keep_changes"),
   /** Puts back the mouse memory saved before the last write. */
   undoLastWrite: () => invoke<MouseRestore>("mouse_undo_last_write"),
 
   profiles: () => invoke<ProfilesInfo>("profiles_get"),
-  setProfiles: (profiles: AppProfiles) => invoke<void>("profiles_set", { profiles }),
+  setProfiles: (profiles: AppProfiles) =>
+    invoke<void>("profiles_set", { profiles }),
   onFocus: (handler: (app: string | null) => void): Promise<UnlistenFn> =>
     listen<string | null>("focus-changed", (event) => handler(event.payload)),
 
   appSettings: () => invoke<AppSettings>("app_get_settings"),
-  setAppSettings: (settings: AppSettings) => invoke<AppSettings>("app_set_settings", { settings }),
+  setAppSettings: (settings: AppSettings) =>
+    invoke<AppSettings>("app_set_settings", { settings }),
   quit: () => invoke<void>("app_quit"),
   openLogFolder: () => invoke<void>("app_open_log_folder"),
   openTestForm: (url: string) => invoke<void>("app_open_test_form", { url }),
   softMacros: () => invoke<SoftMacrosInfo>("soft_get"),
   /** Saves a macro run by PeriHub; a new one (key 0) gets its trigger key. */
-  saveSoftMacro: (item: SoftwareMacro) => invoke<SoftwareMacro>("soft_save", { item }),
+  saveSoftMacro: (item: SoftwareMacro) =>
+    invoke<SoftwareMacro>("soft_save", { item }),
   deleteSoftMacro: (key: number) => invoke<void>("soft_delete", { key }),
   stopSoftMacros: () => invoke<void>("soft_stop_all"),
   grantSoftAccess: () => invoke<void>("soft_grant_access"),
   revokeSoftAccess: () => invoke<void>("soft_revoke_access"),
   /** Saves a macro to a file chosen in the system's dialog; false if cancelled. */
-  exportMacro: (content: Macro, name: string) => invoke<boolean>("macro_export", { content, name }),
+  exportMacro: (content: Macro, name: string) =>
+    invoke<boolean>("macro_export", { content, name }),
   /** Reads a macro from a file chosen in the system's dialog; null if cancelled. */
   importMacro: () => invoke<Macro | null>("macro_import"),
   checkUpdate: () => invoke<UpdateInfo | null>("update_check"),
@@ -689,7 +778,10 @@ export const api = {
 };
 
 /** Runs `fn` only after `ms` milliseconds without new calls (for sliders and color pickers). */
-export function debounce<A extends unknown[]>(fn: (...args: A) => void, ms: number) {
+export function debounce<A extends unknown[]>(
+  fn: (...args: A) => void,
+  ms: number,
+) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const call = (...args: A) => {
     clearTimeout(timer);
@@ -701,5 +793,9 @@ export function debounce<A extends unknown[]>(fn: (...args: A) => void, ms: numb
 }
 
 export function errorText(error: unknown): string {
-  return typeof error === "string" ? error : error instanceof Error ? error.message : JSON.stringify(error);
+  return typeof error === "string"
+    ? error
+    : error instanceof Error
+      ? error.message
+      : JSON.stringify(error);
 }

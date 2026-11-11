@@ -150,7 +150,8 @@
 
   {#if confirmKeep}
     <KeepChangesDialog model={info.model} undoText="puts the settings from before back"
-      checkText="move it, click, check what you changed" onkeep={keep} onundo={undo} />
+      checkText={info.kind === "keyboard" ? "look at its lighting" : "move it, click, check what you changed"}
+      onkeep={keep} onundo={undo} />
   {/if}
   {#if asking}
     <PeripheralSaveDialog device={name} source={info.source} onclose={() => (asking = false)}
@@ -181,6 +182,7 @@
         <BlindSettings {info} onchange={(i) => (live = i)} />
       {:else}
       <dl class="settings">
+        {#if shown.dpi_levels.length > 0 || info.limits.dpi}
         <dt>{shown.dpi_levels.length === 1 ? "DPI" : "DPI levels"}</dt>
         <dd class="levels">
           {#each shown.dpi_levels as dpi, i (i)}
@@ -195,7 +197,9 @@
           {#if info.active_dpi}<span class="muted small">level {info.active_dpi} in use</span>{/if}
           {#if info.editable && !info.limits.dpi}<span class="muted small">(not changed on this device)</span>{/if}
         </dd>
+        {/if}
 
+        {#if shown.polling_hz !== null || info.limits.polling_hz.length > 0}
         <dt>Polling rate</dt>
         <dd>
           {#if info.editable && info.limits.polling_hz.length > 0}
@@ -207,6 +211,7 @@
             {shown.polling_hz ? `${shown.polling_hz} Hz` : "not read"}
           {/if}
         </dd>
+        {/if}
 
         {#each info.limits.options as choice (choice.id)}
           <dt>{choice.label}</dt>

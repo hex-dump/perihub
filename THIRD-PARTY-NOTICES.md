@@ -109,3 +109,7 @@ was copied.
   `docs/protocols/razer-mice.md`).
 - [ckb-next](https://github.com/ckb-next/ckb-next) (GPL-2.0-only) and
   [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub) (GPL-3.0): Corsair's protocol.
+- [QMK](https://github.com/qmk/qmk_firmware) (GPL-2.0-or-later), [vial-qmk](https://github.com/vial-kb/vial-qmk)
+  (GPL-2.0) and [vial-gui](https://github.com/vial-kb/vial-gui) (GPL-2.0): the VIA and Vial commands, the
+  lighting values and VialRGB's effect ids, the raw HID collection and interface of QMK keyboards, and the
+  serial numbers Vial uses to find its keyboards (see `docs/protocols/qmk-via-vial.md`).

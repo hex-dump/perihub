@@ -57,6 +57,7 @@
 | 75 **Razer mice** (DeathAdder, Viper, Basilisk, Naga, Orochi…) on their USB cable | 🧪 Experimental: read; DPI and polling rate can be saved at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
 | 21 **ASUS ROG and TUF mice** (Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3…) | 🧪 Experimental: read; DPI, polling rate, button response, angle snapping and lighting can be changed at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
 | 3 **Glorious mice** (Model O/O-, Model D, Model O Eternal) with a cable | 🧪 Experimental: read; on Linux DPI and polling rate can be saved at your own risk, on Windows read-only for now ([how](#mice-and-keyboards-of-other-brands)) |
+| **Keyboards with QMK firmware**: every Vial keyboard, and VIA keyboards you turn on | 🧪 Experimental: read; lighting can be changed at your own risk, keymaps are left to VIA and Vial ([how](#mice-and-keyboards-of-other-brands)) |
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
 
@@ -150,6 +151,8 @@ Razer mice are supported from facts found in [OpenRazer](https://github.com/open
 
 Glorious mice are supported from the published documentation of their SinoWealth protocol ([libratbag](https://github.com/libratbag/libratbag)). Every change rewrites their settings in memory, so their page too offers only **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo; PeriHub changes only the DPI of each slot and the polling rate, and writes everything else back as it read it, never on top of a reading that differs from the one taken when the mouse was connected. On Windows they are read-only for now: there the mouse does not say how long its settings are, and a write must. Only the ids that belong to Glorious are recognized: the generic SinoWealth ids are shared by other brands' mice, some with a different protocol.
 
+Keyboards with **QMK firmware** are supported from facts found in the [QMK](https://github.com/qmk/qmk_firmware) and [Vial](https://github.com/vial-kb/vial-qmk) sources, with no code copied. They have no USB ids of their own, so PeriHub finds them by the raw HID channel that VIA and Vial use, and lists them on the **QMK keyboards** page. **Vial** keyboards say so in their serial number and are read by themselves. Any other keyboard with that channel is read only after you turn it on as a VIA keyboard, since its firmware might give VIA's bytes another meaning. PeriHub shows the protocol versions, layers and macros, and the lighting: effect, speed, colour and brightness, with **Apply** and **Save to memory** as above. It changes the lighting only on Vial keyboards with VialRGB and on VIA firmware from 2023 on (protocol 12 or 13), where the protocol says exactly how; VIA effects have no names, so their page offers off and the effect in use. Keymaps, macros, the bootloader and the memory resets are never touched: use VIA or Vial for them, and close them while PeriHub reads the keyboard.
+
 SteelSeries mice are supported from [rivalcfg](https://github.com/flozz/rivalcfg), and PeriHub sends exactly the bytes rivalcfg's own tests expect. These mice **cannot report their settings**, so PeriHub cannot show, check or undo them: **Send** changes one setting until the mouse is unplugged or turned off, under a warning that is always on screen, and PeriHub never saves to their memory until someone has tested one. Unplugging the mouse brings back what it has saved.
 
 ### Help test your device
@@ -241,6 +244,10 @@ Linux puts the Unifying receivers in a mode where what you type on the keyboards
 > Linux cannot give this permission to PeriHub alone. With the rule installed, **every program running under your user account can read everything you type on the keyboards paired with a Unifying receiver**, passwords included, even while PeriHub is closed. Install it only if you want PeriHub to reach those devices and trust all the software you run.
 
 PeriHub itself only reads the answers of the devices it asks, and drops everything else that arrives on that interface without storing, logging or sending it.
+
+#### Optional: QMK keyboards
+
+QMK keyboards have no USB ids PeriHub's rule could list, so each one needs a line of its own. When the system refuses PeriHub a QMK keyboard, the **QMK keyboards** page offers to add one to [`74-perihub-qmk.rules`](docs/protocols/qmk-via-vial.md#on-linux), asking for your password, and can remove it from there. PeriHub first reads, in `/sys`, the descriptor of each of the keyboard's interfaces, and the line opens only the one that holds the raw HID channel and nothing else: what you type arrives on another interface, which stays closed. If Vial's own rule is installed, PeriHub can already read Vial keyboards.
 
 #### Optional: software macros
 
@@ -346,6 +353,7 @@ The protocols were worked out thanks to:
 - [OpenRazer](https://github.com/openrazer/openrazer): the Razer mice and their protocol, described in our own words in [docs/protocols/razer-mice.md](docs/protocols/razer-mice.md). No code was copied.
 - [libratbag](https://github.com/libratbag/libratbag) (MIT): the Glorious mice and their SinoWealth protocol, in [docs/protocols/sinowealth-glorious.md](docs/protocols/sinowealth-glorious.md).
 - [rivalcfg](https://github.com/flozz/rivalcfg) (WTFPL): the SteelSeries mice, their commands and the reports its tests expect, in [docs/protocols/steelseries-mice.md](docs/protocols/steelseries-mice.md).
+- [QMK](https://github.com/qmk/qmk_firmware) and [Vial](https://github.com/vial-kb/vial-qmk): the VIA and Vial protocols and how QMK keyboards present their raw HID channel, described in our own words in [docs/protocols/qmk-via-vial.md](docs/protocols/qmk-via-vial.md). No code was copied.
 
 The notices of the projects PeriHub takes code or data from are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which comes with every package.
 

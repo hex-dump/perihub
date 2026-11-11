@@ -11,11 +11,22 @@
   import type { ReceiverReport, UnsupportedReceiverDevice } from "./lib/api";
   import G300 from "./pages/G300.svelte";
   import Peripheral from "./pages/Peripheral.svelte";
+  import QmkKeyboards from "./pages/QmkKeyboards.svelte";
   import Settings from "./pages/Settings.svelte";
   import Icon from "./components/Icon.svelte";
 
-  type Page = "keyboard" | "mouse" | "g300" | "corsair" | "logitech" | "peripheral" | "profiles" | "settings";
-  const PAGES: Page[] = ["keyboard", "mouse", "g300", "corsair", "logitech", "peripheral", "profiles", "settings"];
+  type Page = "keyboard" | "mouse" | "g300" | "corsair" | "logitech" | "peripheral" | "qmk" | "profiles" | "settings";
+  const PAGES: Page[] = [
+    "keyboard",
+    "mouse",
+    "g300",
+    "corsair",
+    "logitech",
+    "peripheral",
+    "qmk",
+    "profiles",
+    "settings",
+  ];
 
   // Navigation through the URL hash (#page or #page:tab), so a page can be opened directly.
   function fromHash(): [Page, string | undefined] {
@@ -47,6 +58,7 @@
     corsair_error: null,
     peripherals: [],
     peripheral_error: null,
+    qmk: [],
     receivers: [],
     logitech_programs: [],
     sandboxed: false,
@@ -171,6 +183,15 @@
         </span>
       </button>
     {/each}
+    {#if status.qmk.length > 0}
+      <button class:active={page === "qmk"} onclick={() => go("qmk")}>
+        <Icon name="keyboard" />
+        <span class="col tight">
+          <span class="name">QMK keyboards</span>
+          <span class="state">{status.qmk.length} found</span>
+        </span>
+      </button>
+    {/if}
     {#if status.peripherals.length === 0 && status.peripheral_error}
       <button class:active={page === "peripheral"} onclick={() => go("peripheral")}>
         <Icon name="mouse" />
@@ -249,6 +270,8 @@
           />{/key}
       {:else if page === "peripheral"}
         {#key peripheralShown?.key}<Peripheral info={peripheralShown} error={status.peripheral_error} />{/key}
+      {:else if page === "qmk"}
+        <QmkKeyboards keyboards={status.qmk} onopen={(key) => go("peripheral", peripheralTab(key))} />
       {:else if page === "profiles"}
         <AppProfiles {status} />
       {:else}

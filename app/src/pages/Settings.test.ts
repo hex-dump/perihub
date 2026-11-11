@@ -43,6 +43,7 @@ const status: DeviceStatus = {
   corsair_error: null,
   peripherals: [],
   peripheral_error: null,
+  qmk: [],
   receivers: [],
   logitech_programs: [],
   sandboxed: false,

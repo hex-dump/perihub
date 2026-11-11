@@ -1,11 +1,11 @@
 name: Device test report
-description: Tell us how PeriHub works with a Corsair, ASUS, SteelSeries, Razer or Glorious device, the Logitech G300 or a Logitech device on a Bolt or Unifying receiver
+description: Tell us how PeriHub works with a Corsair, ASUS, SteelSeries, Razer or Glorious device, a QMK keyboard (Vial, VIA), the Logitech G300 or a Logitech device on a Bolt or Unifying receiver
 labels: ["device test"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing! PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session, if you turn it on. On the Logitech G300 it reads and saves the three profiles. For a Logitech device on a Bolt or Unifying receiver it reads what the device is, and can set its DPI, if you choose to. On ASUS, SteelSeries, Razer and Glorious mice it reads what the mouse reports, and changes settings only if you choose to, at your own risk. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
+        Thanks for testing! PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session, if you turn it on. On the Logitech G300 it reads and saves the three profiles. For a Logitech device on a Bolt or Unifying receiver it reads what the device is, and can set its DPI, if you choose to. On ASUS, SteelSeries, Razer and Glorious mice, and on QMK keyboards, it reads what the device reports, and changes settings only if you choose to, at your own risk. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
   - type: input
     id: model
     attributes:
@@ -66,7 +66,7 @@ body:
         - label: "Bolt or Unifying: after the device slept or was turned off and on, PeriHub set the DPI again"
         - label: "Bolt or Unifying: without PeriHub running, the device kept the DPI after it slept or was turned off and on"
         - label: "Bolt or Unifying: Back to the device's own DPI worked"
-        - label: "Other brands (ASUS, SteelSeries, Razer, Glorious): the DPI levels, polling rate, lighting and buttons PeriHub shows match the device"
+        - label: "Other brands (ASUS, SteelSeries, Razer, Glorious, QMK keyboards): the DPI levels, polling rate, lighting and buttons PeriHub shows match the device"
         - label: "Other brands: a change made with Apply took effect"
         - label: "Other brands: after unplugging the device (or turning it off) a change made only with Apply was gone"
         - label: "Other brands: a change made with Save to memory was still there after unplugging the device"
