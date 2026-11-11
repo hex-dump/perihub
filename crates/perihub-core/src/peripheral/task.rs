@@ -11,7 +11,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::{
     BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
-    check_settings, steelseries,
+    check_settings, razer, steelseries,
 };
 use crate::config;
 use crate::error::{Error, Result};
@@ -40,6 +40,10 @@ pub trait Driver: Send {
     /// Stores the settings in the device's memory, on devices that can.
     fn save(&mut self, io: &mut Io) -> Result<()>;
     fn can_save(&self) -> bool;
+    /// Every change stays in the device's memory by itself (no separate save).
+    fn changes_stay(&self) -> bool {
+        false
+    }
     /// Where the protocol is documented, for the page and the test report.
     fn source(&self) -> &'static str;
     fn profiles(&self) -> u8;
@@ -49,6 +53,7 @@ pub fn driver(model: &'static Model) -> Box<dyn Driver> {
     match model.protocol {
         Protocol::Asus(params) => Box::new(asus::Asus::new(params)),
         Protocol::SteelSeries(params) => Box::new(steelseries::SteelSeries::new(params)),
+        Protocol::Razer(params) => Box::new(razer::Razer::new(params)),
     }
 }
 
@@ -116,6 +121,7 @@ impl PeripheralTask {
             blind: driver.blind_settings(),
             editable: false,
             can_save: driver.can_save(),
+            changes_stay: driver.changes_stay(),
             problem: None,
             pending_undo: false,
             raw: Vec::new(),

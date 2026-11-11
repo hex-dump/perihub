@@ -447,3 +447,156 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1874", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1840", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Prime Wireless (through its receiver)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1848", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Razer mice (experimental, untested; facts from OpenRazer): only the interface OpenRazer sends to (0, or 3
+# on some newer mice). Interface 0 also carries the mouse's movements and clicks, as on the Logitech mice
+# above. Receivers and docks are left out: some can be shared with a keyboard.
+# Razer Orochi 2011
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0013", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0015", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga Epic
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="001f", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Abyssus 1800
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0020", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Mamba 2012 (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0024", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga 2012
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="002e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Imperator 2012
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="002f", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Ouroboros
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0032", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Taipan
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0034", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga Hex (Red)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0036", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder 2013
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0037", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder 1800
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0038", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Orochi 2013
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0039", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga Epic Chroma (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="003e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga 2014
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0040", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga Hex
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0041", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Abyssus
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0042", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder Chroma
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0043", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Mamba Chroma (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0044", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Mamba Tournament Edition
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0046", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Orochi (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0048", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Diamondback Chroma
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="004c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder 2000
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="004f", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga Hex V2
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0050", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga Chroma
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0053", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder 3500
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0054", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Lancehead (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0059", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Abyssus V2
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="005b", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder Elite
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="005c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Abyssus 2000
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="005e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Lancehead Tournament Edition
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0060", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Basilisk
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0064", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Basilisk Essential
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0065", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga Trinity
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0067", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Abyssus Elite (D.Va Edition)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="006a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Abyssus Essential
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="006b", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Mamba Elite
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="006c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder Essential
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="006e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Lancehead Wireless (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0070", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder Essential (White Edition)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0071", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Mamba Wireless (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0073", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0078", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper Ultimate (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="007a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder V2 Pro (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="007c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Pro Click (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0080", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder V2
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0084", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Basilisk V2
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0085", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Basilisk Ultimate
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0086", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper Mini
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="008a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder V2 Mini
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="008c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga Left Handed Edition 2020
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="008d", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga Pro (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="008f", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper 8KHz
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0091", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga X
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0096", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Razer DeathAdder Essential (2021)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0098", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Basilisk V3
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="0099", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Razer Viper Mini SE (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="009e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder V2 Lite
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00a1", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Cobra
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00a3", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper V2 Pro (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00a5", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Naga V2 Pro (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00a7", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Basilisk V3 Pro (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00aa", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Cobra Pro (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00af", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder V3
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00b2", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder V3 Pro (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00b6", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder V4 Pro (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00be", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper V3 Pro (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00c0", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer DeathAdder V3 Pro (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00c2", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Pro Click V2 Vertical Edition (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00c7", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Basilisk V3 35K
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00cb", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Razer Basilisk V3 Pro 35K (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00cc", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Pro Click V2 (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d0", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Basilisk Mobile (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d3", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Basilisk V3 Pro 35K Phantom Green Edition (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d6", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper V3 Pro SE (Wired)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00de", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"

@@ -57,6 +57,7 @@ const info: PeripheralInfo = {
   blind: [],
   editable: true,
   can_save: true,
+  changes_stay: false,
   problem: null,
   pending_undo: false,
   raw: ["12 04 00 00 → 12 04 00 00 03 00"],
@@ -264,6 +265,41 @@ describe("a mouse that cannot report its settings", () => {
     expect(report).toContain("Battery: 80 %, charging");
     expect(report).toContain("Sent: Polling rate = 500");
     expect(report).toContain("cannot be read back");
+  });
+});
+
+describe("a mouse that stores every change", () => {
+  const razer: PeripheralInfo = {
+    ...info,
+    key: "1532:0084",
+    vendor_id: 0x1532,
+    product_id: 0x0084,
+    brand: "Razer",
+    model: "DeathAdder V2",
+    source: "OpenRazer (facts only)",
+    profiles: 1,
+    active_profile: null,
+    active_dpi: null,
+    can_save: false,
+    changes_stay: true,
+    settings: { dpi_levels: [800], polling_hz: 1000, options: {}, leds: [] },
+    limits: { dpi: { min: 100, max: 20000, step: 50 }, polling_hz: [125, 500, 1000], options: [], leds: [] },
+    buttons: [],
+  };
+
+  it("offers only Save to memory, after the No warranty box, and the change is undone unless kept", async () => {
+    render(Peripheral, { props: { info: razer, error: null } });
+    expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
+    expect(document.body.textContent).toContain("stores every change in its memory by itself");
+    await setPolling(500);
+    await fireEvent.click(screen.getByRole("button", { name: "Save to memory…" }));
+    expect(api.peripheralChange).not.toHaveBeenCalled();
+    await fireEvent.click(screen.getByRole("checkbox"));
+    await fireEvent.click(screen.getByRole("button", { name: "Save to memory" }));
+    await wait(0);
+    expect(api.peripheralChange).toHaveBeenCalledWith("1532:0084", { ...razer.settings, polling_hz: 500 }, false, null);
+    await wait(15_000);
+    expect(api.peripheralUndo).toHaveBeenCalledWith("1532:0084");
   });
 });
 

@@ -87,9 +87,12 @@
     });
   }
 
+  /** On devices where every change stays, the change itself is the save. */
+  const saveFlag = () => !info?.changes_stay;
+
   function saveToMemory() {
     if (!info) return;
-    if (noWarrantyAccepted(`save:${info.key}`)) send(true);
+    if (noWarrantyAccepted(`save:${info.key}`)) send(saveFlag());
     else asking = true;
   }
 
@@ -154,7 +157,7 @@
       onconfirm={() => {
         asking = false;
         acceptNoWarranty(`save:${info!.key}`);
-        send(true);
+        send(saveFlag());
       }} />
   {/if}
   {#if busy}<div class="notice info">{busy}</div>{/if}
@@ -268,7 +271,18 @@
         </table>
       {/if}
 
-      {#if info.editable}
+      {#if info.editable && info.changes_stay}
+        <div class="notice warn change">
+          <b>Experimental.</b> This device stores every change in its memory by itself, the way {info.source} sends it,
+          so there is no change that lasts only until it is turned off. PeriHub asks for the No warranty box the first
+          time, saves the settings first, reads them back after the change, and puts them back after 15 seconds unless
+          you keep the change.
+        </div>
+        <div class="row actions">
+          <button disabled={!changed || !!busy || confirmKeep} onclick={() => (draft = null)}>Discard</button>
+          <button class="primary" disabled={!changed || !!busy || confirmKeep} onclick={saveToMemory}>Save to memory…</button>
+        </div>
+      {:else if info.editable}
         <div class="notice warn change">
           <b>Experimental.</b> <b>Apply</b> sends the change without saving it to the device's memory: it should last
           until the device is turned off, but nobody has confirmed that on this device. PeriHub saves the settings first,

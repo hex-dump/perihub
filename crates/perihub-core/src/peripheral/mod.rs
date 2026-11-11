@@ -10,6 +10,9 @@
 //! - an answer that does not look as documented leaves the device read-only.
 
 pub mod asus;
+pub mod razer;
+#[rustfmt::skip]
+pub mod razer_models;
 pub mod steelseries;
 #[rustfmt::skip]
 pub mod steelseries_models;
@@ -43,10 +46,12 @@ pub enum Effect {
     Save,
 }
 
-/// A command a driver may send, recognized by its first bytes.
+/// A command a driver may send, recognized by its bytes from `at`.
 #[derive(Debug, Clone, Copy)]
 pub struct Command {
     pub prefix: &'static [u8],
+    /// Where the bytes are: 0 for most protocols, 6 for Razer's class and command.
+    pub at: usize,
     pub effect: Effect,
     pub name: &'static str,
 }
@@ -55,6 +60,7 @@ pub struct Command {
 #[derive(Debug, Clone, Copy)]
 pub enum Protocol {
     Asus(asus::Params),
+    Razer(razer::Params),
     SteelSeries(steelseries::Params),
 }
 
@@ -76,7 +82,7 @@ pub struct Model {
 
 /// Every model of every driver.
 pub fn models() -> impl Iterator<Item = &'static Model> {
-    asus::MODELS.iter().chain(steelseries_models::MODELS)
+    asus::MODELS.iter().chain(steelseries_models::MODELS).chain(razer_models::MODELS)
 }
 
 pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {
@@ -248,6 +254,8 @@ pub struct PeripheralInfo {
     pub buttons: Vec<ButtonView>,
     /// Settings PeriHub can send to a device that cannot report them, one at a time.
     pub blind: Vec<BlindSetting>,
+    /// Every change stays in the device's memory: there is no separate save.
+    pub changes_stay: bool,
     /// Changes may be tried: this is PeriHub's app (not the command line) and everything read looked
     /// as documented.
     pub editable: bool,
@@ -336,9 +344,13 @@ impl Io {
 
     /// What may be sent: a command of the list, and on a read-only connection only a read.
     pub fn check(&self, payload: &[u8]) -> Result<Effect> {
-        let command = self.commands.iter().find(|c| payload.starts_with(c.prefix)).ok_or_else(|| {
-            Error::Invalid(format!("{} is not a command PeriHub may send", hex(&payload[..payload.len().min(4)])))
-        })?;
+        let command = self
+            .commands
+            .iter()
+            .find(|c| payload.get(c.at..).is_some_and(|p| p.starts_with(c.prefix)))
+            .ok_or_else(|| {
+                Error::Invalid(format!("{} is not a command PeriHub may send", hex(&payload[..payload.len().min(4)])))
+            })?;
         if command.effect != Effect::Read && !self.changes {
             return Err(Error::Invalid(format!("{}: this connection may not change anything", command.name)));
         }
@@ -364,6 +376,37 @@ impl Io {
                 break;
             }
         }
+    }
+
+    /// Sends `request` as feature report 0, waits `wait`, and reads feature report 0 back until
+    /// `ready` accepts it (a device that answers "busy" is asked again, five times at most).
+    pub fn feature_query<const N: usize>(
+        &mut self,
+        request: &[u8; N],
+        wait: Duration,
+        ready: impl Fn(&[u8; N]) -> bool,
+    ) -> Result<[u8; N]> {
+        self.check(request)?;
+        let mut report = Vec::with_capacity(N + 1);
+        report.push(0);
+        report.extend_from_slice(request);
+        self.hid.send_feature(&report)?;
+        let mut buf = vec![0u8; N + 1];
+        for _ in 0..5 {
+            std::thread::sleep(wait);
+            buf.fill(0);
+            let n = self.hid.get_feature(&mut buf)?;
+            if n < N + 1 {
+                continue;
+            }
+            let answer: [u8; N] = buf[1..=N].try_into().expect("length checked");
+            if ready(&answer) {
+                self.note(format!("{} → {}", hex(&request[..N.min(10)]), hex(&answer[..N.min(16)])));
+                return Ok(answer);
+            }
+        }
+        self.note(format!("{} → no answer", hex(&request[..N.min(10)])));
+        Err(Error::Timeout)
     }
 
     /// Sends `payload`, after report number 0, as an output report or a feature report.
@@ -501,6 +544,7 @@ pub(crate) mod fake {
     use super::*;
 
     type Answer = Box<dyn FnMut(&[u8]) -> Vec<Vec<u8>> + Send>;
+    type FeatureAnswer = Box<dyn FnMut(&[u8]) -> Vec<u8> + Send>;
 
     #[derive(Clone)]
     pub struct FakeHid(pub Arc<Mutex<FakeState>>);
@@ -509,6 +553,9 @@ pub(crate) mod fake {
         pub sent: Vec<Vec<u8>>,
         pub pending: VecDeque<Vec<u8>>,
         answer: Answer,
+        /// Answers a feature report (without its report number) with the next one to read.
+        pub on_feature: Option<FeatureAnswer>,
+        feature_answer: Option<Vec<u8>>,
     }
 
     impl FakeHid {
@@ -519,6 +566,8 @@ pub(crate) mod fake {
                 sent: Vec::new(),
                 pending: VecDeque::new(),
                 answer: Box::new(answer),
+                on_feature: None,
+                feature_answer: None,
             })))
         }
 
@@ -548,11 +597,23 @@ pub(crate) mod fake {
             }
         }
         fn send_feature(&self, data: &[u8]) -> Result<()> {
-            self.0.lock().unwrap().sent.push(data.to_vec());
+            let mut state = self.0.lock().unwrap();
+            assert_eq!(data[0], 0, "feature reports are sent with report number 0");
+            state.sent.push(data[1..].to_vec());
+            let answer = state.on_feature.as_mut().map(|f| f(&data[1..]));
+            state.feature_answer = answer;
             Ok(())
         }
-        fn get_feature(&self, _buf: &mut [u8]) -> Result<usize> {
-            Ok(0)
+        fn get_feature(&self, buf: &mut [u8]) -> Result<usize> {
+            let state = self.0.lock().unwrap();
+            match &state.feature_answer {
+                Some(a) => {
+                    buf[0] = 0;
+                    buf[1..=a.len()].copy_from_slice(a);
+                    Ok(a.len() + 1)
+                }
+                None => Ok(0),
+            }
         }
     }
 }
@@ -563,8 +624,8 @@ mod tests {
     use super::*;
 
     const COMMANDS: &[Command] = &[
-        Command { prefix: &[0x12, 0x04], effect: Effect::Read, name: "read" },
-        Command { prefix: &[0x51, 0x31], effect: Effect::Change, name: "change" },
+        Command { prefix: &[0x12, 0x04], at: 0, effect: Effect::Read, name: "read" },
+        Command { prefix: &[0x51, 0x31], at: 0, effect: Effect::Change, name: "change" },
     ];
 
     fn echo() -> FakeHid {

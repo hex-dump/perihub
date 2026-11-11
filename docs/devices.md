@@ -22,6 +22,7 @@ the same format.
 - [Corsair](#corsair)
 - [ASUS](#asus)
 - [SteelSeries mice](#steelseries-mice)
+- [Razer mice](#razer-mice)
 
 ## SteelSeries
 
@@ -276,6 +277,98 @@ rivalcfg's own tests expect (616 reports compared).
 | Aerox 5 Wireless (through its receiver) | `1038:1852`, `1038:185c`, `1038:1860` | 3 | 8, battery |
 | Aerox 9 Wireless (through its receiver) | `1038:1858`, `1038:1874` | 3 | 8, battery |
 | Prime Wireless (through its receiver) | `1038:1840`, `1038:1848` | 3 | 6, battery |
+
+## Razer mice
+
+🧪 Experimental: 75 Razer mice, on their USB cable. Nobody has tried PeriHub on one yet. Their protocol
+is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts found in
+[OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): no code was copied.
+
+- PeriHub reads the firmware, DPI and polling rate.
+- **Save to memory** changes the DPI and polling rate, after the No warranty box the first time.
+  These mice store every change by themselves, the way OpenRazer sends it, so there is no change
+  that lasts only until they are unplugged: PeriHub saves the settings first, reads them back, and
+  puts them back after 15 seconds unless you keep the change.
+- Their wireless receivers and docks are left out, since some can be shared with a keyboard: use
+  the USB cable. Not offered yet: DPI stages, lighting, buttons, battery.
+
+| Mouse | USB ID | Interface | What PeriHub changes |
+|---|---|---|---|
+| Orochi 2011 | `1532:0013` | 0 | polling rate shown |
+| Naga | `1532:0015` | 0 | polling rate |
+| Naga Epic | `1532:001f` | 0 | polling rate |
+| Abyssus 1800 | `1532:0020` | 0 | polling rate |
+| Mamba 2012 (Wired) | `1532:0024` | 0 | DPI up to 6400, polling rate |
+| Naga 2012 | `1532:002e` | 0 | polling rate |
+| Imperator 2012 | `1532:002f` | 0 | DPI up to 6400, polling rate |
+| Ouroboros | `1532:0032` | 0 | DPI up to 8200, polling rate |
+| Taipan | `1532:0034` | 0 | DPI up to 8200, polling rate |
+| Naga Hex (Red) | `1532:0036` | 0 | polling rate |
+| DeathAdder 2013 | `1532:0037` | 0 | polling rate |
+| DeathAdder 1800 | `1532:0038` | 0 | polling rate |
+| Orochi 2013 | `1532:0039` | 0 | DPI up to 6400, polling rate |
+| Naga Epic Chroma (Wired) | `1532:003e` | 0 | DPI up to 8200, polling rate |
+| Naga 2014 | `1532:0040` | 0 | DPI up to 8200, polling rate |
+| Naga Hex | `1532:0041` | 0 | polling rate |
+| Abyssus | `1532:0042` | 0 | polling rate |
+| DeathAdder Chroma | `1532:0043` | 0 | DPI up to 10000, polling rate |
+| Mamba Chroma (Wired) | `1532:0044` | 0 | DPI up to 16000, polling rate shown |
+| Mamba Tournament Edition | `1532:0046` | 0 | DPI up to 16000 |
+| Orochi (Wired) | `1532:0048` | 0 | DPI up to 8200, polling rate |
+| Diamondback Chroma | `1532:004c` | 0 | DPI up to 16000 |
+| DeathAdder 2000 | `1532:004f` | 0 | DPI up to 2000, polling rate |
+| Naga Hex V2 | `1532:0050` | 0 | DPI up to 16000, polling rate |
+| Naga Chroma | `1532:0053` | 0 | DPI up to 16000, polling rate |
+| DeathAdder 3500 | `1532:0054` | 0 | DPI up to 3500, polling rate |
+| Lancehead (Wired) | `1532:0059` | 0 | DPI up to 16000, polling rate |
+| Abyssus V2 | `1532:005b` | 0 | DPI up to 5000, polling rate |
+| DeathAdder Elite | `1532:005c` | 0 | DPI up to 16000, polling rate |
+| Abyssus 2000 | `1532:005e` | 0 | DPI up to 2000, polling rate |
+| Lancehead Tournament Edition | `1532:0060` | 0 | DPI up to 16000, polling rate |
+| Basilisk | `1532:0064` | 0 | DPI up to 16000, polling rate |
+| Basilisk Essential | `1532:0065` | 0 | DPI up to 6400, polling rate |
+| Naga Trinity | `1532:0067` | 0 | DPI up to 16000, polling rate |
+| Abyssus Elite (D.Va Edition) | `1532:006a` | 0 | DPI up to 7200, polling rate |
+| Abyssus Essential | `1532:006b` | 0 | DPI up to 7200, polling rate |
+| Mamba Elite | `1532:006c` | 0 | DPI up to 16000, polling rate |
+| DeathAdder Essential | `1532:006e` | 0 | DPI up to 6400, polling rate |
+| Lancehead Wireless (Wired) | `1532:0070` | 0 | DPI up to 16000, polling rate |
+| DeathAdder Essential (White Edition) | `1532:0071` | 0 | DPI up to 6400, polling rate |
+| Mamba Wireless (Wired) | `1532:0073` | 0 | DPI up to 16000, polling rate |
+| Viper | `1532:0078` | 0 | DPI up to 16000, polling rate |
+| Viper Ultimate (Wired) | `1532:007a` | 0 | DPI up to 20000, polling rate |
+| DeathAdder V2 Pro (Wired) | `1532:007c` | 0 | DPI up to 20000, polling rate |
+| Pro Click (Wired) | `1532:0080` | 0 | DPI up to 16000, polling rate |
+| DeathAdder V2 | `1532:0084` | 0 | DPI up to 20000, polling rate |
+| Basilisk V2 | `1532:0085` | 0 | DPI up to 20000, polling rate |
+| Basilisk Ultimate | `1532:0086` | 0 | DPI up to 20000, polling rate shown |
+| Viper Mini | `1532:008a` | 0 | DPI up to 8500, polling rate |
+| DeathAdder V2 Mini | `1532:008c` | 0 | DPI up to 8500, polling rate |
+| Naga Left Handed Edition 2020 | `1532:008d` | 0 | DPI up to 20000, polling rate |
+| Naga Pro (Wired) | `1532:008f` | 0 | DPI up to 20000, polling rate |
+| Viper 8KHz | `1532:0091` | 0 | DPI up to 20000 |
+| Naga X | `1532:0096` | 3 | DPI up to 18000, polling rate |
+| DeathAdder Essential (2021) | `1532:0098` | 0 | DPI up to 6400, polling rate |
+| Basilisk V3 | `1532:0099` | 3 | DPI up to 26000, polling rate |
+| Viper Mini SE (Wired) | `1532:009e` | 0 | DPI up to 30000 |
+| DeathAdder V2 Lite | `1532:00a1` | 0 | DPI up to 8500, polling rate |
+| Cobra | `1532:00a3` | 0 | DPI up to 8500, polling rate |
+| Viper V2 Pro (Wired) | `1532:00a5` | 0 | DPI up to 30000, polling rate |
+| Naga V2 Pro (Wired) | `1532:00a7` | 0 | DPI up to 30000, polling rate |
+| Basilisk V3 Pro (Wired) | `1532:00aa` | 0 | DPI up to 30000, polling rate |
+| Cobra Pro (Wired) | `1532:00af` | 0 | DPI up to 30000, polling rate |
+| DeathAdder V3 | `1532:00b2` | 0 | DPI up to 30000 |
+| DeathAdder V3 Pro (Wired) | `1532:00b6` | 0 | DPI up to 35000, polling rate |
+| DeathAdder V4 Pro (Wired) | `1532:00be` | 0 | DPI up to 45000 |
+| Viper V3 Pro (Wired) | `1532:00c0` | 0 | DPI up to 35000, polling rate |
+| DeathAdder V3 Pro (Wired) | `1532:00c2` | 0 | DPI up to 35000, polling rate |
+| Pro Click V2 Vertical Edition (Wired) | `1532:00c7` | 0 | DPI up to 30000, polling rate |
+| Basilisk V3 35K | `1532:00cb` | 3 | DPI up to 35000, polling rate |
+| Basilisk V3 Pro 35K (Wired) | `1532:00cc` | 0 | DPI up to 35000, polling rate |
+| Pro Click V2 (Wired) | `1532:00d0` | 0 | DPI up to 30000, polling rate |
+| Basilisk Mobile (Wired) | `1532:00d3` | 0 | DPI up to 18000, polling rate |
+| Basilisk V3 Pro 35K Phantom Green Edition (Wired) | `1532:00d6` | 0 | DPI up to 35000, polling rate |
+| Viper V3 Pro SE (Wired) | `1532:00de` | 0 | DPI up to 35000, polling rate |
 
 ## Something else?
 

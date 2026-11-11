@@ -508,6 +508,8 @@ export interface PeripheralInfo {
   editable: boolean;
   /** The device can store its settings in its memory. */
   can_save: boolean;
+  /** Every change stays in the device's memory by itself: only Save to memory is offered. */
+  changes_stay: boolean;
   /** Something did not look as documented: nothing is changed on it. */
   problem: string | null;
   /** A change was neither kept nor undone, and could not be undone on this connection. */

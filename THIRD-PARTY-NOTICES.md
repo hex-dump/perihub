@@ -97,5 +97,8 @@ was copied.
 
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later): the Apex 8-zone lighting
   protocol, and the interface and usage page of each ASUS mouse's configuration collection.
+- [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse
+  its USB interface, transaction ids and maximum DPI, read as text by `tools/openrazer_facts.py` (see
+  `docs/protocols/razer-mice.md`).
 - [ckb-next](https://github.com/ckb-next/ckb-next) (GPL-2.0-only) and
   [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub) (GPL-3.0): Corsair's protocol.

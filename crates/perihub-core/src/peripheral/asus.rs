@@ -40,13 +40,13 @@ const STATUS_ERROR: [u8; 2] = [0xFF, 0xAA];
 /// Everything PeriHub may send to an ASUS mouse. Switching profiles (`50 02`), button bindings
 /// (`51 21`) and the Omni receiver's identification (`12 12`) are left out on purpose.
 pub const COMMANDS: &[Command] = &[
-    Command { prefix: &GET_PROFILE, effect: Effect::Read, name: "read profile" },
-    Command { prefix: &GET_LEDS, effect: Effect::Read, name: "read LEDs" },
-    Command { prefix: &GET_SETTINGS, effect: Effect::Read, name: "read settings" },
-    Command { prefix: &GET_BUTTONS, effect: Effect::Read, name: "read buttons" },
-    Command { prefix: &SET_SETTING, effect: Effect::Change, name: "set a setting" },
-    Command { prefix: &SET_LED, effect: Effect::Change, name: "set an LED" },
-    Command { prefix: &SAVE, effect: Effect::Save, name: "save to the mouse's memory" },
+    Command { prefix: &GET_PROFILE, at: 0, effect: Effect::Read, name: "read profile" },
+    Command { prefix: &GET_LEDS, at: 0, effect: Effect::Read, name: "read LEDs" },
+    Command { prefix: &GET_SETTINGS, at: 0, effect: Effect::Read, name: "read settings" },
+    Command { prefix: &GET_BUTTONS, at: 0, effect: Effect::Read, name: "read buttons" },
+    Command { prefix: &SET_SETTING, at: 0, effect: Effect::Change, name: "set a setting" },
+    Command { prefix: &SET_LED, at: 0, effect: Effect::Change, name: "set an LED" },
+    Command { prefix: &SAVE, at: 0, effect: Effect::Save, name: "save to the mouse's memory" },
 ];
 
 const POLLING_HZ: [u16; 4] = [125, 250, 500, 1000];

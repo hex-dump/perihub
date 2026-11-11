@@ -220,13 +220,13 @@ impl Driver for SteelSeries {
             .p
             .settings
             .iter()
-            .map(|s| Command { prefix: s.cmd.bytes, effect: Effect::Change, name: s.label })
+            .map(|s| Command { prefix: s.cmd.bytes, at: 0, effect: Effect::Change, name: s.label })
             .collect();
         if let Some((cmd, _)) = self.p.firmware {
-            list.push(Command { prefix: cmd.bytes, effect: Effect::Read, name: "read firmware" });
+            list.push(Command { prefix: cmd.bytes, at: 0, effect: Effect::Read, name: "read firmware" });
         }
         if let Some(b) = self.p.battery {
-            list.push(Command { prefix: b.cmd.bytes, effect: Effect::Read, name: "read battery" });
+            list.push(Command { prefix: b.cmd.bytes, at: 0, effect: Effect::Read, name: "read battery" });
         }
         // The save command is left out on purpose: see the module's documentation.
         list
