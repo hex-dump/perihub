@@ -463,6 +463,25 @@ export interface PeripheralLimits {
   leds: { name: string; modes: [number, string][]; brightness_step: number | null; color: boolean }[];
 }
 
+/** A setting of a device that cannot report it: PeriHub sends it, one at a time. */
+export interface BlindSetting {
+  id: string;
+  label: string;
+  kind:
+    | { type: "choice"; values: string[] }
+    | { type: "color" }
+    | { type: "range"; min: number; max: number; step: number }
+    | { type: "dpi"; min: number; max: number; step: number; max_presets: number };
+  /** What PeriHub last sent since the device was connected. */
+  last: BlindValue | null;
+}
+
+export type BlindValue =
+  | { type: "choice"; value: string }
+  | { type: "color"; value: string }
+  | { type: "number"; value: number }
+  | { type: "dpi"; value: number[] };
+
 export interface PeripheralInfo {
   /** "vvvv:pppp". */
   key: string;
@@ -475,12 +494,16 @@ export interface PeripheralInfo {
   source: string;
   profiles: number;
   firmware: string | null;
+  battery: { level: number; charging: boolean } | null;
   /** From 1. */
   active_profile: number | null;
   active_dpi: number | null;
+  /** The device can report its settings; if not, `blind` lists what PeriHub can send. */
+  readable: boolean;
   settings: PeripheralSettings;
   limits: PeripheralLimits;
   buttons: { name: string; action: string }[];
+  blind: BlindSetting[];
   /** Changes may be tried: PeriHub's app, and everything read looked as documented. */
   editable: boolean;
   /** The device can store its settings in its memory. */
@@ -619,6 +642,9 @@ export const api = {
     invoke<PeripheralInfo>("peripheral_change", { key, settings, save }),
   peripheralKeepChanges: (key: string) => invoke<void>("peripheral_keep_changes", { key }),
   peripheralUndo: (key: string) => invoke<PeripheralInfo>("peripheral_undo", { key }),
+  /** Sends one setting to a device that cannot report its settings: not saved, not undone. */
+  peripheralSetBlind: (key: string, id: string, value: BlindValue) =>
+    invoke<PeripheralInfo>("peripheral_set_blind", { key, id, value }),
   /** Experimental lighting on a Corsair mouse: one colour on every LED, for this session. */
   corsairSetLighting: (productId: number, color: string) =>
     invoke<CorsairInfo>("corsair_set_lighting", { productId, color }),

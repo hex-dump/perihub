@@ -9,7 +9,10 @@
 use std::path::PathBuf;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use super::{Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus, check_settings};
+use super::{
+    BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
+    check_settings, steelseries,
+};
 use crate::config;
 use crate::error::{Error, Result};
 use crate::worker::DeviceTask;
@@ -17,7 +20,19 @@ use crate::worker::DeviceTask;
 /// How a protocol reads and changes a device. A driver reaches the device only through [`Io`].
 pub trait Driver: Send {
     /// The commands the driver may send: [`Io`] refuses every other one.
-    fn commands(&self) -> &'static [Command];
+    fn commands(&self) -> Vec<Command>;
+    /// The device can report its settings. If not, only [`Driver::send_blind`] changes it.
+    fn readable(&self) -> bool {
+        true
+    }
+    /// The settings of a device that cannot report them.
+    fn blind_settings(&self) -> Vec<BlindSetting> {
+        Vec::new()
+    }
+    /// Sends one setting to a device that cannot report it, without saving it to its memory.
+    fn send_blind(&mut self, _io: &mut Io, id: &str, _value: &BlindValue) -> Result<()> {
+        Err(Error::Invalid(format!("{id}: this device's settings are changed together")))
+    }
     /// Reads what the page shows, with read commands only.
     fn read(&mut self, io: &mut Io) -> Result<Reading>;
     /// Sends what turns `from` into `to`, only what differs. `to` was checked against the limits.
@@ -33,6 +48,7 @@ pub trait Driver: Send {
 pub fn driver(model: &'static Model) -> Box<dyn Driver> {
     match model.protocol {
         Protocol::Asus(params) => Box::new(asus::Asus::new(params)),
+        Protocol::SteelSeries(params) => Box::new(steelseries::SteelSeries::new(params)),
     }
 }
 
@@ -87,11 +103,14 @@ impl PeripheralTask {
             source: driver.source(),
             profiles: driver.profiles(),
             firmware: None,
+            battery: None,
             active_profile: None,
             active_dpi: None,
+            readable: driver.readable(),
             settings: Settings::default(),
             limits: Default::default(),
             buttons: Vec::new(),
+            blind: driver.blind_settings(),
             editable: false,
             can_save: driver.can_save(),
             problem: None,
@@ -133,6 +152,7 @@ impl PeripheralTask {
             self.io.forbid_changes();
         }
         self.info.firmware = reading.firmware;
+        self.info.battery = reading.battery.map(|(level, charging)| super::Battery { level, charging });
         self.info.active_profile = reading.active_profile;
         self.info.active_dpi = reading.active_dpi;
         self.info.settings = reading.settings;
@@ -156,6 +176,25 @@ impl PeripheralTask {
         Ok(self.info.clone())
     }
 
+    /// Sends one setting to a device that cannot report its settings. Nothing is saved to its
+    /// memory, and nothing can be read back or undone: unplugging the device brings back what it
+    /// has saved.
+    pub fn set_blind(&mut self, id: &str, value: &BlindValue) -> Result<PeripheralInfo> {
+        if !self.info.editable {
+            return Err(Error::Invalid("this connection may not change anything".into()));
+        }
+        let index = self
+            .info
+            .blind
+            .iter()
+            .position(|b| b.id == id)
+            .ok_or_else(|| Error::Invalid(format!("{id} is not a setting of this device")))?;
+        self.driver.send_blind(&mut self.io, id, value)?;
+        self.info.blind[index].last = Some(value.clone());
+        self.info.raw = self.io.take_raw();
+        Ok(self.info.clone())
+    }
+
     /// Changes the settings, and also saves them to the device's memory if `save`. Undone unless
     /// kept (see [`Self::keep_changes`]).
     pub fn change(&mut self, wanted: &Settings, save: bool) -> Result<PeripheralInfo> {
@@ -164,6 +203,9 @@ impl PeripheralTask {
                 Some(problem) => format!("nothing is changed on this device: {problem}"),
                 None => "this connection may not change anything".into(),
             }));
+        }
+        if !self.info.readable {
+            return Err(Error::Invalid("this device cannot report its settings: they are sent one at a time".into()));
         }
         if save && !self.info.can_save {
             return Err(Error::Invalid("this device has no memory to save to".into()));

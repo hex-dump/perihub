@@ -10,6 +10,9 @@
 //! - an answer that does not look as documented leaves the device read-only.
 
 pub mod asus;
+pub mod steelseries;
+#[rustfmt::skip]
+pub mod steelseries_models;
 pub mod task;
 
 use std::collections::BTreeMap;
@@ -52,6 +55,7 @@ pub struct Command {
 #[derive(Debug, Clone, Copy)]
 pub enum Protocol {
     Asus(asus::Params),
+    SteelSeries(steelseries::Params),
 }
 
 /// A device PeriHub recognizes, from a driver's table.
@@ -65,14 +69,14 @@ pub struct Model {
     pub kind: Kind,
     /// The USB interface of the configuration collection, where a source says which one.
     pub interface: Option<i32>,
-    /// The usage page of the configuration collection.
-    pub usage_page: u16,
+    /// The usage page of the configuration collection, where a source says which one.
+    pub usage_page: Option<u16>,
     pub protocol: Protocol,
 }
 
 /// Every model of every driver.
 pub fn models() -> impl Iterator<Item = &'static Model> {
-    asus::MODELS.iter()
+    asus::MODELS.iter().chain(steelseries_models::MODELS)
 }
 
 pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {
@@ -156,10 +160,59 @@ pub struct ButtonView {
     pub action: String,
 }
 
+/// A setting of a device that cannot report it: PeriHub can send it but not read it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct BlindSetting {
+    pub id: &'static str,
+    pub label: &'static str,
+    pub kind: BlindKind,
+    /// What PeriHub last sent since the device was connected, if anything.
+    pub last: Option<BlindValue>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum BlindKind {
+    Choice {
+        values: Vec<String>,
+    },
+    Color,
+    Range {
+        min: i32,
+        max: i32,
+        step: i32,
+    },
+    /// DPI presets, from one to `max_presets`.
+    Dpi {
+        min: i32,
+        max: i32,
+        step: i32,
+        max_presets: u8,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", content = "value", rename_all = "snake_case")]
+pub enum BlindValue {
+    Choice(String),
+    Color(Rgb),
+    Number(i32),
+    Dpi(Vec<u16>),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct Battery {
+    /// Percent.
+    pub level: u8,
+    pub charging: bool,
+}
+
 /// What a driver reads from a device.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Reading {
     pub firmware: Option<String>,
+    /// Level in percent and charging.
+    pub battery: Option<(u8, bool)>,
     /// From 1.
     pub active_profile: Option<u8>,
     /// From 1.
@@ -185,11 +238,16 @@ pub struct PeripheralInfo {
     pub source: &'static str,
     pub profiles: u8,
     pub firmware: Option<String>,
+    pub battery: Option<Battery>,
     pub active_profile: Option<u8>,
     pub active_dpi: Option<u8>,
+    /// The device can report its settings. If not, PeriHub shows `blind` instead.
+    pub readable: bool,
     pub settings: Settings,
     pub limits: Limits,
     pub buttons: Vec<ButtonView>,
+    /// Settings PeriHub can send to a device that cannot report them, one at a time.
+    pub blind: Vec<BlindSetting>,
     /// Changes may be tried: this is PeriHub's app (not the command line) and everything read looked
     /// as documented.
     pub editable: bool,
@@ -244,7 +302,7 @@ const RAW_MAX: usize = 64;
 /// before it is sent.
 pub struct Io {
     hid: Box<dyn Hid>,
-    commands: &'static [Command],
+    commands: Vec<Command>,
     /// Commands that change something may be sent.
     changes: bool,
     /// The connection was opened to change things (PeriHub's app, never the command line).
@@ -253,7 +311,7 @@ pub struct Io {
 }
 
 impl Io {
-    pub fn new(hid: Box<dyn Hid>, commands: &'static [Command], changes: bool) -> Self {
+    pub fn new(hid: Box<dyn Hid>, commands: Vec<Command>, changes: bool) -> Self {
         Self { hid, commands, changes, granted: changes, raw: Vec::new() }
     }
 
@@ -295,6 +353,49 @@ impl Io {
     fn note(&mut self, line: String) {
         if self.raw.len() < RAW_MAX {
             self.raw.push(line);
+        }
+    }
+
+    /// Drops the input reports left waiting.
+    pub fn drain(&mut self) {
+        let mut scratch = [0u8; 256];
+        for _ in 0..64 {
+            if !matches!(self.hid.read_timeout(&mut scratch, 0), Ok(n) if n > 0) {
+                break;
+            }
+        }
+    }
+
+    /// Sends `payload`, after report number 0, as an output report or a feature report.
+    pub fn send(&mut self, payload: &[u8], feature: bool) -> Result<()> {
+        self.check(payload)?;
+        let mut report = Vec::with_capacity(payload.len() + 1);
+        report.push(0);
+        report.extend_from_slice(payload);
+        if feature {
+            self.hid.send_feature(&report)?;
+        } else {
+            self.hid.write(&report)?;
+        }
+        self.note(format!("{} {}", if feature { "feature" } else { "out" }, hex(payload)));
+        Ok(())
+    }
+
+    /// Fills `reply` with the first input report of at least its length, within `timeout`.
+    pub fn read_at_least(&mut self, reply: &mut [u8], timeout: Duration) -> Result<()> {
+        let mut scratch = [0u8; 256];
+        let end = Instant::now() + timeout;
+        loop {
+            let left = end.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                return Err(Error::Timeout);
+            }
+            let n = self.hid.read_timeout(&mut scratch, left.as_millis().clamp(1, 1000) as i32)?;
+            if n >= reply.len() && n > 0 {
+                reply.copy_from_slice(&scratch[..reply.len()]);
+                self.note(format!("  ← {}", hex(&scratch[..n.min(16)])));
+                return Ok(());
+            }
         }
     }
 
@@ -473,7 +574,7 @@ mod tests {
     #[test]
     fn only_listed_commands_are_sent_and_reads_only_when_read_only() {
         let hid = echo();
-        let mut io = Io::new(Box::new(hid.clone()), COMMANDS, false);
+        let mut io = Io::new(Box::new(hid.clone()), COMMANDS.to_vec(), false);
         let mut reply = [0u8; 64];
         io.output_query(&[0x12, 0x04, 0], &mut reply, Duration::from_millis(50)).unwrap();
         assert_eq!(reply[..2], [0x12, 0x04], "the short report in front was skipped");
@@ -481,7 +582,7 @@ mod tests {
         assert!(io.output_query(&[0x50, 0x03], &mut reply, Duration::from_millis(50)).is_err());
         assert_eq!(hid.sent().len(), 1, "refused commands never reach the device");
 
-        let mut io = Io::new(Box::new(hid.clone()), COMMANDS, true);
+        let mut io = Io::new(Box::new(hid.clone()), COMMANDS.to_vec(), true);
         io.output_query(&[0x51, 0x31, 0], &mut reply, Duration::from_millis(50)).unwrap();
         assert!(io.output_query(&[0x50, 0x03], &mut reply, Duration::from_millis(50)).is_err(), "not listed");
         assert_eq!(hid.sent().len(), 2);
@@ -490,7 +591,7 @@ mod tests {
     #[test]
     fn no_answer_is_a_timeout() {
         let hid = FakeHid::new(|_| Vec::new());
-        let mut io = Io::new(Box::new(hid), COMMANDS, false);
+        let mut io = Io::new(Box::new(hid), COMMANDS.to_vec(), false);
         let mut reply = [0u8; 64];
         assert!(matches!(io.output_query(&[0x12, 0x04], &mut reply, Duration::from_millis(20)), Err(Error::Timeout)));
     }

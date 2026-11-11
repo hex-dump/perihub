@@ -21,6 +21,7 @@ the same format.
 - [Logitech G300](#logitech-g300)
 - [Corsair](#corsair)
 - [ASUS](#asus)
+- [SteelSeries mice](#steelseries-mice)
 
 ## SteelSeries
 
@@ -223,6 +224,58 @@ receiver. Nobody has tried PeriHub on one yet. Their protocol comes from
 | TUF Gaming M3 Gen II | `0b05:1a9b` | interface 2 | — |
 | TUF Gaming M4 Air | `0b05:1a03` | whole mouse | no lighting |
 | TUF Gaming Mini WL Mouse Miku | `0b05:1c56`, `0b05:1c57` | whole mouse | DPI shown, not changed (separate X and Y); LED brightness kept as it is |
+
+## SteelSeries mice
+
+🧪 Experimental: 33 SteelSeries mice (Rival, Sensei, Aerox, Prime, Kana, Kinzu), on their cable and
+through their own 2.4 GHz receiver. Nobody has tried PeriHub on one yet. Their commands come from
+[rivalcfg](https://github.com/flozz/rivalcfg) (WTFPL), described in
+[protocols/steelseries-mice.md](protocols/steelseries-mice.md); PeriHub sends the same bytes as
+rivalcfg's own tests expect (616 reports compared).
+
+- These mice **cannot report their settings**: PeriHub shows the firmware and, on wireless mice,
+  the battery, and for each setting what it last sent.
+- **Send** changes one setting (DPI presets, polling rate, colours, lighting effects, brightness,
+  timers…) until the mouse is unplugged or turned off, under a warning that is always on screen.
+  PeriHub **never saves to their memory** until someone has tested it: it could not back up or
+  undo a save. Unplugging the mouse brings back the settings saved in it.
+- Not offered yet: button mapping, colour gradients, reactive colours, separate X and Y DPI.
+
+| Mouse | USB ID | Interface | Settings PeriHub sends |
+|---|---|---|---|
+| Aerox 3 | `1038:1836` | 3 | 8 |
+| Aerox 3 Wireless | `1038:183a`, `1038:187a` | 3 | 8, battery |
+| Aerox 5 | `1038:1850` | 3 | 8 |
+| Aerox 5 Wireless | `1038:1854`, `1038:185e`, `1038:1862` | 3 | 8, battery |
+| Aerox 9 Wireless | `1038:185a`, `1038:1876` | 3 | 8, battery |
+| Kana v2 | `1038:137a` | 0 | 5 |
+| Kinzu v2 | `1038:1366`, `1038:1378` | 0 | 3 |
+| Prime | `1038:182e`, `1038:182a`, `1038:1856` | 0 | 4 |
+| Prime Mini | `1038:184d` | 3 | 4 |
+| Prime+ | `1038:182c` | 0 | 4 |
+| Prime Wireless | `1038:1842`, `1038:184a` | 3 | 6, battery |
+| Rival 100 / Rival 105 | `1038:1702`, `1038:170a`, `1038:170b`, `1038:170c`, `1038:1814` | 0 | 6 |
+| Rival 110 / Rival 106 | `1038:1729`, `1038:1816` | 0 | 6 |
+| Rival 3 | `1038:1824`, `1038:184c` | 3 | 7 |
+| Rival 300 / Rival | `1038:1384`, `1038:1392`, `1038:1710`, `1038:1712`, `1038:171c`, `1038:1394`, `1038:171a`, `1038:1716`, `1038:1714`, `1038:1718` | 0 | 7 |
+| Rival 300S | `1038:1810` | 0 | 6 |
+| Rival 310 | `1038:1720`, `1038:171e`, `1038:1736` | 0 | 3 |
+| Rival 3 Gen 2 | `1038:1870` | 3 | 7 |
+| Rival 3 Wireless | `1038:1830` | 3 | 2, battery |
+| Rival 3 Wireless Gen 2 | `1038:1872` | 3 | 1, battery |
+| Rival 5 | `1038:183c`, `1038:183e` | 0 | 14 |
+| Rival 500 | `1038:170e` | 0 | 3 |
+| Rival 600 | `1038:1724`, `1038:172e` | 0 | 3 |
+| Rival 650 Wireless | `1038:172b`, `1038:1726` | 0 | 5, battery |
+| Rival 700 / Rival 710 | `1038:1700`, `1038:1730` | 0 | 3 |
+| Rival 95 / Rival 100 PC Bang | `1038:1706`, `1038:1707`, `1038:1704`, `1038:1708` | 0 | 4 |
+| Sensei 310 | `1038:1722` | 0 | 3 |
+| Sensei [RAW] | `1038:1369`, `1038:1362`, `1038:136d`, `1038:136f`, `1038:1380`, `1038:1390` | 0 | 5 |
+| Sensei TEN | `1038:1832`, `1038:1834` | 0 | 2 |
+| Aerox 3 Wireless (through its receiver) | `1038:1838`, `1038:1878` | 3 | 8, battery |
+| Aerox 5 Wireless (through its receiver) | `1038:1852`, `1038:185c`, `1038:1860` | 3 | 8, battery |
+| Aerox 9 Wireless (through its receiver) | `1038:1858`, `1038:1874` | 3 | 8, battery |
+| Prime Wireless (through its receiver) | `1038:1840`, `1038:1848` | 3 | 6, battery |
 
 ## Something else?
 

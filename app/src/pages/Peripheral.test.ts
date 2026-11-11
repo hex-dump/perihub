@@ -6,6 +6,7 @@ const api = vi.hoisted(() => ({
   peripheralChange: vi.fn(),
   peripheralKeepChanges: vi.fn(),
   peripheralUndo: vi.fn(),
+  peripheralSetBlind: vi.fn(),
   appSettings: vi.fn(),
 }));
 
@@ -27,8 +28,10 @@ const info: PeripheralInfo = {
   source: "libratbag (MIT)",
   profiles: 3,
   firmware: "1.02.03",
+  battery: null,
   active_profile: 2,
   active_dpi: 2,
+  readable: true,
   settings: {
     dpi_levels: [400, 800, 1600, 3200],
     polling_hz: 1000,
@@ -51,6 +54,7 @@ const info: PeripheralInfo = {
     ],
   },
   buttons: [{ name: "Left", action: "Left" }],
+  blind: [],
   editable: true,
   can_save: true,
   problem: null,
@@ -176,3 +180,90 @@ describe("a mouse of another brand", () => {
     expect(report).toContain("  12 04 00 00 → 12 04 00 00 03 00");
   });
 });
+
+const rival3: PeripheralInfo = {
+  ...info,
+  key: "1038:1824",
+  vendor_id: 0x1038,
+  product_id: 0x1824,
+  brand: "SteelSeries",
+  model: "Rival 3",
+  source: "rivalcfg (WTFPL)",
+  profiles: 1,
+  firmware: "1.37",
+  active_profile: null,
+  active_dpi: null,
+  readable: false,
+  can_save: false,
+  settings: { dpi_levels: [], polling_hz: null, options: {}, leds: [] },
+  limits: { dpi: null, polling_hz: [], options: [], leds: [] },
+  buttons: [],
+  blind: [
+    { id: "sensitivity", label: "Sensitivity presets", kind: { type: "dpi", min: 200, max: 8500, step: 100, max_presets: 5 }, last: null },
+    { id: "polling_rate", label: "Polling rate", kind: { type: "choice", values: ["125", "250", "500", "1000"] }, last: null },
+    { id: "logo_color", label: "Logo LED color", kind: { type: "color" }, last: null },
+  ],
+};
+
+describe("a mouse that cannot report its settings", () => {
+  it("always warns that nothing can be read, checked or undone, and how to go back", () => {
+    render(Peripheral, { props: { info: rival3, error: null } });
+    expect(document.body.textContent).toContain("cannot report its settings");
+    expect(document.body.textContent).toContain("unplug it and plug it back in");
+    expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save to memory…" })).toBeNull();
+    expect(screen.getAllByText("Last sent: not sent yet").length).toBe(3);
+  });
+
+  it("sends one setting at a time, without asking for anything more", async () => {
+    api.peripheralSetBlind.mockResolvedValue(rival3);
+    render(Peripheral, { props: { info: rival3, error: null } });
+    const select = screen.getByRole("combobox", { name: "Polling rate" }) as HTMLSelectElement;
+    select.value = "500";
+    await fireEvent.change(select);
+    await fireEvent.click(screen.getAllByRole("button", { name: "Send" })[1]);
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenCalledWith("1038:1824", "polling_rate", { type: "choice", value: "500" });
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("refuses DPI presets the mouse does not take before sending anything", async () => {
+    render(Peripheral, { props: { info: rival3, error: null } });
+    const dpi = screen.getByRole("textbox", { name: "Sensitivity presets" }) as HTMLInputElement;
+    dpi.value = "800, 1650";
+    await fireEvent.change(dpi);
+    await fireEvent.click(screen.getAllByRole("button", { name: "Send" })[0]);
+    expect(document.body.textContent).toContain("each from 200 to 8500 DPI in steps of 100");
+    dpi.value = "400, 800, 1600, 3200, 6400, 8000";
+    await fireEvent.change(dpi);
+    await fireEvent.click(screen.getAllByRole("button", { name: "Send" })[0]);
+    expect(document.body.textContent).toContain("at most 5 presets");
+    expect(api.peripheralSetBlind).not.toHaveBeenCalled();
+    dpi.value = "800, 1600";
+    await fireEvent.change(dpi);
+    await fireEvent.click(screen.getAllByRole("button", { name: "Send" })[0]);
+    expect(api.peripheralSetBlind).toHaveBeenCalledWith("1038:1824", "sensitivity", { type: "dpi", value: [800, 1600] });
+  });
+
+  it("offers nothing to send on a read-only connection", () => {
+    render(Peripheral, { props: { info: { ...rival3, editable: false }, error: null } });
+    expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
+  });
+
+  it("reports what was last sent and the battery", () => {
+    const report = peripheralTest(
+      {
+        ...rival3,
+        battery: { level: 80, charging: true },
+        blind: [{ ...rival3.blind[1], last: { type: "choice", value: "500" } }],
+      },
+      "0.7.0",
+      "Linux",
+    ).report;
+    expect(report).toContain("Battery: 80 %, charging");
+    expect(report).toContain("Sent: Polling rate = 500");
+    expect(report).toContain("cannot be read back");
+  });
+});
+

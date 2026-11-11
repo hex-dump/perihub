@@ -10,6 +10,7 @@
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import PeripheralSaveDialog from "../components/PeripheralSaveDialog.svelte";
+  import BlindSettings from "../components/BlindSettings.svelte";
 
   interface Props {
     info: PeripheralInfo | null;
@@ -161,11 +162,19 @@
     <section class="card">
       <dl>
         {#if info.firmware}<dt>Firmware</dt><dd>{info.firmware}</dd>{/if}
+        {#if info.battery}
+          <dt>Battery</dt><dd>{info.battery.level} %{info.battery.charging ? ", charging" : ""}</dd>
+        {/if}
         {#if info.profiles > 1}
           <dt>Profile</dt>
           <dd>{info.active_profile ?? "?"} of {info.profiles} <span class="muted small">(the one in use; PeriHub reads and changes only this one)</span></dd>
         {/if}
+      </dl>
 
+      {#if !info.readable}
+        <BlindSettings {info} onchange={(i) => (live = i)} />
+      {:else}
+      <dl class="settings">
         <dt>DPI levels</dt>
         <dd class="levels">
           {#each shown.dpi_levels as dpi, i (i)}
@@ -271,6 +280,7 @@
           {/if}
         </div>
       {/if}
+      {/if}
     </section>
   {/if}
 {:else if !connectError}
@@ -296,6 +306,10 @@
 
   .report {
     margin-top: 10px;
+  }
+
+  dl.settings {
+    margin-top: 8px;
   }
 
   dl {

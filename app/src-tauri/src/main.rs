@@ -182,6 +182,7 @@ fn main() {
             commands::peripheral_change,
             commands::peripheral_keep_changes,
             commands::peripheral_undo,
+            commands::peripheral_set_blind,
             commands::corsair_set_lighting,
             commands::corsair_lighting_off,
             commands::corsair_keep_lighting,

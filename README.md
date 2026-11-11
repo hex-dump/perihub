@@ -53,6 +53,7 @@
 | 28 more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
 | Logitech devices on a **Logi Bolt** or **Unifying** receiver (MX Master, MX Anywhere, MX Keys…) | 🧪 Experimental: recognized by the features they report; the DPI of those without onboard memory can be changed, everything else is read |
 | 26 **Corsair mice** and 23 **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Experimental: read, and one colour of lighting for the session, at your own risk |
+| 33 **SteelSeries mice** (Rival, Sensei, Aerox, Prime, Kana, Kinzu) | 🧪 Experimental: these mice cannot report their settings; DPI, polling rate, colours and effects can be sent one at a time, never saved to the mouse ([how](#mice-and-keyboards-of-other-brands)) |
 | 21 **ASUS ROG and TUF mice** (Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3…) | 🧪 Experimental: read; DPI, polling rate, button response, angle snapping and lighting can be changed at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
@@ -142,6 +143,8 @@ ASUS mice are supported from the published documentation of their protocol ([lib
 - **Save to memory** also stores it in the device, after the **No warranty** box the first time.
 - Either way PeriHub sends only the commands in its list for that device (never anything that touches firmware) and only values the device accepts. It saves a backup of the settings first and reads them back after, and the change is undone after 15 seconds unless you keep it, also after PeriHub closed or the device was unplugged.
 - If anything the device answers does not look as documented, PeriHub changes nothing on it and the test report shows exactly what it answered.
+
+SteelSeries mice are supported from [rivalcfg](https://github.com/flozz/rivalcfg), and PeriHub sends exactly the bytes rivalcfg's own tests expect. These mice **cannot report their settings**, so PeriHub cannot show, check or undo them: **Send** changes one setting until the mouse is unplugged or turned off, under a warning that is always on screen, and PeriHub never saves to their memory until someone has tested one. Unplugging the mouse brings back what it has saved.
 
 ### Help test your device
 
@@ -334,6 +337,7 @@ The protocols were worked out thanks to:
 - [gorkemgun/apex-3-tkl](https://github.com/gorkemgun/apex-3-tkl) (MIT): the Apex 3 TKL key mapping.
 - [ckb-next](https://github.com/ckb-next/ckb-next) and [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub): Corsair's protocol, described in our own words in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md). No code was copied.
 - [libratbag](https://github.com/libratbag/libratbag) (MIT), and OpenRGB for each mouse's interface: the ASUS ROG and TUF mice and their protocol, in [docs/protocols/asus-rog.md](docs/protocols/asus-rog.md).
+- [rivalcfg](https://github.com/flozz/rivalcfg) (WTFPL): the SteelSeries mice, their commands and the reports its tests expect, in [docs/protocols/steelseries-mice.md](docs/protocols/steelseries-mice.md).
 
 The notices of the projects PeriHub takes code or data from are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which comes with every package.
 

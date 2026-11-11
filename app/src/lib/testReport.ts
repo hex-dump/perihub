@@ -220,6 +220,11 @@ export function peripheralTest(info: PeripheralInfo, version: string, system: st
       `PeriHub ${version} on ${system}`,
       `Device: ${info.brand} ${info.model} (${info.kind}), USB ID ${usbId}, protocol from ${info.source}`,
       `Firmware: ${info.firmware ?? "not read"}`,
+      info.battery ? `Battery: ${info.battery.level} %${info.battery.charging ? ", charging" : ""}` : null,
+      info.readable ? null : "Settings: this device cannot be read back; PeriHub sends them one at a time",
+      ...info.blind
+        .filter((b) => b.last)
+        .map((b) => `Sent: ${b.label} = ${b.last!.type === "dpi" ? b.last!.value.join(", ") : b.last!.value}`),
       `Active profile: ${info.active_profile ?? "-"} of ${info.profiles}, DPI level ${info.active_dpi ?? "-"}`,
       `DPI levels: ${set.dpi_levels.join(" / ") || "-"}, polling: ${set.polling_hz ?? "not read"} Hz`,
       options ? `Other settings: ${options}` : null,

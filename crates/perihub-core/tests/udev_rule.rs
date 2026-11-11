@@ -97,8 +97,13 @@ fn udev_rule_matches_the_other_brands_tables() {
     for vendor in perihub_core::peripheral::vendors() {
         let tag = format!(r#"ATTRS{{idVendor}}=="{vendor:04x}""#);
         let lines: Vec<&str> = RULE.lines().filter(|l| !l.trim_start().starts_with('#') && l.contains(&tag)).collect();
-        let mut in_rule: Vec<String> =
-            lines.iter().map(|l| l.split(r#"ATTRS{idProduct}==""#).nth(1).unwrap()[..4].to_string()).collect();
+        // Devices of the same vendor handled by PeriHub's own drivers (the Apex 3 TKL).
+        let others = ["1622"];
+        let mut in_rule: Vec<String> = lines
+            .iter()
+            .map(|l| l.split(r#"ATTRS{idProduct}==""#).nth(1).unwrap()[..4].to_string())
+            .filter(|id| !(vendor == 0x1038 && others.contains(&id.as_str())))
+            .collect();
         let mut in_tables = Vec::new();
         for model in models().filter(|m| m.vendor_id == vendor) {
             for id in model.product_ids {

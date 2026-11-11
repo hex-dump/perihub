@@ -104,7 +104,7 @@ const fn mouse(product_ids: &'static [u16], name: &'static str, interface: Optio
         name,
         kind: Kind::Mouse,
         interface,
-        usage_page: USAGE_PAGE,
+        usage_page: Some(USAGE_PAGE),
         protocol: Protocol::Asus(p),
     }
 }
@@ -381,8 +381,8 @@ impl Asus {
 }
 
 impl Driver for Asus {
-    fn commands(&self) -> &'static [Command] {
-        COMMANDS
+    fn commands(&self) -> Vec<Command> {
+        COMMANDS.to_vec()
     }
 
     fn source(&self) -> &'static str {
@@ -460,6 +460,7 @@ impl Driver for Asus {
         };
         Ok(Reading {
             firmware: Some(firmware),
+            battery: None,
             active_profile: (self.p.profiles > 1).then_some(profile_index + 1),
             active_dpi: (profile[11] > 0).then_some(profile[11]),
             settings,
@@ -620,7 +621,7 @@ mod tests {
     fn the_table_is_consistent() {
         let mut ids = Vec::new();
         for m in models() {
-            let Protocol::Asus(p) = m.protocol;
+            let Protocol::Asus(p) = m.protocol else { continue };
             assert!(p.dpis == 2 || p.dpis == 4, "{}", m.name);
             let double = if p.quirks & DOUBLE_DPI != 0 { 100 } else { 50 };
             assert!(p.dpi_min >= double && p.dpi_step.is_multiple_of(double), "{}: DPI range encodable", m.name);
@@ -640,7 +641,7 @@ mod tests {
     fn forbidden_commands_never_leave() {
         let mouse = standard();
         let hid = fake(mouse, false);
-        let mut io = Io::new(Box::new(hid.clone()), COMMANDS, true);
+        let mut io = Io::new(Box::new(hid.clone()), COMMANDS.to_vec(), true);
         let mut reply = [0u8; 64];
         for command in
             [[0x50, 0x02], [0x51, 0x21], [0x12, 0x12], [0x00, 0x00], [0xEE, 0x01], [0x50, 0x00], [0x51, 0x00]]

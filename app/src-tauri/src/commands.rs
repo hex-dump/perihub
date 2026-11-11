@@ -12,7 +12,7 @@ use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
 use perihub_core::keyboard::{Keymap, KeymapRestore};
 use perihub_core::logitech::LogitechLive;
 use perihub_core::mouse::{MouseLive, MouseRestore, MouseState};
-use perihub_core::peripheral::{PeripheralInfo, Settings};
+use perihub_core::peripheral::{BlindValue, PeripheralInfo, Settings};
 use perihub_core::{DeviceStatus, Error};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -381,6 +381,21 @@ pub async fn peripheral_change(
         peripheral_changed(&app, &info);
     }
     result
+}
+
+/// Sends one setting to a device of another brand that cannot report its settings (experimental).
+/// Nothing is saved to its memory, and nothing can be undone but by unplugging it.
+#[tauri::command]
+pub async fn peripheral_set_blind(
+    app: AppHandle,
+    key: String,
+    id: String,
+    value: BlindValue,
+) -> CmdResult<PeripheralInfo> {
+    let manager = app.state::<AppState>().manager.clone();
+    let info = blocking(move || manager.peripheral(&key)?.call(move |p| p.set_blind(&id, &value))).await?;
+    peripheral_changed(&app, &info);
+    Ok(info)
 }
 
 /// The user keeps a change to a device of another brand: the core stops counting down to undo it.

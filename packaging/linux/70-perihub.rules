@@ -292,3 +292,158 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a03", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1c56", TAG+="uaccess"
 # ASUS TUF Gaming Mini WL Mouse Miku
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1c57", TAG+="uaccess"
+# SteelSeries mice (experimental, untested; commands from rivalcfg): only the interface rivalcfg sends
+# to. On the mice where that is interface 0 it also carries the mouse's movements and clicks, as on
+# the Logitech mice above. The 2.4 GHz receivers listed are the mice's own, not shared ones.
+# SteelSeries Aerox 3
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1836", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 3 Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="183a", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 3 Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="187a", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 5
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1850", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 5 Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1854", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 5 Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="185e", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 5 Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1862", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 9 Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="185a", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 9 Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1876", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Kana v2
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="137a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Kinzu v2
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1366", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Kinzu v2
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1378", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Prime
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="182e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Prime
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="182a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Prime
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1856", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Prime Mini
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="184d", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Prime+
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="182c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Prime Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1842", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Prime Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="184a", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Rival 100 / Rival 105
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1702", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 100 / Rival 105
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="170a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 100 / Rival 105
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="170b", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 100 / Rival 105
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="170c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 100 / Rival 105
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1814", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 110 / Rival 106
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1729", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 110 / Rival 106
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1816", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 3
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1824", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Rival 3
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="184c", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Rival 300 / Rival
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1384", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 300 / Rival
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1392", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 300 / Rival
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1710", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 300 / Rival
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1712", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 300 / Rival
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="171c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 300 / Rival
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1394", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 300 / Rival
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="171a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 300 / Rival
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1716", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 300 / Rival
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1714", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 300 / Rival
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1718", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 300S
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1810", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 310
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1720", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 310
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="171e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 310
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1736", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 3 Gen 2
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1870", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Rival 3 Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1830", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Rival 3 Wireless Gen 2
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1872", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Rival 5
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="183c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 5
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="183e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 500
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="170e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 600
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1724", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 600
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="172e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 650 Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="172b", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 650 Wireless
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1726", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 700 / Rival 710
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1700", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 700 / Rival 710
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1730", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 95 / Rival 100 PC Bang
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1706", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 95 / Rival 100 PC Bang
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1707", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 95 / Rival 100 PC Bang
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1704", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Rival 95 / Rival 100 PC Bang
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1708", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Sensei 310
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1722", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Sensei [RAW]
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1369", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Sensei [RAW]
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1362", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Sensei [RAW]
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="136d", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Sensei [RAW]
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="136f", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Sensei [RAW]
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1380", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Sensei [RAW]
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1390", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Sensei TEN
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1832", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Sensei TEN
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1834", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# SteelSeries Aerox 3 Wireless (through its receiver)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1838", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 3 Wireless (through its receiver)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1878", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 5 Wireless (through its receiver)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1852", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 5 Wireless (through its receiver)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="185c", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 5 Wireless (through its receiver)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1860", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 9 Wireless (through its receiver)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1858", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Aerox 9 Wireless (through its receiver)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1874", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Prime Wireless (through its receiver)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1840", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# SteelSeries Prime Wireless (through its receiver)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1848", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"

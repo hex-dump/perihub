@@ -101,11 +101,14 @@ fn peripheral_collections(devices: &[DeviceInfo]) -> Vec<(DeviceInfo, &'static p
         a.vendor_id() == b.vendor_id() && a.product_id() == b.product_id() && a.serial_number() == b.serial_number()
     };
     let mut found: Vec<(DeviceInfo, &'static peripheral::Model)> = Vec::new();
+    // On Windows an interface can have several collections: a vendor-defined one goes first.
+    let mut ordered: Vec<&DeviceInfo> = devices.iter().collect();
+    ordered.sort_by_key(|d| d.usage_page() < 0xFF00);
     for by_usage in [true, false] {
-        for d in devices {
+        for d in ordered.iter().copied() {
             let Some(model) = peripheral::find(d.vendor_id(), d.product_id()) else { continue };
             let matches = if by_usage {
-                d.usage_page() == model.usage_page
+                model.usage_page == Some(d.usage_page())
             } else {
                 model.interface == Some(d.interface_number())
             };
