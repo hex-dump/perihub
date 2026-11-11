@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.7 — 2026-11-11
 
 Logitech mice are supported by the format of their memory, not by model, and the devices on a Bolt or Unifying receiver get a page of their own, with their DPI as a first experimental setting.
 
