@@ -17,6 +17,9 @@ const api = vi.hoisted(() => ({
   restoreMouseBackup: vi.fn(),
   keepChanges: vi.fn(),
   undoLastWrite: vi.fn(),
+  unifyingAccess: vi.fn(),
+  grantUnifyingAccess: vi.fn(),
+  revokeUnifyingAccess: vi.fn(),
 }));
 
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
@@ -252,6 +255,13 @@ describe("a device on a receiver that PeriHub does not support", () => {
     ],
   };
   const note = "Logi Bolt receiver c548, slot 1: MX Master 3S is not supported yet";
+  const access = { rule_installed: false, supported: true, manual_install: "install", manual_remove: "remove" };
+
+  beforeEach(() => {
+    api.unifyingAccess.mockResolvedValue(access);
+    api.grantUnifyingAccess.mockResolvedValue(undefined);
+    api.revokeUnifyingAccess.mockResolvedValue(undefined);
+  });
 
   it("is pointed to its own page instead of an error", async () => {
     render(Mouse, { props: { info: null, error: note, asleep: null, receivers: [bolt] } });
@@ -277,7 +287,34 @@ describe("a device on a receiver that PeriHub does not support", () => {
     await wait(0);
     expect(screen.queryByText(/install the PeriHub udev rule/)).toBeNull();
     expect(screen.getByText("PeriHub cannot open your Unifying receiver.")).toBeTruthy();
-    expect(screen.getByText(/any program\s+you run could read your typing/)).toBeTruthy();
+    expect(screen.getByText(/every key you press on the keyboards paired with this receiver/)).toBeTruthy();
+
+    // The rule is installed only after the box is ticked.
+    const allow = screen.getByRole("button", { name: "Allow PeriHub to open the receiver" }) as HTMLButtonElement;
+    expect(allow.disabled).toBe(true);
+    await fireEvent.click(screen.getByRole("checkbox", { name: /I understand that every program/ }));
+    await fireEvent.click(allow);
+    await wait(0);
+    expect(api.grantUnifyingAccess).toHaveBeenCalledOnce();
+    expect(screen.getByText(/Permission given/)).toBeTruthy();
+  });
+
+  it("offers to remove the rule once PeriHub installed it", async () => {
+    api.unifyingAccess.mockResolvedValue({ ...access, rule_installed: true });
+    const open = {
+      ...bolt,
+      product_id: 0xc52b,
+      name: "Unifying receiver",
+      bolt: false,
+      unifying: true,
+      unsupported: [],
+    };
+    render(Mouse, { props: { info: null, error: null, asleep: null, receivers: [open] } });
+    await wait(0);
+    await fireEvent.click(screen.getByRole("button", { name: "Remove permission" }));
+    await wait(0);
+    expect(api.revokeUnifyingAccess).toHaveBeenCalledOnce();
+    expect(screen.getByText(/Permission removed/)).toBeTruthy();
   });
 
   it("still offers a report when the Bolt receiver is reached but nothing answered", async () => {

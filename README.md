@@ -204,6 +204,15 @@ Reactive lighting reads key presses, and so does a key of the Apex 3 TKL that st
 
 PeriHub itself reads key presses only while reactive lighting is on or a keyboard key starts a macro, and never stores, logs or sends what you type.
 
+#### Optional: Unifying receivers
+
+Linux puts the Unifying receivers in a mode where what you type on the keyboards paired with them comes through the same interface PeriHub needs, so the default rule leaves them closed. When PeriHub finds a Unifying receiver it cannot open, the mouse page explains this and offers to install [`73-perihub-unifying.rules`](packaging/linux/73-perihub-unifying.rules), asking for your password, and can remove it from there. If Solaar is installed, its own rule already opens the receiver.
+
+> [!WARNING]
+> Linux cannot give this permission to PeriHub alone. With the rule installed, **every program running under your user account can read everything you type on the keyboards paired with a Unifying receiver**, passwords included, even while PeriHub is closed. Install it only if you want PeriHub to reach those devices and trust all the software you run.
+
+PeriHub itself only reads the answers of the devices it asks, and drops everything else that arrives on that interface without storing, logging or sending it.
+
 #### Optional: software macros
 
 Software macros type and click through a virtual keyboard and mouse (`/dev/uinput`). Many gaming systems already allow it, and PeriHub tells you so on the **Buttons** and **Keys** pages. Otherwise it offers to install [`72-perihub-uinput.rules`](packaging/linux/72-perihub-uinput.rules) from there.
@@ -278,7 +287,7 @@ The interface is in English. More languages are planned.
 - **Windows**: tested on a real Windows 11 PC (lighting, key remapping, mouse profiles and macros, app profiles, tray, autostart, updates, software macros). Creating software macros has been tried on Linux only.
 - **Logitech G300**: reading and saving were confirmed by one user, on Windows ([issue #21](https://github.com/hex-dump/perihub/issues/21)). No G300 has been tried on Linux yet.
 - **Logitech mice through a LIGHTSPEED receiver** are never saved to: use the USB cable. With a tested memory format PeriHub switches their profile and DPI level. The receivers have not been tried on real hardware yet ([issue #4](https://github.com/hex-dump/perihub/issues/4)), and their buttons do not start software macros.
-- **Devices on a Logi Bolt or Unifying receiver**, such as the MX Master 3S, are not supported yet. Each one gets a read-only page with what it can do and a test report ([issue #17](https://github.com/hex-dump/perihub/issues/17)). For now PeriHub looks behind the receivers only while no supported Logitech mouse is connected with its cable. On Linux PeriHub's udev rule does not open the Unifying receivers, because the typing of the keyboards paired with them goes through the same interface: see [docs/devices.md](docs/devices.md).
+- **Devices on a Logi Bolt or Unifying receiver**, such as the MX Master 3S, are not supported yet. Each one gets a read-only page with what it can do and a test report ([issue #17](https://github.com/hex-dump/perihub/issues/17)). For now PeriHub looks behind the receivers only while no supported Logitech mouse is connected with its cable. On Linux the Unifying receivers need an [optional rule](#optional-unifying-receivers), because the typing of the keyboards paired with them goes through the same interface.
 - **Corsair devices** have not been tried on real hardware yet. With more than one device on the same receiver, only the first one is shown, and the Slipstream V2 receiver is not recognized.
 - **App profiles** work on Windows and Hyprland only. They switch lighting and mouse profiles, not key mappings.
 - **Software macros** on Linux skip characters the keyboard layout cannot type. On Windows many games ignore typed text, but not keys.

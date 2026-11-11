@@ -38,6 +38,21 @@ fn udev_rule_opens_only_the_hidpp_interface_of_the_receivers() {
     assert_eq!(sorted(in_rule), sorted(in_list));
 }
 
+const UNIFYING_RULE: &str = include_str!("../../../packaging/linux/73-perihub-unifying.rules");
+
+#[test]
+fn the_optional_unifying_rule_opens_only_their_hidpp_interface() {
+    let lines: Vec<&str> = UNIFYING_RULE.lines().filter(|line| line.contains("TAG+=")).collect();
+    for line in &lines {
+        assert!(line.contains(r#"ENV{ID_USB_INTERFACE_NUM}=="02""#), "{line}");
+        assert!(line.contains(r#"KERNELS=="0003:046D:"#), "{line}");
+    }
+    let in_rule = lines.iter().map(|line| line.split("0003:046D:").nth(1).unwrap()[..4].to_lowercase()).collect();
+    let in_list = UNIFYING.iter().map(|id| format!("{id:04x}")).collect();
+    assert_eq!(sorted(in_rule), sorted(in_list));
+    assert!(UNIFYING_RULE.contains("WARNING"), "the rule explains what it opens");
+}
+
 #[test]
 fn udev_rule_never_opens_a_unifying_receiver() {
     // In DJ mode, which Linux turns on for Unifying receivers, what is typed on the keyboards

@@ -68,8 +68,10 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   looks behind the receivers only while no supported Logitech mouse is connected with its cable.
 - **On Linux PeriHub's udev rule does not open the Unifying receivers.** Linux puts them in DJ mode,
   where what is typed on the keyboards paired with them arrives on the same interface as HID++:
-  opening it would let any program running as the user read that typing. PeriHub reads them only
-  where another rule already opens them, such as Solaar's. Windows is not affected.
+  opening it would let any program running as the user read that typing. The mouse page explains
+  this and offers an optional rule, `73-perihub-unifying.rules`, which PeriHub installs only if you
+  ask, after the warning, and can remove. With Solaar installed its own rule already opens them.
+  Windows is not affected.
 
 | Mouse | USB ID | Through a receiver |
 |---|---|---|

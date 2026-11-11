@@ -7,6 +7,7 @@ mod key_access;
 mod logfile;
 mod macro_files;
 mod soft_macros;
+mod unifying_access;
 mod updates;
 mod window;
 
@@ -151,6 +152,9 @@ fn main() {
             key_access::kb_key_access,
             key_access::kb_grant_key_access,
             key_access::kb_revoke_key_access,
+            unifying_access::unifying_access,
+            unifying_access::unifying_grant_access,
+            unifying_access::unifying_revoke_access,
             commands::mouse_get_state,
             commands::mouse_live,
             commands::mouse_save_profile,

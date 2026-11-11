@@ -22,7 +22,7 @@ pub const RECEIVERS: &[u16] =
 /// Unifying receivers, for the MX, M and K mice and keyboards (ids from Linux's hid-logitech-dj).
 /// On Linux their HID++ interface also carries what is typed on the keyboards paired with them
 /// (hid-logitech-dj puts them in DJ mode), so PeriHub's udev rule does not open it: see
-/// `packaging/linux/70-perihub.rules`.
+/// `packaging/linux/70-perihub.rules`, and the optional `73-perihub-unifying.rules`.
 pub const UNIFYING: [u16; 2] = [0xC52B, 0xC532];
 
 /// The Logi Bolt receiver, for the MX and other office mice and keyboards. PeriHub does not support

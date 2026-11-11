@@ -330,6 +330,16 @@ export interface UnsupportedReceiverDevice {
 }
 
 /** A connected Logitech receiver, for the test report that helps support what is paired with it. */
+/** Linux: the optional udev rule that opens the Unifying receivers (see 73-perihub-unifying.rules). */
+export interface UnifyingAccess {
+  rule_installed: boolean;
+  /** The rule can be installed from PeriHub (Linux only). */
+  supported: boolean;
+  /** Commands to run in a terminal if the password window cannot be shown. */
+  manual_install: string;
+  manual_remove: string;
+}
+
 export interface ReceiverReport {
   product_id: number;
   /** "LIGHTSPEED receiver", "Logi Bolt receiver" or "Unifying receiver". */
@@ -488,6 +498,10 @@ export const api = {
   keyAccess: () => invoke<KeyAccess>("kb_key_access"),
   grantKeyAccess: () => invoke<void>("kb_grant_key_access"),
   revokeKeyAccess: () => invoke<void>("kb_revoke_key_access"),
+  /** Linux: the optional rule that opens the Unifying receivers, installed through the password window. */
+  unifyingAccess: () => invoke<UnifyingAccess>("unifying_access"),
+  grantUnifyingAccess: () => invoke<void>("unifying_grant_access"),
+  revokeUnifyingAccess: () => invoke<void>("unifying_revoke_access"),
   presets: () => invoke<LightingPreset[]>("kb_get_presets"),
   savePreset: (name: string, lighting: KeyboardLighting) =>
     invoke<LightingPreset[]>("kb_save_preset", { name, lighting }),

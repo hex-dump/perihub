@@ -82,8 +82,9 @@ KERNEL=="hidraw*", KERNELS=="0003:046D:C54D.*", ENV{ID_USB_INTERFACE_NUM}=="02",
 KERNEL=="hidraw*", KERNELS=="0003:046D:C548.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 # Unifying receivers (c52b, c532) are left out on purpose. Linux puts them in DJ mode, where what is
 # typed on the keyboards paired with them arrives on the same interface as HID++ (02): opening it
-# to the user would let any program running as the user read that typing. PeriHub reads them only
-# where another rule already opens them, such as Solaar's.
+# to the user would let any program running as the user read that typing. PeriHub offers the
+# optional 73-perihub-unifying.rules, with that warning, and reads them where another rule already
+# opens them, such as Solaar's.
 # Logitech G300 (read only): interface 1, which holds its profiles. It also has a keyboard collection,
 # which sends only the keys assigned to the mouse's own buttons.
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c246", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"

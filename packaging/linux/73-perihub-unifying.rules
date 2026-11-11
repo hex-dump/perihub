@@ -1,0 +1,20 @@
+# PeriHub, optional: the Unifying receivers (046d:c52b, 046d:c532), for the devices paired with them.
+#
+# WARNING: Linux puts these receivers in DJ mode, where what is typed on the keyboards paired with
+# them, and what the paired mice do, arrives on the same interface (02) as the HID++ messages
+# PeriHub needs. Linux cannot open it to PeriHub alone: with this rule EVERY program running as the
+# logged-in user can read everything typed on those keyboards, including passwords and private
+# messages, even while PeriHub is closed. A malicious or compromised program running as your user
+# could use it as a keylogger. Install it only if you want PeriHub to reach the devices paired with
+# a Unifying receiver and trust all the software you run. Solaar's rule already opens it (and every
+# other Logitech device): with Solaar installed this rule is not needed.
+#
+# PeriHub can install and remove this rule from the mouse page.
+# Manual install:
+#   sudo cp 73-perihub-unifying.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger
+# Remove:
+#   sudo rm /etc/udev/rules.d/73-perihub-unifying.rules && sudo udevadm control --reload && sudo udevadm trigger
+
+KERNEL=="hidraw*", SUBSYSTEMS=="usb", ENV{ID_USB_INTERFACE_NUM}=="", IMPORT{builtin}="usb_id"
+KERNEL=="hidraw*", KERNELS=="0003:046D:C52B.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="0003:046D:C532.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"

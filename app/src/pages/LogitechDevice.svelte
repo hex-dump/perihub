@@ -6,6 +6,7 @@
   import { capabilities, kindName } from "../lib/logitechFeatures";
   import { receiverTest } from "../lib/testReport";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
+  import UnifyingPermission from "../components/UnifyingPermission.svelte";
 
   interface Props {
     receiver: ReceiverReport | null;
@@ -84,6 +85,11 @@
       <p class="small muted">Could not read: {device.read_errors.join("; ")}</p>
     {/if}
   </section>
+
+  <!-- Linux only: the way to remove the optional rule that opened the receiver. -->
+  {#if receiver.unifying && !navigator.userAgent.includes("Windows")}
+    <section class="card"><UnifyingPermission {receiver} /></section>
+  {/if}
 {:else}
   <div class="notice info">
     This device is not connected, or it is asleep. Turn it on or move it: PeriHub finds it again within a few seconds.

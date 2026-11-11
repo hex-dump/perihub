@@ -15,6 +15,7 @@
   import { mouseRestoreMessage } from "../lib/backups";
   import TestReport from "../components/TestReport.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
+  import UnifyingPermission from "../components/UnifyingPermission.svelte";
   import { receiverName, receiverTest } from "../lib/testReport";
   import ExperimentalDialog from "../components/ExperimentalDialog.svelte";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
@@ -326,13 +327,12 @@
         add it.
       </div>
     {/each}
+    {#if receiver.unifying}
+      <!-- Linux: the warning and the optional rule while it is closed, the way to remove the rule once open. -->
+      <UnifyingPermission {receiver} />
+    {/if}
     {#if receiver.unifying && receiver.denied}
-      <div class="notice info">
-        <b>PeriHub cannot open your Unifying receiver.</b> On Linux, what you type on the keyboards paired with it comes
-        through the same channel PeriHub would read, so PeriHub's own udev rule leaves it closed: otherwise any program
-        you run could read your typing. If Solaar is installed, its rule already opens it, and PeriHub can read what is
-        paired with it.
-      </div>
+      <!-- Said by the permission above. -->
     {:else if receiver.unsupported.length === 0 && (receiver.bolt || receiver.unifying || !receiver.reachable)}
       <div class="notice info">
         {#if receiver.reachable}
