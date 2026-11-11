@@ -11,7 +11,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::{
     BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
-    check_settings, razer, sinowealth, steelseries,
+    check_settings, qmk, razer, sinowealth, steelseries,
 };
 use crate::config;
 use crate::error::{Error, Result};
@@ -44,6 +44,11 @@ pub trait Driver: Send {
     fn changes_stay(&self) -> bool {
         false
     }
+    /// The settings the device will read back for `wanted`, where the page's values do not map one to
+    /// one onto the device's (a colour the device keeps as hue and saturation).
+    fn normalize(&self, wanted: &Settings) -> Settings {
+        wanted.clone()
+    }
     /// Where the protocol is documented, for the page and the test report.
     fn source(&self) -> &'static str;
     fn profiles(&self) -> u8;
@@ -55,6 +60,43 @@ pub fn driver(model: &'static Model) -> Box<dyn Driver> {
         Protocol::SteelSeries(params) => Box::new(steelseries::SteelSeries::new(params)),
         Protocol::Razer(params) => Box::new(razer::Razer::new(params)),
         Protocol::Sinowealth(params) => Box::new(sinowealth::Sinowealth::new(params)),
+        Protocol::Qmk(params) => Box::new(qmk::Qmk::new(params)),
+    }
+}
+
+/// Who a device is: from its model's table, or, for a keyboard PeriHub knows by its collection
+/// rather than by its USB id (QMK), from what it says over USB.
+#[derive(Debug, Clone)]
+pub struct Identity {
+    pub vendor_id: u16,
+    pub product_id: u16,
+    pub brand: String,
+    pub name: String,
+    /// The folder of its backups.
+    pub folder: String,
+}
+
+impl Identity {
+    pub fn of(model: &Model, product_id: u16) -> Self {
+        Self {
+            vendor_id: model.vendor_id,
+            product_id,
+            brand: model.brand.to_string(),
+            name: model.name.to_string(),
+            folder: format!("{}-{product_id:04x}", model.brand.to_lowercase()),
+        }
+    }
+
+    /// A QMK keyboard, by its USB ids and strings.
+    pub fn qmk(
+        model: &Model,
+        vendor_id: u16,
+        product_id: u16,
+        manufacturer: Option<&str>,
+        product: Option<&str>,
+    ) -> Self {
+        let (brand, name) = qmk::names(manufacturer, product, model);
+        Self { vendor_id, product_id, brand, name, folder: format!("qmk-{vendor_id:04x}-{product_id:04x}") }
     }
 }
 
@@ -86,28 +128,27 @@ pub struct PeripheralTask {
 
 impl PeripheralTask {
     /// `changes`: changes may be tried (PeriHub's app; never the command line).
-    pub fn open(hid: Box<dyn Hid>, model: &'static Model, product_id: u16, changes: bool) -> Result<Self> {
-        let backups =
-            config::config_dir().join("backups").join(format!("{}-{:04x}", model.brand.to_lowercase(), product_id));
-        Self::start(hid, driver(model), model, product_id, changes, backups)
+    pub fn open(hid: Box<dyn Hid>, model: &'static Model, who: Identity, changes: bool) -> Result<Self> {
+        let backups = config::config_dir().join("backups").join(&who.folder);
+        Self::start(hid, driver(model), model, who, changes, backups)
     }
 
     fn start(
         hid: Box<dyn Hid>,
         mut driver: Box<dyn Driver>,
         model: &'static Model,
-        product_id: u16,
+        who: Identity,
         changes: bool,
         backups: PathBuf,
     ) -> Result<Self> {
         let mut io = Io::new(hid, driver.commands(), changes);
         let reading = driver.read(&mut io)?;
         let info = PeripheralInfo {
-            key: format!("{:04x}:{product_id:04x}", model.vendor_id),
-            vendor_id: model.vendor_id,
-            product_id,
-            brand: model.brand,
-            model: model.name,
+            key: format!("{:04x}:{:04x}", who.vendor_id, who.product_id),
+            vendor_id: who.vendor_id,
+            product_id: who.product_id,
+            brand: who.brand,
+            model: who.name,
             kind: model.kind,
             source: driver.source(),
             profiles: driver.profiles(),
@@ -141,8 +182,8 @@ impl PeripheralTask {
         task.take(reading);
         log::info!(
             "{} {} connected (experimental, from {}): {}",
-            model.brand,
-            model.name,
+            task.info.brand,
+            task.info.model,
             task.info.source,
             match (&task.info.problem, task.info.editable) {
                 (Some(problem), _) => format!("read-only, {problem}"),
@@ -234,6 +275,7 @@ impl PeripheralTask {
             )));
         }
         let before = self.info.settings.clone();
+        let wanted = &self.driver.normalize(wanted);
         check_settings(&self.info.limits, &before, wanted)?;
         if *wanted == before && !save {
             return Ok(self.info.clone());
@@ -387,7 +429,7 @@ pub(crate) fn start_for_test(
     changes: bool,
     backups: PathBuf,
 ) -> Result<PeripheralTask> {
-    PeripheralTask::start(hid, driver(model), model, product_id, changes, backups)
+    PeripheralTask::start(hid, driver(model), model, Identity::of(model, product_id), changes, backups)
 }
 
 #[cfg(test)]

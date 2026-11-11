@@ -23,7 +23,9 @@ use crate::hidpp::{HidppDevice, Transport};
 use crate::keyboard::{KeyInterfaces, KeyboardInfo, KeyboardTask};
 use crate::logitech::LogitechTask;
 use crate::mouse::{MouseInfo, MouseTask, ReceiverLink};
-use crate::peripheral::{self, PeripheralInfo, task::PeripheralTask};
+use crate::peripheral::qmk::{self, Found};
+use crate::peripheral::task::{Identity, PeripheralTask};
+use crate::peripheral::{self, PeripheralInfo, Protocol};
 use crate::softmacro::KeyboardTriggers;
 use crate::worker::Worker;
 
@@ -276,6 +278,8 @@ pub struct DeviceStatus {
     /// Mice and keyboards of other brands, from published protocol documentation (experimental).
     pub peripherals: Vec<PeripheralInfo>,
     pub peripheral_error: Option<String>,
+    /// Keyboards with QMK firmware found by their raw HID collection, open or not.
+    pub qmk: Vec<QmkKeyboard>,
     /// Connected Logitech receivers (LIGHTSPEED and Logi Bolt).
     pub receivers: Vec<ReceiverReport>,
     /// Running programs that set their own DPI and other settings on Logitech devices (Solaar,
@@ -284,6 +288,25 @@ pub struct DeviceStatus {
     /// PeriHub runs in a Flatpak sandbox and cannot see the other programs running (see
     /// [`conflicts::sandboxed`]).
     pub sandboxed: bool,
+}
+
+/// A keyboard with QMK firmware: PeriHub reads Vial keyboards by itself, and other keyboards with a raw
+/// HID collection only once the user turns them on as VIA keyboards.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct QmkKeyboard {
+    /// "vvvv:pppp", as in the peripherals.
+    pub key: String,
+    pub vendor_id: u16,
+    pub product_id: u16,
+    pub brand: String,
+    pub name: String,
+    pub vial: bool,
+    /// PeriHub may open it: a Vial keyboard, or one the user turned on.
+    pub enabled: bool,
+    /// Open now, with a page of its own.
+    pub open: bool,
+    /// The system refused to open it (on Linux, no rule opens its raw HID interface).
+    pub denied: bool,
 }
 
 #[derive(Default)]
@@ -309,6 +332,10 @@ struct Slots {
     peripheral_failed: Vec<CString>,
     /// Devices that did not answer (asleep, or away from their receiver), and when they were asked.
     peripheral_waiting: HashMap<CString, std::time::Instant>,
+    /// QMK keyboards found, and the paths of those the system refused to open (asked again at every
+    /// pass: a rule may have been installed since).
+    qmk: Vec<QmkKeyboard>,
+    qmk_denied: HashSet<CString>,
     /// Set by the mouse's thread while another program controls the mouse.
     mouse_host_mode: Option<Arc<AtomicBool>>,
     reported_host_mode: bool,
@@ -355,6 +382,8 @@ pub struct Manager {
     untested_saves: bool,
     /// The DPI to set on the devices PeriHub knows by their features, by settings key.
     logitech_dpi: Arc<Mutex<HashMap<String, u16>>>,
+    /// Keyboards with a raw HID collection the user turned on as VIA keyboards, by "vvvv:pppp".
+    qmk_enabled: Arc<Mutex<HashSet<String>>>,
 }
 
 impl Manager {
@@ -362,11 +391,13 @@ impl Manager {
     /// `untested_saves`: a mouse whose memory format is untested may be saved to, each save undone
     /// unless the user keeps it. Only the interface asks that; the command line never saves to one.
     /// `logitech_dpi`: the DPI to set on the devices PeriHub knows by their features every time they
-    /// connect, by settings key (see [`Manager::set_logitech_dpi`]).
+    /// connect, by settings key (see [`Manager::set_logitech_dpi`]). `qmk_keyboards`: the keyboards
+    /// the user turned on as VIA keyboards (see [`Manager::set_qmk_enabled`]).
     pub fn start(
         keyboard_config: KeyboardConfig,
         untested_saves: bool,
         logitech_dpi: HashMap<String, u16>,
+        qmk_keyboards: Vec<String>,
         listener: Listener,
     ) -> Self {
         let manager = Self {
@@ -374,6 +405,7 @@ impl Manager {
             keyboard_config: Arc::new(Mutex::new(keyboard_config)),
             untested_saves,
             logitech_dpi: Arc::new(Mutex::new(logitech_dpi)),
+            qmk_enabled: Arc::new(Mutex::new(qmk_keyboards.into_iter().collect())),
         };
         let background = manager.clone();
         thread::Builder::new()
@@ -850,6 +882,17 @@ impl Manager {
         };
     }
 
+    /// Turns a keyboard with a raw HID collection on or off as a VIA keyboard, by "vvvv:pppp". It is
+    /// opened or closed at the next pass.
+    pub fn set_qmk_enabled(&self, key: &str, on: bool) {
+        let mut enabled = self.qmk_enabled.lock().unwrap();
+        if on {
+            enabled.insert(key.to_string());
+        } else {
+            enabled.remove(key);
+        }
+    }
+
     /// Looks for running programs that take control of the devices. Returns `true` if the list changed.
     fn check_conflicts(&self) -> bool {
         let running = conflicts::running();
@@ -886,6 +929,7 @@ impl Manager {
             corsair_error: slots.corsair_error.clone(),
             peripherals: slots.peripherals.iter().map(|(_, _, info)| info.clone()).collect(),
             peripheral_error: slots.peripheral_error.clone(),
+            qmk: slots.qmk.clone(),
             receivers: slots.receivers.clone(),
             logitech_programs: slots.logitech_programs.iter().map(|name| name.to_string()).collect(),
             sandboxed: conflicts::sandboxed(),
@@ -973,9 +1017,46 @@ impl Manager {
     /// Opens new devices of other brands and forgets the ones that went away. Returns `true` if
     /// the status changed.
     fn poll_peripherals(&self, api: &HidApi) -> bool {
-        let devices: Vec<DeviceInfo> =
-            api.device_list().filter(|d| peripheral::vendors().any(|v| v == d.vendor_id())).cloned().collect();
-        let found = peripheral_collections(&devices);
+        let qmk_found = |d: &DeviceInfo| qmk::classify(d.usage_page(), d.usage(), d.serial_number());
+        let devices: Vec<DeviceInfo> = api
+            .device_list()
+            .filter(|d| peripheral::vendors().any(|v| v == d.vendor_id()) || qmk_found(d) != Found::No)
+            .cloned()
+            .collect();
+        let mut found = peripheral_collections(&devices);
+        let enabled = self.qmk_enabled.lock().unwrap().clone();
+        let mut keyboards: Vec<(CString, QmkKeyboard)> = Vec::new();
+        for d in &devices {
+            let model = match qmk_found(d) {
+                Found::Vial => &qmk::VIAL_MODEL,
+                Found::Via => &qmk::VIA_MODEL,
+                Found::No | Found::Bootloader => continue,
+            };
+            let key = format!("{:04x}:{:04x}", d.vendor_id(), d.product_id());
+            if found.iter().any(|(o, _)| o.path() == d.path()) || keyboards.iter().any(|(_, k)| k.key == key) {
+                continue;
+            }
+            let vial = matches!(model.protocol, Protocol::Qmk(p) if p.vial);
+            let who = qmk_identity(d, model);
+            let on = vial || enabled.contains(&key);
+            keyboards.push((
+                d.path().to_owned(),
+                QmkKeyboard {
+                    key,
+                    vendor_id: d.vendor_id(),
+                    product_id: d.product_id(),
+                    brand: who.brand,
+                    name: who.name,
+                    vial,
+                    enabled: on,
+                    open: false,
+                    denied: false,
+                },
+            ));
+            if on {
+                found.push((d.clone(), model));
+            }
+        }
         let present = |path: &CStr| found.iter().any(|(d, _)| d.path() == path);
         let mut changed = false;
         let mut slots = self.slots.lock().unwrap();
@@ -1005,10 +1086,12 @@ impl Manager {
         drop(slots);
         for (device, model) in new {
             let changes = self.untested_saves;
+            let is_qmk = matches!(model.protocol, Protocol::Qmk(_));
+            let who = if is_qmk { qmk_identity(&device, model) } else { Identity::of(model, device.product_id()) };
             let result = device
                 .open_device(api)
                 .map_err(Error::from)
-                .and_then(|dev| PeripheralTask::open(Box::new(dev), model, device.product_id(), changes));
+                .and_then(|dev| PeripheralTask::open(Box::new(dev), model, who, changes));
             let mut slots = self.slots.lock().unwrap();
             let path = device.path().to_owned();
             match result {
@@ -1016,8 +1099,20 @@ impl Manager {
                     let info = task.info.clone();
                     slots.peripherals.push((path.clone(), Worker::spawn("perihub-peripheral", task), info));
                     slots.peripheral_waiting.remove(&path);
+                    slots.qmk_denied.remove(&path);
                     slots.peripheral_error = None;
                     changed = true;
+                }
+                // Its page says how to open it: asked again at every pass, without a message.
+                Err(error) if is_qmk && is_permission_error(&error) => {
+                    if slots.qmk_denied.insert(path) {
+                        log::info!(
+                            "QMK keyboard {:04x}:{:04x}: permission denied",
+                            device.vendor_id(),
+                            device.product_id()
+                        );
+                        changed = true;
+                    }
                 }
                 // Asleep or away from its receiver: asked again later, without a message.
                 Err(Error::Unreachable | Error::Timeout) => {
@@ -1037,6 +1132,20 @@ impl Manager {
                     changed |= new;
                 }
             }
+        }
+        let mut slots = self.slots.lock().unwrap();
+        slots.qmk_denied.retain(|path| keyboards.iter().any(|(p, _)| p == path));
+        let keyboards: Vec<QmkKeyboard> = keyboards
+            .into_iter()
+            .map(|(path, k)| QmkKeyboard {
+                open: slots.peripherals.iter().any(|(p, _, _)| *p == path),
+                denied: k.enabled && slots.qmk_denied.contains(&path),
+                ..k
+            })
+            .collect();
+        if slots.qmk != keyboards {
+            slots.qmk = keyboards;
+            changed = true;
         }
         changed
     }
@@ -1253,6 +1362,11 @@ impl Manager {
 fn is_permission_error(error: &Error) -> bool {
     let text = error.to_string();
     text.contains("Permission denied") || text.contains("ermesso") || text.contains("ccess is denied")
+}
+
+/// Who a QMK keyboard is, from its USB strings.
+fn qmk_identity(d: &DeviceInfo, model: &peripheral::Model) -> Identity {
+    Identity::qmk(model, d.vendor_id(), d.product_id(), d.manufacturer_string(), d.product_string())
 }
 
 fn open_error_message(error: Error) -> String {

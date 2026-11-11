@@ -62,7 +62,8 @@ pub(crate) fn run_as_root(script: &str, input: &str) -> Result<(), String> {
     }
 }
 
-pub(crate) async fn as_root(script: String, input: &'static str) -> Result<(), String> {
+pub(crate) async fn as_root(script: String, input: impl Into<String>) -> Result<(), String> {
+    let input = input.into();
     if !cfg!(target_os = "linux") {
         return Err("only needed on Linux".into());
     }
@@ -71,7 +72,7 @@ pub(crate) async fn as_root(script: String, input: &'static str) -> Result<(), S
     if crate::flatpak::active() {
         return Err("PeriHub runs as a Flatpak, which cannot install system rules: run this in a terminal".into());
     }
-    tauri::async_runtime::spawn_blocking(move || run_as_root(&script, input)).await.map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(move || run_as_root(&script, &input)).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

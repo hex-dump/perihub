@@ -8,6 +8,7 @@ mod flatpak;
 mod key_access;
 mod logfile;
 mod macro_files;
+mod qmk_access;
 mod soft_macros;
 mod unifying_access;
 mod updates;
@@ -90,6 +91,7 @@ fn main() {
                 // The interface asks whether to keep every save to a mouse whose memory format is untested.
                 true,
                 config.logitech_dpi.clone(),
+                config.qmk_keyboards.clone(),
                 Box::new(move |status| {
                     if let Some(profiles) = slot.get() {
                         profiles.devices_changed(status);
@@ -155,6 +157,10 @@ fn main() {
             key_access::kb_key_access,
             key_access::kb_grant_key_access,
             key_access::kb_revoke_key_access,
+            qmk_access::qmk_access,
+            qmk_access::qmk_grant_access,
+            qmk_access::qmk_revoke_access,
+            commands::qmk_set_enabled,
             unifying_access::unifying_access,
             unifying_access::unifying_grant_access,
             unifying_access::unifying_revoke_access,

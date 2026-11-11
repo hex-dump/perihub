@@ -10,6 +10,7 @@
 //! - an answer that does not look as documented leaves the device read-only.
 
 pub mod asus;
+pub mod qmk;
 pub mod razer;
 #[rustfmt::skip]
 pub mod razer_models;
@@ -61,6 +62,7 @@ pub struct Command {
 #[derive(Debug, Clone, Copy)]
 pub enum Protocol {
     Asus(asus::Params),
+    Qmk(qmk::Params),
     Razer(razer::Params),
     Sinowealth(sinowealth::Params),
     SteelSeries(steelseries::Params),
@@ -239,8 +241,8 @@ pub struct PeripheralInfo {
     pub key: String,
     pub vendor_id: u16,
     pub product_id: u16,
-    pub brand: &'static str,
-    pub model: &'static str,
+    pub brand: String,
+    pub model: String,
     pub kind: Kind,
     /// Where PeriHub knows the protocol from, for the page and the test report.
     pub source: &'static str,

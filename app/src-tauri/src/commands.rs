@@ -232,6 +232,19 @@ pub async fn logitech_reset_dpi(state: State<'_, AppState>, receiver_id: u16, sl
     save_logitech_dpi(&state, key, None)
 }
 
+/// Turns a keyboard with a raw HID collection on or off as a VIA keyboard ("vvvv:pppp"). PeriHub
+/// opens it, or closes it, at its next look at the devices.
+#[tauri::command]
+pub fn qmk_set_enabled(state: State<'_, AppState>, key: String, on: bool) -> CmdResult<()> {
+    let mut config = state.config.lock().unwrap();
+    config.qmk_keyboards.retain(|k| *k != key);
+    if on {
+        config.qmk_keyboards.push(key.clone());
+    }
+    state.manager.set_qmk_enabled(&key, on);
+    config.save().map_err(|e| e.to_string())
+}
+
 fn save_logitech_dpi(state: &AppState, key: String, dpi: Option<u16>) -> CmdResult<()> {
     let mut config = state.config.lock().unwrap();
     match dpi {
