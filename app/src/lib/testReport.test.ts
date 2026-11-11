@@ -147,6 +147,7 @@ describe("receiverTest", () => {
     unifying: false,
     reachable: true,
     denied: false,
+    open_slots: [1],
     slots: ["slot 1: HID++ 4.5", "slot 2: HID++ 1.0 error 0x08"],
     unsupported: [
       {

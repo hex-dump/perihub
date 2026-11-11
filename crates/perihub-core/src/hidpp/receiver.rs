@@ -118,6 +118,10 @@ pub struct UnsupportedDevice {
     pub protocol: String,
     /// The id it reports through a LIGHTSPEED receiver, if it lists one.
     pub wireless_id: Option<u16>,
+    /// Its unit id (0x0003 function 0, bytes 1 to 4), which tells two devices of the same model
+    /// apart: the key its settings are saved under on this PC. Never shown or reported.
+    #[serde(skip)]
+    pub unit_id: Option<[u8; 4]>,
     /// 0x0003 function 0 as read, in hex: entity count, unit id, transport bits and product ids.
     /// The unit id identifies the single device, so it is left out ("xx"): the report is public.
     pub device_info: Option<String>,
@@ -144,6 +148,7 @@ impl UnsupportedDevice {
             kind: None,
             protocol: format!("{major}.{minor}"),
             wireless_id: None,
+            unit_id: None,
             device_info: None,
             firmware: Vec::new(),
             features: Vec::new(),
@@ -169,6 +174,8 @@ impl UnsupportedDevice {
                 let hex = bytes.map(|(i, b)| if (1..5).contains(&i) { "xx".into() } else { format!("{b:02x}") });
                 device.device_info = Some(hex.collect::<Vec<_>>().join(" "));
                 device.wireless_id = super::wireless_id_from_device_info(&info);
+                let unit = [info[1], info[2], info[3], info[4]];
+                device.unit_id = (unit != [0; 4] && unit != [0xFF; 4]).then_some(unit);
             }
             Err(error) => failed("device info", error)?,
         }
@@ -212,6 +219,14 @@ impl UnsupportedDevice {
             }
         }
         Ok(device)
+    }
+
+    /// The key its settings are saved under: its unit id, or else its name and wireless id.
+    pub fn settings_key(&self) -> String {
+        match self.unit_id {
+            Some(unit) => format!("unit-{}", unit.iter().map(|b| format!("{b:02x}")).collect::<String>()),
+            None => format!("name-{}-{:04x}", self.name.as_deref().unwrap_or("device"), self.wireless_id.unwrap_or(0)),
+        }
     }
 
     /// The device in a sentence, such as "MX Master 3S (b034)".
@@ -351,6 +366,9 @@ mod tests {
         assert_eq!(device.features[3].kind, 0x40);
         assert!(device.read_errors.is_empty(), "{:?}", device.read_errors);
         assert_eq!(device.label(), "Office mouse with a long name");
+        // The unit id is the settings key, and stays out of what is shown or reported.
+        assert_eq!(device.settings_key(), "unit-a1b2c3d4");
+        assert!(!serde_json::to_string(&device).unwrap().contains("a1"), "unit id serialized");
         assert_eq!(device.kind, Some(3));
         let dpi = device.dpi.as_ref().unwrap();
         assert_eq!((dpi.min, dpi.max, dpi.step), (200, 4000, 50));

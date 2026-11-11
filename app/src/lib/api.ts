@@ -300,8 +300,10 @@ export interface DeviceStatus {
   /** Corsair mice and keyboards (experimental support). */
   corsair: CorsairInfo[];
   corsair_error: string | null;
-  /** Connected Logitech receivers (LIGHTSPEED and Logi Bolt). */
+  /** Connected Logitech receivers (LIGHTSPEED, Logi Bolt and Unifying). */
   receivers: ReceiverReport[];
+  /** Running programs that set Logitech devices' settings themselves, such as "Solaar". */
+  logitech_programs: string[];
 }
 
 /** A device paired with a receiver that PeriHub does not support yet, as far as it could be read. */
@@ -330,6 +332,15 @@ export interface UnsupportedReceiverDevice {
 }
 
 /** A connected Logitech receiver, for the test report that helps support what is paired with it. */
+/** What changes while a device PeriHub knows by its features is in use. */
+export interface LogitechLive {
+  battery: Battery | null;
+  /** The DPI it uses now, if it has adjustable DPI. */
+  dpi: number | null;
+  /** The DPI PeriHub sets every time the device connects, if one was chosen. */
+  saved_dpi: number | null;
+}
+
 /** Linux: the optional udev rule that opens the Unifying receivers (see 73-perihub-unifying.rules). */
 export interface UnifyingAccess {
   rule_installed: boolean;
@@ -355,6 +366,8 @@ export interface ReceiverReport {
   reachable: boolean;
   /** The system refused to open it (on Linux, no udev rule gives access to it). */
   denied: boolean;
+  /** Slots whose device PeriHub has open by its features: its DPI can be read and changed now. */
+  open_slots: number[];
   /** What each of its slots answered the last time PeriHub asked, or why it could not ask. */
   slots: string[];
   /** Paired devices that answer and that PeriHub does not support yet. */
@@ -502,6 +515,11 @@ export const api = {
   unifyingAccess: () => invoke<UnifyingAccess>("unifying_access"),
   grantUnifyingAccess: () => invoke<void>("unifying_grant_access"),
   revokeUnifyingAccess: () => invoke<void>("unifying_revoke_access"),
+  logitechLive: (receiverId: number, slot: number) => invoke<LogitechLive>("logitech_live", { receiverId, slot }),
+  /** Experimental: sets the DPI in the device's RAM, and again every time it connects. */
+  logitechSetDpi: (receiverId: number, slot: number, dpi: number) =>
+    invoke<void>("logitech_set_dpi", { receiverId, slot, dpi }),
+  logitechResetDpi: (receiverId: number, slot: number) => invoke<void>("logitech_reset_dpi", { receiverId, slot }),
   presets: () => invoke<LightingPreset[]>("kb_get_presets"),
   savePreset: (name: string, lighting: KeyboardLighting) =>
     invoke<LightingPreset[]>("kb_save_preset", { name, lighting }),

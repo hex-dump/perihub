@@ -236,6 +236,7 @@ describe("a device on a receiver that PeriHub does not support", () => {
     unifying: false,
     reachable: true,
     denied: false,
+    open_slots: [1],
     slots: ["slot 1: HID++ 4.5"],
     unsupported: [
       {

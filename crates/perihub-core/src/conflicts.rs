@@ -59,6 +59,27 @@ fn corsair_programs_in(names: &[String]) -> Vec<&'static str> {
     found
 }
 
+/// Programs that set the DPI and other settings of Logitech devices themselves, by process name
+/// (lowercase): Solaar (its launcher script is named solaar) and logiops (its daemon is logid).
+/// PeriHub does not stop them: it tells the user they may undo what it sets. Logi Options+ is not
+/// listed until its process name has been seen on a real PC.
+const LOGITECH_SETTINGS_PROGRAMS: &[(&str, &str)] = &[("solaar", "Solaar"), ("logid", "logiops")];
+
+/// Programs that set Logitech devices' settings and are running now, by name, without repeats.
+pub fn logitech_programs_running() -> Vec<&'static str> {
+    logitech_programs_in(&process_names())
+}
+
+fn logitech_programs_in(names: &[String]) -> Vec<&'static str> {
+    let mut found: Vec<&'static str> = LOGITECH_SETTINGS_PROGRAMS
+        .iter()
+        .filter(|(exe, _)| names.iter().any(|n| n == exe))
+        .map(|&(_, name)| name)
+        .collect();
+    found.dedup();
+    found
+}
+
 /// Conflicting programs that are running now. They only exist on Windows.
 pub fn running() -> Vec<Conflict> {
     running_in(&process_names())
@@ -118,6 +139,14 @@ mod tests {
         assert_eq!(corsair_programs_in(&names(&["openlinkhub", "icue.exe"])), ["OpenLinkHub", "Corsair iCUE"]);
         // Only whole names: a process that merely contains the name does not count.
         assert!(corsair_programs_in(&names(&["openrgb-helper"])).is_empty());
+    }
+
+    #[test]
+    fn programs_that_set_logitech_settings_are_found_by_name() {
+        let names = |list: &[&str]| list.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert!(logitech_programs_in(&names(&["zsh", "perihub", "lghub.exe"])).is_empty());
+        assert_eq!(logitech_programs_in(&names(&["solaar", "logid"])), ["Solaar", "logiops"]);
+        assert!(logitech_programs_in(&names(&["solaar-cli"])).is_empty(), "whole names only");
     }
 
     #[test]

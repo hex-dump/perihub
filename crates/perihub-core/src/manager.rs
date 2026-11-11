@@ -21,6 +21,7 @@ use crate::hidpp::models::{self, MouseModel};
 use crate::hidpp::receiver::{self, Presence, UnsupportedDevice};
 use crate::hidpp::{HidppDevice, Transport};
 use crate::keyboard::{KeyInterfaces, KeyboardInfo, KeyboardTask};
+use crate::logitech::LogitechTask;
 use crate::mouse::{MouseInfo, MouseTask, ReceiverLink};
 use crate::softmacro::KeyboardTriggers;
 use crate::worker::Worker;
@@ -30,6 +31,9 @@ const POLL_INTERVAL: Duration = Duration::from_secs(2);
 /// How often a Corsair receiver without a connected device is asked again.
 const CORSAIR_RECEIVER_RETRY: Duration = Duration::from_secs(10);
 const CONFLICT_CHECK_EVERY: u32 = 5;
+/// While a mouse is open, the receivers are asked for the other devices paired with them every this
+/// many passes (10 seconds).
+const RECEIVER_SCAN_EVERY: u32 = 5;
 
 const STEELSERIES: u16 = 0x1038;
 const APEX_3_TKL: u16 = 0x1622;
@@ -215,6 +219,8 @@ pub struct ReceiverReport {
     pub denied: bool,
     /// What each of its slots answered the last time PeriHub asked, or why it could not ask.
     pub slots: Vec<String>,
+    /// Slots whose device PeriHub has open by its features: its DPI can be read and changed now.
+    pub open_slots: Vec<u8>,
     /// Paired devices that answer and that PeriHub does not support yet.
     pub unsupported: Vec<UnsupportedDevice>,
 }
@@ -241,6 +247,9 @@ pub struct DeviceStatus {
     pub corsair_error: Option<String>,
     /// Connected Logitech receivers (LIGHTSPEED and Logi Bolt).
     pub receivers: Vec<ReceiverReport>,
+    /// Running programs that set their own DPI and other settings on Logitech devices (Solaar,
+    /// logiops): they may undo what PeriHub sets on the devices it knows by their features.
+    pub logitech_programs: Vec<String>,
 }
 
 #[derive(Default)]
@@ -283,6 +292,12 @@ struct Slots {
     receiver_answers: HashMap<CString, Vec<String>>,
     /// Receivers the system refused to open (by path).
     receiver_denied: HashSet<CString>,
+    /// Slots that answered the last time each receiver was asked (by path).
+    receiver_online: HashMap<CString, Vec<u8>>,
+    /// Devices PeriHub knows by their features, open on their own thread, by receiver path and slot,
+    /// with the receiver's product id.
+    logitech: HashMap<(CString, u8), (Worker<LogitechTask>, u16)>,
+    logitech_programs: Vec<&'static str>,
     /// Interfaces of the connected keyboard that report key presses.
     key_interfaces: KeyInterfaces,
     /// Keys of the connected keyboard's map that start software macros, kept by its thread.
@@ -297,17 +312,27 @@ pub struct Manager {
     keyboard_config: Arc<Mutex<KeyboardConfig>>,
     /// Mice whose memory format is untested may be saved to (see [`MouseTask::open`]).
     untested_saves: bool,
+    /// The DPI to set on the devices PeriHub knows by their features, by settings key.
+    logitech_dpi: Arc<Mutex<HashMap<String, u16>>>,
 }
 
 impl Manager {
     /// Starts detection in the background. `listener` is called on every change.
     /// `untested_saves`: a mouse whose memory format is untested may be saved to, each save undone
     /// unless the user keeps it. Only the interface asks that; the command line never saves to one.
-    pub fn start(keyboard_config: KeyboardConfig, untested_saves: bool, listener: Listener) -> Self {
+    /// `logitech_dpi`: the DPI to set on the devices PeriHub knows by their features every time they
+    /// connect, by settings key (see [`Manager::set_logitech_dpi`]).
+    pub fn start(
+        keyboard_config: KeyboardConfig,
+        untested_saves: bool,
+        logitech_dpi: HashMap<String, u16>,
+        listener: Listener,
+    ) -> Self {
         let manager = Self {
             slots: Arc::new(Mutex::new(Slots::default())),
             keyboard_config: Arc::new(Mutex::new(keyboard_config)),
             untested_saves,
+            logitech_dpi: Arc::new(Mutex::new(logitech_dpi)),
         };
         let background = manager.clone();
         thread::Builder::new()
@@ -331,7 +356,7 @@ impl Manager {
         };
         let mut pass = 0u32;
         loop {
-            let mut changed = self.poll(&mut api);
+            let mut changed = self.poll(&mut api, pass.is_multiple_of(RECEIVER_SCAN_EVERY));
             changed |= self.poll_corsair(&api);
             changed |= self.poll_g300(&api);
             if pass.is_multiple_of(CONFLICT_CHECK_EVERY) {
@@ -346,7 +371,8 @@ impl Manager {
     }
 
     /// One detection pass. Returns `true` if anything changed.
-    fn poll(&self, api: &mut HidApi) -> bool {
+    /// `scan`: ask the receivers for their devices even while a mouse is open.
+    fn poll(&self, api: &mut HidApi, scan: bool) -> bool {
         if let Err(error) = api.refresh_devices() {
             log::warn!("HID enumeration failed: {error}");
             return false;
@@ -443,6 +469,7 @@ impl Manager {
             slots.receiver_models.retain(|path, _| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
             slots.receiver_answers.retain(|path, _| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
             slots.receiver_denied.retain(|path| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
+            slots.receiver_online.retain(|path, _| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
             slots
                 .receiver_unsupported
                 .retain(|(path, _), _| receivers.iter().any(|(d, _)| d.path() == path.as_c_str()));
@@ -474,6 +501,7 @@ impl Manager {
                 changed |= slots.mouse_asleep.take().is_some() | slots.receiver_note.take().is_some();
             }
         }
+        changed |= self.poll_logitech(api, &receivers, scan);
         let reports = self.receiver_reports(api, &receivers);
         {
             let mut slots = self.slots.lock().unwrap();
@@ -566,7 +594,15 @@ impl Manager {
                     .filter(|(path, _)| paths.contains(&path.as_c_str()))
                     .flat_map(|(_, answers)| answers.iter().cloned())
                     .collect();
+                let mut open_slots: Vec<u8> = slots
+                    .logitech
+                    .keys()
+                    .filter(|(path, _)| paths.contains(&path.as_c_str()))
+                    .map(|&(_, slot)| slot)
+                    .collect();
+                open_slots.sort();
                 ReceiverReport {
+                    open_slots,
                     product_id,
                     name: receiver::name(product_id),
                     collections,
@@ -597,6 +633,8 @@ impl Manager {
             {
                 let mut slots = self.slots.lock().unwrap();
                 slots.receiver_answers.insert(path.clone(), answers);
+                let online = found.as_ref().map(|f| f.online.clone()).unwrap_or_default();
+                slots.receiver_online.insert(path.clone(), online);
                 if matches!(&found, Err(error) if is_permission_error(error)) {
                     slots.receiver_denied.insert(path.clone());
                 } else {
@@ -672,15 +710,112 @@ impl Manager {
         changed
     }
 
+    /// Opens a thread for every device behind a receiver that PeriHub knows by its features and that
+    /// answers, and drops the threads of the devices that stopped answering (they are opened again,
+    /// with their DPI set again, when they are back). `watch_receivers` asks the receivers only while
+    /// no mouse is open: then they are asked here, when `scan` is set. Returns `true` if a device was
+    /// found.
+    fn poll_logitech(&self, api: &HidApi, receivers: &[ReceiverPaths], scan: bool) -> bool {
+        let present = |path: &CStr| receivers.iter().any(|(d, _)| d.path() == path);
+        let mut changed = false;
+        let mouse_link = {
+            let mut slots = self.slots.lock().unwrap();
+            slots.logitech.retain(|(path, _), (worker, _)| worker.is_alive() && present(path));
+            slots.mouse.as_ref().map(|(_, info)| (slots.mouse_path.clone(), info.link.as_ref().map(|l| l.slot)))
+        };
+        if scan && let Some((mouse_path, mouse_slot)) = mouse_link {
+            for paths in receivers {
+                let path = paths.0.path().to_owned();
+                let Ok(found) = probe(api, paths) else { continue };
+                self.slots.lock().unwrap().receiver_online.insert(path.clone(), found.online.clone());
+                for slot in found.online {
+                    let known = self.slots.lock().unwrap().receiver_unsupported.contains_key(&(path.clone(), slot));
+                    let the_mouse = mouse_path.as_deref() == Some(path.as_c_str()) && mouse_slot == Some(slot);
+                    if known || the_mouse {
+                        continue;
+                    }
+                    if let Ok(Err(device)) = identify(api, paths, slot) {
+                        self.slots.lock().unwrap().receiver_unsupported.insert((path.clone(), slot), device);
+                        changed = true;
+                    }
+                }
+            }
+        }
+        let to_open: Vec<(ReceiverPaths, u8, UnsupportedDevice)> = {
+            let slots = self.slots.lock().unwrap();
+            slots
+                .receiver_unsupported
+                .iter()
+                .filter(|((path, slot), _)| {
+                    !slots.logitech.contains_key(&(path.clone(), *slot))
+                        && slots.receiver_online.get(path).is_some_and(|online| online.contains(slot))
+                })
+                .filter_map(|((path, slot), device)| {
+                    let paths = receivers.iter().find(|(d, _)| d.path() == path.as_c_str())?;
+                    Some((paths.clone(), *slot, device.clone()))
+                })
+                .collect()
+        };
+        for (paths, slot, device) in to_open {
+            let saved = self.logitech_dpi.lock().unwrap().get(&device.settings_key()).copied();
+            let receiver_id = paths.0.product_id();
+            match open_behind(api, &paths, slot, true).and_then(|dev| LogitechTask::open(dev, device, saved)) {
+                Ok(task) => {
+                    log::info!(
+                        "{} connected through the {}, slot {slot} (read by its features)",
+                        task.device.label(),
+                        receiver::name(receiver_id)
+                    );
+                    let worker = Worker::spawn("perihub-logitech", task);
+                    self.slots
+                        .lock()
+                        .unwrap()
+                        .logitech
+                        .insert((paths.0.path().to_owned(), slot), (worker, receiver_id));
+                }
+                // Asleep again: opened when it answers.
+                Err(Error::Unreachable) => {}
+                Err(error) => log::debug!("{}, slot {slot}: {error}", receiver::name(receiver_id)),
+            }
+        }
+        changed
+    }
+
+    /// The device PeriHub knows by its features in `slot` of a connected receiver.
+    pub fn logitech(&self, receiver_id: u16, slot: u8) -> Result<Worker<LogitechTask>> {
+        let slots = self.slots.lock().unwrap();
+        slots
+            .logitech
+            .iter()
+            .find(|((_, s), (_, id))| *s == slot && *id == receiver_id)
+            .map(|(_, (worker, _))| worker.clone())
+            .ok_or(Error::NotConnected)
+    }
+
+    /// Keeps the DPI to set on a device every time it connects (`None`: none any more), by
+    /// [`UnsupportedDevice::settings_key`].
+    pub fn set_logitech_dpi(&self, key: String, dpi: Option<u16>) {
+        let mut saved = self.logitech_dpi.lock().unwrap();
+        match dpi {
+            Some(dpi) => saved.insert(key, dpi),
+            None => saved.remove(&key),
+        };
+    }
+
     /// Looks for running programs that take control of the devices. Returns `true` if the list changed.
     fn check_conflicts(&self) -> bool {
         let running = conflicts::running();
+        let logitech_programs = conflicts::logitech_programs_running();
         let mut slots = self.slots.lock().unwrap();
-        if slots.conflicts == running {
+        if slots.conflicts == running && slots.logitech_programs == logitech_programs {
             return false;
         }
         log::info!("programs that conflict with PeriHub: {:?}", running.iter().map(|c| c.name()).collect::<Vec<_>>());
+        if slots.logitech_programs != logitech_programs {
+            log::info!("programs that set Logitech settings: {logitech_programs:?}");
+        }
         slots.conflicts = running;
+        slots.logitech_programs = logitech_programs;
         true
     }
 
@@ -702,6 +837,7 @@ impl Manager {
             g300_error: slots.g300_error.clone(),
             corsair_error: slots.corsair_error.clone(),
             receivers: slots.receivers.clone(),
+            logitech_programs: slots.logitech_programs.iter().map(|name| name.to_string()).collect(),
         }
     }
 

@@ -12,6 +12,7 @@ pub mod focus;
 pub mod g300;
 pub mod hidpp;
 pub mod keyboard;
+pub mod logitech;
 pub mod manager;
 pub mod mouse;
 #[cfg(windows)]

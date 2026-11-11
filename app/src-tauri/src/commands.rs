@@ -10,6 +10,7 @@ use perihub_core::focus::{self, FocusSupport};
 use perihub_core::g300::{G300Info, G300Settings};
 use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
 use perihub_core::keyboard::{Keymap, KeymapRestore};
+use perihub_core::logitech::LogitechLive;
 use perihub_core::mouse::{MouseLive, MouseRestore, MouseState};
 use perihub_core::{DeviceStatus, Error};
 use serde::{Deserialize, Serialize};
@@ -204,6 +205,40 @@ pub async fn mouse_get_state(state: State<'_, AppState>) -> CmdResult<MouseState
 pub async fn mouse_live(state: State<'_, AppState>) -> CmdResult<MouseLive> {
     let manager = state.manager.clone();
     blocking(move || manager.mouse()?.call(|m| m.live())).await
+}
+
+/// Battery and DPI of a device PeriHub knows by its features, in `slot` of the receiver `receiver_id`.
+#[tauri::command]
+pub async fn logitech_live(state: State<'_, AppState>, receiver_id: u16, slot: u8) -> CmdResult<LogitechLive> {
+    let manager = state.manager.clone();
+    blocking(move || manager.logitech(receiver_id, slot)?.call(|d| d.live())).await
+}
+
+/// Sets the DPI of a device PeriHub knows by its features (experimental), and keeps it to set it
+/// again every time the device connects.
+#[tauri::command]
+pub async fn logitech_set_dpi(state: State<'_, AppState>, receiver_id: u16, slot: u8, dpi: u16) -> CmdResult<()> {
+    let manager = state.manager.clone();
+    let key = blocking(move || manager.logitech(receiver_id, slot)?.call(move |d| d.set_dpi(dpi))).await?;
+    save_logitech_dpi(&state, key, Some(dpi))
+}
+
+/// Puts the device's own default DPI back, and stops setting one.
+#[tauri::command]
+pub async fn logitech_reset_dpi(state: State<'_, AppState>, receiver_id: u16, slot: u8) -> CmdResult<()> {
+    let manager = state.manager.clone();
+    let key = blocking(move || manager.logitech(receiver_id, slot)?.call(|d| d.reset_dpi())).await?;
+    save_logitech_dpi(&state, key, None)
+}
+
+fn save_logitech_dpi(state: &AppState, key: String, dpi: Option<u16>) -> CmdResult<()> {
+    let mut config = state.config.lock().unwrap();
+    match dpi {
+        Some(dpi) => config.logitech_dpi.insert(key.clone(), dpi),
+        None => config.logitech_dpi.remove(&key),
+    };
+    state.manager.set_logitech_dpi(key, dpi);
+    config.save().map_err(|e| e.to_string())
 }
 
 #[tauri::command]

@@ -87,6 +87,7 @@ fn main() {
                 config.keyboard.clone(),
                 // The interface asks whether to keep every save to a mouse whose memory format is untested.
                 true,
+                config.logitech_dpi.clone(),
                 Box::new(move |status| {
                     if let Some(profiles) = slot.get() {
                         profiles.devices_changed(status);
@@ -157,6 +158,9 @@ fn main() {
             unifying_access::unifying_revoke_access,
             commands::mouse_get_state,
             commands::mouse_live,
+            commands::logitech_live,
+            commands::logitech_set_dpi,
+            commands::logitech_reset_dpi,
             commands::mouse_save_profile,
             commands::mouse_restore_factory,
             commands::mouse_backups,

@@ -45,6 +45,7 @@
     g300_error: null,
     corsair_error: null,
     receivers: [],
+    logitech_programs: [],
   });
 
   const hex = (id: number) => id.toString(16).padStart(4, "0");
@@ -124,7 +125,13 @@
         <Icon name={kindIcon(device.kind)} />
         <span class="col tight">
           <span class="name">Logitech {device.name ?? kindName(device.kind)}</span>
-          <span class="state">Read-only</span>
+          {#if !receiver.open_slots.includes(device.slot)}
+            <span class="state">Asleep</span>
+          {:else if device.dpi}
+            <span class="state on">Experimental</span>
+          {:else}
+            <span class="state on">Read-only</span>
+          {/if}
         </span>
       </button>
     {/each}
@@ -198,6 +205,7 @@
         {#key logitechShown ? logitechKey(logitechShown.receiver, logitechShown.device) : null}<LogitechDevice
             receiver={logitechShown?.receiver ?? null}
             device={logitechShown?.device ?? null}
+            programs={status.logitech_programs}
           />{/key}
       {:else if page === "corsair"}
         {#key corsairShown?.product_id}<CorsairDevice info={corsairShown} error={status.corsair_error} />{/key}

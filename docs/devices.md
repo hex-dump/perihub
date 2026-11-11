@@ -59,13 +59,19 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   been tried on real hardware yet: reports are welcome in
   [issue #4](https://github.com/hex-dump/perihub/issues/4).
 - **The Logi Bolt receiver** (`046d:c548`) and **the Unifying receivers** (`046d:c52b`, `c532`)
-  are recognized, but nothing paired with them is supported yet: 👁 read-only. Every device that
-  answers, mouse or keyboard, gets a page of its own in the sidebar, built from the HID++ features it
-  reports: what kind of device it is, what it can do (battery, DPI, SmartShift wheel, programmable
-  buttons…), the DPI and polling rates it accepts, and a test report. Nothing is changed on it.
-  Changing settings comes next, starting with the DPI: the MX Master 3S of
-  [issue #17](https://github.com/hex-dump/perihub/issues/17) is the first one. For now PeriHub
-  looks behind the receivers only while no supported Logitech mouse is connected with its cable.
+  are recognized. Every device paired with them that answers, mouse or keyboard, gets a page of
+  its own in the sidebar, built from the HID++ features it reports: what kind of device it is, what
+  it can do (battery, DPI, SmartShift wheel, programmable buttons…), its battery and DPI as they
+  are now, the DPI and polling rates it accepts, and a test report.
+  - 🧪 **DPI**, on a device that has adjustable DPI (HID++ 0x2201): PeriHub sets it in the
+    device's RAM, never in its memory, and only to values the device says it accepts. Such devices
+    forget it when they are turned off or fall asleep, so PeriHub sets it again every time the
+    device connects, while PeriHub is running. Before the first change PeriHub asks you to tick
+    the **No warranty** box. Nobody has tried it on a real device yet: the MX Master 3S of
+    [issue #17](https://github.com/hex-dump/perihub/issues/17) is the first candidate.
+  - 👁 Everything else is only read.
+  - **Solaar and logiops** set their own DPI and may undo PeriHub's: the device page says so when
+    one of them runs.
 - **On Linux PeriHub's udev rule does not open the Unifying receivers.** Linux puts them in DJ mode,
   where what is typed on the keyboards paired with them arrives on the same interface as HID++:
   opening it would let any program running as the user read that typing. The mouse page explains

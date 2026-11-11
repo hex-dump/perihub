@@ -60,6 +60,9 @@ pub struct AppConfig {
     pub check_updates: bool,
     /// Macros run by PeriHub, started by buttons that send their trigger key.
     pub software_macros: Vec<crate::softmacro::SoftwareMacro>,
+    /// The DPI PeriHub sets every time a Logitech device it knows by its features connects, by the
+    /// device's settings key (see `UnsupportedDevice::settings_key`).
+    pub logitech_dpi: std::collections::HashMap<String, u16>,
 }
 
 impl Default for AppConfig {
@@ -71,6 +74,7 @@ impl Default for AppConfig {
             app_profiles: AppProfiles::default(),
             check_updates: true,
             software_macros: Vec::new(),
+            logitech_dpi: std::collections::HashMap::new(),
         }
     }
 }
