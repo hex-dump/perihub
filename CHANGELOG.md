@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 — 2026-11-11
+
+129 mice of three more brands, ASUS ROG and TUF, SteelSeries and Razer, from the published documentation of their protocols. Nobody has tried them with PeriHub yet.
 
 ### Added
 - **21 ASUS ROG and TUF mice (experimental)**, from the published documentation of their protocol (libratbag, MIT), on their cable and through their own wireless receiver: Chakram, Chakram Core, Chakram X, Gladius II (and Origin, PNK LTD), GX860 Buzzard, Harpe Wireless, Keris (and Wireless, Wireless AimPoint), Pugio, Spatha X, Strix Carry, Strix Impact (I, II, II Wireless, III), TUF Gaming M3 Gen II, M4 Air and Mini WL Mouse Miku. Nobody has tried them with PeriHub yet. Each gets a page with what PeriHub read: firmware, active profile, DPI levels, polling rate, button response, angle snapping, lighting and buttons, and a test report with every request and answer.

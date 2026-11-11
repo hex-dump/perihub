@@ -94,6 +94,11 @@
   </requires>
 
   <releases>
+    <release version="0.7.0" date="2026-11-11">
+      <description>
+        <p>129 mice of three more brands, ASUS ROG and TUF, SteelSeries and Razer, recognized from the published documentation of their protocols. Nobody has tried them yet: their settings can be changed at your own risk.</p>
+      </description>
+    </release>
     <release version="0.6.8" date="2026-11-11">
       <description>
         <p>First version as a Flatpak. Inside it, autostart goes through the desktop's Background portal, and the optional udev rules come with the commands to run.</p>
