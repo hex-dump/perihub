@@ -17,13 +17,17 @@ goes with every PeriHub package.
 - the Glorious mouse table (`data/devices/glorious-*.device`) and the SinoWealth protocol
   (`src/driver-sinowealth.c`, `src/driver-sinowealth.h`, Copyright © 2020 Marian Beermann), rewritten
   in Rust in `crates/perihub-core/src/peripheral/sinowealth.rs` (see
-  `docs/protocols/sinowealth-glorious.md`).
+  `docs/protocols/sinowealth-glorious.md`);
+- the Logitech G600's profile format (`src/driver-logitech-g600.c`, Copyright © 2018 Thomas Hindoe
+  Paaboel Andersen), rewritten in Rust in `crates/perihub-core/src/peripheral/logitech_g600.rs` (see
+  `docs/protocols/logitech-g600.md`).
 
 ```
 Copyright © 2015-2017 Red Hat, Inc.
 Copyright © 2015 David Herrmann <dh.herrmann@gmail.com>
 Copyright (C) 2021 Kyoken, kyoken@kyoken.ninja
 Copyright © 2020 Marian Beermann
+Copyright © 2018 Thomas Hindoe Paaboel Andersen
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -103,7 +107,8 @@ was copied.
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later): the Apex 8-zone lighting
   protocol, the interface and usage page of each ASUS mouse's configuration collection, and for the
   Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and
-  that a reading right after a write is incomplete.
+  that a reading right after a write is incomplete, and the interface and usage page of the Logitech
+  G600's.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse
   its USB interface, transaction ids and maximum DPI, read as text by `tools/openrazer_facts.py` (see
   `docs/protocols/razer-mice.md`).

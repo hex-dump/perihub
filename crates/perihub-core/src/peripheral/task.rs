@@ -11,7 +11,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::{
     BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
-    check_settings, qmk, razer, sinowealth, steelseries,
+    check_settings, logitech_g600, qmk, razer, sinowealth, steelseries,
 };
 use crate::config;
 use crate::error::{Error, Result};
@@ -61,6 +61,7 @@ pub fn driver(model: &'static Model) -> Box<dyn Driver> {
         Protocol::Razer(params) => Box::new(razer::Razer::new(params)),
         Protocol::Sinowealth(params) => Box::new(sinowealth::Sinowealth::new(params)),
         Protocol::Qmk(params) => Box::new(qmk::Qmk::new(params)),
+        Protocol::LogitechG600 => Box::new(logitech_g600::G600::new()),
     }
 }
 

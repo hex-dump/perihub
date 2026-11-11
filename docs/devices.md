@@ -25,6 +25,7 @@ the same format.
 - [SteelSeries mice](#steelseries-mice)
 - [Razer mice](#razer-mice)
 - [Glorious mice](#glorious-mice)
+- [Logitech G600](#logitech-g600)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
 ## SteelSeries
@@ -399,6 +400,25 @@ described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md
 | Model O/O- | `258a:0036` | `V103` | whole mouse |
 | Model D | `258a:0033` | `V102` | whole mouse |
 | Model O Eternal | `3794:a000` | `1009` | whole mouse |
+
+## Logitech G600
+
+🧪 Experimental: nobody has tried PeriHub on one yet. Its protocol comes from
+[libratbag](https://github.com/libratbag/libratbag) (MIT), and is described in
+[protocols/logitech-g600.md](protocols/logitech-g600.md). It is not a HID++ mouse.
+
+- PeriHub reads the profile in use: the DPI of each slot that is on, the slot in use, the polling rate,
+  the lighting (steady, breathing or colour cycle, colour, duration) and what each of the 20 buttons does.
+- **Save to memory** changes the DPI of the slots that are on, the polling rate and the lighting, after the
+  No warranty box the first time. Writing a profile stores it: there is no change that lasts only until
+  the mouse is unplugged. PeriHub reads the profile again just before, writes nothing if it changed since
+  the mouse was connected, writes every other byte back as read, reads it back after, puts back the DPI
+  slot that was in use, and puts the profile back after 15 seconds unless you keep the change.
+- Not offered yet: buttons, G-Shift, the other two profiles, switching profile.
+
+| Mouse | USB ID | Opened on Linux |
+|---|---|---|
+| G600 | `046d:c24a` | interface 1 (with the keys its own side buttons send) |
 
 ## Keyboards with QMK firmware (Vial, VIA)
 

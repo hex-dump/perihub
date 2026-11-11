@@ -612,3 +612,8 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="0036", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="0033", TAG+="uaccess"
 # Glorious Model O Eternal
 KERNEL=="hidraw*", ATTRS{idVendor}=="3794", ATTRS{idProduct}=="a000", TAG+="uaccess"
+
+# Logitech G600 (experimental, untested; protocol from libratbag, interface from OpenRGB): interface 1,
+# which holds its profiles. It also carries the keys the mouse's own side buttons send, never what is
+# typed on a keyboard.
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c24a", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"

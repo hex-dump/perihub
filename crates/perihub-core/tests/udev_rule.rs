@@ -23,6 +23,8 @@ fn udev_rule_matches_mouse_list() {
         .filter(|m| m.has_cable())
         .map(|m| format!("{:04x}", m.product_id))
         .chain([format!("{:04x}", perihub_core::g300::PRODUCT_ID)])
+        // The G600, from the other brands' tables (checked there).
+        .chain(perihub_core::peripheral::logitech_g600::MODELS.iter().map(|m| format!("{:04x}", m.product_ids[0])))
         .collect();
     assert_eq!(sorted(in_rule), sorted(in_list));
 }
@@ -116,6 +118,10 @@ fn udev_rule_matches_the_other_brands_tables() {
                 }
                 in_tables.push(id);
             }
+        }
+        // Logitech's other lines are the HID++ mice and receivers, checked against their own lists.
+        if vendor == 0x046D {
+            in_rule.retain(|id| in_tables.contains(id));
         }
         in_rule.sort();
         in_tables.sort();

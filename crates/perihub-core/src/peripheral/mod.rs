@@ -10,6 +10,7 @@
 //! - an answer that does not look as documented leaves the device read-only.
 
 pub mod asus;
+pub mod logitech_g600;
 pub mod qmk;
 pub mod razer;
 #[rustfmt::skip]
@@ -62,6 +63,7 @@ pub struct Command {
 #[derive(Debug, Clone, Copy)]
 pub enum Protocol {
     Asus(asus::Params),
+    LogitechG600,
     Qmk(qmk::Params),
     Razer(razer::Params),
     Sinowealth(sinowealth::Params),
@@ -86,7 +88,12 @@ pub struct Model {
 
 /// Every model of every driver.
 pub fn models() -> impl Iterator<Item = &'static Model> {
-    asus::MODELS.iter().chain(steelseries_models::MODELS).chain(razer_models::MODELS).chain(sinowealth::MODELS)
+    asus::MODELS
+        .iter()
+        .chain(steelseries_models::MODELS)
+        .chain(razer_models::MODELS)
+        .chain(sinowealth::MODELS)
+        .chain(logitech_g600::MODELS)
 }
 
 pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {
