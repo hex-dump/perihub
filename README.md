@@ -56,6 +56,7 @@
 | 33 **SteelSeries mice** (Rival, Sensei, Aerox, Prime, Kana, Kinzu) | 🧪 Experimental: these mice cannot report their settings; DPI, polling rate, colours and effects can be sent one at a time, never saved to the mouse ([how](#mice-and-keyboards-of-other-brands)) |
 | 75 **Razer mice** (DeathAdder, Viper, Basilisk, Naga, Orochi…) on their USB cable | 🧪 Experimental: read; DPI and polling rate can be saved at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
 | 21 **ASUS ROG and TUF mice** (Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3…) | 🧪 Experimental: read; DPI, polling rate, button response, angle snapping and lighting can be changed at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
+| 3 **Glorious mice** (Model O/O-, Model D, Model O Eternal) with a cable | 🧪 Experimental: read; on Linux DPI and polling rate can be saved at your own risk, on Windows read-only for now ([how](#mice-and-keyboards-of-other-brands)) |
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
 
@@ -146,6 +147,8 @@ ASUS mice are supported from the published documentation of their protocol ([lib
 - If anything the device answers does not look as documented, PeriHub changes nothing on it and the test report shows exactly what it answered.
 
 Razer mice are supported from facts found in [OpenRazer](https://github.com/openrazer/openrazer), with no code copied. They store every change by themselves, so their page offers only **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo. Their receivers and docks are left out, since some can be shared with a keyboard: use the USB cable.
+
+Glorious mice are supported from the published documentation of their SinoWealth protocol ([libratbag](https://github.com/libratbag/libratbag)). Every change rewrites their settings in memory, so their page too offers only **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo; PeriHub changes only the DPI of each slot and the polling rate, and writes everything else back as it read it, never on top of a reading that differs from the one taken when the mouse was connected. On Windows they are read-only for now: there the mouse does not say how long its settings are, and a write must. Only the ids that belong to Glorious are recognized: the generic SinoWealth ids are shared by other brands' mice, some with a different protocol.
 
 SteelSeries mice are supported from [rivalcfg](https://github.com/flozz/rivalcfg), and PeriHub sends exactly the bytes rivalcfg's own tests expect. These mice **cannot report their settings**, so PeriHub cannot show, check or undo them: **Send** changes one setting until the mouse is unplugged or turned off, under a warning that is always on screen, and PeriHub never saves to their memory until someone has tested one. Unplugging the mouse brings back what it has saved.
 
@@ -341,8 +344,9 @@ The protocols were worked out thanks to:
 - [ckb-next](https://github.com/ckb-next/ckb-next) and [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub): Corsair's protocol, described in our own words in [docs/protocols/corsair-bragi.md](docs/protocols/corsair-bragi.md). No code was copied.
 - [libratbag](https://github.com/libratbag/libratbag) (MIT), and OpenRGB for each mouse's interface: the ASUS ROG and TUF mice and their protocol, in [docs/protocols/asus-rog.md](docs/protocols/asus-rog.md).
 - [OpenRazer](https://github.com/openrazer/openrazer): the Razer mice and their protocol, described in our own words in [docs/protocols/razer-mice.md](docs/protocols/razer-mice.md). No code was copied.
+- [libratbag](https://github.com/libratbag/libratbag) (MIT): the Glorious mice and their SinoWealth protocol, in [docs/protocols/sinowealth-glorious.md](docs/protocols/sinowealth-glorious.md).
 - [rivalcfg](https://github.com/flozz/rivalcfg) (WTFPL): the SteelSeries mice, their commands and the reports its tests expect, in [docs/protocols/steelseries-mice.md](docs/protocols/steelseries-mice.md).
 
 The notices of the projects PeriHub takes code or data from are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which comes with every package.
 
-PeriHub is released under the [MIT license](LICENSE). It is not affiliated with SteelSeries, Logitech or Corsair; product names belong to their owners.
+PeriHub is released under the [MIT license](LICENSE). It is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer or Glorious; product names belong to their owners.

@@ -23,6 +23,7 @@ the same format.
 - [ASUS](#asus)
 - [SteelSeries mice](#steelseries-mice)
 - [Razer mice](#razer-mice)
+- [Glorious mice](#glorious-mice)
 
 ## SteelSeries
 
@@ -369,6 +370,33 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 | Basilisk Mobile (Wired) | `1532:00d3` | 0 | DPI up to 18000, polling rate |
 | Basilisk V3 Pro 35K Phantom Green Edition (Wired) | `1532:00d6` | 0 | DPI up to 35000, polling rate |
 | Viper V3 Pro SE (Wired) | `1532:00de` | 0 | DPI up to 35000, polling rate |
+
+## Glorious mice
+
+🧪 Experimental: 3 Glorious mice with a cable, built on a SinoWealth controller. Nobody has tried PeriHub
+on one yet. Their protocol comes from [libratbag](https://github.com/libratbag/libratbag) (MIT), and is
+described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md).
+
+- PeriHub reads the firmware, the DPI of each slot that is on, the slot in use and the polling rate.
+- **Save to memory** changes the DPI of those slots and the polling rate, after the No warranty box the
+  first time. These mice have no change that lasts only until they are unplugged: every change rewrites
+  their settings in memory. PeriHub reads them again just before, changes only those values, reads them
+  back after, and puts them back after 15 seconds unless you keep the change. It never writes on top of a
+  reading that differs from the one taken when the mouse was connected anywhere but in those values and the
+  slot in use.
+- **On Windows they are read-only for now**: there the mouse's settings may arrive padded to 520 bytes,
+  and then PeriHub cannot tell how long they are, which a write must say.
+- PeriHub reads only the firmware of a mouse whose firmware is not the one below, as libratbag does.
+- The generic SinoWealth ids libratbag also lists (`258a:0027`, `0029`, `0051`, `1007`) are left out: mice
+  of other brands share them, some with another protocol. So are the wireless Model O and
+  Model D, which speak another protocol. Not offered yet: lighting, buttons, debounce time.
+- On Linux the udev rule opens the whole mouse: no source names the interface of the configuration.
+
+| Mouse | USB ID | Firmware | Opened on Linux |
+|---|---|---|---|
+| Model O/O- | `258a:0036` | `V103` | whole mouse |
+| Model D | `258a:0033` | `V102` | whole mouse |
+| Model O Eternal | `3794:a000` | `1009` | whole mouse |
 
 ## Something else?
 

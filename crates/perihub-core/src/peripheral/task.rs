@@ -11,7 +11,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::{
     BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
-    check_settings, razer, steelseries,
+    check_settings, razer, sinowealth, steelseries,
 };
 use crate::config;
 use crate::error::{Error, Result};
@@ -54,6 +54,7 @@ pub fn driver(model: &'static Model) -> Box<dyn Driver> {
         Protocol::Asus(params) => Box::new(asus::Asus::new(params)),
         Protocol::SteelSeries(params) => Box::new(steelseries::SteelSeries::new(params)),
         Protocol::Razer(params) => Box::new(razer::Razer::new(params)),
+        Protocol::Sinowealth(params) => Box::new(sinowealth::Sinowealth::new(params)),
     }
 }
 

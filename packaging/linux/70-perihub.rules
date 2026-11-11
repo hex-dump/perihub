@@ -600,3 +600,15 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d3", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d6", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # Razer Viper V3 Pro SE (Wired)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00de", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+
+# Glorious mice (experimental, untested; protocol from libratbag): only the ids that belong to
+# Glorious, not the generic SinoWealth ones, which other brands' devices share. No source names the
+# interface, so the whole mouse is opened, as for the ASUS mice above. Besides the configuration,
+# it carries the mouse's movements, clicks and the keys assigned to its own buttons, never what is
+# typed on a keyboard.
+# Glorious Model O/O-
+KERNEL=="hidraw*", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="0036", TAG+="uaccess"
+# Glorious Model D
+KERNEL=="hidraw*", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="0033", TAG+="uaccess"
+# Glorious Model O Eternal
+KERNEL=="hidraw*", ATTRS{idVendor}=="3794", ATTRS{idProduct}=="a000", TAG+="uaccess"

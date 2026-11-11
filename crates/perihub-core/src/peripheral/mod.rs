@@ -13,6 +13,7 @@ pub mod asus;
 pub mod razer;
 #[rustfmt::skip]
 pub mod razer_models;
+pub mod sinowealth;
 pub mod steelseries;
 #[rustfmt::skip]
 pub mod steelseries_models;
@@ -61,6 +62,7 @@ pub struct Command {
 pub enum Protocol {
     Asus(asus::Params),
     Razer(razer::Params),
+    Sinowealth(sinowealth::Params),
     SteelSeries(steelseries::Params),
 }
 
@@ -82,7 +84,7 @@ pub struct Model {
 
 /// Every model of every driver.
 pub fn models() -> impl Iterator<Item = &'static Model> {
-    asus::MODELS.iter().chain(steelseries_models::MODELS).chain(razer_models::MODELS)
+    asus::MODELS.iter().chain(steelseries_models::MODELS).chain(razer_models::MODELS).chain(sinowealth::MODELS)
 }
 
 pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {
@@ -305,6 +307,8 @@ pub fn hex(bytes: &[u8]) -> String {
 
 /// Most requests and answers kept for a test report.
 const RAW_MAX: usize = 64;
+/// Most bytes of a numbered feature report kept for a test report: a SinoWealth configuration block.
+const NUMBERED_SHOWN: usize = 170;
 
 /// The only way a driver reaches its device. Every command is checked against the driver's list
 /// before it is sent.
@@ -422,6 +426,30 @@ impl Io {
         }
         self.note(format!("{} {}", if feature { "feature" } else { "out" }, hex(payload)));
         Ok(())
+    }
+
+    /// Sends `report` as a feature report whose first byte is its report number, not 0 (SinoWealth
+    /// mice). It is checked against the list like every other command, report number included.
+    pub fn send_numbered(&mut self, report: &[u8]) -> Result<()> {
+        if report.first().is_none_or(|&id| id == 0) {
+            return Err(Error::Invalid("a numbered feature report needs its number".into()));
+        }
+        self.check(report)?;
+        self.hid.send_feature(report)?;
+        self.note(format!("feature {}", hex(&report[..report.len().min(NUMBERED_SHOWN)])));
+        Ok(())
+    }
+
+    /// Reads feature report `id` into `buf`, whose first byte becomes the report number. Reading a
+    /// feature report sends only its number and changes nothing on the device. Returns how many bytes
+    /// came, the report number included.
+    pub fn read_numbered(&mut self, id: u8, buf: &mut [u8]) -> Result<usize> {
+        buf.fill(0);
+        buf[0] = id;
+        let n = self.hid.get_feature(buf)?;
+        let shown = n.min(buf.len()).min(NUMBERED_SHOWN);
+        self.note(format!("  ← feature {id}, {n} bytes: {}", hex(&buf[..shown])));
+        Ok(n)
     }
 
     /// Fills `reply` with the first input report of at least its length, within `timeout`.
@@ -545,6 +573,10 @@ pub(crate) mod fake {
 
     type Answer = Box<dyn FnMut(&[u8]) -> Vec<Vec<u8>> + Send>;
     type FeatureAnswer = Box<dyn FnMut(&[u8]) -> Vec<u8> + Send>;
+    /// Gets each numbered feature report sent, its number included; `false`: the device refuses it.
+    type SetNumbered = Box<dyn FnMut(&[u8]) -> bool + Send>;
+    /// Answers a read of a numbered feature report (number included), or `None`: no such report.
+    type GetNumbered = Box<dyn FnMut(u8) -> Option<Vec<u8>> + Send>;
 
     #[derive(Clone)]
     pub struct FakeHid(pub Arc<Mutex<FakeState>>);
@@ -556,6 +588,8 @@ pub(crate) mod fake {
         /// Answers a feature report (without its report number) with the next one to read.
         pub on_feature: Option<FeatureAnswer>,
         feature_answer: Option<Vec<u8>>,
+        /// A device whose feature reports have numbers (SinoWealth): replaces `on_feature`.
+        pub numbered: Option<(SetNumbered, GetNumbered)>,
     }
 
     impl FakeHid {
@@ -568,6 +602,7 @@ pub(crate) mod fake {
                 answer: Box::new(answer),
                 on_feature: None,
                 feature_answer: None,
+                numbered: None,
             })))
         }
 
@@ -598,6 +633,15 @@ pub(crate) mod fake {
         }
         fn send_feature(&self, data: &[u8]) -> Result<()> {
             let mut state = self.0.lock().unwrap();
+            if state.numbered.is_some() {
+                assert_ne!(data[0], 0, "this device's feature reports have numbers");
+                if !(state.numbered.as_mut().unwrap().0)(data) {
+                    let message = format!("feature report {} refused", data[0]);
+                    return Err(Error::Hid(hidapi::HidError::HidApiError { message }));
+                }
+                state.sent.push(data.to_vec());
+                return Ok(());
+            }
             assert_eq!(data[0], 0, "feature reports are sent with report number 0");
             state.sent.push(data[1..].to_vec());
             let answer = state.on_feature.as_mut().map(|f| f(&data[1..]));
@@ -605,7 +649,14 @@ pub(crate) mod fake {
             Ok(())
         }
         fn get_feature(&self, buf: &mut [u8]) -> Result<usize> {
-            let state = self.0.lock().unwrap();
+            let mut state = self.0.lock().unwrap();
+            if let Some((_, get)) = state.numbered.as_mut() {
+                let id = buf[0];
+                let answer = get(id).ok_or_else(|| Error::Protocol(format!("no feature report {id}")))?;
+                let n = answer.len().min(buf.len());
+                buf[..n].copy_from_slice(&answer[..n]);
+                return Ok(answer.len());
+            }
             match &state.feature_answer {
                 Some(a) => {
                     buf[0] = 0;

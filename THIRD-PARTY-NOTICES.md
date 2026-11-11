@@ -13,12 +13,17 @@ goes with every PeriHub package.
 - the list of Logitech mice and their HID++ details, and the Logitech G300's profile format;
 - the ASUS ROG and TUF mouse table (`data/devices/asus-*.device`) and the ASUS protocol
   (`src/asus.c`, `src/asus.h`, `src/driver-asus.c`, Copyright (C) 2021 Kyoken), rewritten in Rust
-  in `crates/perihub-core/src/peripheral/asus.rs` (see `docs/protocols/asus-rog.md`).
+  in `crates/perihub-core/src/peripheral/asus.rs` (see `docs/protocols/asus-rog.md`);
+- the Glorious mouse table (`data/devices/glorious-*.device`) and the SinoWealth protocol
+  (`src/driver-sinowealth.c`, `src/driver-sinowealth.h`, Copyright © 2020 Marian Beermann), rewritten
+  in Rust in `crates/perihub-core/src/peripheral/sinowealth.rs` (see
+  `docs/protocols/sinowealth-glorious.md`).
 
 ```
 Copyright © 2015-2017 Red Hat, Inc.
 Copyright © 2015 David Herrmann <dh.herrmann@gmail.com>
 Copyright (C) 2021 Kyoken, kyoken@kyoken.ninja
+Copyright © 2020 Marian Beermann
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -96,7 +101,9 @@ interface numbers), described in its own words in `docs/protocols`, and wrote it
 was copied.
 
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later): the Apex 8-zone lighting
-  protocol, and the interface and usage page of each ASUS mouse's configuration collection.
+  protocol, the interface and usage page of each ASUS mouse's configuration collection, and for the
+  Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and
+  that a reading right after a write is incomplete.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse
   its USB interface, transaction ids and maximum DPI, read as text by `tools/openrazer_facts.py` (see
   `docs/protocols/razer-mice.md`).

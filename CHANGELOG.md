@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **3 Glorious mice (experimental)**, with a cable: Model O/O- (`258a:0036`), Model D (`258a:0033`) and Model O Eternal (`3794:a000`), from the published documentation of their SinoWealth protocol (libratbag, MIT). Nobody has tried them with PeriHub yet. Their page shows the firmware, the DPI of each slot that is on, the slot in use and the polling rate. Every change rewrites their settings in memory, so, as on Razer mice, only **Save to memory** is offered, after the No warranty box, with backup, read-back and the 15-second undo. PeriHub reads the settings again just before, changes only the DPI of the slots that are on and the polling rate, writes every other byte back as it read it, and checks every byte after. A mouse whose firmware is not the one libratbag knows is read for its firmware only.
+- PeriHub never writes these mice on top of a reading that differs from the one taken when the mouse was connected anywhere but in the DPI, the polling rate and the slot in use, and reads the block back up to five times after a write: OpenRGB found that a reading right after a write is incomplete, and its zeros must never reach the mouse's memory.
+- **On Windows these mice are read-only for now**: there their settings may arrive padded to 520 bytes, and then the length a write must give is unknown.
+- The generic SinoWealth ids libratbag also lists (`258a:0027`, `0029`, `0051`, `1007`) are left out on purpose: mice of other brands share them, some with a different protocol, and OpenRGB turned off its SinoWealth keyboards after reused ids bricked Redragon keyboards. Firmware update mode and profile switching are never sent.
+- On Linux the udev rule opens these three mice whole, since no source names the interface of their configuration: it carries what the mouse does and the keys its own buttons send, never a keyboard's typing. With the AppImage or the Flatpak, install the rule again.
+
 ## 0.7.0 — 2026-11-11
 
 129 mice of three more brands, ASUS ROG and TUF, SteelSeries and Razer, from the published documentation of their protocols. Nobody has tried them with PeriHub yet.
