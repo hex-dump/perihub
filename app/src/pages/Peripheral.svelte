@@ -181,7 +181,7 @@
         <BlindSettings {info} onchange={(i) => (live = i)} />
       {:else}
       <dl class="settings">
-        <dt>DPI levels</dt>
+        <dt>{shown.dpi_levels.length === 1 ? "DPI" : "DPI levels"}</dt>
         <dd class="levels">
           {#each shown.dpi_levels as dpi, i (i)}
             {#if info.editable && info.limits.dpi}
@@ -273,8 +273,8 @@
 
       {#if info.editable && info.changes_stay}
         <div class="notice warn change">
-          <b>Experimental.</b> This device stores every change in its memory by itself, the way {info.source} sends it,
-          so there is no change that lasts only until it is turned off. PeriHub asks for the No warranty box the first
+          <b>Experimental.</b> This device stores every change in its memory by itself: there is no change that lasts
+          only until it is turned off. PeriHub asks for the No warranty box the first
           time, saves the settings first, reads them back after the change, and puts them back after 15 seconds unless
           you keep the change.
         </div>
