@@ -769,6 +769,20 @@ pub mod descriptor {
     }
 }
 
+/// On Linux a hidraw node carries every collection of its interface, whatever rule opened it: a QMK
+/// keyboard is opened only if its node's descriptor holds the raw HID collection and nothing else, so
+/// that nothing typed can reach PeriHub. On Windows each collection is a device of its own.
+pub fn node_carries_only_raw_hid(path: &str) -> bool {
+    if !cfg!(target_os = "linux") {
+        return true;
+    }
+    let Some(name) = path.strip_prefix("/dev/").filter(|n| n.starts_with("hidraw") && !n.contains('/')) else {
+        return false;
+    };
+    std::fs::read(format!("/sys/class/hidraw/{name}/device/report_descriptor"))
+        .is_ok_and(|d| descriptor::is_raw_hid_only(&d))
+}
+
 /// A USB interface that holds QMK's raw HID collection and nothing else, found in sysfs.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RawInterface {
@@ -781,13 +795,18 @@ pub struct RawInterface {
 /// The raw HID interfaces of the USB devices under `class_dir` (`/sys/class/hidraw` on Linux), read
 /// from each node's report descriptor, which every user may read without opening the device.
 pub fn raw_interfaces(class_dir: &std::path::Path) -> Vec<RawInterface> {
+    usb_interfaces(class_dir, descriptor::is_raw_hid_only)
+}
+
+/// The USB interfaces under `class_dir` whose report descriptor `accept` takes.
+fn usb_interfaces(class_dir: &std::path::Path, accept: impl Fn(&[u8]) -> bool) -> Vec<RawInterface> {
     let Ok(entries) = std::fs::read_dir(class_dir) else { return Vec::new() };
     let mut found: Vec<RawInterface> = entries
         .flatten()
         .filter_map(|entry| {
             let device = std::fs::canonicalize(entry.path().join("device")).ok()?;
             let descriptor = std::fs::read(device.join("report_descriptor")).ok()?;
-            if !descriptor::is_raw_hid_only(&descriptor) {
+            if !accept(&descriptor) {
                 return None;
             }
             let uevent = std::fs::read_to_string(device.join("uevent")).ok()?;
@@ -809,6 +828,11 @@ pub fn raw_interfaces(class_dir: &std::path::Path) -> Vec<RawInterface> {
     found.dedup();
     found
 }
+
+/// The optional rule file in `/etc/udev/rules.d`. Its name must sort before systemd's
+/// `73-seat-late.rules`, which turns the `uaccess` tag into the user's access: a tag added by a file
+/// read after it gives nothing.
+pub const RULE_FILE: &str = "73-perihub-qmk.rules";
 
 /// The optional udev rule for one keyboard: only the interface whose descriptor PeriHub checked.
 pub fn rule_line(vendor_id: u16, product_id: u16, interface: u8) -> String {
@@ -1278,6 +1302,26 @@ mod tests {
             [RawInterface { vendor_id: 0x3434, product_id: 0x0311, interface: 1, name: "Keychron Q1 Pro".into() }]
         );
         let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_node_is_opened_only_with_a_raw_hid_descriptor() {
+        assert!(!node_carries_only_raw_hid("/dev/hidraw../../etc"));
+        assert!(!node_carries_only_raw_hid("/tmp/hidraw0"));
+        assert!(!node_carries_only_raw_hid("/dev/hidraw999"));
+        // The nodes of this machine: none is a QMK keyboard's raw HID interface.
+        for entry in std::fs::read_dir("/sys/class/hidraw").into_iter().flatten().flatten() {
+            let path = format!("/dev/{}", entry.file_name().to_string_lossy());
+            let descriptor = std::fs::read(entry.path().join("device/report_descriptor")).unwrap_or_default();
+            assert_eq!(node_carries_only_raw_hid(&path), descriptor::is_raw_hid_only(&descriptor), "{path}");
+        }
+    }
+
+    #[test]
+    fn the_optional_rule_is_read_before_systemd_gives_access() {
+        assert!(RULE_FILE < "73-seat-late.rules");
+        assert!(RULE_FILE.ends_with(".rules"));
     }
 
     #[test]

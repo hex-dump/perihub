@@ -1036,6 +1036,10 @@ impl Manager {
             if found.iter().any(|(o, _)| o.path() == d.path()) || keyboards.iter().any(|(_, k)| k.key == key) {
                 continue;
             }
+            // Never a node that also carries what is typed, whatever rule opened it.
+            if !qmk::node_carries_only_raw_hid(&d.path().to_string_lossy()) {
+                continue;
+            }
             let vial = matches!(model.protocol, Protocol::Qmk(p) if p.vial);
             let who = qmk_identity(d, model);
             let on = vial || enabled.contains(&key);

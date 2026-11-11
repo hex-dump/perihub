@@ -501,6 +501,14 @@ describe("a QMK keyboard", () => {
     ).toBeTruthy();
   });
 
+  it("sends a test report without mouse lines", () => {
+    const report = peripheralTest(keyboard, "0.7.0", "linux x86_64").report;
+    expect(report).toContain("Firmware: VIA protocol 13, 4 layers, 16 macros");
+    expect(report).toContain("LED 1: mode 4, brightness 80, #ff0000");
+    expect(report).not.toContain("DPI");
+    expect(report).not.toContain("polling");
+  });
+
   it("asks to look at the lighting before keeping a change", async () => {
     render(Peripheral, { props: { info: keyboard, error: null } });
     const mode = screen.getByRole("combobox", {

@@ -10,7 +10,7 @@ use serde::Serialize;
 
 use crate::key_access::as_root;
 
-const RULE_PATH: &str = "/etc/udev/rules.d/74-perihub-qmk.rules";
+const RULES_DIR: &str = "/etc/udev/rules.d";
 const RELOAD: &str = "udevadm control --reload && udevadm trigger --subsystem-match=hidraw";
 const SYSFS: &str = "/sys/class/hidraw";
 
@@ -28,7 +28,7 @@ pub struct QmkAccess {
 
 /// The keyboards in the installed rule file, as (vendor id, product id, interface, name).
 fn installed() -> Vec<(u16, u16, u8, String)> {
-    let Ok(text) = std::fs::read_to_string(RULE_PATH) else { return Vec::new() };
+    let Ok(text) = std::fs::read_to_string(rule_path()) else { return Vec::new() };
     let mut name = String::new();
     let mut found = Vec::new();
     for line in text.lines() {
@@ -55,6 +55,10 @@ fn installed() -> Vec<(u16, u16, u8, String)> {
     found
 }
 
+fn rule_path() -> String {
+    format!("{RULES_DIR}/{}", qmk::RULE_FILE)
+}
+
 fn key(vendor_id: u16, product_id: u16) -> String {
     format!("{vendor_id:04x}:{product_id:04x}")
 }
@@ -77,6 +81,7 @@ fn with(mut keyboards: Vec<(u16, u16, u8, String)>, add: &[RawInterface]) -> Str
 
 #[tauri::command]
 pub fn qmk_access() -> QmkAccess {
+    let path = rule_path();
     let current = installed();
     let linux = cfg!(target_os = "linux");
     let mut allowed: Vec<String> = current.iter().map(|(v, p, _, _)| key(*v, *p)).collect();
@@ -88,15 +93,14 @@ pub fn qmk_access() -> QmkAccess {
         keys.dedup();
         for k in keys {
             let file = with(current.clone(), &interfaces_of(&k));
-            manual_install
-                .push((k, format!("sudo tee {RULE_PATH} >/dev/null <<'EOF'\n{file}EOF\nsudo sh -c '{RELOAD}'")));
+            manual_install.push((k, format!("sudo tee {path} >/dev/null <<'EOF'\n{file}EOF\nsudo sh -c '{RELOAD}'")));
         }
     }
     QmkAccess {
         allowed,
         supported: linux,
         manual_install,
-        manual_remove: format!("sudo rm -f {RULE_PATH} && sudo sh -c '{RELOAD}'"),
+        manual_remove: format!("sudo rm -f {path} && sudo sh -c '{RELOAD}'"),
     }
 }
 
@@ -110,15 +114,17 @@ pub async fn qmk_grant_access(key: String) -> Result<(), String> {
         );
     }
     let file = with(installed(), &found);
-    as_root(format!("cat > {RULE_PATH} && {RELOAD}"), file).await
+    let path = rule_path();
+    as_root(format!("cat > {path} && {RELOAD}"), file).await
 }
 
 #[tauri::command]
 pub async fn qmk_revoke_access(key: String) -> Result<(), String> {
     let keep: Vec<_> = installed().into_iter().filter(|(v, p, _, _)| self::key(*v, *p) != key).collect();
+    let path = rule_path();
     if keep.is_empty() {
-        as_root(format!("rm -f {RULE_PATH} && {RELOAD}"), "").await
+        as_root(format!("rm -f {path} && {RELOAD}"), "").await
     } else {
-        as_root(format!("cat > {RULE_PATH} && {RELOAD}"), qmk::rules_file(&keep)).await
+        as_root(format!("cat > {path} && {RELOAD}"), qmk::rules_file(&keep)).await
     }
 }

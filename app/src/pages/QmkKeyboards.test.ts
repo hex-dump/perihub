@@ -108,7 +108,7 @@ describe("QMK keyboards", () => {
       allowed: [],
       supported: true,
       manual_install: [
-        ["4653:0001", "sudo tee /etc/udev/rules.d/74-perihub-qmk.rules"],
+        ["4653:0001", "sudo tee /etc/udev/rules.d/73-perihub-qmk.rules"],
       ],
       manual_remove: "sudo rm",
     });
@@ -125,7 +125,7 @@ describe("QMK keyboards", () => {
     );
     await flush();
     expect(document.body.textContent).toContain("not authorized");
-    expect(document.body.textContent).toContain("74-perihub-qmk.rules");
+    expect(document.body.textContent).toContain("73-perihub-qmk.rules");
   });
 
   it("removes the rule of an allowed keyboard", async () => {

@@ -225,8 +225,12 @@ export function peripheralTest(info: PeripheralInfo, version: string, system: st
       ...info.blind
         .filter((b) => b.last)
         .map((b) => `Sent: ${b.label} = ${b.last!.type === "dpi" ? b.last!.value.join(", ") : b.last!.value}`),
-      `Active profile: ${info.active_profile ?? "-"} of ${info.profiles}, DPI level ${info.active_dpi ?? "-"}`,
-      `DPI levels: ${set.dpi_levels.join(" / ") || "-"}, polling: ${set.polling_hz ?? "not read"} Hz`,
+      info.kind === "mouse"
+        ? `Active profile: ${info.active_profile ?? "-"} of ${info.profiles}, DPI level ${info.active_dpi ?? "-"}`
+        : null,
+      info.kind === "mouse"
+        ? `DPI levels: ${set.dpi_levels.join(" / ") || "-"}, polling: ${set.polling_hz ?? "not read"} Hz`
+        : null,
       options ? `Other settings: ${options}` : null,
       ...set.leds.map((l, i) => `LED ${i + 1}: mode ${l.mode}, brightness ${l.brightness ?? "-"}, ${l.color}`),
       ...info.buttons.map((b) => `Button ${b.name}: ${b.action}`),

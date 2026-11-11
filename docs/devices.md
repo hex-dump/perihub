@@ -421,7 +421,7 @@ on the **QMK keyboards** page.
 - Never sent: keymaps, macros, encoders, layout options, the keymap, macro and memory resets, the
   bootloader jump, the state of the key matrix, Vial's unlock, the keyboard's own custom values, and the
   backlight (its breathing setting writes the memory at once).
-- On Linux a keyboard needs a line in the optional rule `74-perihub-qmk.rules`, which PeriHub writes
+- On Linux a keyboard needs a line in the optional rule `73-perihub-qmk.rules`, which PeriHub writes
   from the **QMK keyboards** page: it opens only the interface whose descriptor holds the raw HID
   collection and nothing else, checked in `/sys` first.
 

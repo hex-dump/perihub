@@ -247,7 +247,7 @@ PeriHub itself only reads the answers of the devices it asks, and drops everythi
 
 #### Optional: QMK keyboards
 
-QMK keyboards have no USB ids PeriHub's rule could list, so each one needs a line of its own. When the system refuses PeriHub a QMK keyboard, the **QMK keyboards** page offers to add one to [`74-perihub-qmk.rules`](docs/protocols/qmk-via-vial.md#on-linux), asking for your password, and can remove it from there. PeriHub first reads, in `/sys`, the descriptor of each of the keyboard's interfaces, and the line opens only the one that holds the raw HID channel and nothing else: what you type arrives on another interface, which stays closed. If Vial's own rule is installed, PeriHub can already read Vial keyboards.
+QMK keyboards have no USB ids PeriHub's rule could list, so each one needs a line of its own. When the system refuses PeriHub a QMK keyboard, the **QMK keyboards** page offers to add one to [`73-perihub-qmk.rules`](docs/protocols/qmk-via-vial.md#on-linux), asking for your password, and can remove it from there. PeriHub first reads, in `/sys`, the descriptor of each of the keyboard's interfaces, and the line opens only the one that holds the raw HID channel and nothing else: what you type arrives on another interface, which stays closed. If Vial's own rule is installed, PeriHub can already read Vial keyboards.
 
 #### Optional: software macros
 
