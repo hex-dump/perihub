@@ -1,6 +1,6 @@
 name: Release
 
-# A vX.Y.Z tag creates a draft release with Windows and Linux installers.
+# A vX.Y.Z tag creates a draft release with the Windows and Linux installers and the Flatpak bundle.
 on:
   push:
     tags: ["v*"]
@@ -74,3 +74,39 @@ jobs:
           args: --config ${{ github.workspace }}/app/src-tauri/tauri.updater.conf.json
           includeUpdaterJson: true
           updaterJsonPreferNsis: true
+
+  # The Flatpak bundle (packaging/flatpak), built from source in Flathub's image, which has the GNOME
+  # runtime. PeriHub is not on Flathub: the bundle is attached to the release like the other packages.
+  flatpak:
+    name: Flatpak bundle
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      # flatpak-builder runs every build step in a bubblewrap sandbox.
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the bundle
+        run: packaging/flatpak/build-local.sh --system
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: flatpak
+          path: packaging/flatpak/.build/*.flatpak
+          if-no-files-found: error
+
+  # The draft release exists once the other bundles are built.
+  flatpak-release:
+    name: Flatpak bundle to the release
+    needs: [build, flatpak]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: flatpak
+
+      - name: Attach it to the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" PeriHub_*_x86_64.flatpak --clobber --repo "$GITHUB_REPOSITORY"

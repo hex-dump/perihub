@@ -1,8 +1,8 @@
 name: Test build
 
 # Started by hand (Actions → Test build → Run workflow): builds the Windows installer and the Linux
-# AppImage and .deb of any branch for testing, without a tag or a release. The files are attached to
-# the run as artifacts.
+# AppImage, .deb and Flatpak of any branch for testing, without a tag or a release. The files are
+# attached to the run as artifacts.
 on:
   workflow_dispatch:
 
@@ -80,4 +80,23 @@ jobs:
           path: |
             target/release/bundle/appimage/*.AppImage
             target/release/bundle/deb/*.deb
+          if-no-files-found: error
+
+  # As in the release workflow.
+  flatpak:
+    name: Flatpak bundle
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the bundle
+        run: packaging/flatpak/build-local.sh --system
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: perihub-flatpak-test-${{ github.sha }}
+          path: packaging/flatpak/.build/*.flatpak
           if-no-files-found: error

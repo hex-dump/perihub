@@ -1,6 +1,6 @@
-# PeriHub on Flathub. Built from source, offline: cargo-sources.json and node-sources.json list
-# every Rust crate and npm package, generated from Cargo.lock and app/package-lock.json (see
-# README.md next to this file). The tag and commit below move with each release.
+# The PeriHub Flatpak attached to each GitHub release (PeriHub_X.Y.Z_x86_64.flatpak), built by the
+# release workflow from this repository. It is not on Flathub. The build downloads the Rust crates and
+# npm packages pinned in Cargo.lock and app/package-lock.json.
 id: io.github.hex_dump.perihub
 runtime: org.gnome.Platform
 runtime-version: '51'
@@ -24,33 +24,31 @@ finish-args:
   - --filesystem=xdg-run/hypr:ro
 
 modules:
-  # Tauri's tray icon loads libayatana-appindicator, which the GNOME runtime does not have.
+  # Tauri's tray icon loads libayatana-appindicator, which the GNOME runtime does not have. From
+  # Flathub's shared modules, cloned next to this file (see README.md).
   - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
 
   - name: perihub
     buildsystem: simple
     build-options:
       append-path: /usr/lib/sdk/node24/bin:/usr/lib/sdk/rust-stable/bin
-      env:
-        CARGO_HOME: /run/build/perihub/cargo
-        CARGO_NET_OFFLINE: 'true'
-        XDG_CACHE_HOME: /run/build/perihub/flatpak-node/cache
-        npm_config_cache: /run/build/perihub/flatpak-node/npm-cache
-        npm_config_offline: 'true'
+      # npm and cargo download what the lock files pin.
+      build-args:
+        - --share=network
     sources:
-      - type: git
-        url: https://github.com/hex-dump/perihub.git
-        tag: v0.6.8
-        commit: TO_BE_FILLED_AT_RELEASE
-        x-checker-data:
-          type: git
-          tag-pattern: ^v([\d.]+)$
-      - cargo-sources.json
-      - node-sources.json
+      - type: dir
+        path: ../..
+        skip:
+          - .git
+          - .flatpak-builder
+          - target
+          - app/node_modules
+          - app/dist
+          - packaging/flatpak/.build
+          - packaging/flatpak/shared-modules
     build-commands:
-      - npm ci --offline --prefix app
-      - cargo --offline fetch --locked
-      - npm run --offline --prefix app tauri build -- --no-bundle
+      - npm ci --prefix app
+      - npm run --prefix app tauri build -- --no-bundle -- --locked
       - install -Dm755 target/release/perihub /app/bin/perihub
       - install -Dm644 -t /app/share/applications packaging/linux/io.github.hex_dump.perihub.desktop
       - install -Dm644 -t /app/share/metainfo packaging/linux/io.github.hex_dump.perihub.metainfo.xml

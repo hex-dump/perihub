@@ -169,6 +169,7 @@ scoop install perihub-scoop/perihub
 | Debian, Ubuntu | `PeriHub_…_amd64.deb` |
 | Fedora, openSUSE | `PeriHub-…-1.x86_64.rpm` |
 | Arch, CachyOS | the `perihub-bin` package, built from this repository (below) |
+| Any, with Flatpak | `PeriHub_…_x86_64.flatpak` (below) |
 | Any other | `PeriHub_…_amd64.AppImage`: `chmod +x` it and run it |
 
 On Arch-based distributions, until `perihub-bin` is on the AUR:
@@ -179,9 +180,17 @@ cd perihub/packaging/aur/perihub-bin
 makepkg -si
 ```
 
+**Flatpak**: install the downloaded file for your user, with its name in place of `X.Y.Z`. PeriHub runs on the GNOME runtime, which Flatpak downloads from Flathub, offering to set Flathub up if it is not:
+
+```sh
+flatpak install --user PeriHub_X.Y.Z_x86_64.flatpak
+```
+
+PeriHub is not on Flathub, so the Flatpak does not update by itself: install the next release's file the same way. Like the AppImage, it needs the udev rule below. On desktops without the Background portal, such as Hyprland, add `flatpak run io.github.hex_dump.perihub --hidden` to the desktop's own autostart (an `exec-once` line on Hyprland): PeriHub says so when you tick **Start PeriHub when I log in** in **Settings**.
+
 #### USB permissions
 
-The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage**, if PeriHub shows "permission denied", install it by hand, and again after an update that adds devices:
+The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage** or the **Flatpak**, if PeriHub shows "permission denied", install it by hand, and again after an update that adds devices:
 
 ```sh
 sudo curl -o /etc/udev/rules.d/70-perihub.rules \
@@ -242,7 +251,7 @@ PeriHub never touches firmware. It uses the same settings commands as the offici
 - **Only known commands.** The code can send only commands that have been checked, and refuses the others before they reach the device. The command that restarts the Apex into its firmware updater cannot even be written. On Logitech mice only a short list of HID++ features is used, and a receiver's pairing commands are never sent. On Corsair devices only property reads, and with experimental lighting the commands lighting needs, can get through.
 - **Untested devices are only read**, unless you use an [experimental feature](#experimental-features). A Logitech mouse whose memory format is untested is saved to only after the No warranty box, with the USB cable, and each save is undone unless you keep it.
 - **Every write is checked.** Mouse profiles are changed on top of their original bytes and read back byte by byte. The keyboard's key mapping is tried in RAM first and saved only if the read-back matches.
-- **Backups** before every write: in `~/.config/perihub/backups/` on Linux and `%APPDATA%\perihub\backups\` on Windows. **Backups…** puts one back, writing only what differs.
+- **Backups** before every write: in `~/.config/perihub/backups/` on Linux (`~/.var/app/io.github.hex_dump.perihub/config/perihub/backups/` in the Flatpak) and `%APPDATA%\perihub\backups\` on Windows. **Backups…** puts one back, writing only what differs.
 - **Factory profiles are never written**: they are only read, to restore a profile.
 - **Your key presses stay on your PC.** Reactive lighting and software macros read keys only while they need to, keep only which zone to light or which macro to start, and drop keys from other devices at once. Nothing you type is stored, logged or sent.
 - **No data leaves your PC.** PeriHub works offline. The only connection: on Windows it asks GitHub for the latest version at start and once a day (you can turn this off), and installs an update only if you ask and its signature matches PeriHub's key.

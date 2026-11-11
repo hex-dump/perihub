@@ -23,8 +23,12 @@ ASSETS = {
     "APPIMAGE": "_amd64.AppImage",
     "DEB": "_amd64.deb",
     "RPM": ".x86_64.rpm",
+    "FLATPAK": "_x86_64.flatpak",
     "SUMS": "SHA256SUMS.txt",
 }
+# Releases before 0.6.8 have no Flatpak. When the latest release lacks one of these, the page drops
+# what is written between <!--if KEY--> and <!--end KEY-->.
+OPTIONAL = {"FLATPAK"}
 
 
 def size(n: int) -> str:
@@ -36,8 +40,12 @@ def main() -> None:
     out = Path(sys.argv[2])
 
     values = {"VERSION": release["tagName"].removeprefix("v")}
+    missing = set()
     for key, suffix in ASSETS.items():
         found = [a for a in release["assets"] if a["name"].endswith(suffix)]
+        if not found and key in OPTIONAL:
+            missing.add(key)
+            continue
         if len(found) != 1:
             sys.exit(f"expected one asset ending with {suffix!r}, found {len(found)}")
         values[f"{key}_URL"] = found[0]["url"]
@@ -47,7 +55,13 @@ def main() -> None:
         shutil.rmtree(out)
     (out / "screenshots").mkdir(parents=True)
     for page in SITE.glob("*.html"):
-        html = re.sub(r"%%(\w+)%%", lambda m: values[m.group(1)], page.read_text())
+        html = re.sub(
+            r"<!--if (\w+)-->(.*?)<!--end \1-->",
+            lambda m: "" if m.group(1) in missing else m.group(2),
+            page.read_text(),
+            flags=re.S,
+        )
+        html = re.sub(r"%%(\w+)%%", lambda m: values[m.group(1)], html)
         (out / page.name).write_text(html)
     for name in ("style.css", "main.js"):
         shutil.copy(SITE / name, out / name)

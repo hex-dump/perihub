@@ -1,4 +1,5 @@
-//! Running as a Flatpak (Flathub). The sandbox changes two things:
+//! Running as a Flatpak (the bundle attached to each release, see `packaging/flatpak`). The
+//! sandbox changes two things:
 //! - autostart goes through the Background portal, which writes the entry on the host: the
 //!   sandbox's own `~/.config/autostart` is not the one the desktop reads;
 //! - system files cannot be installed from inside it, so the optional udev rules are installed

@@ -64,7 +64,7 @@
             </a>
             <a class="btn" data-os="linux" href="#linux">
               <span class="btn-title">Download for Linux</span>
-              <span class="btn-sub">.deb, .rpm or AppImage</span>
+              <span class="btn-sub">.deb, .rpm<!--if FLATPAK-->, Flatpak<!--end FLATPAK--> or AppImage</span>
             </a>
           </div>
           <div class="linux-choices" hidden>
@@ -82,6 +82,10 @@
                 <span class="btn-title">Any distribution</span>
                 <span class="btn-sub">AppImage · %%APPIMAGE_SIZE%%</span>
               </a>
+              <!--if FLATPAK--><a class="btn" href="%%FLATPAK_URL%%">
+                <span class="btn-title">With Flatpak</span>
+                <span class="btn-sub">.flatpak · %%FLATPAK_SIZE%%</span>
+              </a><!--end FLATPAK-->
             </div>
             <p class="small">The .deb and .rpm are smaller and set up USB access by themselves. On Arch and CachyOS, <a href="https://github.com/hex-dump/perihub#linux">build the package</a> from the repository.</p>
           </div>
@@ -300,9 +304,10 @@
             <li><a href="%%DEB_URL%%">Debian, Ubuntu (.deb)</a> <span>%%DEB_SIZE%%</span></li>
             <li><a href="%%RPM_URL%%">Fedora, openSUSE (.rpm)</a> <span>%%RPM_SIZE%%</span></li>
             <li><a href="%%APPIMAGE_URL%%">AppImage, any distribution</a> <span>%%APPIMAGE_SIZE%%</span></li>
+            <!--if FLATPAK--><li><a href="%%FLATPAK_URL%%">Flatpak, any distribution with Flatpak</a> <span>%%FLATPAK_SIZE%%</span></li><!--end FLATPAK-->
           </ul>
           <p>Pick the .deb or the .rpm if your distribution uses them: they are much smaller, because they use your system's web engine, and they set up USB access by themselves. The AppImage works everywhere and brings its own engine, which makes it larger.</p>
-          <p>With the AppImage, see <a href="https://github.com/hex-dump/perihub#usb-permissions">USB permissions</a>. On Arch and CachyOS you can <a href="https://github.com/hex-dump/perihub#linux">build the package</a> from the repository.</p>
+          <p>With the AppImage<!--if FLATPAK--> or the Flatpak<!--end FLATPAK-->, see <a href="https://github.com/hex-dump/perihub#usb-permissions">USB permissions</a>.<!--if FLATPAK--> The Flatpak does not update by itself: <a href="https://github.com/hex-dump/perihub#linux">how to install it</a>.<!--end FLATPAK--> On Arch and CachyOS you can <a href="https://github.com/hex-dump/perihub#linux">build the package</a> from the repository.</p>
         </div>
       </div>
     </section>

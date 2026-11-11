@@ -3,7 +3,9 @@
 ## Unreleased
 
 ### Added
-- **Ready for Flathub**, as `io.github.hex_dump.perihub`: a manifest that builds PeriHub from source (`packaging/flatpak`), and the desktop file and AppStream metainfo Flathub requires (`packaging/linux`). Inside the Flatpak, autostart goes through the Background portal; the optional udev rules, which a sandbox cannot install, come with the commands to run instead; and since the sandbox cannot see the other programs running, the Corsair lighting and Logitech DPI pages ask to quit OpenRGB, ckb-next, OpenLinkHub, Solaar and logiops.
+- **A Flatpak**, `PeriHub_0.6.8_x86_64.flatpak`, attached to the release like the other packages and built from source by the release workflow (`packaging/flatpak`). It works on any distribution with Flatpak, on the GNOME 51 runtime, which Flatpak downloads from Flathub when PeriHub is installed. PeriHub itself is not on Flathub, so the Flatpak does not update by itself: install the next release's file the same way. Like the AppImage, it needs the udev rule installed by hand (README, USB permissions).
+- Inside the Flatpak, autostart goes through the desktop's Background portal; the optional udev rules, which a sandbox cannot install, come with the commands to run instead; and since the sandbox cannot see the other programs running, the Corsair lighting and Logitech DPI pages ask to quit OpenRGB, ckb-next, OpenLinkHub, Solaar and logiops. On a desktop without the Background portal, such as Hyprland, the autostart setting says which command to add to the desktop's own autostart.
+- A desktop file and AppStream metainfo for Linux (`packaging/linux`), used by the Flatpak.
 
 ## 0.6.7 — 2026-11-11
 
