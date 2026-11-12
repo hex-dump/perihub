@@ -89,40 +89,82 @@ nav { align-items: center; }
 .gallery figure { margin: 0; }
 .gallery figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 8px; text-align: center; }
 
-/* Devices */
-.chip { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; margin-right: 6px; vertical-align: middle; white-space: nowrap; }
-.chip.ok { color: var(--ok); background: var(--ok-soft); }
-.chip.test { color: var(--warn); background: var(--warn-soft); }
-.chip.ro, .chip.dep { color: var(--muted); background: var(--panel-2); border: 1px solid var(--line-strong); padding: 1px 9px; }
-.levels { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 8px; color: var(--muted); }
-.levels li { display: grid; grid-template-columns: 120px 1fr; align-items: baseline; }
-.levels .chip { justify-self: start; }
-.levels b { color: var(--text); }
-.table-wrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; margin-bottom: 16px; }
-.compat { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.95rem; }
-.compat th, .compat td { text-align: left; vertical-align: top; padding: 10px 16px; }
-.compat thead th { color: var(--muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--line-strong); }
-.compat td { border-top: 1px solid var(--line); }
-.compat td:first-child { width: 42%; }
-.compat td:nth-child(2) { width: 1%; white-space: nowrap; }
-.compat td:last-child { color: var(--muted); }
-.compat td b { color: var(--text); }
-.compat .brand-row th { padding-top: 18px; padding-bottom: 6px; font-size: 0.85rem; color: var(--accent-2); border-top: 1px solid var(--line-strong); }
-.compat tbody:first-of-type .brand-row th { border-top: 0; }
-.compat .brand-row + tr td, .compat thead + tbody > tr:first-child > td { border-top: 0; }
-.compat a { white-space: nowrap; }
+/* Devices: a catalogue by brand. A status LED, as on the app's sidebar, gives each device's level. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.devices-lead { max-width: 68ch; }
+.led { display: inline-block; flex: none; width: 9px; height: 9px; border-radius: 50%; margin-right: 10px; vertical-align: 0.05em; }
+.led.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(60, 207, 145, 0.14), 0 0 12px rgba(60, 207, 145, 0.6); }
+.led.test { background: var(--warn); box-shadow: 0 0 0 3px rgba(255, 194, 77, 0.12), 0 0 12px rgba(255, 194, 77, 0.5); }
+.led.ro { background: #6f7686; box-shadow: 0 0 0 3px rgba(111, 118, 134, 0.16); }
+.led.none { background: transparent; box-shadow: inset 0 0 0 1.5px #6f7686; }
+.led.dep { background: conic-gradient(var(--ok) 0 120deg, var(--warn) 0 240deg, #6f7686 0); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05); }
+
+.tested { margin: 28px 0 32px; border: 1px solid rgba(60, 207, 145, 0.28); border-radius: var(--radius); background: linear-gradient(180deg, rgba(60, 207, 145, 0.07), rgba(60, 207, 145, 0.02)); }
+.tested h3 { font-size: 0.95rem; font-weight: 600; color: var(--ok); margin: 0; padding: 14px 20px 0; }
+.tested ul { list-style: none; margin: 0; padding: 6px 0 16px; display: grid; grid-template-columns: repeat(4, 1fr); }
+.tested li { padding: 10px 20px; display: grid; grid-template-columns: auto 1fr; align-items: baseline; }
+.tested li + li { border-left: 1px solid rgba(60, 207, 145, 0.16); }
+.tested b { font-size: 1.2rem; letter-spacing: -0.01em; }
+.tested li span:last-child { grid-column: 2; color: var(--muted); font-size: 0.9rem; }
+
+.finder { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.finder-search { flex: 1 1 320px; }
+.finder-search input { width: 100%; height: 46px; font: inherit; color: var(--text); background: var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%23a9b0c0' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='m12.5 12.5 4 4'/%3E%3C/svg%3E") no-repeat 14px 50%; border: 1px solid var(--line-strong); border-radius: 12px; padding: 0 14px 0 42px; }
+.finder-search input::placeholder { color: #7d8496; }
+.finder-search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.finder-levels { display: flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 12px; }
+.finder-levels button { font: inherit; font-size: 0.92rem; font-weight: 600; color: var(--muted); background: none; border: 0; border-radius: 9px; padding: 0 14px; min-height: 38px; cursor: pointer; display: inline-flex; align-items: center; }
+.finder-levels button:hover { color: var(--text); }
+.finder-levels button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.finder-levels .led { margin-right: 8px; }
+
+.levels { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 10px 28px; margin: 0 0 8px; font-size: 0.9rem; color: var(--muted); }
+.levels dt { color: var(--text); font-weight: 650; margin-bottom: 2px; }
+.levels dd { margin: 0; }
+.levels b { color: var(--text); font-weight: 600; }
+
+.catalogue { margin-top: 12px; }
+.brand-block { display: grid; grid-template-columns: 210px 1fr; gap: 0 32px; padding: 22px 0; border-top: 1px solid var(--line); }
+.brand-name { font-size: 1.4rem; font-weight: 750; letter-spacing: -0.015em; margin: 6px 0 0; }
+.dev-list { list-style: none; margin: 0; padding: 0; }
+.dev { padding: 8px 0 12px; }
+/* Only between devices on screen: the finder hides some. */
+.dev:not([hidden]) ~ .dev:not([hidden]) { border-top: 1px dashed var(--line); padding-top: 14px; }
+.dev-head { display: flex; align-items: baseline; gap: 0 4px; flex-wrap: wrap; }
+.dev-head h4 { margin: 0; font-size: 1.08rem; font-weight: 650; letter-spacing: -0.005em; }
+.dev-level { margin-left: auto; padding-left: 16px; font-size: 0.85rem; font-weight: 650; white-space: nowrap; }
+.dev-level.ok { color: var(--ok); }
+.dev-level.test { color: var(--warn); }
+.dev-level.ro, .dev-level.none, .dev-level.dep { color: var(--muted); }
+.dev-sub, .dev-does, .dev-match { margin: 3px 0 0 19px; }
+.dev-sub { font-size: 0.9rem; color: #8b92a3; }
+.dev-does { color: #c8cdd8; font-size: 0.97rem; }
+.dev-match { font-size: 0.9rem; color: var(--accent-2); }
+.finder-empty { padding: 22px 0; border-top: 1px solid var(--line); color: var(--muted); }
+.finder-empty b { color: var(--text); }
+
 details summary { cursor: pointer; color: var(--accent-2); }
-.models-list { margin: 0 0 16px; }
-.models-list summary { font-weight: 600; padding: 4px 0; }
+.models-list { margin: 8px 0 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.models-list summary { font-weight: 600; }
 .models-title { font-size: 0.9rem; color: var(--muted); font-weight: 600; margin: 14px 0 8px; }
 .models { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0 0 4px; }
 .models li { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--panel-2); font-size: 0.85rem; }
-.logitech { margin-top: 40px; }
-.logitech > p { color: var(--muted); }
+
+.logitech { margin-top: 44px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.logitech h3 { font-size: 1.35rem; letter-spacing: -0.01em; }
+.logitech > p { color: var(--muted); max-width: 75ch; }
 .logitech > p b { color: var(--text); }
-.logitech .compat td:first-child { width: 38%; }
-.compat.known td:first-child { width: 22%; }
-.compat.known td:nth-child(2) { width: 30%; white-space: normal; }
+.logitech .models-list { margin-bottom: 0; }
+.matrix { display: grid; gap: 8px; margin: 22px 0 20px; max-width: 760px; }
+.m-row { display: grid; grid-template-columns: 170px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.m-head span { font-size: 0.85rem; font-weight: 600; color: var(--muted); padding: 0 14px; }
+.m-label { align-self: center; font-weight: 650; }
+.m-cell { display: flex; flex-wrap: wrap; align-items: baseline; font-weight: 650; padding: 14px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--panel-2); }
+.m-cell small { flex-basis: 100%; margin-left: 19px; font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+.m-cell.ok { border-color: rgba(60, 207, 145, 0.35); background: var(--ok-soft); }
+.m-cell.test { border-color: rgba(255, 194, 77, 0.3); background: var(--warn-soft); }
+.m-wide { grid-column: 2 / -1; }
+.m-key { display: none; }
 .steps { margin: 6px 0 12px; padding-left: 20px; color: var(--muted); }
 .steps li { margin-bottom: 6px; }
 .steps b { color: var(--text); }
@@ -185,15 +227,23 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 48px; }
 .prose code { font-size: 0.9em; overflow-wrap: anywhere; }
 .summary { border: 1px solid rgba(60, 207, 145, 0.4); background: var(--ok-soft); border-radius: 12px; padding: 14px 16px; }
 
-/* Devices on a phone: each row becomes a card, the level next to the device. */
-@media (max-width: 700px) {
-  .compat thead { display: none; }
-  .compat tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
-  .compat tr.brand-row { display: block; padding: 16px 14px 0; border-top: 1px solid var(--line-strong); }
-  .compat tbody:first-of-type tr.brand-row { border-top: 0; }
-  .compat tr.brand-row + tr { border-top: 0; }
-  .compat th, .compat td { padding: 0; border: 0; width: auto !important; }
-  .compat .brand-row th { padding: 0; border: 0; }
-  .compat td:last-child { grid-column: 1 / -1; }
-  .compat.known td:nth-child(2) { white-space: nowrap; }
+/* Devices on a phone and on narrow windows */
+@media (max-width: 860px) {
+  .tested ul { grid-template-columns: 1fr 1fr; }
+  .tested li:nth-child(3) { border-left: 0; }
+  .levels { grid-template-columns: 1fr; }
+  .brand-block { grid-template-columns: 1fr; }
+  .brand-name { margin: 0 0 6px; }
+}
+@media (max-width: 560px) {
+  .tested ul { grid-template-columns: 1fr; }
+  .tested li + li { border-left: 0; border-top: 1px solid rgba(60, 207, 145, 0.16); }
+  .finder-levels { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .finder-levels button { justify-content: center; padding: 0 8px; }
+  .logitech { padding: 20px 16px; }
+  /* The matrix becomes a list: each cell names its own format and sector size. */
+  .m-head, .m-label { display: none; }
+  .m-row { grid-template-columns: 1fr; gap: 8px; }
+  .m-wide { grid-column: auto; }
+  .m-key { display: block; flex-basis: 100%; font-weight: 400; font-size: 0.85rem; color: var(--muted); margin-bottom: 2px; }
 }
