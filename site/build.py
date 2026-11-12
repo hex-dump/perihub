@@ -5,6 +5,7 @@ Usage: gh release view --json tagName,assets > release.json
        python3 site/build.py release.json OUT_DIR
 """
 
+import hashlib
 import json
 import re
 import shutil
@@ -62,6 +63,11 @@ def main() -> None:
             flags=re.S,
         )
         html = re.sub(r"%%(\w+)%%", lambda m: values[m.group(1)], html)
+        # A fingerprint of the file in the link: after a change, browsers fetch the new stylesheet and
+        # script instead of mixing the new page with the old ones from their cache.
+        for name in ("style.css", "main.js"):
+            stamp = hashlib.sha256((SITE / name).read_bytes()).hexdigest()[:10]
+            html = html.replace(f'"{name}"', f'"{name}?v={stamp}"')
         (out / page.name).write_text(html)
     for name in ("style.css", "main.js"):
         shutil.copy(SITE / name, out / name)

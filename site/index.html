@@ -197,361 +197,452 @@
           <p class="lead">Four devices are tested on real hardware, and over 200 more mice and keyboards are recognized. PeriHub talks only to the devices on this page.</p>
         </div>
 
-        <div class="tested">
-          <h3>Tested on real hardware</h3>
-          <ul>
-            <li><span class="led ok" aria-hidden="true"></span><b>Apex 3 TKL</b><span>SteelSeries keyboard</span></li>
-            <li><span class="led ok" aria-hidden="true"></span><b>G502 HERO</b><span>Logitech mouse</span></li>
-            <li><span class="led ok" aria-hidden="true"></span><b>G502 X Wireless</b><span>Logitech mouse, with its cable</span></li>
-            <li><span class="led ok" aria-hidden="true"></span><b>G300</b><span>Logitech mouse</span></li>
-          </ul>
-        </div>
-
-        <dl class="levels">
-          <div><dt><span class="led ok" aria-hidden="true"></span>Supported</dt><dd>Tested on real hardware: everything on its page works.</dd></div>
-          <div><dt><span class="led test" aria-hidden="true"></span>Experimental</dt><dd>Recognized, but nobody has tried it with PeriHub yet. Changes are at your own risk, with a warning on screen. Saving to the device's memory asks you to tick a <b>No warranty</b> box first, and each save is backed up and undone after 15 seconds unless you keep it.</dd></div>
-          <div><dt><span class="led ro" aria-hidden="true"></span>Read-only</dt><dd>Recognized: PeriHub shows its settings and changes nothing.</dd></div>
-        </dl>
-
         <div class="finder" hidden>
           <label class="visually-hidden" for="device-search">Find your device</label>
           <input type="search" id="device-search" class="finder-input" placeholder="Find your mouse or keyboard, e.g. G703 or DeathAdder" autocomplete="off" spellcheck="false">
-          <div class="finder-levels" role="group" aria-label="Show">
-            <button type="button" data-filter="all" aria-pressed="true">All</button>
-            <button type="button" data-filter="ok" aria-pressed="false"><span class="led ok" aria-hidden="true"></span>Supported</button>
-            <button type="button" data-filter="test" aria-pressed="false"><span class="led test" aria-hidden="true"></span>Experimental</button>
-            <button type="button" data-filter="ro" aria-pressed="false"><span class="led ro" aria-hidden="true"></span>Read-only</button>
-          </div>
           <p class="finder-status" role="status"></p>
         </div>
 
         <div class="catalogue">
-          <div class="brand-block">
-            <h3 class="brand-name">ASUS</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="test" data-models="ROG GX860 Buzzard|ROG Chakram Core|ROG Chakram|ROG Chakram X|ROG Gladius II|ROG Gladius II Origin|ROG Gladius II Origin PNK LTD|ROG Harpe Wireless|ROG Keris|ROG Keris Wireless AimPoint|ROG Keris Wireless|ROG Pugio|ROG Spatha X|ROG Strix Carry|ROG Strix Impact II|ROG Strix Impact II Wireless|ROG Strix Impact III|ROG Strix Impact|TUF Gaming M3 Gen II|TUF Gaming M4 Air|TUF Gaming Mini WL Mouse Miku" data-keys="">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>21 ROG and TUF mice</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-sub">Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3 and more, with a cable or their own receiver</p>
-                <p class="dev-does">DPI, polling rate, button response, angle snapping and lighting.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
+          <div class="level-group" data-group="ok">
+            <div class="level-head">
+              <h3><span class="led ok" aria-hidden="true"></span>Supported</h3>
+              <p>Tested on real hardware: everything on its page works.</p>
+            </div>
+            <div class="brand-rows">
+              <details class="brand-row">
+                <summary><span class="brand-name">Logitech</span><span class="brand-peek">G502 HERO, G502 X Wireless, G300</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Logitech, supported</caption>
+                    <tbody>
+                      <tr class="dev" data-models="G502 HERO" data-keys="">
+                        <th scope="row"><span class="dev-name">G502 HERO</span></th>
+                        <td><span class="dev-does">Profiles, DPI, polling rate, buttons, G-Shift, macros and lighting, all saved in the mouse.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                      <tr class="dev" data-models="G502 X Wireless" data-keys="">
+                        <th scope="row"><span class="dev-name">G502 X Wireless</span><span class="dev-sub">With its cable</span></th>
+                        <td><span class="dev-does">Profiles, DPI, buttons and macros. Confirmed by a user on a real mouse.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                      <tr class="dev" data-models="G300" data-keys="">
+                        <th scope="row"><span class="dev-name">G300</span></th>
+                        <td><span class="dev-does">Its three profiles: DPI, polling rate, colour and buttons. Confirmed by a user on a real mouse.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">SteelSeries</span><span class="brand-peek">Apex 3 TKL</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">SteelSeries, supported</caption>
+                    <tbody>
+                      <tr class="dev" data-models="Apex 3 TKL" data-keys="">
+                        <th scope="row"><span class="dev-name">Apex 3 TKL</span><span class="dev-sub">Keyboard</span></th>
+                        <td><span class="dev-does">Lighting, brightness and key remapping on both layers, saved in the keyboard.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </div>
           </div>
-          <div class="brand-block">
-            <h3 class="brand-name">Cooler Master</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="test" data-models="MM530|MM711|MM720|MM730" data-keys="">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>MM530, MM711, MM720, MM730</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-does">Lighting only: colour, brightness and mode, saved in the mouse.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
+          <div class="level-group" data-group="test">
+            <div class="level-head">
+              <h3><span class="led test" aria-hidden="true"></span>Experimental</h3>
+              <p>Recognized, but nobody has tried it with PeriHub yet. Changes are at your own risk, with a warning on screen. Saving to the device's memory asks you to tick a <b>No warranty</b> box first, and each save is backed up and undone after 15 seconds unless you keep it.</p>
+            </div>
+            <div class="brand-rows">
+              <details class="brand-row">
+                <summary><span class="brand-name">ASUS</span><span class="brand-peek">21 ROG and TUF mice</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">ASUS, experimental</caption>
+                    <tbody>
+                      <tr class="dev" data-models="ROG GX860 Buzzard|ROG Chakram Core|ROG Chakram|ROG Chakram X|ROG Gladius II|ROG Gladius II Origin|ROG Gladius II Origin PNK LTD|ROG Harpe Wireless|ROG Keris|ROG Keris Wireless AimPoint|ROG Keris Wireless|ROG Pugio|ROG Spatha X|ROG Strix Carry|ROG Strix Impact II|ROG Strix Impact II Wireless|ROG Strix Impact III|ROG Strix Impact|TUF Gaming M3 Gen II|TUF Gaming M4 Air|TUF Gaming Mini WL Mouse Miku" data-keys="">
+                        <th scope="row"><span class="dev-name">21 ROG and TUF mice</span><span class="dev-sub">Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3 and more, with a cable or their own receiver</span></th>
+                        <td><span class="dev-does">DPI, polling rate, button response, angle snapping and lighting.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">Cooler Master</span><span class="brand-peek">MM530, MM711, MM720, MM730</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Cooler Master, experimental</caption>
+                    <tbody>
+                      <tr class="dev" data-models="MM530|MM711|MM720|MM730" data-keys="">
+                        <th scope="row"><span class="dev-name">MM530, MM711, MM720, MM730</span></th>
+                        <td><span class="dev-does">Lighting only: colour, brightness and mode, saved in the mouse.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">Corsair</span><span class="brand-peek">26 mice and 23 keyboards</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Corsair, experimental</caption>
+                    <tbody>
+                      <tr class="dev" data-models="KATAR PRO|KATAR PRO XT|M55 RGB PRO|M65 RGB ULTRA|M75|SABRE RGB PRO|SABRE PRO CS|IRONCLAW RGB WIRELESS|IRONCLAW WIRELESS SE|DARK CORE RGB PRO|DARK CORE RGB PRO SE|HARPOON RGB WIRELESS|HARPOON V2|M65 RGB ULTRA WIRELESS|M75 WIRELESS|M75 AIR WIRELESS|NIGHTSABRE WIRELESS|SCIMITAR RGB ELITE WIRELESS|SCIMITAR ELITE WIRELESS SE|SABRE RGB PRO WIRELESS|DARKSTAR RGB WIRELESS|SABRE V2 PRO|SABRE V2 PRO MG|SABRE V2 PRO CF|SCIMITAR RGB ELITE|M55|K55 PRO RGB|K55 RGB PRO XT|K55 CORE RGB|K55 CORE TKL RGB|K57 RGB WIRELESS|K60 RGB PRO|K60 RGB PRO LP|K65 PLUS WIRELESS|K65 PRO MINI|K65 RGB MINI|K70 CORE RGB|K70 CORE TKL|K70 CORE TKL WIRELESS|K70 MAX|K70 PRO|K70 PRO MINI WIRELESS|K70 PRO TKL|K70 RGB TKL|K70 RGB TKL CS|K95 RGB PLATINUM XT|K100 RGB|K100 AIR WIRELESS|MAKR 75" data-keys="">
+                        <th scope="row"><span class="dev-name">26 mice and 23 keyboards</span><span class="dev-sub">The newer generation: KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100 and more, with a cable or their Slipstream receiver</span></th>
+                        <td><span class="dev-does">PeriHub reads them, and can try one colour of lighting until you close it.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <details class="models-list">
+                    <summary>The 26 Corsair mice and 23 Corsair keyboards</summary>
+                    <h4 class="models-title">Mice</h4>
+                    <ul class="models">
+                      <li>KATAR PRO</li>
+                      <li>KATAR PRO XT</li>
+                      <li>M55 RGB PRO</li>
+                      <li>M65 RGB ULTRA</li>
+                      <li>M75</li>
+                      <li>SABRE RGB PRO</li>
+                      <li>SABRE PRO CS</li>
+                      <li>IRONCLAW RGB WIRELESS</li>
+                      <li>IRONCLAW WIRELESS SE</li>
+                      <li>DARK CORE RGB PRO</li>
+                      <li>DARK CORE RGB PRO SE</li>
+                      <li>HARPOON RGB WIRELESS</li>
+                      <li>HARPOON V2</li>
+                      <li>M65 RGB ULTRA WIRELESS</li>
+                      <li>M75 WIRELESS</li>
+                      <li>M75 AIR WIRELESS</li>
+                      <li>NIGHTSABRE WIRELESS</li>
+                      <li>SCIMITAR RGB ELITE WIRELESS</li>
+                      <li>SCIMITAR ELITE WIRELESS SE</li>
+                      <li>SABRE RGB PRO WIRELESS</li>
+                      <li>DARKSTAR RGB WIRELESS</li>
+                      <li>SABRE V2 PRO</li>
+                      <li>SABRE V2 PRO MG</li>
+                      <li>SABRE V2 PRO CF</li>
+                      <li>SCIMITAR RGB ELITE</li>
+                      <li>M55</li>
+                    </ul>
+                    <h4 class="models-title">Keyboards</h4>
+                    <ul class="models">
+                      <li>K55 PRO RGB</li>
+                      <li>K55 RGB PRO XT</li>
+                      <li>K55 CORE RGB</li>
+                      <li>K55 CORE TKL RGB</li>
+                      <li>K57 RGB WIRELESS</li>
+                      <li>K60 RGB PRO</li>
+                      <li>K60 RGB PRO LP</li>
+                      <li>K65 PLUS WIRELESS</li>
+                      <li>K65 PRO MINI</li>
+                      <li>K65 RGB MINI</li>
+                      <li>K70 CORE RGB</li>
+                      <li>K70 CORE TKL</li>
+                      <li>K70 CORE TKL WIRELESS</li>
+                      <li>K70 MAX</li>
+                      <li>K70 PRO</li>
+                      <li>K70 PRO MINI WIRELESS</li>
+                      <li>K70 PRO TKL</li>
+                      <li>K70 RGB TKL</li>
+                      <li>K70 RGB TKL CS</li>
+                      <li>K95 RGB PLATINUM XT</li>
+                      <li>K100 RGB</li>
+                      <li>K100 AIR WIRELESS</li>
+                      <li>MAKR 75</li>
+                    </ul>
+                  </details>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">EVGA</span><span class="brand-peek">X12</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">EVGA, experimental</caption>
+                    <tbody>
+                      <tr class="dev" data-models="X12" data-keys="">
+                        <th scope="row"><span class="dev-name">X12</span><span class="dev-sub">With a cable</span></th>
+                        <td><span class="dev-does">Lighting: each zone off or steady, with its colour and brightness, saved in the mouse.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">Glorious</span><span class="brand-peek">Model O/O-, Model D, Model O Eternal</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Glorious, experimental</caption>
+                    <tbody>
+                      <tr class="dev" data-models="Model O/O-|Model D|Model O Eternal" data-keys="">
+                        <th scope="row"><span class="dev-name">Model O/O-, Model D, Model O Eternal</span><span class="dev-sub">With a cable</span></th>
+                        <td><span class="dev-does">DPI and polling rate, saved in the mouse. On Windows read-only for now.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">Logitech</span><span class="brand-peek">G600, G500s, G700s, Devices on a Logi Bolt or Unifying receiver</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Logitech, experimental</caption>
+                    <tbody>
+                      <tr class="dev" data-models="G600" data-keys="">
+                        <th scope="row"><span class="dev-name">G600</span></th>
+                        <td><span class="dev-does">DPI, polling rate and lighting of the profile in use, saved in the mouse.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                      <tr class="dev" data-models="G500s|G700s" data-keys="logitech gaming software lgs">
+                        <th scope="row"><span class="dev-name">G500s, G700s</span><span class="dev-sub">With the cable. Logitech no longer offers their software</span></th>
+                        <td><span class="dev-does">The profile in use as the mouse stores it, and the DPI in use, changed without saving it. Their memory is never written.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                      <tr class="dev" data-models="" data-keys="bolt unifying mx master anywhere keys">
+                        <th scope="row"><span class="dev-name">Devices on a Logi Bolt or Unifying receiver</span><span class="dev-sub">MX Master, MX Anywhere, MX Keys and the others</span></th>
+                        <td><span class="dev-does">A page with battery and DPI. The DPI of those without onboard memory can be changed, and PeriHub sets it again every time they connect.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">Pulsar</span><span class="brand-peek">9 mice with a cable</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Pulsar, experimental</caption>
+                    <tbody>
+                      <tr class="dev" data-models="Xlite Wired|X2 Wired|X2H Wired Medium|X2A Medium Wired|Xlite v4|X3|X3 LHD|Pulsar X2 CrazyLight|Pulsar X3 LHD CrazyLight" data-keys="">
+                        <th scope="row"><span class="dev-name">9 mice with a cable</span><span class="dev-sub">Xlite, X2, X2H, X2A, Xlite v4, X3, X3 LHD, X2 CrazyLight, X3 LHD CrazyLight</span></th>
+                        <td><span class="dev-does">DPI, polling rate, debounce, angle snapping, ripple control and motion sync, saved in the mouse. Lift-off too on the CrazyLight.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">Razer</span><span class="brand-peek">75 mice with a cable</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Razer, experimental</caption>
+                    <tbody>
+                      <tr class="dev" data-models="Orochi 2011|Naga|Naga Epic|Abyssus 1800|Mamba 2012 (Wired)|Naga 2012|Imperator 2012|Ouroboros|Taipan|Naga Hex (Red)|DeathAdder 2013|DeathAdder 1800|Orochi 2013|Naga Epic Chroma (Wired)|Naga 2014|Naga Hex|Abyssus|DeathAdder Chroma|Mamba Chroma (Wired)|Mamba Tournament Edition|Orochi (Wired)|Diamondback Chroma|DeathAdder 2000|Naga Hex V2|Naga Chroma|DeathAdder 3500|Lancehead (Wired)|Abyssus V2|DeathAdder Elite|Abyssus 2000|Lancehead Tournament Edition|Basilisk|Basilisk Essential|Naga Trinity|Abyssus Elite (D.Va Edition)|Abyssus Essential|Mamba Elite|DeathAdder Essential|Lancehead Wireless (Wired)|DeathAdder Essential (White Edition)|Mamba Wireless (Wired)|Viper|Viper Ultimate (Wired)|DeathAdder V2 Pro (Wired)|Pro Click (Wired)|DeathAdder V2|Basilisk V2|Basilisk Ultimate|Viper Mini|DeathAdder V2 Mini|Naga Left Handed Edition 2020|Naga Pro (Wired)|Viper 8KHz|Naga X|DeathAdder Essential (2021)|Basilisk V3|Viper Mini SE (Wired)|DeathAdder V2 Lite|Cobra|Viper V2 Pro (Wired)|Naga V2 Pro (Wired)|Basilisk V3 Pro (Wired)|Cobra Pro (Wired)|DeathAdder V3|DeathAdder V3 Pro (Wired)|DeathAdder V4 Pro (Wired)|Viper V3 Pro (Wired)|DeathAdder V3 Pro (Wired)|Pro Click V2 Vertical Edition (Wired)|Basilisk V3 35K|Basilisk V3 Pro 35K (Wired)|Pro Click V2 (Wired)|Basilisk Mobile (Wired)|Basilisk V3 Pro 35K Phantom Green Edition (Wired)|Viper V3 Pro SE (Wired)" data-keys="">
+                        <th scope="row"><span class="dev-name">75 mice with a cable</span><span class="dev-sub">DeathAdder, Viper, Basilisk, Naga, Orochi and more</span></th>
+                        <td><span class="dev-does">DPI and polling rate, saved in the mouse.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">SteelSeries</span><span class="brand-peek">33 mice</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">SteelSeries, experimental</caption>
+                    <tbody>
+                      <tr class="dev" data-models="Aerox 3|Aerox 3 Wireless|Aerox 5|Aerox 5 Wireless|Aerox 9 Wireless|Kana v2|Kinzu v2|Prime|Prime Mini|Prime+|Prime Wireless|Rival 100 / Rival 105|Rival 110 / Rival 106|Rival 3|Rival 300 / Rival|Rival 300S|Rival 310|Rival 3 Gen 2|Rival 3 Wireless|Rival 3 Wireless Gen 2|Rival 5|Rival 500|Rival 600|Rival 650 Wireless|Rival 700 / Rival 710|Rival 95 / Rival 100 PC Bang|Sensei 310|Sensei [RAW]|Sensei TEN|Aerox 3 Wireless (through its receiver)|Aerox 5 Wireless (through its receiver)|Aerox 9 Wireless (through its receiver)|Prime Wireless (through its receiver)" data-keys="">
+                        <th scope="row"><span class="dev-name">33 mice</span><span class="dev-sub">Rival, Sensei, Aerox, Prime, Kana, Kinzu, with a cable or their own receiver</span></th>
+                        <td><span class="dev-does">They cannot report their settings: DPI, polling rate, colours and effects are sent one at a time and last until the mouse is unplugged.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">Any brand</span><span class="brand-peek">Keyboards with QMK firmware</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Any brand, experimental</caption>
+                    <tbody>
+                      <tr class="dev" data-models="" data-keys="qmk via vial keychron">
+                        <th scope="row"><span class="dev-name">Keyboards with QMK firmware</span><span class="dev-sub">Every Vial keyboard, and VIA keyboards you turn on</span></th>
+                        <td><span class="dev-does">Lighting, where the protocol says exactly how (VialRGB, VIA firmware from 2023). Keymaps stay with VIA and Vial.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </div>
           </div>
-          <div class="brand-block">
-            <h3 class="brand-name">Corsair</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="test" data-models="KATAR PRO|KATAR PRO XT|M55 RGB PRO|M65 RGB ULTRA|M75|SABRE RGB PRO|SABRE PRO CS|IRONCLAW RGB WIRELESS|IRONCLAW WIRELESS SE|DARK CORE RGB PRO|DARK CORE RGB PRO SE|HARPOON RGB WIRELESS|HARPOON V2|M65 RGB ULTRA WIRELESS|M75 WIRELESS|M75 AIR WIRELESS|NIGHTSABRE WIRELESS|SCIMITAR RGB ELITE WIRELESS|SCIMITAR ELITE WIRELESS SE|SABRE RGB PRO WIRELESS|DARKSTAR RGB WIRELESS|SABRE V2 PRO|SABRE V2 PRO MG|SABRE V2 PRO CF|SCIMITAR RGB ELITE|M55|K55 PRO RGB|K55 RGB PRO XT|K55 CORE RGB|K55 CORE TKL RGB|K57 RGB WIRELESS|K60 RGB PRO|K60 RGB PRO LP|K65 PLUS WIRELESS|K65 PRO MINI|K65 RGB MINI|K70 CORE RGB|K70 CORE TKL|K70 CORE TKL WIRELESS|K70 MAX|K70 PRO|K70 PRO MINI WIRELESS|K70 PRO TKL|K70 RGB TKL|K70 RGB TKL CS|K95 RGB PLATINUM XT|K100 RGB|K100 AIR WIRELESS|MAKR 75" data-keys="">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>26 mice and 23 keyboards</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-sub">The newer generation: KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100 and more, with a cable or their Slipstream receiver</p>
-                <p class="dev-does">PeriHub reads them, and can try one colour of lighting until you close it.</p>
-                <p class="dev-match" hidden></p>
-                <details class="models-list">
-                  <summary>The 26 Corsair mice and 23 Corsair keyboards</summary>
-                  <h5 class="models-title">Mice</h5>
-                  <ul class="models">
-                    <li>KATAR PRO</li>
-                    <li>KATAR PRO XT</li>
-                    <li>M55 RGB PRO</li>
-                    <li>M65 RGB ULTRA</li>
-                    <li>M75</li>
-                    <li>SABRE RGB PRO</li>
-                    <li>SABRE PRO CS</li>
-                    <li>IRONCLAW RGB WIRELESS</li>
-                    <li>IRONCLAW WIRELESS SE</li>
-                    <li>DARK CORE RGB PRO</li>
-                    <li>DARK CORE RGB PRO SE</li>
-                    <li>HARPOON RGB WIRELESS</li>
-                    <li>HARPOON V2</li>
-                    <li>M65 RGB ULTRA WIRELESS</li>
-                    <li>M75 WIRELESS</li>
-                    <li>M75 AIR WIRELESS</li>
-                    <li>NIGHTSABRE WIRELESS</li>
-                    <li>SCIMITAR RGB ELITE WIRELESS</li>
-                    <li>SCIMITAR ELITE WIRELESS SE</li>
-                    <li>SABRE RGB PRO WIRELESS</li>
-                    <li>DARKSTAR RGB WIRELESS</li>
-                    <li>SABRE V2 PRO</li>
-                    <li>SABRE V2 PRO MG</li>
-                    <li>SABRE V2 PRO CF</li>
-                    <li>SCIMITAR RGB ELITE</li>
-                    <li>M55</li>
-                  </ul>
-                  <h5 class="models-title">Keyboards</h5>
-                  <ul class="models">
-                    <li>K55 PRO RGB</li>
-                    <li>K55 RGB PRO XT</li>
-                    <li>K55 CORE RGB</li>
-                    <li>K55 CORE TKL RGB</li>
-                    <li>K57 RGB WIRELESS</li>
-                    <li>K60 RGB PRO</li>
-                    <li>K60 RGB PRO LP</li>
-                    <li>K65 PLUS WIRELESS</li>
-                    <li>K65 PRO MINI</li>
-                    <li>K65 RGB MINI</li>
-                    <li>K70 CORE RGB</li>
-                    <li>K70 CORE TKL</li>
-                    <li>K70 CORE TKL WIRELESS</li>
-                    <li>K70 MAX</li>
-                    <li>K70 PRO</li>
-                    <li>K70 PRO MINI WIRELESS</li>
-                    <li>K70 PRO TKL</li>
-                    <li>K70 RGB TKL</li>
-                    <li>K70 RGB TKL CS</li>
-                    <li>K95 RGB PLATINUM XT</li>
-                    <li>K100 RGB</li>
-                    <li>K100 AIR WIRELESS</li>
-                    <li>MAKR 75</li>
-                  </ul>
-                </details>
-              </li>
-            </ul>
+          <div class="level-group" data-group="dep">
+            <div class="level-head">
+              <h3><span class="led dep" aria-hidden="true"></span>Depends on the mouse</h3>
+              <p>Supported, experimental or read-only, by the memory each mouse reports.</p>
+            </div>
+            <div class="brand-rows">
+              <details class="brand-row" id="logitech">
+                <summary><span class="brand-name">Logitech</span><span class="brand-peek">26 more G mice</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Logitech, depends on the mouse</caption>
+                    <tbody>
+                      <tr class="dev" data-models="G502 Proteus Core|G502 Proteus Spectrum|G502 HERO Wireless|G502 X|G502 X PLUS|G Pro|G Pro Wireless|G Pro X Superlight|G102 / G103 / G203|G302|G303|G303 Shroud Edition|G402|G403|G403 HERO|G403 Wireless|G703|G703 HERO|G705|G900|G903|G903 HERO|MX518|G305|G603|G604" data-keys="lightspeed">
+                        <th scope="row"><span class="dev-name">26 more G mice</span><span class="dev-sub">G Pro, G403, G703, G903, G305 and more, with a cable or a LIGHTSPEED receiver</span></th>
+                        <td><span class="dev-does">Supported, experimental or read-only, by the memory each mouse reports.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="logi-explain">
+                    <h4 class="logi-title">Which Logitech G mice are supported?</h4>
+                    <p>The <b>G502 HERO</b> and the <b>G502 X Wireless</b> are supported whatever their firmware. For the other 26 Logitech G mice with onboard memory, what counts is the format of the memory the mouse reports, not the model. PeriHub reads it every time the mouse is plugged in, and the mouse page shows the level.</p>
+                    <div class="matrix-wrap">
+                      <table class="matrix">
+                        <caption class="visually-hidden">Level by memory format and sector size</caption>
+                        <thead>
+                          <tr><td></td><th scope="col">255-byte sectors</th><th scope="col">256-byte sectors</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <th scope="row">Profile format 2</th>
+                            <td class="test" data-label="255-byte sectors"><span class="led test" aria-hidden="true"></span>Experimental</td>
+                            <td class="ok" data-label="256-byte sectors"><span class="led ok" aria-hidden="true"></span>Supported<small>as on the G502 HERO</small></td>
+                          </tr>
+                          <tr>
+                            <th scope="row">Profile format 3</th>
+                            <td class="ok" data-label="255-byte sectors"><span class="led ok" aria-hidden="true"></span>Supported<small>as on the G502 X Wireless</small></td>
+                            <td class="test" data-label="256-byte sectors"><span class="led test" aria-hidden="true"></span>Experimental</td>
+                          </tr>
+                          <tr>
+                            <th scope="row">Any other format</th>
+                            <td class="ro" colspan="2" data-label="Any sector size"><span class="led ro" aria-hidden="true"></span>Read-only</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p class="small">Experimental saves need the USB cable and the <b>No warranty</b> box, and each one is undone after 15 seconds unless you keep it. Through a LIGHTSPEED receiver nothing is saved: with a supported memory PeriHub switches the profile and DPI level, otherwise it only reads. What <a href="https://github.com/libratbag/libratbag">libratbag</a> found so far: the G900 uses format 3, the G203 format 4 and the G502 X PLUS format 5, so the last two are read-only.</p>
+                    <details class="models-list">
+                      <summary>The 28 Logitech G mice PeriHub recognizes</summary>
+                      <h5 class="models-title">With a USB cable</h5>
+                      <ul class="models">
+                        <li>G502 HERO</li>
+                        <li>G502 Proteus Core</li>
+                        <li>G502 Proteus Spectrum</li>
+                        <li>G502 HERO Wireless</li>
+                        <li>G502 X</li>
+                        <li>G502 X PLUS</li>
+                        <li>G502 X Wireless</li>
+                        <li>G Pro</li>
+                        <li>G Pro Wireless</li>
+                        <li>G Pro X Superlight</li>
+                        <li>G102 / G103 / G203</li>
+                        <li>G302</li>
+                        <li>G303</li>
+                        <li>G303 Shroud Edition</li>
+                        <li>G402</li>
+                        <li>G403</li>
+                        <li>G403 HERO</li>
+                        <li>G403 Wireless</li>
+                        <li>G703</li>
+                        <li>G703 HERO</li>
+                        <li>G705</li>
+                        <li>G900</li>
+                        <li>G903</li>
+                        <li>G903 HERO</li>
+                        <li>MX518</li>
+                      </ul>
+                      <h5 class="models-title">Wireless, through a LIGHTSPEED receiver</h5>
+                      <ul class="models">
+                        <li>G502 HERO Wireless</li>
+                        <li>G502 X Wireless</li>
+                        <li>G502 X PLUS</li>
+                        <li>G Pro Wireless</li>
+                        <li>G Pro X Superlight</li>
+                        <li>G403 Wireless</li>
+                        <li>G703</li>
+                        <li>G703 HERO</li>
+                        <li>G705</li>
+                        <li>G900</li>
+                        <li>G903</li>
+                        <li>G903 HERO</li>
+                        <li>G305</li>
+                        <li>G603</li>
+                        <li>G604</li>
+                      </ul>
+                    </details>
+
+                  </div>
+                </div>
+              </details>
+            </div>
           </div>
-          <div class="brand-block">
-            <h3 class="brand-name">EVGA</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="test" data-models="X12" data-keys="">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>X12</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-sub">With a cable</p>
-                <p class="dev-does">Lighting: each zone off or steady, with its colour and brightness, saved in the mouse.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-              <li class="dev" data-level="ro" data-models="X20" data-keys="">
-                <div class="dev-head"><span class="led ro" aria-hidden="true"></span><h4>X20</h4><span class="dev-level ro">Read-only</span></div>
-                <p class="dev-sub">With a cable</p>
-                <p class="dev-does">Its lighting.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
-          </div>
-          <div class="brand-block">
-            <h3 class="brand-name">Glorious</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="test" data-models="Model O/O-|Model D|Model O Eternal" data-keys="">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>Model O/O-, Model D, Model O Eternal</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-sub">With a cable</p>
-                <p class="dev-does">DPI and polling rate, saved in the mouse. On Windows read-only for now.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
-          </div>
-          <div class="brand-block">
-            <h3 class="brand-name">Lamzu</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="ro" data-models="Atlantis" data-keys="">
-                <div class="dev-head"><span class="led ro" aria-hidden="true"></span><h4>Atlantis</h4><span class="dev-level ro">Read-only</span></div>
-                <p class="dev-sub">With a cable</p>
-                <p class="dev-does">DPI, polling rate and its other settings.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
-          </div>
-          <div class="brand-block wide">
-            <h3 class="brand-name">Logitech</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="ok" data-models="G502 HERO" data-keys="">
-                <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>G502 HERO</h4><span class="dev-level ok">Supported</span></div>
-                <p class="dev-does">Profiles, DPI, polling rate, buttons, G-Shift, macros and lighting, all saved in the mouse.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-              <li class="dev" data-level="ok" data-models="G502 X Wireless" data-keys="">
-                <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>G502 X Wireless</h4><span class="dev-level ok">Supported</span></div>
-                <p class="dev-sub">With its cable</p>
-                <p class="dev-does">Profiles, DPI, buttons and macros. Confirmed by a user on a real mouse.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-              <li class="dev" data-level="ok" data-models="G300" data-keys="">
-                <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>G300</h4><span class="dev-level ok">Supported</span></div>
-                <p class="dev-does">Its three profiles: DPI, polling rate, colour and buttons. Confirmed by a user on a real mouse.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-              <li class="dev" data-level="ok test ro" data-models="G502 Proteus Core|G502 Proteus Spectrum|G502 HERO Wireless|G502 X|G502 X PLUS|G Pro|G Pro Wireless|G Pro X Superlight|G102 / G103 / G203|G302|G303|G303 Shroud Edition|G402|G403|G403 HERO|G403 Wireless|G703|G703 HERO|G705|G900|G903|G903 HERO|MX518|G305|G603|G604" data-keys="lightspeed">
-                <div class="dev-head"><span class="led dep" aria-hidden="true"></span><h4>26 more G mice</h4><span class="dev-level dep">Depends on the mouse</span></div>
-                <p class="dev-sub">G Pro, G403, G703, G903, G305 and more, with a cable or a LIGHTSPEED receiver</p>
-                <p class="dev-does">Supported, experimental or read-only, by the memory each mouse reports. <a href="#logitech">Which ones?</a></p>
-                <p class="dev-match" hidden></p>
-              </li>
-              <li class="dev" data-level="test" data-models="G600" data-keys="">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>G600</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-does">DPI, polling rate and lighting of the profile in use, saved in the mouse.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-              <li class="dev" data-level="test" data-models="G500s|G700s" data-keys="logitech gaming software lgs">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>G500s, G700s</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-sub">With the cable. Logitech no longer offers their software</p>
-                <p class="dev-does">The profile in use as the mouse stores it, and the DPI in use, changed without saving it. Their memory is never written.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-              <li class="dev" data-level="ro" data-models="G9|G9x|G500|G700" data-keys="logitech gaming software lgs">
-                <div class="dev-head"><span class="led ro" aria-hidden="true"></span><h4>G9, G9x, G500, G700</h4><span class="dev-level ro">Read-only</span></div>
-                <p class="dev-sub">With the cable. Logitech no longer offers their software</p>
-                <p class="dev-does">DPI in use, polling rate, and the profile in use as the mouse stores it: DPI levels and buttons.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-              <li class="dev" data-level="test" data-models="" data-keys="bolt unifying mx master anywhere keys">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>Devices on a Logi Bolt or Unifying receiver</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-sub">MX Master, MX Anywhere, MX Keys and the others</p>
-                <p class="dev-does">A page with battery and DPI. The DPI of those without onboard memory can be changed, and PeriHub sets it again every time they connect.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
-          </div>
-          <div class="brand-block">
-            <h3 class="brand-name">Pulsar</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="test" data-models="Xlite Wired|X2 Wired|X2H Wired Medium|X2A Medium Wired|Xlite v4|X3|X3 LHD|Pulsar X2 CrazyLight|Pulsar X3 LHD CrazyLight" data-keys="">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>9 mice with a cable</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-sub">Xlite, X2, X2H, X2A, Xlite v4, X3, X3 LHD, X2 CrazyLight, X3 LHD CrazyLight</p>
-                <p class="dev-does">DPI, polling rate, debounce, angle snapping, ripple control and motion sync, saved in the mouse. Lift-off too on the CrazyLight.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
-          </div>
-          <div class="brand-block">
-            <h3 class="brand-name">Razer</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="test" data-models="Orochi 2011|Naga|Naga Epic|Abyssus 1800|Mamba 2012 (Wired)|Naga 2012|Imperator 2012|Ouroboros|Taipan|Naga Hex (Red)|DeathAdder 2013|DeathAdder 1800|Orochi 2013|Naga Epic Chroma (Wired)|Naga 2014|Naga Hex|Abyssus|DeathAdder Chroma|Mamba Chroma (Wired)|Mamba Tournament Edition|Orochi (Wired)|Diamondback Chroma|DeathAdder 2000|Naga Hex V2|Naga Chroma|DeathAdder 3500|Lancehead (Wired)|Abyssus V2|DeathAdder Elite|Abyssus 2000|Lancehead Tournament Edition|Basilisk|Basilisk Essential|Naga Trinity|Abyssus Elite (D.Va Edition)|Abyssus Essential|Mamba Elite|DeathAdder Essential|Lancehead Wireless (Wired)|DeathAdder Essential (White Edition)|Mamba Wireless (Wired)|Viper|Viper Ultimate (Wired)|DeathAdder V2 Pro (Wired)|Pro Click (Wired)|DeathAdder V2|Basilisk V2|Basilisk Ultimate|Viper Mini|DeathAdder V2 Mini|Naga Left Handed Edition 2020|Naga Pro (Wired)|Viper 8KHz|Naga X|DeathAdder Essential (2021)|Basilisk V3|Viper Mini SE (Wired)|DeathAdder V2 Lite|Cobra|Viper V2 Pro (Wired)|Naga V2 Pro (Wired)|Basilisk V3 Pro (Wired)|Cobra Pro (Wired)|DeathAdder V3|DeathAdder V3 Pro (Wired)|DeathAdder V4 Pro (Wired)|Viper V3 Pro (Wired)|DeathAdder V3 Pro (Wired)|Pro Click V2 Vertical Edition (Wired)|Basilisk V3 35K|Basilisk V3 Pro 35K (Wired)|Pro Click V2 (Wired)|Basilisk Mobile (Wired)|Basilisk V3 Pro 35K Phantom Green Edition (Wired)|Viper V3 Pro SE (Wired)" data-keys="">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>75 mice with a cable</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-sub">DeathAdder, Viper, Basilisk, Naga, Orochi and more</p>
-                <p class="dev-does">DPI and polling rate, saved in the mouse.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
-          </div>
-          <div class="brand-block">
-            <h3 class="brand-name">Roccat</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="ro" data-models="Kone Pure|Kone XTD|Kone EMP" data-keys="">
-                <div class="dev-head"><span class="led ro" aria-hidden="true"></span><h4>Kone Pure, Kone XTD, Kone EMP</h4><span class="dev-level ro">Read-only</span></div>
-                <p class="dev-does">Profile in use, DPI levels and polling rate.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
-          </div>
-          <div class="brand-block">
-            <h3 class="brand-name">SteelSeries</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="ok" data-models="Apex 3 TKL" data-keys="">
-                <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>Apex 3 TKL</h4><span class="dev-level ok">Supported</span></div>
-                <p class="dev-sub">Keyboard</p>
-                <p class="dev-does">Lighting, brightness and key remapping on both layers, saved in the keyboard.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-              <li class="dev" data-level="test" data-models="Aerox 3|Aerox 3 Wireless|Aerox 5|Aerox 5 Wireless|Aerox 9 Wireless|Kana v2|Kinzu v2|Prime|Prime Mini|Prime+|Prime Wireless|Rival 100 / Rival 105|Rival 110 / Rival 106|Rival 3|Rival 300 / Rival|Rival 300S|Rival 310|Rival 3 Gen 2|Rival 3 Wireless|Rival 3 Wireless Gen 2|Rival 5|Rival 500|Rival 600|Rival 650 Wireless|Rival 700 / Rival 710|Rival 95 / Rival 100 PC Bang|Sensei 310|Sensei [RAW]|Sensei TEN|Aerox 3 Wireless (through its receiver)|Aerox 5 Wireless (through its receiver)|Aerox 9 Wireless (through its receiver)|Prime Wireless (through its receiver)" data-keys="">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>33 mice</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-sub">Rival, Sensei, Aerox, Prime, Kana, Kinzu, with a cable or their own receiver</p>
-                <p class="dev-does">They cannot report their settings: DPI, polling rate, colours and effects are sent one at a time and last until the mouse is unplugged.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-              <li class="dev" data-level="ro" data-models="Apex 3" data-keys="">
-                <div class="dev-head"><span class="led none" aria-hidden="true"></span><h4>Apex 3</h4><span class="dev-level none">Not yet</span></div>
-                <p class="dev-sub">Keyboard, not the TKL</p>
-                <p class="dev-does">Recognized, but PeriHub sends nothing to it yet.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
-          </div>
-          <div class="brand-block">
-            <h3 class="brand-name">Any brand</h3>
-            <ul class="dev-list">
-              <li class="dev" data-level="test" data-models="" data-keys="qmk via vial keychron">
-                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>Keyboards with QMK firmware</h4><span class="dev-level test">Experimental</span></div>
-                <p class="dev-sub">Every Vial keyboard, and VIA keyboards you turn on</p>
-                <p class="dev-does">Lighting, where the protocol says exactly how (VialRGB, VIA firmware from 2023). Keymaps stay with VIA and Vial.</p>
-                <p class="dev-match" hidden></p>
-              </li>
-            </ul>
+          <div class="level-group" data-group="ro">
+            <div class="level-head">
+              <h3><span class="led ro" aria-hidden="true"></span>Read-only</h3>
+              <p>Recognized: PeriHub shows its settings and changes nothing.</p>
+            </div>
+            <div class="brand-rows">
+              <details class="brand-row">
+                <summary><span class="brand-name">EVGA</span><span class="brand-peek">X20</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">EVGA, read-only</caption>
+                    <tbody>
+                      <tr class="dev" data-models="X20" data-keys="">
+                        <th scope="row"><span class="dev-name">X20</span><span class="dev-sub">With a cable</span></th>
+                        <td><span class="dev-does">Its lighting.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">Lamzu</span><span class="brand-peek">Atlantis</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Lamzu, read-only</caption>
+                    <tbody>
+                      <tr class="dev" data-models="Atlantis" data-keys="">
+                        <th scope="row"><span class="dev-name">Atlantis</span><span class="dev-sub">With a cable</span></th>
+                        <td><span class="dev-does">DPI, polling rate and its other settings.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">Logitech</span><span class="brand-peek">G9, G9x, G500, G700</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Logitech, read-only</caption>
+                    <tbody>
+                      <tr class="dev" data-models="G9|G9x|G500|G700" data-keys="logitech gaming software lgs">
+                        <th scope="row"><span class="dev-name">G9, G9x, G500, G700</span><span class="dev-sub">With the cable. Logitech no longer offers their software</span></th>
+                        <td><span class="dev-does">DPI in use, polling rate, and the profile in use as the mouse stores it: DPI levels and buttons.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">Roccat</span><span class="brand-peek">Kone Pure, Kone XTD, Kone EMP</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">Roccat, read-only</caption>
+                    <tbody>
+                      <tr class="dev" data-models="Kone Pure|Kone XTD|Kone EMP" data-keys="">
+                        <th scope="row"><span class="dev-name">Kone Pure, Kone XTD, Kone EMP</span></th>
+                        <td><span class="dev-does">Profile in use, DPI levels and polling rate.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+              <details class="brand-row">
+                <summary><span class="brand-name">SteelSeries</span><span class="brand-peek">Apex 3</span></summary>
+                <div class="brand-body">
+                  <table class="dev-table">
+                    <caption class="visually-hidden">SteelSeries, read-only</caption>
+                    <tbody>
+                      <tr class="dev" data-models="Apex 3" data-keys="">
+                        <th scope="row"><span class="dev-name">Apex 3</span><span class="dev-tag">Not yet</span><span class="dev-sub">Keyboard, not the TKL</span></th>
+                        <td><span class="dev-does">Recognized, but PeriHub sends nothing to it yet.</span><span class="dev-match" hidden></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </div>
           </div>
         </div>
         <p class="finder-empty" hidden>Nothing matches. If your device is not here, PeriHub can ask for it: <b>Settings → Devices → Send a report</b> opens a device request already filled in.</p>
-
-        <div class="logitech" id="logitech">
-          <h3>Which Logitech G mice are supported?</h3>
-          <p>The <b>G502 HERO</b> and the <b>G502 X Wireless</b> are supported whatever their firmware. For the other 26 Logitech G mice with onboard memory, what counts is the format of the memory the mouse reports, not the model. PeriHub reads it every time the mouse is plugged in, and the mouse page shows the level.</p>
-          <div class="matrix-wrap">
-            <table class="matrix">
-              <caption class="visually-hidden">Level by memory format and sector size</caption>
-              <thead>
-                <tr><td></td><th scope="col">255-byte sectors</th><th scope="col">256-byte sectors</th></tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th scope="row">Profile format 2</th>
-                  <td class="test" data-label="255-byte sectors"><span class="led test" aria-hidden="true"></span>Experimental</td>
-                  <td class="ok" data-label="256-byte sectors"><span class="led ok" aria-hidden="true"></span>Supported<small>as on the G502 HERO</small></td>
-                </tr>
-                <tr>
-                  <th scope="row">Profile format 3</th>
-                  <td class="ok" data-label="255-byte sectors"><span class="led ok" aria-hidden="true"></span>Supported<small>as on the G502 X Wireless</small></td>
-                  <td class="test" data-label="256-byte sectors"><span class="led test" aria-hidden="true"></span>Experimental</td>
-                </tr>
-                <tr>
-                  <th scope="row">Any other format</th>
-                  <td class="ro" colspan="2" data-label="Any sector size"><span class="led ro" aria-hidden="true"></span>Read-only</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="small">Experimental saves need the USB cable and the <b>No warranty</b> box, and each one is undone after 15 seconds unless you keep it. Through a LIGHTSPEED receiver nothing is saved: with a supported memory PeriHub switches the profile and DPI level, otherwise it only reads. What <a href="https://github.com/libratbag/libratbag">libratbag</a> found so far: the G900 uses format 3, the G203 format 4 and the G502 X PLUS format 5, so the last two are read-only.</p>
-          <details class="models-list">
-            <summary>The 28 Logitech G mice PeriHub recognizes</summary>
-            <h4 class="models-title">With a USB cable</h4>
-            <ul class="models">
-              <li>G502 HERO</li>
-              <li>G502 Proteus Core</li>
-              <li>G502 Proteus Spectrum</li>
-              <li>G502 HERO Wireless</li>
-              <li>G502 X</li>
-              <li>G502 X PLUS</li>
-              <li>G502 X Wireless</li>
-              <li>G Pro</li>
-              <li>G Pro Wireless</li>
-              <li>G Pro X Superlight</li>
-              <li>G102 / G103 / G203</li>
-              <li>G302</li>
-              <li>G303</li>
-              <li>G303 Shroud Edition</li>
-              <li>G402</li>
-              <li>G403</li>
-              <li>G403 HERO</li>
-              <li>G403 Wireless</li>
-              <li>G703</li>
-              <li>G703 HERO</li>
-              <li>G705</li>
-              <li>G900</li>
-              <li>G903</li>
-              <li>G903 HERO</li>
-              <li>MX518</li>
-            </ul>
-            <h4 class="models-title">Wireless, through a LIGHTSPEED receiver</h4>
-            <ul class="models">
-              <li>G502 HERO Wireless</li>
-              <li>G502 X Wireless</li>
-              <li>G502 X PLUS</li>
-              <li>G Pro Wireless</li>
-              <li>G Pro X Superlight</li>
-              <li>G403 Wireless</li>
-              <li>G703</li>
-              <li>G703 HERO</li>
-              <li>G705</li>
-              <li>G900</li>
-              <li>G903</li>
-              <li>G903 HERO</li>
-              <li>G305</li>
-              <li>G603</li>
-              <li>G604</li>
-            </ul>
-          </details>
-        </div>
 
         <div class="help-grid">
           <div class="help" id="test-report">

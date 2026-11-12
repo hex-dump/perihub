@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.8.1 — 2026-11-13
+
+The older Logitech G mice whose software Logitech removed on 31 October 2026: the G500s and G700s are read and their DPI in use can be changed, the G9, G9x, G500 and G700 are read. Nobody has tried them with PeriHub yet, and PeriHub never writes their memory.
 
 ### Added
 - **The older Logitech G mice, whose software Logitech no longer offers**: G9 (`046d:c048`), G9x (`c066`, and `c249` for the Call of Duty MW3 Edition), G500 (`c068`), G500s (`c24e`), G700 (`c06b`) and G700s (`c07c`) on their cable, from libratbag's HID++ 1.0 driver (MIT), with their interface from Solaar. Logitech removed Logitech Gaming Software, their software, from its site on 31 October 2026. Nobody has tried them with PeriHub yet. Their page shows the firmware, the DPI in use, the polling rate, the profile in use and what it stores in the mouse's memory: its name, DPI levels, polling rate, colour (G9, G9x) and buttons.

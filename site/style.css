@@ -198,8 +198,7 @@ main:focus { outline: none; }
 .section { padding: var(--space-8) 0; border-top: 1px solid var(--line); }
 .section-head { margin-bottom: var(--space-6); }
 .section-head .lead { margin-bottom: 0; }
-.kicker { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); color: var(--accent-2); font-weight: 650; font-size: 0.9rem; }
-.kicker::before { content: ""; width: 1.75rem; height: 3px; border-radius: 3px; background: var(--brand-gradient); }
+.kicker { margin-bottom: var(--space-3); color: var(--accent-2); font-weight: 650; font-size: 0.9rem; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr)); gap: var(--space-4); }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--space-5); }
 .card p { color: var(--muted); margin: 0; }
@@ -212,80 +211,66 @@ main:focus { outline: none; }
 .gallery figure { margin: 0; }
 .gallery figcaption { color: var(--muted); font-size: 0.9rem; margin-top: var(--space-2); text-align: center; }
 
-/* Devices: a catalogue by brand. A status LED, as on the app's sidebar, gives each device's level;
-   the level is always written next to it too. */
+/* Devices: by support level, then one row per brand that opens on click. A status LED, as on the
+   app's sidebar, marks each level; the level is always written next to it too. */
 .led { display: inline-block; flex: none; width: 9px; height: 9px; border-radius: 50%; margin-right: 10px; vertical-align: 0.05em; }
 .led.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(60, 207, 145, 0.14), 0 0 12px rgba(60, 207, 145, 0.6); }
 .led.test { background: var(--warn); box-shadow: 0 0 0 3px rgba(255, 194, 77, 0.12), 0 0 12px rgba(255, 194, 77, 0.5); }
 .led.ro { background: var(--grey); box-shadow: 0 0 0 3px rgba(124, 131, 148, 0.16); }
-.led.none { background: transparent; box-shadow: inset 0 0 0 1.5px var(--grey); }
 .led.dep { background: conic-gradient(var(--ok) 0 120deg, var(--warn) 0 240deg, var(--grey) 0); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05); }
 
-.tested { margin: 0 0 var(--space-5); border: 1px solid rgba(60, 207, 145, 0.28); border-radius: var(--radius); background: linear-gradient(180deg, rgba(60, 207, 145, 0.07), rgba(60, 207, 145, 0.02)); }
-.tested h3 { font-size: 0.95rem; font-weight: 600; color: var(--ok); margin: 0; padding: var(--space-4) var(--space-5) 0; }
-.tested ul { list-style: none; margin: 0; padding: var(--space-2) 0 var(--space-4); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.tested li { padding: var(--space-2) var(--space-5); display: grid; grid-template-columns: auto 1fr; align-items: baseline; }
-.tested li + li { border-left: 1px solid rgba(60, 207, 145, 0.16); }
-.tested b { font-size: 1.2rem; letter-spacing: -0.01em; }
-.tested li span:last-child { grid-column: 2; color: var(--muted); font-size: 0.9rem; }
-
-.levels {
-  display: grid; grid-template-columns: 1fr 2fr 1fr; gap: var(--space-4) var(--space-6);
-  margin: 0 0 var(--space-5); padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
-  font-size: 0.9rem; color: var(--muted);
-}
-.levels dt { color: var(--text); font-weight: 650; margin-bottom: 2px; }
-.levels dd { margin: 0; }
-.levels b { color: var(--text); font-weight: 600; }
-
-.finder { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5); }
+.finder { margin-bottom: var(--space-6); }
 .finder-input {
-  flex: 1 1 20rem; min-width: 0; min-height: 2.9rem; font: inherit; color: var(--text);
-  background: var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%23a9b0c0' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='m12.5 12.5 4 4'/%3E%3C/svg%3E") no-repeat 14px 50%;
-  border: 1px solid var(--line-control); border-radius: 12px; padding: 0 var(--space-4) 0 2.6rem;
+  width: 100%; min-height: 3rem; font: inherit; color: var(--text);
+  background: var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%23a9b0c0' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='m12.5 12.5 4 4'/%3E%3C/svg%3E") no-repeat 16px 50%;
+  border: 1px solid var(--line-control); border-radius: 12px; padding: 0 var(--space-4) 0 2.8rem;
 }
 .finder-input::placeholder { color: var(--faint); }
 .finder-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
-.finder-levels { display: flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line-control); border-radius: 12px; }
-.finder-levels button { font: inherit; font-size: 0.92rem; font-weight: 600; color: var(--muted); background: none; border: 0; border-radius: 9px; padding: 0 var(--space-4); min-height: 2.5rem; cursor: pointer; display: inline-flex; align-items: center; }
-.finder-levels button:hover { color: var(--text); }
-.finder-levels button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-control); }
-.finder-levels .led { margin-right: var(--space-2); }
-.finder-status { flex-basis: 100%; margin: 0; min-height: 1.4em; font-size: 0.9rem; color: var(--muted); }
+.finder-status { margin: var(--space-2) 0 0; min-height: 1.4em; font-size: 0.9rem; color: var(--muted); }
 
-/* Brand cards flow in columns, in alphabetical order down the first column and then the second. */
-.catalogue { columns: 2 24rem; column-gap: var(--space-4); }
-.brand-block {
-  break-inside: avoid; margin-bottom: var(--space-4); container-type: inline-size;
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--space-4) var(--space-5) var(--space-2);
+.catalogue { display: grid; gap: var(--space-6); }
+.level-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-5); margin-bottom: var(--space-3); }
+.level-head h3 { display: flex; align-items: center; margin: 0; font-size: 1.2rem; }
+.level-head h3 .led { margin-right: var(--space-3); }
+.level-head p { flex: 1 1 28rem; margin: 0; max-width: 80ch; font-size: 0.92rem; color: var(--muted); }
+.level-head b { color: var(--text); font-weight: 600; }
+[data-group="ok"] .brand-rows { border-color: rgba(60, 207, 145, 0.35); }
+
+.brand-rows { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; }
+.brand-row + .brand-row { border-top: 1px solid var(--line); }
+.brand-row > summary {
+  display: grid; grid-template-columns: 10rem minmax(0, 1fr) auto; align-items: center; gap: var(--space-4);
+  min-height: 3.25rem; padding: var(--space-3) var(--space-5); cursor: pointer; list-style: none; color: var(--text); font-weight: 400;
 }
-/* Logitech has many entries: it takes the whole width, with its devices in two columns. */
-.brand-block.wide { column-span: all; }
-.brand-block.wide .dev-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(24rem, 100%), 1fr)); column-gap: var(--space-6); }
-.brand-block.wide .dev:not([hidden]) { border-top: 1px solid var(--line); }
-.brand-name { font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; margin: 0 0 var(--space-1); }
-.dev-list { list-style: none; margin: 0; padding: 0; }
-.dev { padding: var(--space-3) 0; }
-/* Only between devices on screen: the finder hides some. */
-.dev:not([hidden]) ~ .dev:not([hidden]) { border-top: 1px solid var(--line); }
-.dev-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-3); }
-.dev-head .led { margin: 0; }
-.dev-head h4 { margin: 0; font-size: 1rem; font-weight: 650; }
-.dev-level {
-  justify-self: end; padding: 0.1rem 0.6rem; border-radius: 999px; border: 1px solid var(--line-strong);
-  font-size: 0.8rem; font-weight: 650; white-space: nowrap; color: var(--muted);
+.brand-row > summary::-webkit-details-marker { display: none; }
+.brand-row > summary:hover { background: var(--panel-2); color: var(--text); }
+.brand-row > summary:focus-visible { outline-offset: -3px; border-radius: 0; }
+/* The arrow: points down when closed, up when open. */
+.brand-row > summary::after {
+  content: ""; width: 0.5rem; height: 0.5rem; margin: 0 0.25rem 0.25rem 0;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); rotate: 45deg;
 }
-.dev-level.ok { color: var(--ok); border-color: rgba(60, 207, 145, 0.4); background: var(--ok-soft); }
-.dev-level.test { color: var(--warn); border-color: rgba(255, 194, 77, 0.35); background: var(--warn-soft); }
-@container (width < 26rem) {
-  .dev-head { grid-template-columns: auto minmax(0, 1fr); }
-  .dev-level { grid-column: 2; justify-self: start; margin-top: var(--space-1); }
-}
-.dev-sub, .dev-does, .dev-match, .dev .models-list { margin: var(--space-1) 0 0 calc(9px + var(--space-3)); }
-.dev-sub { font-size: 0.88rem; color: var(--faint); }
-.dev-does { color: #c8cdd8; font-size: 0.95rem; }
-.dev-match { font-size: 0.9rem; color: var(--accent-2); }
+.brand-row[open] > summary::after { rotate: -135deg; margin: 0.25rem 0.25rem 0 0; }
+.brand-row[open] > summary { background: var(--panel-2); }
+.brand-name { font-weight: 700; }
+.brand-peek { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 0.95rem; }
+.brand-row[open] .brand-peek { visibility: hidden; }
+/* Opened, the table lines up under the device names, like a column of the closed rows. */
+.brand-body { padding: var(--space-1) var(--space-5) var(--space-4) calc(10rem + var(--space-5) + var(--space-4)); background: var(--panel-2); }
+.dev-table { width: 100%; border-collapse: collapse; }
+.dev-table th, .dev-table td { text-align: left; vertical-align: top; padding: var(--space-3) 0; font-weight: 400; }
+.dev-table tr:not([hidden]) ~ tr:not([hidden]) > * { border-top: 1px solid var(--line-strong); }
+.dev-table th { width: 38%; padding-right: var(--space-5); }
+.dev-name { font-weight: 650; }
+.dev-sub { display: block; margin-top: 2px; font-size: 0.88rem; color: var(--faint); }
+.dev-does { color: #c8cdd8; }
+.dev-match { display: block; margin-top: var(--space-1); font-size: 0.9rem; color: var(--accent-2); }
+.dev-tag { margin-left: var(--space-2); padding: 0 0.5rem; border: 1px solid var(--line-control); border-radius: 999px; font-size: 0.78rem; font-weight: 650; color: var(--muted); }
+.brand-body > .models-list, .logi-explain { margin-top: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--line-strong); }
+.logi-title { font-size: 1.05rem; }
+.logi-explain > p { color: var(--muted); max-width: 75ch; }
+.logi-explain > p b { color: var(--text); }
 .finder-empty { padding: var(--space-5); border: 1px dashed var(--line-strong); border-radius: var(--radius); color: var(--muted); }
 .finder-empty b { color: var(--text); }
 
@@ -298,10 +283,6 @@ details summary:hover { color: var(--accent); }
 .models { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0 0 var(--space-1); }
 .models li { padding: 2px var(--space-3); border-radius: 999px; border: 1px solid var(--line-strong); background: var(--panel-2); font-size: 0.82rem; }
 
-.logitech { margin-top: var(--space-6); padding: var(--space-6); border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
-.logitech h3 { font-size: 1.35rem; letter-spacing: -0.01em; }
-.logitech > p { color: var(--muted); max-width: 75ch; }
-.logitech > p b { color: var(--text); }
 .matrix-wrap { container-type: inline-size; max-width: 48rem; margin: var(--space-5) 0; }
 .matrix { width: 100%; border-collapse: separate; border-spacing: var(--space-2); margin: calc(-1 * var(--space-2)); table-layout: fixed; }
 .matrix thead th { font-size: 0.85rem; font-weight: 600; color: var(--muted); text-align: left; padding: 0 var(--space-3); }
@@ -385,9 +366,6 @@ details summary:hover { color: var(--accent); }
 @media (max-width: 860px) {
   .hero { padding-top: var(--space-6); }
   .hero-grid { grid-template-columns: 1fr; gap: var(--space-6); }
-  .levels { grid-template-columns: 1fr; }
-  .tested ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tested li:nth-child(3) { border-left: 0; }
   .platforms, .support, .help-grid { grid-template-columns: 1fr; }
 }
 /* Phones */
@@ -409,18 +387,24 @@ details summary:hover { color: var(--accent); }
   .buttons .btn { flex: 1 1 100%; }
   .choice-grid { grid-template-columns: 1fr; }
   .facts { justify-content: flex-start; gap: var(--space-2) var(--space-5); }
-  .tested ul { grid-template-columns: 1fr; }
-  .tested li + li { border-left: 0; border-top: 1px solid rgba(60, 207, 145, 0.16); }
-  .finder-levels { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
-  .finder-levels button { justify-content: center; padding: 0 var(--space-2); }
-  .brand-block { padding-inline: var(--space-4); }
-  .logitech { padding: var(--space-5) var(--space-4); }
   .files li { padding-inline: var(--space-3); }
+}
+
+/* Narrow: the closed row puts its devices under the brand, and each device is a short block. */
+@media (max-width: 44rem) {
+  .brand-row > summary { grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--space-3); padding: var(--space-3) var(--space-4); }
+  .brand-peek { grid-column: 1; grid-row: 2; font-size: 0.88rem; }
+  .brand-row > summary::after { grid-column: 2; grid-row: 1 / span 2; }
+  .brand-row[open] .brand-peek { display: none; }
+  .brand-body { padding: 0 var(--space-4) var(--space-3); }
+  .dev-table, .dev-table tbody, .dev-table tr, .dev-table th, .dev-table td { display: block; width: auto; }
+  .dev-table th { padding: var(--space-3) 0 var(--space-1); }
+  .dev-table td { padding: 0 0 var(--space-3); }
+  .dev-table tr:not([hidden]) ~ tr:not([hidden]) > td { border-top: 0; }
 }
 
 /* Windows High Contrast and other forced colours: the LEDs keep an outline, the levels stay written. */
 @media (forced-colors: active) {
   .led { border: 1px solid CanvasText; }
   .skip-link, .btn.primary, .copy { border: 1px solid ButtonText; }
-  .kicker::before { background: CanvasText; }
 }

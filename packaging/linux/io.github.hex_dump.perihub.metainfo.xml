@@ -94,6 +94,11 @@
   </requires>
 
   <releases>
+    <release version="0.8.1" date="2026-11-13">
+      <description>
+        <p>The older Logitech G mice whose software Logitech removed: the G500s and G700s are read and their DPI in use can be changed, the G9, G9x, G500 and G700 are read. Nobody has tried them yet, and PeriHub never writes their memory.</p>
+      </description>
+    </release>
     <release version="0.8.0" date="2026-11-12">
       <description>
         <p>23 more mice, among them Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA and the Logitech G600, and keyboards with QMK or Vial firmware. Nobody has tried them yet: their settings can be changed at your own risk. The sidebar lists only the devices that are there, a page helps ask for a new one, and each zone of the mouse lighting can keep its own effect.</p>
