@@ -7,6 +7,7 @@
   const os = mobile ? "mobile" : /Windows/.test(ua) ? "windows" : /Mac OS X|Macintosh/.test(ua) ? "mac" : /Linux|X11|CrOS/.test(ua) ? "linux" : "";
 
   const buttons = document.querySelector(".os-buttons");
+  if (!buttons) return; // pages without downloads, like the privacy policy
   const show = (selector) => (document.querySelector(selector).hidden = false);
 
   if (os === "windows") {
@@ -52,13 +53,28 @@
   });
 })();
 
-// On narrow screens the header links are in a popover: close it when a link is picked.
+// On narrow screens the header links are in a popover: close it when a link is picked. Browsers
+// without popovers (older iPhones, and the in-app browsers that use their engine) get the same menu
+// opened and closed by this script.
 (function () {
   const menu = document.getElementById("site-menu");
-  if (!menu || !menu.hidePopover) return;
-  menu.addEventListener("click", (event) => {
-    if (event.target.closest("a") && menu.matches(":popover-open")) menu.hidePopover();
-  });
+  const button = document.querySelector(".menu-button");
+  if (!menu || !button) return;
+  if ("popover" in HTMLElement.prototype) {
+    menu.addEventListener("click", (event) => {
+      if (event.target.closest("a") && menu.matches(":popover-open")) menu.hidePopover();
+    });
+    return;
+  }
+  document.documentElement.classList.add("no-popover");
+  button.setAttribute("aria-expanded", "false");
+  const toggle = (open) => {
+    menu.classList.toggle("open", open);
+    button.setAttribute("aria-expanded", String(open));
+  };
+  button.addEventListener("click", () => toggle(!menu.classList.contains("open")));
+  menu.addEventListener("click", (event) => event.target.closest("a") && toggle(false));
+  document.addEventListener("keydown", (event) => event.key === "Escape" && toggle(false));
 })();
 
 // Devices: find a model by name, or show one level. Without JavaScript the finder stays hidden and

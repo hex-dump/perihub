@@ -109,6 +109,9 @@ main:focus { outline: none; }
 }
 .site-menu a { display: block; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); color: var(--text); text-decoration: none; font-weight: 600; }
 .site-menu a:hover { background: var(--panel-2); }
+@media (max-width: 49.99rem) {
+  .no-popover .site-menu:not(.open) { display: none; }
+}
 .star-link {
   display: inline-flex; align-items: center; gap: 0.35em; white-space: nowrap;
   min-height: 2.5rem; padding: 0 var(--space-4); border-radius: 999px;
@@ -250,7 +253,6 @@ main:focus { outline: none; }
 .finder-levels button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-control); }
 .finder-levels .led { margin-right: var(--space-2); }
 .finder-status { flex-basis: 100%; margin: 0; min-height: 1.4em; font-size: 0.9rem; color: var(--muted); }
-.finder-status:empty { display: none; }
 
 /* Brand cards flow in columns, in alphabetical order down the first column and then the second. */
 .catalogue { columns: 2 24rem; column-gap: var(--space-4); }
