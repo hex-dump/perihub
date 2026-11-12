@@ -26,6 +26,7 @@ use crate::mouse::{MouseInfo, MouseTask, ReceiverLink};
 use crate::peripheral::qmk::{self, Found};
 use crate::peripheral::task::{Identity, PeripheralTask};
 use crate::peripheral::{self, PeripheralInfo, Protocol};
+use crate::report_devices::{self, ReportDevice};
 use crate::softmacro::KeyboardTriggers;
 use crate::worker::Worker;
 
@@ -368,6 +369,8 @@ struct Slots {
     logitech_programs: Vec<&'static str>,
     /// Interfaces of the connected keyboard that report key presses.
     key_interfaces: KeyInterfaces,
+    /// The connected devices PeriHub does not know, for a device request.
+    report_devices: Vec<ReportDevice>,
     /// Keys of the connected keyboard's map that start software macros, kept by its thread.
     keyboard_macro_keys: Option<Arc<Mutex<Vec<u8>>>>,
 }
@@ -451,6 +454,8 @@ impl Manager {
             log::warn!("HID enumeration failed: {error}");
             return false;
         }
+        let report = report_devices::unknown_devices(api.device_list().filter_map(report_devices::Entry::from_hid));
+        self.slots.lock().unwrap().report_devices = report;
         let keyboard = api.device_list().find(|d| is_keyboard_config_interface(d)).cloned();
         let key_interface = |number| {
             api.device_list()
@@ -908,6 +913,11 @@ impl Manager {
         slots.conflicts = running;
         slots.logitech_programs = logitech_programs;
         true
+    }
+
+    /// The connected USB and Bluetooth devices PeriHub does not know, as of the last pass.
+    pub fn report_devices(&self) -> Vec<ReportDevice> {
+        self.slots.lock().unwrap().report_devices.clone()
     }
 
     pub fn status(&self) -> DeviceStatus {

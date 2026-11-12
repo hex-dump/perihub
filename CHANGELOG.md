@@ -18,6 +18,8 @@
 - The credits in **Settings** name every source.
 
 ### Changed
+- **The sidebar lists only the devices that are there**: connected, asleep, or there but not opened (a missing permission, for example), each with its own page. The Apex 3 TKL and the Logitech mouse no longer stay listed as "Not connected", and PeriHub opens on the first device it finds.
+- **Send a report**: with no supported device connected, the sidebar offers it instead. It lists the USB and Bluetooth devices PeriHub does not know, with their name, USB id and HID collections, and opens a device request on GitHub already filled in for the one you pick (no serial numbers). Settings → Devices links to it too.
 - **Mouse lighting: a "Same effect on all zones" switch.** On, one card sets every zone at once, so breathing and color cycle pulse together (what PeriHub always did). Off, each zone keeps its own effect: choosing breathing or color cycle on the logo no longer changes the DPI indicator too. A profile opens in sync when its zones already show the same effect. Not tried on a mouse yet.
 
 ### Fixed

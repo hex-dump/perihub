@@ -26,6 +26,7 @@ type CmdResult<T> = Result<T, String>;
 const TEST_FORM_URLS: &[&str] = &[
     "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml&",
     "https://github.com/hex-dump/perihub/issues/new?template=device_test.yml&",
+    "https://github.com/hex-dump/perihub/issues/new?template=device_request.yml&",
 ];
 
 async fn blocking<T: Send + 'static>(f: impl FnOnce() -> perihub_core::Result<T> + Send + 'static) -> CmdResult<T> {
@@ -35,6 +36,12 @@ async fn blocking<T: Send + 'static>(f: impl FnOnce() -> perihub_core::Result<T>
 #[tauri::command]
 pub fn get_status(state: State<'_, AppState>) -> DeviceStatus {
     state.manager.status()
+}
+
+/// The connected devices PeriHub does not know, for a device request.
+#[tauri::command]
+pub fn devices_for_report(state: State<'_, AppState>) -> Vec<perihub_core::report_devices::ReportDevice> {
+    state.manager.report_devices()
 }
 
 // ---- Keyboard ----

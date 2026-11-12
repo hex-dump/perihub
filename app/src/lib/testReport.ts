@@ -1,7 +1,7 @@
 import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
-import type { MouseInfo } from "./api";
+import type { MouseInfo, ReportDevice } from "./api";
 import { kindName } from "./logitechFeatures";
 
 const LOGITECH = "046d";
@@ -241,4 +241,34 @@ export function peripheralTest(info: PeripheralInfo, version: string, system: st
       .filter((line): line is string => line !== null)
       .join("\n"),
   };
+}
+
+const DEVICE_REQUEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=device_request.yml";
+
+/** A device's name as it gives it, with its maker unless the name already starts with it. */
+export function reportDeviceName(device: ReportDevice): string {
+  const product = device.product ?? "Unnamed device";
+  const maker = device.manufacturer;
+  return maker && !product.toLowerCase().startsWith(maker.toLowerCase().split(" ")[0]) ? `${maker} ${product}` : product;
+}
+
+export const reportUsbId = (device: ReportDevice) => `${hex(device.vendor_id)}:${hex(device.product_id)}`;
+
+/** The device request form, filled in with what PeriHub sees of `device`: no serial number, no path. */
+export function deviceRequestUrl(device: ReportDevice, version: string, system: string): string {
+  const name = reportDeviceName(device);
+  const collections = device.collections.map(
+    (c) =>
+      `  ${c.interface < 0 ? "no interface number" : `interface ${c.interface}`}, usage page ${hex(c.usage_page)}, usage ${hex(c.usage)}`,
+  );
+  const details = [
+    `PeriHub ${version} on ${system}`,
+    `Device: ${name}`,
+    `USB ID: ${reportUsbId(device)} (${device.bus})`,
+    "HID collections:",
+    ...collections,
+  ].join("\n");
+  const values = { title: `Device request: ${name}`, model: name, "usb-id": reportUsbId(device), details };
+  const query = Object.entries(values).map(([field, value]) => `${field}=${encodeURIComponent(value)}`);
+  return `${DEVICE_REQUEST_FORM}&${query.join("&")}`;
 }

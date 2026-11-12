@@ -22,6 +22,12 @@ body:
     validations:
       required: true
   - type: textarea
+    id: details
+    attributes:
+      label: What PeriHub saw
+      description: Filled in by PeriHub's "Send a report" page, if you came from there. No serial numbers.
+      render: text
+  - type: textarea
     id: features
     attributes:
       label: Features you use in the official software

@@ -287,6 +287,17 @@ export interface KeyboardInfo {
   firmware: string;
 }
 
+/** A connected USB or Bluetooth device PeriHub does not know, for a device request. */
+export interface ReportDevice {
+  vendor_id: number;
+  product_id: number;
+  manufacturer: string | null;
+  product: string | null;
+  bus: "USB" | "Bluetooth";
+  /** Interface -1: the system does not say (Bluetooth). */
+  collections: { interface: number; usage_page: number; usage: number }[];
+}
+
 export interface DeviceStatus {
   keyboard: KeyboardInfo | null;
   mouse: MouseInfo | null;
@@ -641,6 +652,7 @@ export interface MouseRestore {
 
 export const api = {
   status: () => invoke<DeviceStatus>("get_status"),
+  devicesForReport: () => invoke<ReportDevice[]>("devices_for_report"),
   onStatus: (handler: (status: DeviceStatus) => void): Promise<UnlistenFn> =>
     listen<DeviceStatus>("devices-changed", (event) => handler(event.payload)),
 

@@ -141,6 +141,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_status,
+            commands::devices_for_report,
             commands::kb_get_config,
             commands::kb_set_lighting,
             commands::kb_set_brightness,

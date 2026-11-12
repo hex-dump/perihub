@@ -13,9 +13,20 @@
   import Peripheral from "./pages/Peripheral.svelte";
   import QmkKeyboards from "./pages/QmkKeyboards.svelte";
   import Settings from "./pages/Settings.svelte";
+  import DeviceReport from "./pages/DeviceReport.svelte";
   import Icon from "./components/Icon.svelte";
 
-  type Page = "keyboard" | "mouse" | "g300" | "corsair" | "logitech" | "peripheral" | "qmk" | "profiles" | "settings";
+  type Page =
+    | "keyboard"
+    | "mouse"
+    | "g300"
+    | "corsair"
+    | "logitech"
+    | "peripheral"
+    | "qmk"
+    | "report"
+    | "profiles"
+    | "settings";
   const PAGES: Page[] = [
     "keyboard",
     "mouse",
@@ -24,18 +35,20 @@
     "logitech",
     "peripheral",
     "qmk",
+    "report",
     "profiles",
     "settings",
   ];
 
-  // Navigation through the URL hash (#page or #page:tab), so a page can be opened directly.
-  function fromHash(): [Page, string | undefined] {
+  // Navigation through the URL hash (#page or #page:tab), so a page can be opened directly. Without
+  // one, the first device found is shown once PeriHub has looked (see `firstPage`).
+  function fromHash(): [Page | null, string | undefined] {
     const [p, tab] = location.hash.slice(1).split(":");
-    return [PAGES.includes(p as Page) ? (p as Page) : "keyboard", tab || undefined];
+    return [PAGES.includes(p as Page) ? (p as Page) : null, tab || undefined];
   }
 
   let [initialPage, initialTab] = fromHash();
-  let page = $state<Page>(initialPage);
+  let page = $state<Page | null>(initialPage);
   let tab = $state<string | undefined>(initialTab);
 
   function go(next: Page, nextTab?: string) {
@@ -91,14 +104,55 @@
       null,
   );
 
+  // The sidebar lists only the devices that are there: connected, asleep, or there but not opened
+  // (the error says why, such as a missing permission). With none, it offers a report instead.
+  const keyboardThere = $derived(!!(status.keyboard || status.keyboard_error || status.unsupported_keyboard));
+  const mouseThere = $derived(!!(status.mouse || status.mouse_error || status.mouse_asleep));
+  const g300There = $derived(!!(status.g300 || status.g300_error));
+  const corsairThere = $derived(status.corsair.length > 0 || !!status.corsair_error);
+  const peripheralThere = $derived(status.peripherals.length > 0 || !!status.peripheral_error);
+  const anyDevice = $derived(
+    keyboardThere ||
+      mouseThere ||
+      g300There ||
+      logitechDevices.length > 0 ||
+      corsairThere ||
+      peripheralThere ||
+      status.qmk.length > 0,
+  );
+  /** Until the first status arrives, nothing is listed: no report offered for devices not looked at yet. */
+  let loaded = $state(false);
+
+  /** The page shown when none was asked for: the first device in the sidebar, or the report. */
+  function firstPage(): Page {
+    if (keyboardThere) return "keyboard";
+    if (mouseThere) return "mouse";
+    if (g300There) return "g300";
+    if (logitechDevices.length > 0) return "logitech";
+    if (corsairThere) return "corsair";
+    if (peripheralThere) return "peripheral";
+    if (status.qmk.length > 0) return "qmk";
+    return "report";
+  }
+
+  function received(next: DeviceStatus) {
+    status = next;
+    loaded = true;
+    if (page === null) page = firstPage();
+  }
+
   onMount(() => {
-    api.status().then((s) => (status = s));
+    api.status().then(received);
     // PeriHub checks for updates in the background, also while this window is closed.
     api.updateAvailable().then((u) => u && (updates.available = u));
     const unlistenUpdate = api.onUpdate((u) => (updates.available = u));
-    const onHash = () => ([page, tab] = fromHash());
+    const onHash = () => {
+      const [next, nextTab] = fromHash();
+      page = next ?? (loaded ? firstPage() : null);
+      tab = nextTab;
+    };
     window.addEventListener("hashchange", onHash);
-    const unlisten = api.onStatus((s) => (status = s));
+    const unlisten = api.onStatus(received);
     return () => {
       unlistenUpdate.then((fn) => fn());
       unlisten.then((fn) => fn());
@@ -115,22 +169,37 @@
     </div>
 
     <h3>Devices</h3>
-    <button class:active={page === "keyboard"} onclick={() => go("keyboard")}>
-      <Icon name="keyboard" />
-      <span class="col tight">
-        <span class="name">Apex 3 TKL</span>
-        <span class="state" class:on={!!status.keyboard}>{status.keyboard ? "Connected" : "Not connected"}</span>
-      </span>
-    </button>
-    <button class:active={page === "mouse"} onclick={() => go("mouse")}>
-      <Icon name="mouse" />
-      <span class="col tight">
-        <span class="name">{status.mouse?.model ?? status.mouse_asleep ?? "Logitech mouse"}</span>
-        <span class="state" class:on={!!status.mouse}>
-          {status.mouse ? "Connected" : status.mouse_asleep ? "Asleep" : "Not connected"}
+    {#if loaded && !anyDevice}
+      <button class:active={page === "report"} onclick={() => go("report")}>
+        <Icon name="report" />
+        <span class="col tight">
+          <span class="name">Send a report</span>
+          <span class="state">No device found</span>
         </span>
-      </span>
-    </button>
+      </button>
+    {/if}
+    {#if keyboardThere || page === "keyboard"}
+      <button class:active={page === "keyboard"} onclick={() => go("keyboard")}>
+        <Icon name="keyboard" />
+        <span class="col tight">
+          <span class="name">{!status.keyboard && status.unsupported_keyboard ? status.unsupported_keyboard : "Apex 3 TKL"}</span>
+          <span class="state" class:on={!!status.keyboard}>
+            {status.keyboard ? "Connected" : status.unsupported_keyboard ? "Not supported yet" : status.keyboard_error ? "Not opened" : "Not connected"}
+          </span>
+        </span>
+      </button>
+    {/if}
+    {#if mouseThere || page === "mouse"}
+      <button class:active={page === "mouse"} onclick={() => go("mouse")}>
+        <Icon name="mouse" />
+        <span class="col tight">
+          <span class="name">{status.mouse?.model ?? status.mouse_asleep ?? "Logitech mouse"}</span>
+          <span class="state" class:on={!!status.mouse}>
+            {status.mouse ? "Connected" : status.mouse_asleep ? "Asleep" : status.mouse_error ? "Not opened" : "Not connected"}
+          </span>
+        </span>
+      </button>
+    {/if}
 
     {#if status.g300 || status.g300_error || page === "g300"}
       <button class:active={page === "g300"} onclick={() => go("g300")}>
@@ -211,6 +280,13 @@
       </button>
     {/if}
 
+    {#if anyDevice && page === "report"}
+      <button class="active">
+        <Icon name="report" />
+        <span class="name">Send a report</span>
+      </button>
+    {/if}
+
     <div class="grow"></div>
     <button class:active={page === "profiles"} onclick={() => go("profiles")}>
       <Icon name="profiles" />
@@ -272,9 +348,11 @@
         {#key peripheralShown?.key}<Peripheral info={peripheralShown} error={status.peripheral_error} />{/key}
       {:else if page === "qmk"}
         <QmkKeyboards keyboards={status.qmk} onopen={(key) => go("peripheral", peripheralTab(key))} />
+      {:else if page === "report"}
+        <DeviceReport alone={!anyDevice} shown={status.qmk.map((k) => k.key)} />
       {:else if page === "profiles"}
         <AppProfiles {status} />
-      {:else}
+      {:else if page === "settings"}
         <Settings {status} />
       {/if}
     </div>
