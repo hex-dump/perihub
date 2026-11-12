@@ -28,6 +28,7 @@
 - Dependencies: Vite 8.3.8 and the latest compatible Rust crates (among them wry 0.57.2 and rustls-webpki 0.103.17); the builds run on Node.js 26, the current LTS. Tauri, its plugins, Svelte and the other direct dependencies were already at their latest versions. TypeScript stays on 6.0: svelte-check does not support TypeScript 7 yet.
 
 ### Fixed
+- Other brands: the profile line said "PeriHub readsand changes only this one".
 - Mouse lighting: two quick changes on different zones both reach the mouse; before, only the last one was previewed.
 - Other brands: the undo of a change, when its 15 seconds run out or when the device is connected again, never puts one profile's settings onto another. If the device switched profile since the change, nothing is written: PeriHub says which profile to switch back to, and undoes the change when the device is plugged in again on that profile. Until then no other change is made on that device, so the waiting backup is never replaced.
 

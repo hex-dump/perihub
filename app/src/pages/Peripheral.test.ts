@@ -237,6 +237,11 @@ describe("a mouse of another brand", () => {
     expect(document.body.textContent).not.toContain("changes only this one");
   });
 
+  it("says that the profile in use is the one read and changed", () => {
+    render(Peripheral, { props: { info, error: null } });
+    expect(document.body.textContent).toContain("PeriHub reads and changes only this one");
+  });
+
   it("does not offer to change the DPI where the device's DPI is not changed", () => {
     render(Peripheral, {
       props: {

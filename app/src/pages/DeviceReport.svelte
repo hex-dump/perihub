@@ -85,7 +85,7 @@
     <button type="button" class="self-start" disabled={!version} onclick={() => request(null)}>Open an empty request</button>
   </div>
 {:else}
-  <p class="muted small">
+  <p class="muted small hint">
     A device may show its chip maker's name (SONiX, Holtek, Telink…) instead of its brand: the USB id tells it apart.
   </p>
   <div class="col list">
@@ -108,6 +108,10 @@
 {/if}
 
 <style>
+  .hint {
+    margin: 12px 0 10px;
+  }
+
   .list {
     gap: 10px;
   }
