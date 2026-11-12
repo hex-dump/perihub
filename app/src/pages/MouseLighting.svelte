@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { api, debounce, errorText, type LedEffect, type LedZone, type MouseInfo, type ProfileSettings } from "../lib/api";
   import { ledZoneName } from "../lib/keys";
 
@@ -21,42 +21,66 @@
     { mode: "cycle", id: 3, label: "Color cycle" },
   ];
 
-  // Zones are sent one after the other, so animated effects start together and stay in step.
-  let destroyed = false;
-  const preview = debounce(async (zones: number[], effect: LedEffect) => {
-    // Marked before sending, so that reverting also covers a preview on its way.
-    onpreview();
-    try {
-      for (const zone of zones) {
-        if (destroyed) return;
-        await api.previewLed(zone, effect);
-      }
-      error = null;
-    } catch (e) {
-      error = errorText(e);
-    }
-  }, 120);
-
   const zones = $derived(info.led_zones.filter((z) => z.index < settings.leds.length));
-  const isAnimated = (e: LedEffect) => e.mode === "breathing" || e.mode === "cycle";
-  const supports = (zone: LedZone, effect: LedEffect) =>
-    zone.effects.includes(MODES.find((m) => m.mode === effect.mode)?.id ?? -1);
+  const modeId = (effect: LedEffect) => MODES.find((m) => m.mode === effect.mode)?.id ?? -1;
+  const supports = (zone: LedZone, effect: LedEffect) => zone.effects.includes(modeId(effect));
+  /** The modes every zone can show: the only ones offered while the zones are in sync. */
+  const sharedModes = $derived(MODES.filter((m) => zones.every((z) => z.effects.includes(m.id))));
+  const same = (a: LedEffect, b: LedEffect) => JSON.stringify(a) === JSON.stringify(b);
 
   /**
-   * Breathing and color cycle are shared by all zones, so the DPI indicator and the logo pulse
-   * in sync: choosing one of them sets every zone, and editing it updates the zones using it.
+   * In sync, one card sets every zone at once, so breathing and color cycle start together and pulse
+   * in step. Out of sync, each zone keeps its own effect. A profile opens in sync when all its zones
+   * already show the same effect.
    */
-  function set(zone: LedZone, effect: LedEffect, linkAll = false) {
-    const targets = isAnimated(effect)
-      ? zones.filter((z) => z.index === zone.index ||
-          (supports(z, effect) && (linkAll || settings.leds[z.index].mode === effect.mode)))
-      : [zone];
+  let synced = $state(false);
+  const canSync = $derived(zones.length > 1 && sharedModes.length > 0);
+
+  /** Full-brightness version of each zone's fixed color while its slider is moved, to avoid drift. */
+  let fullColors: Record<number, string> = {};
+  $effect.pre(() => {
+    void settings;
+    untrack(() => {
+      fullColors = {};
+      const first = zones[0] ? settings.leds[zones[0].index] : undefined;
+      synced = canSync && !!first && first.mode !== "raw" && zones.every((z) => same(settings.leds[z.index], first));
+    });
+  });
+
+  // Effects waiting to be previewed, by zone: an edit of another zone within the wait is sent too.
+  // Batches go one after the other, in the order they were made.
+  let destroyed = false;
+  const waiting = new Map<number, LedEffect>();
+  let sending = Promise.resolve();
+  const flush = debounce(() => {
+    const batch = [...waiting];
+    waiting.clear();
+    // Marked before sending, so that reverting also covers a preview on its way.
+    onpreview();
+    sending = sending.then(async () => {
+      try {
+        for (const [zone, effect] of batch) {
+          if (destroyed) return;
+          await api.previewLed(zone, effect);
+        }
+        error = null;
+      } catch (e) {
+        error = errorText(e);
+      }
+    });
+  }, 120);
+
+  function set(targets: LedZone[], effect: LedEffect) {
     for (const z of targets) {
-      settings.leds[z.index] = effect;
+      settings.leds[z.index] = { ...effect };
       delete fullColors[z.index];
+      waiting.set(z.index, { ...effect });
     }
-    preview(targets.map((z) => z.index), effect);
+    flush();
   }
+
+  /** The zones an edit made on `zone`'s card goes to. */
+  const targets = (zone: LedZone) => (synced ? zones : [zone]);
 
   function colorOf(effect: LedEffect): string {
     return effect.mode === "fixed" || effect.mode === "breathing" ? effect.color : "#ff5200";
@@ -68,15 +92,28 @@
     const period = "period_ms" in current ? current.period_ms : 4000;
     const brightness = "brightness" in current ? current.brightness : 100;
     switch (mode) {
-      case "off": return set(zone, { mode: "off" });
-      case "fixed": return set(zone, { mode: "fixed", color });
-      case "breathing": return set(zone, { mode: "breathing", color, period_ms: period, brightness }, true);
-      case "cycle": return set(zone, { mode: "cycle", period_ms: period, brightness }, true);
+      case "off": return set(targets(zone), { mode: "off" });
+      case "fixed": return set(targets(zone), { mode: "fixed", color });
+      case "breathing": return set(targets(zone), { mode: "breathing", color, period_ms: period, brightness });
+      case "cycle": return set(targets(zone), { mode: "cycle", period_ms: period, brightness });
     }
   }
 
   function patch(zone: LedZone, change: Partial<{ color: string; period_ms: number; brightness: number }>) {
-    set(zone, { ...settings.leds[zone.index], ...change } as LedEffect);
+    set(targets(zone), { ...$state.snapshot(settings.leds[zone.index]), ...change } as LedEffect);
+  }
+
+  /**
+   * Turning sync on gives every zone the first effect they can all show; with none (an effect set by
+   * another program) nothing is sent until a mode is picked. Turning it off sends nothing.
+   */
+  function setSynced(on: boolean) {
+    synced = on;
+    if (!on) return;
+    const effect = zones
+      .map((z) => $state.snapshot(settings.leds[z.index]) as LedEffect)
+      .find((e) => e.mode !== "raw" && zones.every((z) => supports(z, e)));
+    if (effect && zones.some((z) => !same(settings.leds[z.index], effect))) set(zones, effect);
   }
 
   // Fixed colors have no brightness setting in the mouse, so brightness scales the color itself.
@@ -88,13 +125,6 @@
     return Math.max(1, Math.round((Math.max(...channels(color)) / 255) * 100));
   }
 
-  /** Full-brightness version of each zone's fixed color while its slider is moved, to avoid drift. */
-  let fullColors: Record<number, string> = {};
-  $effect(() => {
-    void settings;
-    fullColors = {};
-  });
-
   function setFixedBrightness(zone: LedZone, color: string, percent: number) {
     const rgb = channels(color);
     const max = Math.max(...rgb);
@@ -103,10 +133,23 @@
     fullColors[zone.index] = full;
   }
 
+  /** The cards on screen: one for all the zones in sync, one per zone otherwise. */
+  const zoneName = (zone: LedZone) => ledZoneName(info.product_id, zone.location);
+  const cards = $derived(
+    synced && zones.length > 0
+      ? [{ zone: zones[0], title: "All zones", subtitle: zones.map(zoneName).join(" and "), modes: sharedModes }]
+      : zones.map((zone) => ({
+          zone,
+          title: zoneName(zone),
+          subtitle: "",
+          modes: MODES.filter((m) => zone.effects.includes(m.id)),
+        })),
+  );
+
   const num = (e: Event) => Number((e.target as HTMLInputElement).value);
   onDestroy(() => {
     destroyed = true;
-    preview.cancel();
+    flush.cancel();
   });
 </script>
 
@@ -114,19 +157,32 @@
   <p class="muted small">
     Changes are previewed on the mouse right away and become permanent with “Save to mouse”.
     The preview uses the connected mouse even when you are editing a profile that is not active.
-    {#if zones.length > 1}Breathing and color cycle apply to all zones at once, so they stay in sync.{/if}
   </p>
+  {#if canSync}
+    <label class="row small sync">
+      <input type="checkbox" checked={synced} onchange={(e) => setSynced((e.target as HTMLInputElement).checked)} />
+      <span>
+        Same effect on all zones
+        <span class="muted">
+          {synced
+            ? "· breathing and color cycle pulse together"
+            : "· each zone has its own effect, and animations may not pulse together"}
+        </span>
+      </span>
+    </label>
+  {/if}
   {#if error}<div class="notice error">{error}</div>{/if}
 
-  {#each zones as zone (zone.index)}
+  {#each cards as { zone, title, subtitle, modes } (synced ? "all" : zone.index)}
     {@const effect = settings.leds[zone.index]}
     <div class="card col">
-      <h2>{ledZoneName(info.product_id, zone.location)}</h2>
+      <h2>{title}</h2>
+      {#if subtitle}<p class="muted small">{subtitle}</p>{/if}
       {#if effect.mode === "raw"}
         <p class="muted small">Effect set by another program: pick one to replace it.</p>
       {/if}
       <div class="segmented">
-        {#each MODES.filter((m) => zone.effects.includes(m.id)) as m (m.mode)}
+        {#each modes as m (m.mode)}
           <button class:active={effect.mode === m.mode} onclick={() => changeMode(zone, m.mode)}>{m.label}</button>
         {/each}
       </div>
@@ -175,6 +231,10 @@
   }
 
   .segmented {
+    align-self: flex-start;
+  }
+
+  .sync {
     align-self: flex-start;
   }
 

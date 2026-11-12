@@ -639,3 +639,92 @@ describe("Backups", () => {
     expect(screen.getByRole("button", { name: "Backups…" })).toBeTruthy();
   });
 });
+
+describe("Lighting", () => {
+  const RED = { mode: "fixed", color: "#ff0000" } as const;
+  const BLUE = { mode: "fixed", color: "#0000ff" } as const;
+  const ALL_EFFECTS = [0, 1, 10, 3];
+  // The G502 HERO: zone 0 is the DPI indicator, zone 1 the G logo.
+  const zones = [
+    { index: 0, location: 1, effects: ALL_EFFECTS },
+    { index: 1, location: 2, effects: ALL_EFFECTS },
+  ];
+
+  async function openLighting(leds: ProfileSettings["leds"], ledZones = zones) {
+    api.mouseState.mockImplementation(async () => {
+      const s = state();
+      for (const p of s.profiles) p.settings.leds = structuredClone(leds);
+      return s;
+    });
+    render(Mouse, { props: { info: { ...info, led_zones: ledZones }, error: null, asleep: null, initialTab: "lighting" } });
+    await wait(0);
+  }
+
+  const syncBox = () => screen.getByRole("checkbox", { name: /Same effect on all zones/ }) as HTMLInputElement;
+  const cardOf = (title: string) => screen.getByRole("heading", { name: title }).closest(".card") as HTMLElement;
+  const previews = () => api.previewLed.mock.calls.map(([zone, effect]) => [zone, effect.mode]);
+
+  beforeEach(() => api.previewLed.mockResolvedValue(undefined));
+
+  it("opens in sync when every zone shows the same effect, and out of sync otherwise", async () => {
+    await openLighting([RED, RED]);
+    expect(syncBox().checked).toBe(true);
+    expect(screen.getByRole("heading", { name: "All zones" })).toBeTruthy();
+    cleanup();
+
+    await openLighting([RED, BLUE]);
+    expect(syncBox().checked).toBe(false);
+    expect(screen.getByRole("heading", { name: "DPI indicator" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "G logo" })).toBeTruthy();
+  });
+
+  it("out of sync, breathing on one zone leaves the other zone's color alone", async () => {
+    await openLighting([RED, BLUE]);
+    await fireEvent.click(within(cardOf("G logo")).getByRole("button", { name: "Breathing" }));
+    await wait(PREVIEW_WAIT);
+    expect(previews()).toEqual([[1, "breathing"]]);
+    expect(within(cardOf("DPI indicator")).getByRole("button", { name: "Fixed" }).classList).toContain("active");
+  });
+
+  it("in sync, one change goes to every zone", async () => {
+    await openLighting([RED, RED]);
+    await fireEvent.click(within(cardOf("All zones")).getByRole("button", { name: "Color cycle" }));
+    await wait(PREVIEW_WAIT);
+    expect(previews()).toEqual([[0, "cycle"], [1, "cycle"]]);
+  });
+
+  it("turning sync on gives every zone the first zone's effect, restarted together", async () => {
+    const green = { mode: "breathing", color: "#00ff00", period_ms: 3000, brightness: 80 } as const;
+    await openLighting([green, BLUE]);
+    await fireEvent.click(syncBox());
+    await wait(PREVIEW_WAIT);
+    expect(api.previewLed.mock.calls).toEqual([[0, green], [1, green]]);
+
+    api.previewLed.mockClear();
+    await fireEvent.click(syncBox());
+    await wait(PREVIEW_WAIT);
+    expect(api.previewLed).not.toHaveBeenCalled();
+  });
+
+  it("in sync, offers only the effects every zone can show", async () => {
+    await openLighting([RED, RED], [zones[0], { index: 1, location: 2, effects: [0, 1, 3] }]);
+    const card = cardOf("All zones");
+    expect(within(card).queryByRole("button", { name: "Breathing" })).toBeNull();
+    expect(within(card).getByRole("button", { name: "Color cycle" })).toBeTruthy();
+  });
+
+  it("turning sync on skips an effect another program set", async () => {
+    await openLighting([{ mode: "raw", bytes: [0x0b, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }, BLUE]);
+    await fireEvent.click(syncBox());
+    await wait(PREVIEW_WAIT);
+    expect(api.previewLed.mock.calls).toEqual([[0, BLUE], [1, BLUE]]);
+  });
+
+  it("sends two quick changes on different zones, not only the last one", async () => {
+    await openLighting([RED, BLUE]);
+    await fireEvent.click(within(cardOf("DPI indicator")).getByRole("button", { name: "Off" }));
+    await fireEvent.click(within(cardOf("G logo")).getByRole("button", { name: "Color cycle" }));
+    await wait(PREVIEW_WAIT);
+    expect(previews()).toEqual([[0, "off"], [1, "cycle"]]);
+  });
+});

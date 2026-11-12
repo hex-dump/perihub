@@ -17,7 +17,11 @@
 - On Linux, an optional rule per QMK keyboard, `73-perihub-qmk.rules`, written from the QMK keyboards page with your password: it opens only the interface whose descriptor, read in `/sys` first, holds the raw HID channel and nothing else, so what you type stays closed.
 - The credits in **Settings** name every source.
 
+### Changed
+- **Mouse lighting: a "Same effect on all zones" switch.** On, one card sets every zone at once, so breathing and color cycle pulse together (what PeriHub always did). Off, each zone keeps its own effect: choosing breathing or color cycle on the logo no longer changes the DPI indicator too. A profile opens in sync when its zones already show the same effect. Not tried on a mouse yet.
+
 ### Fixed
+- Mouse lighting: two quick changes on different zones both reach the mouse; before, only the last one was previewed.
 - Other brands: the undo of a change, when its 15 seconds run out or when the device is connected again, never puts one profile's settings onto another. If the device switched profile since the change, nothing is written: PeriHub says which profile to switch back to, and undoes the change when the device is plugged in again on that profile. Until then no other change is made on that device, so the waiting backup is never replaced.
 
 ## 0.7.0 — 2026-11-11
