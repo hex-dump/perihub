@@ -177,8 +177,17 @@ was copied.
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its issues 1782 and 2305: the USB captures
   of Cooler Master's app that users attached there, read as data, and which product ids form the Cooler Master mouse
   family (see `docs/protocols/coolermaster-mm.md`).
+- [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its EVGA drivers
+  (`Controllers/EVGAUSBController`): the EVGA X12 and X20 USB ids, interfaces and lighting reports (see
+  `docs/protocols/evga-mice.md`).
 - The [Linux kernel](https://github.com/torvalds/linux) (GPL-2.0): that the Roccat Kone mice are configured
-  through their boot mouse interface (`drivers/hid/hid-roccat-konepure.c`, `hid-roccat-koneplus.c`).
+  through their boot mouse interface (`drivers/hid/hid-roccat-konepure.c`, `hid-roccat-koneplus.c`), and the
+  product ids of the Logitech receivers (`drivers/hid/hid-logitech-dj.c`).
+- [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0): the Logitech receiver ids, and how it reads and writes
+  onboard profile lists and button entries, compared with libratbag's (see
+  `docs/protocols/logitech-onboard-profiles.md`).
+- The `lsusb -v` dumps of [linuxhw/LsUSB](https://github.com/linuxhw/LsUSB): which interfaces the Logitech G600
+  and the Roccat Kone mice have.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse
   its USB interface, transaction ids and maximum DPI, read as text by `tools/openrazer_facts.py` (see
   `docs/protocols/razer-mice.md`).
