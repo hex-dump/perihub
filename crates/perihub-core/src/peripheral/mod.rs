@@ -13,6 +13,7 @@ pub mod asus;
 pub mod coolermaster;
 pub mod evga;
 pub mod logitech_g600;
+pub mod logitech_hidpp10;
 pub mod nordic;
 pub mod pulsar;
 pub mod qmk;
@@ -71,6 +72,7 @@ pub enum Protocol {
     CoolerMaster(coolermaster::Params),
     Evga(evga::Params),
     LogitechG600,
+    LogitechHidpp10(logitech_hidpp10::Params),
     Nordic(nordic::Params),
     Pulsar(pulsar::Params),
     Qmk(qmk::Params),
@@ -104,6 +106,7 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
         .chain(razer_models::MODELS)
         .chain(sinowealth::MODELS)
         .chain(logitech_g600::MODELS)
+        .chain(logitech_hidpp10::MODELS)
         .chain(roccat::MODELS)
         .chain(pulsar::MODELS)
         .chain(coolermaster::MODELS)
@@ -252,6 +255,8 @@ pub struct Reading {
     pub settings: Settings,
     pub limits: Limits,
     pub buttons: Vec<ButtonView>,
+    /// Other things read and shown as they are, such as what a profile stores: label and value.
+    pub details: Vec<(String, String)>,
     /// Something did not look as documented: nothing is changed on this device.
     pub problem: Option<String>,
 }
@@ -278,6 +283,8 @@ pub struct PeripheralInfo {
     pub settings: Settings,
     pub limits: Limits,
     pub buttons: Vec<ButtonView>,
+    /// Other things read and shown as they are: label and value.
+    pub details: Vec<(String, String)>,
     /// Settings PeriHub can send to a device that cannot report them, one at a time.
     pub blind: Vec<BlindSetting>,
     /// Every change stays in the device's memory: there is no separate save.
@@ -338,6 +345,9 @@ const NUMBERED_SHOWN: usize = 170;
 /// before it is sent.
 pub struct Io {
     hid: Box<dyn Hid>,
+    /// A second collection of the same interface, where Windows gives it a path of its own: the
+    /// short HID++ collection of a Logitech HID++ 1.0 mouse.
+    short: Option<Box<dyn Hid>>,
     commands: Vec<Command>,
     /// Commands that change something may be sent.
     changes: bool,
@@ -348,7 +358,13 @@ pub struct Io {
 
 impl Io {
     pub fn new(hid: Box<dyn Hid>, commands: Vec<Command>, changes: bool) -> Self {
-        Self { hid, commands, changes, granted: changes, raw: Vec::new() }
+        Self { hid, short: None, commands, changes, granted: changes, raw: Vec::new() }
+    }
+
+    /// Adds the short HID++ collection, when it has a path of its own (Windows).
+    pub fn with_short(mut self, short: Option<Box<dyn Hid>>) -> Self {
+        self.short = short;
+        self
     }
 
     pub fn granted(&self) -> bool {
@@ -533,6 +549,62 @@ impl Io {
                 return Ok(());
             }
         }
+    }
+
+    /// Logitech HID++: sends `report`, whose first byte is its report number (0x10 short, 0x11
+    /// long), and returns the first report from the device, short or long, that `answers` accepts
+    /// within `timeout`. A short report goes out through the short collection when it has a path
+    /// of its own; answers are read from both collections. `quiet`: the exchange is not kept for
+    /// the test report (the driver keeps a summary instead).
+    pub fn hidpp_exchange(
+        &mut self,
+        report: &[u8],
+        timeout: Duration,
+        quiet: bool,
+        answers: impl Fn(&[u8]) -> bool,
+    ) -> Result<Vec<u8>> {
+        if !matches!(report.first(), Some(0x10 | 0x11)) {
+            return Err(Error::Invalid("a HID++ report starts with 0x10 or 0x11".into()));
+        }
+        self.check(report)?;
+        let mut scratch = [0u8; 64];
+        for hid in std::iter::once(&self.hid).chain(self.short.as_ref()) {
+            for _ in 0..64 {
+                if hid.read_timeout(&mut scratch, 0)? == 0 {
+                    break;
+                }
+            }
+        }
+        let out = match (&self.short, report[0]) {
+            (Some(short), 0x10) => short,
+            _ => &self.hid,
+        };
+        out.write(report)?;
+        let end = Instant::now() + timeout;
+        // With two collections each is asked in turn, briefly.
+        let slice = if self.short.is_some() { 5 } else { 1000 };
+        loop {
+            for hid in std::iter::once(&self.hid).chain(self.short.as_ref()) {
+                let left = end.saturating_duration_since(Instant::now());
+                if left.is_zero() {
+                    self.note(format!("{} → no answer", hex(&report[..report.len().min(7)])));
+                    return Err(Error::Timeout);
+                }
+                let n = hid.read_timeout(&mut scratch, (left.as_millis() as i32).clamp(1, slice))?;
+                if n > 0 && answers(&scratch[..n]) {
+                    let answer = scratch[..n].to_vec();
+                    if !quiet {
+                        self.note(format!("{} → {}", hex(&report[..report.len().min(7)]), hex(&answer)));
+                    }
+                    return Ok(answer);
+                }
+            }
+        }
+    }
+
+    /// Keeps a line for the test report.
+    pub fn note_line(&mut self, line: String) {
+        self.note(line);
     }
 
     /// [`Io::output_query`] that takes only an input report `answers` accepts: reports the device
@@ -775,6 +847,40 @@ mod tests {
         io.output_query(&[0x51, 0x31, 0], &mut reply, Duration::from_millis(50)).unwrap();
         assert!(io.output_query(&[0x50, 0x03], &mut reply, Duration::from_millis(50)).is_err(), "not listed");
         assert_eq!(hid.sent().len(), 2);
+    }
+
+    #[test]
+    fn hidpp_short_requests_go_through_the_short_collection_and_answers_come_from_both() {
+        const HIDPP: &[Command] = &[
+            Command { prefix: &[0x10, 0x00, 0x83, 0x63], at: 0, effect: Effect::Read, name: "read" },
+            Command { prefix: &[0x11, 0x00, 0x82, 0x63], at: 0, effect: Effect::Change, name: "change" },
+        ];
+        // Windows: the long answer to a short request arrives on the long collection.
+        let long = FakeHid::new(|_| vec![vec![0x11, 0x00, 0x82, 0x63, 0, 0, 0]]);
+        long.0.lock().unwrap().numbered_output = true;
+        let long_state = long.0.clone();
+        let short = FakeHid::new(move |_| {
+            let mut answer = vec![0x11, 0x00, 0x83, 0x63, 0x20, 0x00, 0x20, 0x00];
+            answer.resize(20, 0);
+            long_state.lock().unwrap().pending.push_back(answer);
+            vec![vec![0x10, 0x00, 0x41, 0x04, 0, 0, 0]]
+        });
+        short.0.lock().unwrap().numbered_output = true;
+        let mut io = Io::new(Box::new(long.clone()), HIDPP.to_vec(), true).with_short(Some(Box::new(short.clone())));
+        let accept = |sub: u8| move |r: &[u8]| r[2] == sub && r[3] == 0x63;
+        let answer =
+            io.hidpp_exchange(&[0x10, 0x00, 0x83, 0x63, 0, 0, 0], Duration::from_millis(100), false, accept(0x83));
+        assert_eq!(answer.unwrap()[4], 0x20);
+        assert_eq!(short.sent(), [vec![0x10, 0x00, 0x83, 0x63, 0, 0, 0]]);
+        assert!(long.sent().is_empty());
+        let mut set = vec![0x11, 0x00, 0x82, 0x63, 0x21, 0, 0x21, 0];
+        set.resize(20, 0);
+        io.hidpp_exchange(&set, Duration::from_millis(100), false, accept(0x82)).unwrap();
+        assert_eq!(long.sent(), [set], "a long report goes through the long collection");
+        assert!(
+            io.hidpp_exchange(&[0x10, 0x00, 0x80, 0x0F, 0, 1, 0], Duration::from_millis(10), false, |_| true).is_err()
+        );
+        assert_eq!(short.sent().len(), 1, "not listed: never sent");
     }
 
     #[test]

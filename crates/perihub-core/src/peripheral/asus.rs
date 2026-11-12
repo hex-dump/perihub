@@ -466,6 +466,7 @@ impl Driver for Asus {
             settings,
             limits,
             buttons,
+            details: Vec::new(),
             problem: (!problems.is_empty()).then(|| format!("unexpected answer: {}", problems.join(", "))),
         })
     }

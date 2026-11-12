@@ -26,6 +26,7 @@ the same format.
 - [Razer mice](#razer-mice)
 - [Glorious mice](#glorious-mice)
 - [Logitech G600](#logitech-g600)
+- [Older Logitech mice: G9, G9x, G500, G500s, G700, G700s](#older-logitech-mice-g9-g9x-g500-g500s-g700-g700s)
 - [Roccat mice](#roccat-mice)
 - [Pulsar mice](#pulsar-mice)
 - [Pulsar CrazyLight and Lamzu Atlantis](#pulsar-crazylight-and-lamzu-atlantis)
@@ -424,6 +425,36 @@ described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md
 | Mouse | USB ID | Opened on Linux |
 |---|---|---|
 | G600 | `046d:c24a` | interface 1 (with the keys its own side buttons send) |
+
+## Older Logitech mice: G9, G9x, G500, G500s, G700, G700s
+
+Logitech stopped offering their software, Logitech Gaming Software, on 31 October 2026; G HUB, which succeeded it,
+is for the devices that came after. They speak HID++ 1.0, an older protocol than the one of the mice above. Their protocol comes from
+[libratbag](https://github.com/libratbag/libratbag) (MIT), and is described in
+[protocols/logitech-hidpp10.md](protocols/logitech-hidpp10.md). Nobody has tried PeriHub on one yet.
+
+- PeriHub reads the DPI in use, the polling rate, which profile is in use and, from the mouse's memory, what
+  that profile stores: its name, its DPI levels, its polling rate, its colour (G9, G9x) and what each button
+  does. It shows the stored profile as it is.
+- 🧪 **G500s and G700s**: **Apply** changes the DPI in use, from 50 to 8200 in steps of 50. That is a setting in
+  the mouse's RAM: it lasts until the mouse is unplugged or its own DPI buttons are pressed. PeriHub reads it back
+  and puts it back after 15 seconds unless you keep the change.
+- 👁 **G9, G9x, G500, G700**: read-only. The sources disagree on how their DPI is coded, or code it in steps of
+  23.53 DPI that nobody has checked.
+- PeriHub **never writes their memory**: the stored profiles, the buttons and the macros stay as Logitech
+  Gaming Software left them. It never switches profile, not even away from the factory one.
+- With the cable only: the G700 and G700s through their receiver are not supported.
+- Not supported: the **G400s** (`046d:c24c`). The only tool known to configure it sends a raw USB request
+  that PeriHub cannot send, and nothing can be read back from it.
+
+| Mouse | USB ID | Level | Opened on Linux |
+|---|---|---|---|
+| G500s | `046d:c24e` | 🧪 Experimental (DPI in use) | interface 1 (with the keys and macros its own buttons send) |
+| G700s | `046d:c07c` | 🧪 Experimental (DPI in use) | interface 1 |
+| G9x | `046d:c066`, `046d:c249` (Call of Duty MW3 Edition) | 👁 Read-only | interface 1 |
+| G9 | `046d:c048` | 👁 Read-only | interface 1 |
+| G500 | `046d:c068` | 👁 Read-only | interface 1 |
+| G700 | `046d:c06b` | 👁 Read-only | interface 1 |
 
 ## Roccat mice
 

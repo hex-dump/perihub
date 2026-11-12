@@ -23,7 +23,11 @@ goes with every PeriHub package.
   `docs/protocols/logitech-g600.md`);
 - the Roccat Kone Pure, Kone XTD and Kone EMP settings (`src/driver-roccat-kone-pure.c`, `src/driver-roccat.c`,
   Copyright © 2015 Red Hat, Inc., and `src/driver-roccat-kone-emp.c`, Copyright © 2021 Alexandre Laurent),
-  read in `crates/perihub-core/src/peripheral/roccat.rs` (see `docs/protocols/roccat-kone.md`).
+  read in `crates/perihub-core/src/peripheral/roccat.rs` (see `docs/protocols/roccat-kone.md`);
+- the HID++ 1.0 registers, memory pages and profile layouts of the Logitech G9, G9x, G500, G500s, G700 and
+  G700s (`src/hidpp10.c`, `src/hidpp10.h`, `src/driver-hidpp10.c`, `src/hidpp-generic.c` and their
+  `data/devices/logitech-g*.device` files, Copyright © 2015-2017 Red Hat, Inc.), rewritten in Rust in
+  `crates/perihub-core/src/peripheral/logitech_hidpp10.rs` (see `docs/protocols/logitech-hidpp10.md`).
 
 ```
 Copyright © 2015-2017 Red Hat, Inc.
@@ -185,7 +189,8 @@ was copied.
   product ids of the Logitech receivers (`drivers/hid/hid-logitech-dj.c`).
 - [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0): the Logitech receiver ids, and how it reads and writes
   onboard profile lists and button entries, compared with libratbag's (see
-  `docs/protocols/logitech-onboard-profiles.md`).
+  `docs/protocols/logitech-onboard-profiles.md`); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak
+  HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (see `docs/protocols/logitech-hidpp10.md`).
 - The `lsusb -v` dumps of [linuxhw/LsUSB](https://github.com/linuxhw/LsUSB): which interfaces the Logitech G600
   and the Roccat Kone mice have.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse

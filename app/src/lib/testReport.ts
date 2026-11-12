@@ -233,6 +233,7 @@ export function peripheralTest(info: PeripheralInfo, version: string, system: st
         : null,
       options ? `Other settings: ${options}` : null,
       ...set.leds.map((l, i) => `LED ${i + 1}: mode ${l.mode}, brightness ${l.brightness ?? "-"}, ${l.color}`),
+      ...(info.details ?? []).map(([label, value]) => `${label}: ${value}`),
       ...info.buttons.map((b) => `Button ${b.name}: ${b.action}`),
       `Changes: ${info.problem ? `off (${info.problem})` : info.editable ? "available (experimental)" : "off (read-only)"}`,
       "Requests and answers:",

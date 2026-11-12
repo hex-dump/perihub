@@ -176,6 +176,9 @@
           <dt>Profile</dt>
           <dd>{info.active_profile ?? "?"} of {info.profiles} <span class="muted small">(the one in use; PeriHub {info.editable ? "reads and changes" : "reads"} only this one)</span></dd>
         {/if}
+        {#each info.details ?? [] as [label, value] (label)}
+          <dt>{label}</dt><dd>{value}</dd>
+        {/each}
       </dl>
 
       {#if !info.readable}

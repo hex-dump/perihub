@@ -89,6 +89,7 @@ const info: PeripheralInfo = {
     ],
   },
   buttons: [{ name: "Left", action: "Left" }],
+  details: [],
   blind: [],
   editable: true,
   can_save: true,
@@ -251,6 +252,20 @@ describe("a mouse of another brand", () => {
     });
     expect(screen.queryByRole("spinbutton")).toBeNull();
     expect(document.body.textContent).toContain("not changed on this device");
+  });
+
+  it("shows what a profile stores as it is, also in the test report", () => {
+    const g500s: PeripheralInfo = {
+      ...info,
+      details: [
+        ["DPI levels stored", "800 · 1600 · 3200"],
+        ["Polling rate stored", "500 Hz"],
+      ],
+    };
+    render(Peripheral, { props: { info: g500s, error: null } });
+    expect(document.body.textContent).toContain("DPI levels stored800 · 1600 · 3200");
+    const report = peripheralTest(g500s, "0.8.0", "Linux").report;
+    expect(report).toContain("DPI levels stored: 800 · 1600 · 3200\nPolling rate stored: 500 Hz");
   });
 
   it("explains when the device could not be opened", () => {

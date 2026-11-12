@@ -123,6 +123,19 @@ fn peripheral_collections(devices: &[DeviceInfo]) -> Vec<(DeviceInfo, &'static p
     found
 }
 
+/// The HID++ collection with `usage` (2 long, 1 short) of the same interface as `of`, a Logitech
+/// HID++ 1.0 mouse. On Windows each has a path of its own; on Linux they are the same node.
+fn hidpp10_collection<'a>(devices: &'a [DeviceInfo], of: &DeviceInfo, usage: u16) -> Option<&'a DeviceInfo> {
+    devices.iter().find(|d| {
+        d.vendor_id() == of.vendor_id()
+            && d.product_id() == of.product_id()
+            && d.serial_number() == of.serial_number()
+            && d.interface_number() == of.interface_number()
+            && d.usage_page() == 0xFF00
+            && d.usage() == usage
+    })
+}
+
 /// HID++ collection of a receiver: usage 2 is the long one, 1 the short one. On Linux both are the
 /// same hidraw node.
 fn receiver_collection(d: &DeviceInfo, usage: u16) -> bool {
@@ -1034,6 +1047,14 @@ impl Manager {
             .cloned()
             .collect();
         let mut found = peripheral_collections(&devices);
+        // A HID++ 1.0 mouse is opened by its long collection, which gets the long answers.
+        for (d, model) in found.iter_mut() {
+            if matches!(model.protocol, Protocol::LogitechHidpp10(_))
+                && let Some(long) = hidpp10_collection(&devices, d, 2)
+            {
+                *d = long.clone();
+            }
+        }
         let enabled = self.qmk_enabled.lock().unwrap().clone();
         let mut keyboards: Vec<(CString, QmkKeyboard)> = Vec::new();
         for d in &devices {
@@ -1102,10 +1123,19 @@ impl Manager {
             let changes = self.untested_saves;
             let is_qmk = matches!(model.protocol, Protocol::Qmk(_));
             let who = if is_qmk { qmk_identity(&device, model) } else { Identity::of(model, device.product_id()) };
-            let result = device
-                .open_device(api)
-                .map_err(Error::from)
-                .and_then(|dev| PeripheralTask::open(Box::new(dev), model, who, changes));
+            let short = match model.protocol {
+                Protocol::LogitechHidpp10(_) => {
+                    hidpp10_collection(&devices, &device, 1).filter(|d| d.path() != device.path())
+                }
+                _ => None,
+            };
+            let result = device.open_device(api).map_err(Error::from).and_then(|dev| {
+                let short = match short {
+                    Some(d) => Some(Box::new(d.open_device(api)?) as Box<dyn peripheral::Hid>),
+                    None => None,
+                };
+                PeripheralTask::open(Box::new(dev), short, model, who, changes)
+            });
             let mut slots = self.slots.lock().unwrap();
             let path = device.path().to_owned();
             match result {

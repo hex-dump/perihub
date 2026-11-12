@@ -618,6 +618,24 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="3794", ATTRS{idProduct}=="a000", TAG+="uacc
 # typed on a keyboard.
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c24a", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 
+# Logitech HID++ 1.0 mice (experimental, untested; protocol from libratbag, interface from Solaar):
+# interface 1, with their HID++ registers and onboard memory. It may also carry the keys and macros
+# the mouse's own buttons send, never what is typed on a keyboard.
+# Logitech G9
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c048", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Logitech G9x
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c066", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Logitech G9x (Call of Duty MW3 Edition)
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c249", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Logitech G500
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c068", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Logitech G500s
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c24e", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Logitech G700 (cable)
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c06b", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Logitech G700s (cable)
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c07c", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+
 # Roccat mice (read only, untested; protocol from libratbag): interface 0, the boot mouse interface,
 # where the kernel's own Roccat drivers find their configuration. Interface 1, with the keys the
 # mouse's buttons can send, stays closed.

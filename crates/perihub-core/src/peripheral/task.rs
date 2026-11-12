@@ -11,7 +11,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::{
     BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
-    check_settings, coolermaster, evga, logitech_g600, nordic, pulsar, qmk, razer, roccat, sinowealth, steelseries,
+    check_settings, coolermaster, evga, logitech_g600, logitech_hidpp10, nordic, pulsar, qmk, razer, roccat,
+    sinowealth, steelseries,
 };
 use crate::config;
 use crate::error::{Error, Result};
@@ -62,6 +63,7 @@ pub fn driver(model: &'static Model) -> Box<dyn Driver> {
         Protocol::Sinowealth(params) => Box::new(sinowealth::Sinowealth::new(params)),
         Protocol::Qmk(params) => Box::new(qmk::Qmk::new(params)),
         Protocol::LogitechG600 => Box::new(logitech_g600::G600::new()),
+        Protocol::LogitechHidpp10(params) => Box::new(logitech_hidpp10::Hidpp10::new(params)),
         Protocol::Roccat(params) => Box::new(roccat::Roccat::new(params)),
         Protocol::Pulsar(params) => Box::new(pulsar::Pulsar::new(params)),
         Protocol::CoolerMaster(params) => Box::new(coolermaster::CoolerMaster::new(params)),
@@ -139,20 +141,29 @@ pub struct PeripheralTask {
 
 impl PeripheralTask {
     /// `changes`: changes may be tried (PeriHub's app; never the command line).
-    pub fn open(hid: Box<dyn Hid>, model: &'static Model, who: Identity, changes: bool) -> Result<Self> {
+    /// `short`: the short HID++ collection of a Logitech HID++ 1.0 mouse, when it has a path of its
+    /// own (Windows).
+    pub fn open(
+        hid: Box<dyn Hid>,
+        short: Option<Box<dyn Hid>>,
+        model: &'static Model,
+        who: Identity,
+        changes: bool,
+    ) -> Result<Self> {
         let backups = config::config_dir().join("backups").join(&who.folder);
-        Self::start(hid, driver(model), model, who, changes, backups)
+        Self::start(hid, short, driver(model), model, who, changes, backups)
     }
 
     fn start(
         hid: Box<dyn Hid>,
+        short: Option<Box<dyn Hid>>,
         mut driver: Box<dyn Driver>,
         model: &'static Model,
         who: Identity,
         changes: bool,
         backups: PathBuf,
     ) -> Result<Self> {
-        let mut io = Io::new(hid, driver.commands(), changes);
+        let mut io = Io::new(hid, driver.commands(), changes).with_short(short);
         let reading = driver.read(&mut io)?;
         let info = PeripheralInfo {
             key: format!("{:04x}:{:04x}", who.vendor_id, who.product_id),
@@ -171,6 +182,7 @@ impl PeripheralTask {
             settings: Settings::default(),
             limits: Default::default(),
             buttons: Vec::new(),
+            details: Vec::new(),
             blind: driver.blind_settings(),
             editable: false,
             can_save: driver.can_save(),
@@ -224,6 +236,7 @@ impl PeripheralTask {
         self.info.settings = reading.settings;
         self.info.limits = reading.limits;
         self.info.buttons = reading.buttons;
+        self.info.details = reading.details;
         self.info.problem = reading.problem.or(self.info.problem.take());
         self.info.editable = self.io.changes_allowed();
         self.info.raw = self.io.take_raw();
@@ -465,7 +478,7 @@ pub(crate) fn start_for_test(
     changes: bool,
     backups: PathBuf,
 ) -> Result<PeripheralTask> {
-    PeripheralTask::start(hid, driver(model), model, Identity::of(model, product_id), changes, backups)
+    PeripheralTask::start(hid, None, driver(model), model, Identity::of(model, product_id), changes, backups)
 }
 
 #[cfg(test)]

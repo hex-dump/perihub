@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **The older Logitech G mice, whose software Logitech no longer offers**: G9 (`046d:c048`), G9x (`c066`, and `c249` for the Call of Duty MW3 Edition), G500 (`c068`), G500s (`c24e`), G700 (`c06b`) and G700s (`c07c`) on their cable, from libratbag's HID++ 1.0 driver (MIT), with their interface from Solaar. Logitech removed Logitech Gaming Software, their software, from its site on 31 October 2026; G HUB, which succeeded it, is for the devices that came after. Nobody has tried them with PeriHub yet. Their page shows the firmware, the DPI in use, the polling rate, the profile in use and what it stores in the mouse's memory: its name, DPI levels, polling rate, colour (G9, G9x) and buttons.
+- On the **G500s and G700s (experimental)**, **Apply** changes the DPI in use, from 50 to 8200 in steps of 50: a setting in the mouse's RAM that it forgets when it is unplugged or its own DPI buttons pick another level, with read-back and the 15-second undo. The G9, G9x, G500 and G700 are read-only: the sources disagree on how their DPI is coded, or code it in steps of 23.53 DPI nobody has checked.
+- PeriHub never writes these mice's memory and never switches their profile, not even away from the factory one (libratbag does that inside a read): the commands that erase or write the flash pages are not in the list their driver goes through. On Windows PeriHub opens both HID++ collections of the mouse, as it does for receivers. On Linux the udev rule opens their interface 1.
+- The **G400s** (`046d:c24c`) is not supported: the only known tool sends it a raw USB request after detaching the kernel driver, which PeriHub cannot send, and reads nothing back.
+- Pages of devices of other brands can show what the device stores as it is, such as a stored profile, and the test report includes it.
+
 ## 0.8.0 — 2026-11-12
 
 23 more mice, among them six new brands (Glorious, Roccat, Pulsar, Lamzu, Cooler Master and EVGA) and the Logitech G600, and keyboards with QMK or Vial firmware, from the published documentation of their protocols and USB captures. Nobody has tried them with PeriHub yet. Also: a sidebar with only the devices that are there and a page to ask for yours, mouse lighting zones that can each keep their own effect, and faster updates on Windows. The sidebar, the report page and the lighting switch were tried on Windows 11 with an Apex 3 TKL and a G502 HERO.

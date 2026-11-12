@@ -1,11 +1,11 @@
 name: Device test report
-description: Tell us how PeriHub works with a Corsair, ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master or EVGA device, a QMK keyboard (Vial, VIA), the Logitech G300 or G600 or a Logitech device on a Bolt or Unifying receiver
+description: Tell us how PeriHub works with a Corsair, ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master or EVGA device, a QMK keyboard (Vial, VIA), the Logitech G300, G600, G500s, G700s, G9x and their older siblings (G9, G500, G700), or a Logitech device on a Bolt or Unifying receiver
 labels: ["device test"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing! PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session, if you turn it on. On the Logitech G300 it reads and saves the three profiles. For a Logitech device on a Bolt or Unifying receiver it reads what the device is, and can set its DPI, if you choose to. On ASUS, SteelSeries, Razer and Glorious mice, and on QMK keyboards, it reads what the device reports, and changes settings only if you choose to, at your own risk. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
+        Thanks for testing! PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session, if you turn it on. On the Logitech G300 it reads and saves the three profiles. On the Logitech G9, G9x, G500, G500s, G700 and G700s (with the cable) it reads the profile in use, and on the G500s and G700s it can set the DPI in use until the mouse is unplugged, if you choose to; it never writes their memory. For a Logitech device on a Bolt or Unifying receiver it reads what the device is, and can set its DPI, if you choose to. On ASUS, SteelSeries, Razer and Glorious mice, and on QMK keyboards, it reads what the device reports, and changes settings only if you choose to, at your own risk. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
   - type: input
     id: model
     attributes:

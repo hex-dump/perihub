@@ -23,8 +23,10 @@ fn udev_rule_matches_mouse_list() {
         .filter(|m| m.has_cable())
         .map(|m| format!("{:04x}", m.product_id))
         .chain([format!("{:04x}", perihub_core::g300::PRODUCT_ID)])
-        // The G600, from the other brands' tables (checked there).
+        // The G600 and the HID++ 1.0 mice, from the other brands' tables (checked there).
         .chain(perihub_core::peripheral::logitech_g600::MODELS.iter().map(|m| format!("{:04x}", m.product_ids[0])))
+        // The HID++ 1.0 mice, from the other brands' tables too.
+        .chain(perihub_core::peripheral::logitech_hidpp10::MODELS.iter().map(|m| format!("{:04x}", m.product_ids[0])))
         .collect();
     assert_eq!(sorted(in_rule), sorted(in_list));
 }

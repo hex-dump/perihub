@@ -566,6 +566,8 @@ export interface PeripheralInfo {
   settings: PeripheralSettings;
   limits: PeripheralLimits;
   buttons: { name: string; action: string }[];
+  /** Other things read and shown as they are, such as what a profile stores: label and value. */
+  details: [string, string][];
   blind: BlindSetting[];
   /** Changes may be tried: PeriHub's app, and everything read looked as documented. */
   editable: boolean;
