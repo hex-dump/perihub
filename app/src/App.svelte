@@ -15,6 +15,7 @@
   import Settings from "./pages/Settings.svelte";
   import DeviceReport from "./pages/DeviceReport.svelte";
   import Icon from "./components/Icon.svelte";
+  import logo from "../icon.svg";
 
   type Page =
     | "keyboard"
@@ -166,7 +167,7 @@
 <div class="shell">
   <nav>
     <div class="brand">
-      <span class="logo"></span>
+      <img class="logo" src={logo} alt="" />
       <span>PeriHub</span>
     </div>
 
@@ -479,10 +480,8 @@
   }
 
   .logo {
-    width: 24px;
-    height: 24px;
-    border-radius: 7px;
-    background: linear-gradient(135deg, #ff5a1f, #d63bff 55%, #2f8bff);
+    width: 30px;
+    height: 30px;
   }
 
   main {
