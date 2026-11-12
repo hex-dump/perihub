@@ -149,7 +149,7 @@
       <p class="lead">Tested on real hardware: the <b>SteelSeries Apex 3 TKL</b> keyboard and the <b>Logitech G502 HERO</b>, <b>G502 X Wireless</b> and <b>G300</b> mice. Over 200 more mice and keyboards are recognized. PeriHub talks only to the devices listed here.</p>
       <ul class="levels">
         <li><span class="chip ok">Supported</span><span>Tested on real hardware: everything on its page works.</span></li>
-        <li><span class="chip test">Experimental</span><span>Recognized, but nobody has tried it with PeriHub yet. Changes are at your own risk, after a <b>No warranty</b> box, with a backup and an undo wherever the device can report its settings.</span></li>
+        <li><span class="chip test">Experimental</span><span>Recognized, but nobody has tried it with PeriHub yet. Changes are at your own risk, with a warning on screen. Saving to the device's memory asks you to tick a <b>No warranty</b> box first, and each save is backed up and undone after 15 seconds unless you keep it.</span></li>
         <li><span class="chip ro">Read-only</span><span>Recognized: PeriHub shows its settings and changes nothing.</span></li>
       </ul>
       <div class="table-wrap">
@@ -275,7 +275,7 @@
 
       <div class="logitech" id="logitech">
         <h3>Which Logitech G mice are supported?</h3>
-        <p>For the 28 Logitech G mice with onboard memory, what counts is not the model but the <b>format of the memory</b> the mouse reports. Many models share a format, and a firmware update can change it. PeriHub reads it every time the mouse is plugged in, and the mouse page shows the level.</p>
+        <p>The <b>G502 HERO</b> and the <b>G502 X Wireless</b> are supported whatever their firmware. For the other 26 Logitech G mice with onboard memory, what counts is not the model but the <b>format of the memory</b> the mouse reports. Many models share a format, and a firmware update can change it. PeriHub reads it every time the mouse is plugged in, and the mouse page shows the level.</p>
         <div class="table-wrap">
           <table class="compat">
             <thead><tr><th scope="col">Memory the mouse reports</th><th scope="col">Level</th><th scope="col">With the USB cable</th></tr></thead>
@@ -292,7 +292,7 @@
           <table class="compat known">
             <thead><tr><th scope="col">Mouse</th><th scope="col">Memory found</th><th scope="col">Level</th></tr></thead>
             <tbody>
-              <tr><td><b>G900</b></td><td>Format 3, sector size not known</td><td><span class="chip ok">Supported</span> with 255-byte sectors, <span class="chip test">Experimental</span> with 256</td></tr>
+              <tr><td><b>G900</b></td><td>Format 3, sector size not known</td><td><span class="chip ok">Supported</span> with 255-byte sectors, <span class="chip test">Experimental</span> with 256, <span class="chip ro">Read-only</span> with any other size</td></tr>
               <tr><td><b>G203</b></td><td>Format 4</td><td><span class="chip ro">Read-only</span></td></tr>
               <tr><td><b>G502 X PLUS</b></td><td>Format 5</td><td><span class="chip ro">Read-only</span></td></tr>
               <tr><td>Every other model</td><td>Not known yet</td><td>Plug it in: its page in PeriHub shows the level</td></tr>
