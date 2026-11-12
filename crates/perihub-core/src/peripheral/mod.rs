@@ -10,6 +10,7 @@
 //! - an answer that does not look as documented leaves the device read-only.
 
 pub mod asus;
+pub mod coolermaster;
 pub mod logitech_g600;
 pub mod pulsar;
 pub mod qmk;
@@ -65,6 +66,7 @@ pub struct Command {
 #[derive(Debug, Clone, Copy)]
 pub enum Protocol {
     Asus(asus::Params),
+    CoolerMaster(coolermaster::Params),
     LogitechG600,
     Pulsar(pulsar::Params),
     Qmk(qmk::Params),
@@ -100,6 +102,7 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
         .chain(logitech_g600::MODELS)
         .chain(roccat::MODELS)
         .chain(pulsar::MODELS)
+        .chain(coolermaster::MODELS)
 }
 
 pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {
@@ -490,6 +493,18 @@ impl Io {
     /// reports (a mouse's movements, on the same interface) are skipped. Answers left waiting from
     /// before are dropped first.
     pub fn output_query(&mut self, payload: &[u8], reply: &mut [u8], timeout: Duration) -> Result<()> {
+        self.output_exchange(payload, reply, timeout, |_| true)
+    }
+
+    /// [`Io::output_query`] that takes only an input report `answers` accepts: reports the device
+    /// sends by itself on the same interface, of the same length, are skipped too.
+    pub fn output_exchange(
+        &mut self,
+        payload: &[u8],
+        reply: &mut [u8],
+        timeout: Duration,
+        answers: impl Fn(&[u8]) -> bool,
+    ) -> Result<()> {
         self.check(payload)?;
         let mut scratch = [0u8; 256];
         for _ in 0..64 {
@@ -509,7 +524,7 @@ impl Io {
                 return Err(Error::Timeout);
             }
             let n = self.hid.read_timeout(&mut scratch, left.as_millis().clamp(1, 1000) as i32)?;
-            if n == reply.len() {
+            if n == reply.len() && answers(&scratch[..n]) {
                 reply.copy_from_slice(&scratch[..n]);
                 self.note(format!("{} → {}", hex(&payload[..payload.len().min(4)]), hex(reply)));
                 return Ok(());

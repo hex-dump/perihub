@@ -28,6 +28,7 @@ the same format.
 - [Logitech G600](#logitech-g600)
 - [Roccat mice](#roccat-mice)
 - [Pulsar mice](#pulsar-mice)
+- [Cooler Master mice](#cooler-master-mice)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
 ## SteelSeries
@@ -471,6 +472,29 @@ the Xlite Wired and X2 Wired are said to speak the X2A's protocol, and the Xlite
 | X3 LHD | `3710:3410` | interface 3 |
 
 Interface 1, which carries the keys a button bound to a key or a macro types, is never opened.
+
+## Cooler Master mice
+
+🧪 Experimental, lighting only: nobody has tried PeriHub on one yet. Their protocol comes from the USB captures of
+Cooler Master's own app that users attached to OpenRGB's device requests (facts only, no code), and is described in
+[protocols/coolermaster-mm.md](protocols/coolermaster-mm.md).
+
+- PeriHub reads the lighting mode in use and the colour and brightness each mode keeps.
+- **Save to memory** changes the colour and brightness of the mode in use, or switches between steady, breathing,
+  colour cycle and off, after the No warranty box the first time. Every change goes through the save sequence of
+  Cooler Master's app, with backup, read-back and the 15-second undo. A new mode keeps its own colour and brightness:
+  change them after switching.
+- In stars, indicator, custom or multilayer mode the lighting is shown and not changed.
+- Not offered: effect speed, colours per zone, buttons, DPI. The MM531 and MM712 are left out.
+
+| Mouse | USB ID | Opened on Linux |
+|---|---|---|
+| MM530 | `2516:0065` | interface 1 (lighting only) |
+| MM711 | `2516:0101` | interface 1 |
+| MM720 | `2516:0141` | interface 1 |
+| MM730 | `2516:0165` | interface 1 |
+
+Interface 2, which carries the keys a button bound to a key types, is never opened.
 
 ## Keyboards with QMK firmware (Vial, VIA)
 

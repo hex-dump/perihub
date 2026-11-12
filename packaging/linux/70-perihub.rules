@@ -646,3 +646,14 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="3401", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="3409", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # Pulsar X3 LHD
 KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="3410", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+
+# Cooler Master mice, their lighting (experimental, untested; protocol from captures of Cooler Master's app):
+# interface 1, a vendor collection only. Interface 2, with the keys a button bound to a key types, is never opened.
+# Cooler Master MM530
+KERNEL=="hidraw*", ATTRS{idVendor}=="2516", ATTRS{idProduct}=="0065", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Cooler Master MM711
+KERNEL=="hidraw*", ATTRS{idVendor}=="2516", ATTRS{idProduct}=="0101", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Cooler Master MM720
+KERNEL=="hidraw*", ATTRS{idVendor}=="2516", ATTRS{idProduct}=="0141", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Cooler Master MM730
+KERNEL=="hidraw*", ATTRS{idVendor}=="2516", ATTRS{idProduct}=="0165", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
