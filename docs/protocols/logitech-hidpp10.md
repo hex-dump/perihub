@@ -108,8 +108,8 @@ mode at 19, unknown 20–21, polling rate at 22, 10 buttons in 23–52, unknown 
 - Reads: the five registers above, and the memory reads of the directory and of the profile in use, once per
   connection (a page is 32 reads).
 - One change, on the G500s and the G700s: **the DPI in use**, `11 00 82 63 <x lo> <x hi> <y lo> <y hi> 00…`, both
-  codes the same (`code × 50` DPI). The mouse answers `10 00 82 63 …`. It is a register in RAM: the mouse forgets it
-  when it is unplugged, when it switches profile, or when its own DPI buttons pick another stored level. PeriHub reads
+  codes the same (`code × 50` DPI). The mouse answers `10 00 82 63 …`. According to libratbag it is a register in RAM
+  (not confirmed on a mouse yet): the mouse forgets it when it is unplugged, when it switches profile, or when its own DPI buttons pick another stored level. PeriHub reads
   it back, and puts the DPI from before back after 15 seconds unless the change is kept.
 
 Never sent, and not in the list the driver's commands go through:

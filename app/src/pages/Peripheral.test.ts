@@ -268,6 +268,11 @@ describe("a mouse of another brand", () => {
     expect(report).toContain("DPI levels stored: 800 · 1600 · 3200\nPolling rate stored: 500 Hz");
   });
 
+  it("does not say the profile is changed where only the RAM is", () => {
+    render(Peripheral, { props: { info: { ...info, can_save: false, changes_stay: false }, error: null } });
+    expect(document.body.textContent).toContain("PeriHub reads only this one");
+  });
+
   it("explains when the device could not be opened", () => {
     render(Peripheral, {
       props: { info: null, error: "ASUS ROG Keris: permission denied" },

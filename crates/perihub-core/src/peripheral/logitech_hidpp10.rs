@@ -347,7 +347,7 @@ fn describe_profile(params: &Params, page: &[u8], details: &mut Vec<(String, Str
     }
     details.push(("DPI levels stored".into(), if levels.is_empty() { "none".into() } else { levels.join(" · ") }));
     let polling = page[o.polling];
-    if polling != 0 && 1000 % polling as u16 == 0 {
+    if polling != 0 {
         details.push(("Polling rate stored".into(), format!("{} Hz", 1000 / polling as u16)));
     }
     if let (Some(at), true) = (o.color, params.color) {
@@ -505,7 +505,8 @@ impl Driver for Hidpp10 {
             _ => problems.push(format!("DPI codes {x:#x}, {y:#x}")),
         }
         match Self::get(io, POLLING, [0, 0, 0]) {
-            Ok(r) if r[4] != 0 && 1000 % r[4] as u16 == 0 => reading.settings.polling_hz = Some(1000 / r[4] as u16),
+            // Milliseconds between reports: 3 is 333 Hz, as libratbag reads it.
+            Ok(r) if r[4] != 0 => reading.settings.polling_hz = Some(1000 / r[4] as u16),
             Ok(r) => problems.push(format!("polling rate code {:#04x}", r[4])),
             Err(e) => reading.details.push(("Polling rate".into(), format!("not read ({e})"))),
         }
@@ -698,6 +699,7 @@ mod tests {
             match (r[0], sub, register) {
                 (SHORT, GET_REGISTER, PROFILE) => answers.push(short(sub, register, m.profile)),
                 (SHORT, GET_REGISTER, POLLING) => answers.push(short(sub, register, [m.polling, 0, 0])),
+                (SHORT, GET_REGISTER, RESOLUTION) => answers.push(short(sub, register, [m.resolution.0 as u8, 0, 0])),
                 (SHORT, GET_LONG_REGISTER, RESOLUTION) => {
                     let mut a = vec![0u8; LONG_LEN];
                     a[..4].copy_from_slice(&[LONG, DEVICE, sub, register]);
@@ -866,12 +868,13 @@ mod tests {
                     DpiTable::List(_) => (0x83, 0x83),
                     DpiTable::Range { .. } => (34, 34),
                 };
-                if params.layout == Layout::G9 {
-                    m.refused.push(RESOLUTION);
-                }
             }
             let task = start_for_test(Box::new(fake(state.clone())), model, id, true, temp("readonly")).unwrap();
             assert!(!task.info.editable, "{id:04x}");
+            assert_eq!(task.info.problem, None, "{id:04x}");
+            // Code 0x83 on the G9's list, code 34 on the ranges: 200 + 50 × 34 on the G9x, 23.53 × 34 elsewhere.
+            let expected = if id == 0xC066 { 1900 } else { 800 };
+            assert_eq!(task.info.settings.dpi_levels, [expected], "{id:04x}");
             let driver = Hidpp10::new(params);
             assert!(driver.commands().iter().all(|c| c.effect == Effect::Read), "{id:04x}");
         }
@@ -902,6 +905,18 @@ mod tests {
             assert!(task.info.problem.is_some(), "case {i}");
             assert!(!task.info.editable, "case {i}");
         }
+    }
+
+    #[test]
+    fn a_polling_rate_of_3_ms_is_333_hz_and_no_problem() {
+        let state = g500s();
+        state.lock().unwrap().polling = 3;
+        let task =
+            start_for_test(Box::new(fake(state.clone())), find(0x046D, 0xC24E).unwrap(), 0xC24E, true, temp("333"))
+                .unwrap();
+        assert_eq!(task.info.problem, None);
+        assert_eq!(task.info.settings.polling_hz, Some(333));
+        assert!(task.info.editable);
     }
 
     #[test]

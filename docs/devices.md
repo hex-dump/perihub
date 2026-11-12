@@ -428,8 +428,7 @@ described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md
 
 ## Older Logitech mice: G9, G9x, G500, G500s, G700, G700s
 
-Logitech stopped offering their software, Logitech Gaming Software, on 31 October 2026; G HUB, which succeeded it,
-is for the devices that came after. They speak HID++ 1.0, an older protocol than the one of the mice above. Their protocol comes from
+Logitech removed their software, Logitech Gaming Software, from its site on 31 October 2026. They speak HID++ 1.0, an older protocol than the one of the mice above. Their protocol comes from
 [libratbag](https://github.com/libratbag/libratbag) (MIT), and is described in
 [protocols/logitech-hidpp10.md](protocols/logitech-hidpp10.md). Nobody has tried PeriHub on one yet.
 
@@ -437,8 +436,9 @@ is for the devices that came after. They speak HID++ 1.0, an older protocol than
   that profile stores: its name, its DPI levels, its polling rate, its colour (G9, G9x) and what each button
   does. It shows the stored profile as it is.
 - 🧪 **G500s and G700s**: **Apply** changes the DPI in use, from 50 to 8200 in steps of 50. That is a setting in
-  the mouse's RAM: it lasts until the mouse is unplugged or its own DPI buttons are pressed. PeriHub reads it back
-  and puts it back after 15 seconds unless you keep the change.
+  the mouse's RAM according to libratbag: it should last until the mouse is unplugged or its own DPI buttons are
+  pressed, but nobody has confirmed that yet. PeriHub reads it back and puts it back after 15 seconds unless you keep
+  the change.
 - 👁 **G9, G9x, G500, G700**: read-only. The sources disagree on how their DPI is coded, or code it in steps of
   23.53 DPI that nobody has checked.
 - PeriHub **never writes their memory**: the stored profiles, the buttons and the macros stay as Logitech
