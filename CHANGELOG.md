@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 — 2026-11-12
+
+23 more mice, among them six new brands (Glorious, Roccat, Pulsar, Lamzu, Cooler Master and EVGA) and the Logitech G600, and keyboards with QMK or Vial firmware, from the published documentation of their protocols and USB captures. Nobody has tried them with PeriHub yet. Also: a sidebar with only the devices that are there and a page to ask for yours, mouse lighting zones that can each keep their own effect, and faster updates on Windows. The sidebar, the report page and the lighting switch were tried on Windows 11 with an Apex 3 TKL and a G502 HERO.
 
 ### Added
 - **3 Glorious mice (experimental)**, with a cable: Model O/O- (`258a:0036`), Model D (`258a:0033`) and Model O Eternal (`3794:a000`), from the published documentation of their SinoWealth protocol (libratbag, MIT). Nobody has tried them with PeriHub yet. Their page shows the firmware, the DPI of each slot that is on, the slot in use and the polling rate. Every change rewrites their settings in memory, so, as on Razer mice, only **Save to memory** is offered, after the No warranty box, with backup, read-back and the 15-second undo. PeriHub reads the settings again just before, changes only the DPI of the slots that are on and the polling rate, writes every other byte back as it read it, and checks every byte after. A mouse whose firmware is not the one libratbag knows is read for its firmware only.
