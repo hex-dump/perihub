@@ -614,6 +614,12 @@ export interface AppSettings {
   system: string;
 }
 
+/** How far the download of an update has gone. */
+export interface UpdateProgress {
+  received: number;
+  total: number | null;
+}
+
 export interface UpdateInfo {
   version: string;
 }
@@ -787,6 +793,8 @@ export const api = {
   onUpdate: (handler: (update: UpdateInfo) => void): Promise<UnlistenFn> =>
     listen<UpdateInfo>("update-available", (event) => handler(event.payload)),
   installUpdate: () => invoke<void>("update_install"),
+  onUpdateProgress: (handler: (progress: UpdateProgress) => void): Promise<UnlistenFn> =>
+    listen<UpdateProgress>("update-progress", (event) => handler(event.payload)),
 };
 
 /** Runs `fn` only after `ms` milliseconds without new calls (for sliders and color pickers). */

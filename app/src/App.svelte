@@ -146,6 +146,7 @@
     // PeriHub checks for updates in the background, also while this window is closed.
     api.updateAvailable().then((u) => u && (updates.available = u));
     const unlistenUpdate = api.onUpdate((u) => (updates.available = u));
+    const unlistenProgress = api.onUpdateProgress((p) => (updates.progress = p));
     const onHash = () => {
       const [next, nextTab] = fromHash();
       page = next ?? (loaded ? firstPage() : null);
@@ -155,6 +156,7 @@
     const unlisten = api.onStatus(received);
     return () => {
       unlistenUpdate.then((fn) => fn());
+      unlistenProgress.then((fn) => fn());
       unlisten.then((fn) => fn());
       window.removeEventListener("hashchange", onHash);
     };

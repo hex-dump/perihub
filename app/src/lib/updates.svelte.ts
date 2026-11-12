@@ -1,4 +1,4 @@
-import { api, errorText, type UpdateInfo } from "./api";
+import { api, errorText, type UpdateInfo, type UpdateProgress } from "./api";
 
 /** Update state, shared by the sidebar and the settings page. */
 export const updates = $state({
@@ -8,7 +8,19 @@ export const updates = $state({
   /** A check finished in this session (to say "up to date"). */
   checked: false,
   error: null as string | null,
+  /** The download of the installer, which starts as soon as an update is found. */
+  progress: null as UpdateProgress | null,
 });
+
+/** What the update button says while it works. */
+export function installingText(progress: UpdateProgress | null): string {
+  if (!progress) return "Starting…";
+  if (!progress.total) return "Downloading…";
+  if (progress.received < progress.total) {
+    return `Downloading ${Math.floor((progress.received * 100) / progress.total)}%…`;
+  }
+  return "Installing…";
+}
 
 export async function checkForUpdate() {
   if (updates.checking || updates.installing) return;
@@ -24,7 +36,7 @@ export async function checkForUpdate() {
   }
 }
 
-/** Downloads and runs the installer: PeriHub closes and the new version starts. */
+/** Runs the installer, downloading it first if needed: PeriHub closes and the new version starts. */
 export async function installUpdate() {
   updates.installing = true;
   updates.error = null;
