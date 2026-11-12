@@ -278,8 +278,8 @@
 
       {#if info.editable && info.changes_stay}
         <div class="notice warn change">
-          <b>Experimental.</b> This device stores every change in its memory by itself: there is no change that lasts
-          only until it is turned off. PeriHub asks for the No warranty box the first
+          <b>Experimental.</b> PeriHub treats every change on this device as stored in its memory: its protocol has no
+          change that is known to last only until it is turned off. PeriHub asks for the No warranty box the first
           time, saves the settings first, reads them back after the change, and puts them back after 15 seconds unless
           you keep the change.
         </div>

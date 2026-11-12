@@ -277,10 +277,15 @@ impl Driver for Evga {
             return Err(Error::Invalid("lighting".into()));
         }
         let offered = |m: u8| x12::OFFERED.iter().any(|(o, _)| *o == m);
-        let mut modes = self.modes;
-        modes[1..3].copy_from_slice(&[x12::HEADER, x12::SET]);
-        let mut colours = self.colours;
-        colours[1..3].copy_from_slice(&[x12::HEADER, x12::SET]);
+        // Each write is built from zeros, as OpenRGB's are: only the header and the slots come from
+        // what was read, never the rest of the answer.
+        let (mode_slots, colour_slots) = (4..4 + x12::SLOTS, 4..4 + x12::SLOTS * 4);
+        let mut modes = [0u8; x12::LEN];
+        modes[..4].copy_from_slice(&[x12::ID, x12::HEADER, x12::SET, x12::MODES]);
+        modes[mode_slots.clone()].copy_from_slice(&self.modes[mode_slots.clone()]);
+        let mut colours = [0u8; x12::LEN];
+        colours[..4].copy_from_slice(&[x12::ID, x12::HEADER, x12::SET, x12::COLOURS]);
+        colours[colour_slots.clone()].copy_from_slice(&self.colours[colour_slots.clone()]);
         for (((slot, _), old), new) in x12::ZONES.iter().zip(&from.leds).zip(&to.leds) {
             if !offered(old.mode) || !offered(new.mode) || self.modes[4 + slot] != old.mode {
                 return Err(Error::Invalid(format!("lighting mode {}", new.mode)));
@@ -294,15 +299,13 @@ impl Driver for Evga {
             colours[at + 1..at + 4].copy_from_slice(&new.color.to_bytes());
         }
         colours[x12::START_WITH_PROFILE..x12::START_WITH_PROFILE + x12::SLOTS].fill(1);
-        let slots = 4..4 + x12::SLOTS * 4;
-        if colours[slots.clone()] != self.colours[slots.clone()] {
-            Self::x12_set(io, &colours, slots)?;
-            self.colours[4..4 + x12::SLOTS * 4].copy_from_slice(&colours[4..4 + x12::SLOTS * 4]);
+        if colours[colour_slots.clone()] != self.colours[colour_slots.clone()] {
+            Self::x12_set(io, &colours, colour_slots.clone())?;
+            self.colours[colour_slots.clone()].copy_from_slice(&colours[colour_slots]);
         }
-        let slots = 4..4 + x12::SLOTS;
-        if modes[slots.clone()] != self.modes[slots.clone()] {
-            Self::x12_set(io, &modes, slots)?;
-            self.modes[4..4 + x12::SLOTS].copy_from_slice(&modes[4..4 + x12::SLOTS]);
+        if modes[mode_slots.clone()] != self.modes[mode_slots.clone()] {
+            Self::x12_set(io, &modes, mode_slots.clone())?;
+            self.modes[mode_slots.clone()].copy_from_slice(&modes[mode_slots]);
         }
         Ok(())
     }
@@ -331,6 +334,8 @@ mod tests {
         wrong_header: bool,
         /// Drops the colour writes.
         deaf: bool,
+        /// What its answers carry after the slots.
+        trailing: u8,
     }
 
     type Shared = Arc<Mutex<X12>>;
@@ -345,6 +350,7 @@ mod tests {
             sent: Vec::new(),
             wrong_header: false,
             deaf: false,
+            trailing: 0,
         }))
     }
 
@@ -371,7 +377,7 @@ mod tests {
             let m = state.lock().unwrap();
             assert_eq!(id, x12::ID);
             let what = m.next?;
-            let mut a = vec![0u8; x12::LEN];
+            let mut a = vec![m.trailing; x12::LEN];
             a[..4].copy_from_slice(&[x12::ID, if m.wrong_header { 0xEB } else { x12::HEADER }, 0, what]);
             match what {
                 x12::MODES => a[4..8].copy_from_slice(&m.modes),
@@ -435,6 +441,27 @@ mod tests {
         task.expire_undo();
         crate::worker::DeviceTask::tick(&mut task).unwrap();
         assert_eq!(state.lock().unwrap().colours, before);
+        let _ = std::fs::remove_dir_all(task.backups());
+    }
+
+    #[test]
+    fn writes_are_built_from_zeros_whatever_the_answers_carry_after_the_slots() {
+        let state = x12_mouse();
+        state.lock().unwrap().trailing = 0x5A;
+        let model = find(EVGA, 0x2422).unwrap();
+        let mut task = start_for_test(Box::new(x12_fake(state.clone())), model, 0x2422, true, temp("zeros")).unwrap();
+        let mut wanted = task.info.settings.clone();
+        wanted.leds[1].color = BLUE;
+        wanted.leds[2].mode = x12::OFF;
+        task.change(&wanted, false, None).unwrap();
+        let sent = writes(&state);
+        assert_eq!(sent.len(), 2);
+        let (colours, modes) = (&sent[0], &sent[1]);
+        assert_eq!(&colours[..4], &[x12::ID, x12::HEADER, x12::SET, x12::COLOURS]);
+        assert_eq!(&colours[20..24], &[1, 1, 1, 1]);
+        assert!(colours[24..].iter().all(|&b| b == 0), "{colours:02x?}");
+        assert_eq!(&modes[..8], &[x12::ID, x12::HEADER, x12::SET, x12::MODES, 1, 1, 1, 0]);
+        assert!(modes[8..].iter().all(|&b| b == 0), "{modes:02x?}");
         let _ = std::fs::remove_dir_all(task.backups());
     }
 

@@ -422,7 +422,7 @@ describe("a mouse that stores every change", () => {
     render(Peripheral, { props: { info: razer, error: null } });
     expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
     expect(document.body.textContent).toContain(
-      "stores every change in its memory by itself",
+      "treats every change on this device as stored in its memory",
     );
     await setPolling(500);
     await fireEvent.click(
