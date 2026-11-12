@@ -11,7 +11,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::{
     BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
-    check_settings, coolermaster, logitech_g600, nordic, pulsar, qmk, razer, roccat, sinowealth, steelseries,
+    check_settings, coolermaster, evga, logitech_g600, nordic, pulsar, qmk, razer, roccat, sinowealth, steelseries,
 };
 use crate::config;
 use crate::error::{Error, Result};
@@ -66,6 +66,7 @@ pub fn driver(model: &'static Model) -> Box<dyn Driver> {
         Protocol::Pulsar(params) => Box::new(pulsar::Pulsar::new(params)),
         Protocol::CoolerMaster(params) => Box::new(coolermaster::CoolerMaster::new(params)),
         Protocol::Nordic(params) => Box::new(nordic::Nordic::new(params)),
+        Protocol::Evga(params) => Box::new(evga::Evga::new(params)),
     }
 }
 

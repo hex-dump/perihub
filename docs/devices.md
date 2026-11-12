@@ -30,6 +30,7 @@ the same format.
 - [Pulsar mice](#pulsar-mice)
 - [Pulsar CrazyLight and Lamzu Atlantis](#pulsar-crazylight-and-lamzu-atlantis)
 - [Cooler Master mice](#cooler-master-mice)
+- [EVGA mice](#evga-mice)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
 ## SteelSeries
@@ -522,6 +523,24 @@ Cooler Master's own app that users attached to OpenRGB's device requests (facts 
 | MM730 | `2516:0165` | interface 1 |
 
 Interface 2, which carries the keys a button bound to a key types, is never opened.
+
+## EVGA mice
+
+🧪 Experimental, lighting only: nobody has tried PeriHub on one yet. The protocol comes from facts in OpenRGB's EVGA
+drivers (no code copied), described in [protocols/evga-mice.md](protocols/evga-mice.md).
+
+- **X12**: PeriHub reads the mode, colour and brightness of its front, wheel and logo zones. **Save to memory** turns
+  a zone off or steady and changes its colour and brightness, after the No warranty box the first time, with backup,
+  read-back and the 15-second undo. Whether the mouse keeps a change after it is unplugged is not known yet. A zone in
+  one of the other modes of EVGA's software is shown and not changed.
+- **X20** on its cable: read only (mode, brightness and colour of each zone). Its writes are not checked by anything
+  the mouse answers, so they wait for a tester. Its wireless receiver is left out.
+- The **Z15 and Z20 keyboards** are left out: their lighting shares an interface that may carry what is typed.
+
+| Mouse | USB ID | Opened on Linux |
+|---|---|---|
+| X12 | `3842:2422` | interface 1 |
+| X20 | `3842:2420` | interface 2 (read only) |
 
 ## Keyboards with QMK firmware (Vial, VIA)
 

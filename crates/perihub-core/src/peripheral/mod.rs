@@ -11,6 +11,7 @@
 
 pub mod asus;
 pub mod coolermaster;
+pub mod evga;
 pub mod logitech_g600;
 pub mod nordic;
 pub mod pulsar;
@@ -68,6 +69,7 @@ pub struct Command {
 pub enum Protocol {
     Asus(asus::Params),
     CoolerMaster(coolermaster::Params),
+    Evga(evga::Params),
     LogitechG600,
     Nordic(nordic::Params),
     Pulsar(pulsar::Params),
@@ -106,6 +108,7 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
         .chain(pulsar::MODELS)
         .chain(coolermaster::MODELS)
         .chain(nordic::MODELS)
+        .chain(evga::MODELS)
 }
 
 pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {

@@ -666,3 +666,11 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="3414", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="3527", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Lamzu Atlantis (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f50f", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+
+# EVGA mice on their cable (lighting; facts from OpenRGB, untested): the X12's interface 1 (its LED collection) and
+# the X20's interface 2 (a vendor collection), which may also carry the keys their own buttons send, never a
+# keyboard's typing. The Z15 and Z20 keyboards are left out.
+# EVGA X12
+KERNEL=="hidraw*", ATTRS{idVendor}=="3842", ATTRS{idProduct}=="2422", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# EVGA X20 (read only)
+KERNEL=="hidraw*", ATTRS{idVendor}=="3842", ATTRS{idProduct}=="2420", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
