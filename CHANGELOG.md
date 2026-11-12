@@ -15,6 +15,9 @@
 - On Linux, an optional rule per QMK keyboard, `73-perihub-qmk.rules`, written from the QMK keyboards page with your password: it opens only the interface whose descriptor, read in `/sys` first, holds the raw HID channel and nothing else, so what you type stays closed.
 - The credits in **Settings** name every source.
 
+### Fixed
+- Other brands: the undo of a change, when its 15 seconds run out or when the device is connected again, never puts one profile's settings onto another. If the device switched profile since the change, nothing is written and PeriHub says which profile to switch back to; the backup stays.
+
 ## 0.7.0 — 2026-11-11
 
 129 mice of three more brands, ASUS ROG and TUF, SteelSeries and Razer, from the published documentation of their protocols. Nobody has tried them with PeriHub yet.

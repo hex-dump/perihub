@@ -53,13 +53,19 @@ times.
 
 An answer repeats the request's category and register, bit 7 included, and the profile byte when the request named
 a profile (profile 0 answers carry data there). The sub-register can differ: the DPI stages, asked with `15`, are
-answered with `21`. PeriHub takes an answer only when those bytes match its request, so an answer left in the
-mouse's buffer for another request, by PeriHub or by another program, is never read as this one.
+answered with `21`. PeriHub takes the answer to a read only when those bytes match its request, so an answer left
+in the mouse's buffer for another request, by PeriHub or by another program, is never read as this one. Answers to
+writes were seen to repeat the request only through the dongle (the source checks nothing but byte 0 on the cable):
+PeriHub waits for a matching answer to a write too, but takes one still at `01` after the last poll, since the
+reading after every change checks what the mouse stored.
 
 Right after its cable shows up, an X3 left requests at `00` for up to about a second (pulsar-mouse-linux issue 21),
 and they were answered only when sent again. Until the first answer of a connection, PeriHub sends a read the mouse
 did not take (`00` on the last poll) again, 100 ms later, six times at most. A request the mouse took (`02`) is not
 sent again, and **a write is never sent twice**.
+
+A mouse that does not answer one of these reads the first time PeriHub reads it gets a read-only page with the
+test report, so a model nobody tried still shows what it answered.
 
 ## Registers
 

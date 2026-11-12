@@ -122,6 +122,8 @@ pub struct PeripheralTask {
     last_backup: Option<String>,
     /// The last change was also saved to the device's memory: undoing it saves too.
     last_saved: bool,
+    /// The profile in use when the last change was made: its undo writes to that profile only.
+    last_profile: Option<u8>,
     undo_at: Option<Instant>,
     last_refresh: Instant,
     /// What the device's memory is taken to hold: the settings read when PeriHub connected, until
@@ -178,6 +180,7 @@ impl PeripheralTask {
             backups,
             last_backup: None,
             last_saved: false,
+            last_profile: None,
             undo_at: None,
             last_refresh: Instant::now(),
             in_memory: None,
@@ -286,9 +289,14 @@ impl PeripheralTask {
         // Undoing a save puts back what the memory held, not what a kept Apply left in RAM.
         let restore = if save { self.in_memory.clone().unwrap_or_else(|| before.clone()) } else { before.clone() };
         let id = self.backup(&restore)?;
-        std::fs::write(self.backups.join(PENDING_FILE), format!("{id}\n{}", if save { "save" } else { "change" }))?;
+        let profile = self.info.active_profile.map(|p| p.to_string()).unwrap_or_default();
+        std::fs::write(
+            self.backups.join(PENDING_FILE),
+            format!("{id}\n{}\n{profile}", if save { "save" } else { "change" }),
+        )?;
         self.last_backup = Some(id);
         self.last_saved = save;
+        self.last_profile = self.info.active_profile;
         self.undo_at = Some(Instant::now() + UNDO_AFTER);
         log::info!(
             "{} {}: changing {before:?} to {wanted:?}{}",
@@ -345,6 +353,14 @@ impl PeripheralTask {
         let id = self.last_backup.clone().ok_or_else(|| Error::Invalid("nothing to undo".into()))?;
         let saved: Settings = serde_json::from_slice(&config::read_backup_file_in(&self.backups, &id, SETTINGS_FILE)?)?;
         self.read()?;
+        // The settings of one profile never go onto another: the backup and the pending undo stay
+        // for when the device is back on its profile.
+        if let Some(profile) = self.last_profile.filter(|&p| self.info.active_profile != Some(p)) {
+            return Err(Error::Invalid(format!(
+                "the device switched from profile {profile} to {} since the change, so nothing was put back: switch it back to profile {profile} and undo again",
+                self.info.active_profile.map(|p| p.to_string()).unwrap_or_else(|| "another one".into())
+            )));
+        }
         let now = self.info.settings.clone();
         // The undo goes through even on a connection where something since looked wrong: it only
         // sends back values the device itself gave.
@@ -379,6 +395,8 @@ impl PeripheralTask {
         let mut lines = text.lines();
         let id = lines.next().unwrap_or_default().trim().to_string();
         let saved = lines.next() == Some("save");
+        // Missing in a pending undo written before PeriHub kept the profile: no check then.
+        let profile = lines.next().and_then(|l| l.trim().parse().ok());
         let stamp = id.split('-').next().and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
         let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
         if now.saturating_sub(stamp) > PENDING_UNDO_MAX_AGE.as_secs() {
@@ -399,6 +417,7 @@ impl PeripheralTask {
         );
         self.last_backup = Some(id);
         self.last_saved = saved;
+        self.last_profile = profile;
         if let Err(e) = self.undo_last_change() {
             log::warn!("{} undo failed: {e}", self.info.model);
         }
@@ -442,5 +461,8 @@ impl PeripheralTask {
     }
     pub(crate) fn expire_undo(&mut self) {
         self.undo_at = Some(Instant::now());
+    }
+    pub(crate) fn undo_pending(&self) -> bool {
+        self.backups.join(PENDING_FILE).exists()
     }
 }

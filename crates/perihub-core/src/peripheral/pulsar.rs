@@ -149,104 +149,44 @@ pub struct Pulsar {
     stages: Option<Stages>,
     /// Reads that may still be sent again: until the first answer of this connection.
     resends: u8,
+    /// A whole reading went through on this connection.
+    read_once: bool,
 }
 
 impl Pulsar {
     pub fn new(p: Params) -> Self {
-        Self { p, profile: 0, stages: None, resends: RESENDS }
+        Self { p, profile: 0, stages: None, resends: RESENDS, read_once: false }
     }
 
-    /// Sends a request and waits until the mouse answers it. A read the mouse did not take is sent
-    /// again while the connection has had no answer yet; one it took and is still on is not.
-    fn query(&mut self, io: &mut Io, register: Register, read: bool, profile: u8, data: &[u8]) -> Result<[u8; REPORT]> {
-        let r = request(register, read, profile, data);
+    /// Reads a register. A read the mouse did not take is sent again while the connection has had no
+    /// answer yet; one it took and is still on is not.
+    fn query(&mut self, io: &mut Io, register: Register, profile: u8) -> Result<[u8; REPORT]> {
+        let r = request(register, true, profile, &[]);
         loop {
-            let last = Cell::new(NOT_TAKEN);
-            match io.feature_query(&r, POLL, |a| {
-                last.set(a[0]);
-                answers(a, &r)
-            }) {
-                Ok(answer) => {
+            match exchange(io, &r) {
+                (Ok(answer), _) => {
                     self.resends = 0;
                     return Ok(answer);
                 }
-                Err(Error::Timeout) if read && self.resends > 0 && last.get() == NOT_TAKEN => {
+                (Err(Error::Timeout), NOT_TAKEN) if self.resends > 0 => {
                     self.resends -= 1;
                     std::thread::sleep(RESEND_WAIT);
                 }
-                Err(e) => return Err(e),
+                (Err(e), _) => return Err(e),
             }
         }
     }
 
-    fn read_stages(&mut self, io: &mut Io, profile: u8, problems: &mut Vec<String>) -> Result<Option<Stages>> {
-        let r = self.query(io, DPI_READ, true, profile, &[])?;
-        let (active, count) = (r[7], r[8] as usize);
-        if !(1..=MAX_STAGES).contains(&count) || active == 0 || active as usize > count {
-            problems.push(format!("{count} DPI stages, stage {active} in use"));
-            return Ok(None);
-        }
-        let mut stages = Vec::new();
-        for i in 0..count {
-            let at = 9 + 5 * i;
-            let (n, x, y) =
-                (r[at], u16::from_le_bytes([r[at + 1], r[at + 2]]), u16::from_le_bytes([r[at + 3], r[at + 4]]));
-            if n as usize != i + 1
-                || !(DPI_MIN..=self.p.dpi_max).contains(&x)
-                || !(DPI_MIN..=self.p.dpi_max).contains(&y)
-            {
-                problems.push(format!("DPI stage {} reads {n}: {x}×{y}", i + 1));
-                return Ok(None);
-            }
-            stages.push((n, x, y));
-        }
-        Ok(Some(Stages { active, stages }))
-    }
-
-    fn write(&mut self, io: &mut Io, register: Register, profile: u8, data: &[u8]) -> Result<()> {
-        self.query(io, register, false, profile, data).map(|_| ())
-    }
-}
-
-impl Driver for Pulsar {
-    fn commands(&self) -> Vec<Command> {
-        COMMANDS.to_vec()
-    }
-
-    fn source(&self) -> &'static str {
-        "pulsar-mouse-linux (MIT)"
-    }
-
-    fn profiles(&self) -> u8 {
-        self.p.profiles
-    }
-
-    fn can_save(&self) -> bool {
-        false
-    }
-
-    fn changes_stay(&self) -> bool {
-        true
-    }
-
-    fn read(&mut self, io: &mut Io) -> Result<Reading> {
+    /// Everything the page shows, with read commands only.
+    fn read_all(&mut self, io: &mut Io) -> Result<Reading> {
         self.stages = None;
-        let firmware = match self.query(io, FIRMWARE, true, 0, &[]) {
-            Ok(r) => r[6..10].iter().rev().map(|b| format!("{b:02X}")).collect::<Vec<_>>().join("."),
-            // A page with the test report rather than no page at all.
-            Err(e @ (Error::Hid(_) | Error::Timeout)) => {
-                return Ok(Reading {
-                    problem: Some(format!("the mouse did not answer as documented: {e}")),
-                    ..Default::default()
-                });
-            }
-            Err(e) => return Err(e),
-        };
+        let r = self.query(io, FIRMWARE, 0)?;
+        let firmware = r[6..10].iter().rev().map(|b| format!("{b:02X}")).collect::<Vec<_>>().join(".");
         let mut reading = Reading { firmware: Some(firmware), ..Default::default() };
         let mut problems = Vec::new();
         // One source reads it on the X3 and the X2A, another says the X3 does not answer it: without
         // it the DPI stages are left out, and the global settings still show.
-        let profile = match self.query(io, ACTIVE_PROFILE, true, 0, &[]) {
+        let profile = match self.query(io, ACTIVE_PROFILE, 0) {
             Ok(r) => Some(r[6]),
             Err(Error::Timeout) => None,
             Err(e) => return Err(e),
@@ -260,18 +200,18 @@ impl Driver for Pulsar {
             reading.active_profile = Some(profile);
         }
         let mut settings = Settings::default();
-        let code = self.query(io, POLLING, true, 0, &[])?[7];
+        let code = self.query(io, POLLING, 0)?[7];
         match POLLING_CODES.iter().find(|(c, _)| *c == code) {
             Some((_, hz)) => settings.polling_hz = Some(*hz),
             None => problems.push(format!("polling rate code {code:02x}")),
         }
-        let debounce = self.query(io, DEBOUNCE, true, 0, &[])?[7];
+        let debounce = self.query(io, DEBOUNCE, 0)?[7];
         if debounce > DEBOUNCE_MAX {
             problems.push(format!("debounce {debounce} ms"));
         }
         settings.options.insert(DEBOUNCE_OPTION.into(), debounce as u16);
         for (id, register, label) in SWITCHES {
-            let value = self.query(io, register, true, 0, &[])?[7];
+            let value = self.query(io, register, 0)?[7];
             if value > 1 {
                 problems.push(format!("{label} {value}"));
             }
@@ -307,6 +247,89 @@ impl Driver for Pulsar {
             reading.problem = Some(format!("unexpected settings: {}", problems.join(", ")));
         }
         Ok(reading)
+    }
+
+    fn read_stages(&mut self, io: &mut Io, profile: u8, problems: &mut Vec<String>) -> Result<Option<Stages>> {
+        let r = self.query(io, DPI_READ, profile)?;
+        let (active, count) = (r[7], r[8] as usize);
+        if !(1..=MAX_STAGES).contains(&count) || active == 0 || active as usize > count {
+            problems.push(format!("{count} DPI stages, stage {active} in use"));
+            return Ok(None);
+        }
+        let mut stages = Vec::new();
+        for i in 0..count {
+            let at = 9 + 5 * i;
+            let (n, x, y) =
+                (r[at], u16::from_le_bytes([r[at + 1], r[at + 2]]), u16::from_le_bytes([r[at + 3], r[at + 4]]));
+            if n as usize != i + 1
+                || !(DPI_MIN..=self.p.dpi_max).contains(&x)
+                || !(DPI_MIN..=self.p.dpi_max).contains(&y)
+            {
+                problems.push(format!("DPI stage {} reads {n}: {x}×{y}", i + 1));
+                return Ok(None);
+            }
+            stages.push((n, x, y));
+        }
+        Ok(Some(Stages { active, stages }))
+    }
+
+    /// Writes a register, once: a write is never sent again. Only the dongle's answers to a write
+    /// were seen to repeat the request; from a mouse on its cable, an answer still at `01` after the
+    /// last poll is taken without that, and the reading after the change checks what landed.
+    fn write(&mut self, io: &mut Io, register: Register, profile: u8, data: &[u8]) -> Result<()> {
+        match exchange(io, &request(register, false, profile, data)) {
+            (Ok(_), _) | (Err(Error::Timeout), ANSWERED) => Ok(()),
+            (Err(e), _) => Err(e),
+        }
+    }
+}
+
+/// Sends `request` once and waits for its answer, and says what byte 0 of the last poll was.
+fn exchange(io: &mut Io, request: &[u8; REPORT]) -> (Result<[u8; REPORT]>, u8) {
+    let last = Cell::new(NOT_TAKEN);
+    let answer = io.feature_query(request, POLL, |a| {
+        last.set(a[0]);
+        answers(a, request)
+    });
+    (answer, last.get())
+}
+
+impl Driver for Pulsar {
+    fn commands(&self) -> Vec<Command> {
+        COMMANDS.to_vec()
+    }
+
+    fn source(&self) -> &'static str {
+        "pulsar-mouse-linux (MIT)"
+    }
+
+    fn profiles(&self) -> u8 {
+        self.p.profiles
+    }
+
+    fn can_save(&self) -> bool {
+        false
+    }
+
+    fn changes_stay(&self) -> bool {
+        true
+    }
+
+    /// A mouse that does not answer its first reading (a model nobody tried, without one of these
+    /// registers) gets a read-only page with the test report rather than no page. Later, a mouse
+    /// that stops answering is gone, and is opened again when it is back.
+    fn read(&mut self, io: &mut Io) -> Result<Reading> {
+        match self.read_all(io) {
+            Ok(reading) => {
+                self.read_once = true;
+                Ok(reading)
+            }
+            Err(e @ (Error::Hid(_) | Error::Timeout)) if !self.read_once => Ok(Reading {
+                problem: Some(format!("the mouse did not answer as documented: {e}")),
+                ..Default::default()
+            }),
+            Err(e) => Err(e),
+        }
     }
 
     /// Everything is checked before the first write. The task reads the mouse again right before
@@ -376,8 +399,9 @@ mod tests {
 
     /// A simulated Pulsar mouse: the global registers, the DPI stages of each profile, the profile in
     /// use, and every request it got. `dropped` requests are not taken (a mouse whose cable just
-    /// showed up), registers in `silent` are never answered, nor are writes with `deaf_to_writes`,
-    /// and a request for `foreign.0` is answered as if it were for `foreign.1`.
+    /// showed up), registers in `silent` are never answered, nor are writes with `deaf_to_writes`;
+    /// with `bare_write_answers` a write is answered `01` without repeating the request, and a
+    /// request for `foreign.0` is answered as if it were for `foreign.1`.
     struct Mouse {
         globals: HashMap<Register, u8>,
         stages: Vec<Vec<u8>>,
@@ -386,6 +410,7 @@ mod tests {
         dropped: usize,
         silent: Vec<Register>,
         deaf_to_writes: bool,
+        bare_write_answers: bool,
         foreign: Option<(Register, Register)>,
     }
 
@@ -411,6 +436,7 @@ mod tests {
             dropped: 0,
             silent: Vec::new(),
             deaf_to_writes: false,
+            bare_write_answers: false,
             foreign: None,
         }))
     }
@@ -450,6 +476,9 @@ mod tests {
             (reg, false) => {
                 *m.globals.get_mut(&reg).expect("a known register") = r[7];
             }
+        }
+        if m.bare_write_answers && !reading {
+            a[1..7].fill(0);
         }
         a
     }
@@ -521,6 +550,32 @@ mod tests {
         let m = state.lock().unwrap();
         assert_eq!((m.globals[&POLLING], m.globals[&ANGLE_SNAPPING], m.stages[1].clone()), (8, 0, stages()));
         drop(m);
+        let _ = std::fs::remove_dir_all(task.backups());
+    }
+
+    #[test]
+    fn an_undo_never_writes_one_profile_onto_another() {
+        let state = mouse();
+        let mut task = start_for_test(Box::new(fake(state.clone())), x3(), 0x3409, true, temp("undo-profile")).unwrap();
+        let mut wanted = task.info.settings.clone();
+        wanted.dpi_levels[0] = 900;
+        task.change(&wanted, false, Some(2)).unwrap();
+        let changed = state.lock().unwrap().stages[1].clone();
+        // The mouse's own profile button, before the change is kept.
+        state.lock().unwrap().profile = 3;
+        task.expire_undo();
+        crate::worker::DeviceTask::tick(&mut task).unwrap();
+        let profile_3 =
+            |state: &Shared| state.lock().unwrap().requests.iter().filter(|r| r[2] & READ == 0 && r[6] == 3).count();
+        assert_eq!(profile_3(&state), 0, "nothing written to profile 3");
+        assert_eq!(state.lock().unwrap().stages[1], changed, "profile 2 waits for its undo");
+        let refused = task.undo_last_change().unwrap_err().to_string();
+        assert!(refused.contains("switch it back to profile 2"), "{refused}");
+        assert!(task.undo_pending(), "the pending undo stays");
+        state.lock().unwrap().profile = 2;
+        task.undo_last_change().unwrap();
+        assert_eq!(state.lock().unwrap().stages[1], stages());
+        assert_eq!(profile_3(&state), 0);
         let _ = std::fs::remove_dir_all(task.backups());
     }
 
@@ -607,13 +662,30 @@ mod tests {
     }
 
     #[test]
+    fn a_write_answered_without_repeating_the_request_is_checked_by_the_reading_after_it() {
+        let state = mouse();
+        state.lock().unwrap().bare_write_answers = true;
+        let mut task = start_for_test(Box::new(fake(state.clone())), x3(), 0x3409, true, temp("bare")).unwrap();
+        let mut wanted = task.info.settings.clone();
+        wanted.polling_hz = Some(250);
+        wanted.dpi_levels[2] = 3000;
+        task.change(&wanted, false, Some(2)).unwrap();
+        assert_eq!(task.info.settings, wanted);
+        assert_eq!((sent_for(&state, POLLING, false), sent_for(&state, DPI_WRITE, false)), (1, 1));
+        task.keep_changes();
+        let _ = std::fs::remove_dir_all(task.backups());
+    }
+
+    #[test]
     fn an_answer_to_another_request_is_not_taken_for_this_one() {
         let state = mouse();
         // Debounce 4 ms would read as polling code 4, 500 Hz.
         state.lock().unwrap().foreign = Some((POLLING, DEBOUNCE));
         *state.lock().unwrap().globals.get_mut(&POLLING).unwrap() = 4;
         *state.lock().unwrap().globals.get_mut(&DEBOUNCE).unwrap() = 4;
-        assert!(start_for_test(Box::new(fake(state.clone())), x3(), 0x3409, true, temp("foreign")).is_err());
+        let task = start_for_test(Box::new(fake(state.clone())), x3(), 0x3409, true, temp("foreign")).unwrap();
+        assert_ne!(task.info.settings.polling_hz, Some(500));
+        assert!(task.info.problem.is_some() && !task.info.editable);
         assert_eq!(sent_for(&state, POLLING, true), 1, "an answered read is not a dropped one");
         assert!(writes(&state).is_empty());
     }
@@ -633,6 +705,17 @@ mod tests {
         assert_eq!(state.lock().unwrap().globals[&RIPPLE], 1);
         task.keep_changes();
         let _ = std::fs::remove_dir_all(task.backups());
+    }
+
+    #[test]
+    fn a_register_that_does_not_answer_at_first_gives_a_read_only_page_with_the_report() {
+        let state = mouse();
+        state.lock().unwrap().silent.push(DEBOUNCE);
+        let task = start_for_test(Box::new(fake(state.clone())), x3(), 0x3409, true, temp("silent")).unwrap();
+        assert!(task.info.problem.as_deref().is_some_and(|p| p.contains("did not answer")));
+        assert!(!task.info.editable);
+        assert!(task.info.raw.iter().any(|line| line.contains("no answer")), "{:?}", task.info.raw);
+        assert!(writes(&state).is_empty());
     }
 
     #[test]
