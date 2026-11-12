@@ -1,5 +1,5 @@
 name: Device test report
-description: Tell us how PeriHub works with a Corsair, ASUS, SteelSeries, Razer, Glorious or Roccat device, a QMK keyboard (Vial, VIA), the Logitech G300 or G600 or a Logitech device on a Bolt or Unifying receiver
+description: Tell us how PeriHub works with a Corsair, ASUS, SteelSeries, Razer, Glorious, Roccat or Pulsar device, a QMK keyboard (Vial, VIA), the Logitech G300 or G600 or a Logitech device on a Bolt or Unifying receiver
 labels: ["device test"]
 body:
   - type: markdown
@@ -66,7 +66,7 @@ body:
         - label: "Bolt or Unifying: after the device slept or was turned off and on, PeriHub set the DPI again"
         - label: "Bolt or Unifying: without PeriHub running, the device kept the DPI after it slept or was turned off and on"
         - label: "Bolt or Unifying: Back to the device's own DPI worked"
-        - label: "Other brands (ASUS, SteelSeries, Razer, Glorious, QMK keyboards): the DPI levels, polling rate, lighting and buttons PeriHub shows match the device"
+        - label: "Other brands (ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, QMK keyboards): the DPI levels, polling rate, lighting and buttons PeriHub shows match the device"
         - label: "Other brands: a change made with Apply took effect"
         - label: "Other brands: after unplugging the device (or turning it off) a change made only with Apply was gone"
         - label: "Other brands: a change made with Save to memory was still there after unplugging the device"

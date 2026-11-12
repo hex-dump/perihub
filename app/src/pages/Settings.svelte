@@ -142,10 +142,11 @@
     <h2>Credits</h2>
     <p class="small">PeriHub {version}</p>
     <p class="muted small">
-      Protocols reconstructed thanks to the work of OpenRGB (Apex lighting), libratbag (Logitech HID++, ASUS and
-      Glorious mice), gorkemgun/apex-3-tkl (Apex key mapping), ckb-next and OpenLinkHub (Corsair, no code copied),
-      OpenRazer (Razer mice, no code copied) and rivalcfg (SteelSeries mice). PeriHub is not affiliated with
-      SteelSeries, Logitech, Corsair, ASUS, Razer or Glorious.
+      Protocols reconstructed thanks to the work of OpenRGB (Apex lighting), libratbag (Logitech HID++, G600, ASUS,
+      Glorious and Roccat mice), gorkemgun/apex-3-tkl (Apex key mapping), ckb-next and OpenLinkHub (Corsair, no code
+      copied), OpenRazer (Razer mice, no code copied), rivalcfg (SteelSeries mice), QMK and Vial (QMK keyboards, no
+      code copied), and pulsar-mouse-linux and Pulsar-X3-Web-Config (Pulsar mice). PeriHub is not affiliated with
+      SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat or Pulsar.
     </p>
   </div>
 

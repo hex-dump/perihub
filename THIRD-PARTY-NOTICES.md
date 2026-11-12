@@ -79,6 +79,37 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+### pulsar-mouse-linux
+
+<https://github.com/packerlschupfer/pulsar-mouse-linux> (commit 037cefe), MIT license: the Pulsar mice on
+their cable, their USB ids, profiles and DPI ranges, and the Sonix protocol (`src/pulsar_mouse/drivers/x2a.py`
+and the other models' drivers), rewritten in Rust in `crates/perihub-core/src/peripheral/pulsar.rs` (see
+`docs/protocols/pulsar-sonix.md`). What each of their USB interfaces carries comes from the protocol notes of
+[Pulsar-X3-Web-Config](https://github.com/santoshpanna/Pulsar-X3-Web-Config) (MIT, Copyright (c) 2026 Santosh
+Panna); nothing else was taken from it.
+
+```
+Copyright (c) 2026 Packerlschupfer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ### rivalcfg
 
 <https://github.com/flozz/rivalcfg> (commit 779ea52), WTFPL, which asks for nothing: credited out of

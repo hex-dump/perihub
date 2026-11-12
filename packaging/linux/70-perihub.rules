@@ -628,3 +628,21 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2dc2", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2e22", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # Roccat Kone EMP
 KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2e24", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+
+# Pulsar mice on their cable (experimental, untested; protocol from pulsar-mouse-linux): interface 3,
+# which holds their configuration. Interface 1, with the keys a button bound to a key or a macro types,
+# is never opened.
+# Pulsar Xlite Wired
+KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="1401", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Pulsar X2 Wired
+KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="1402", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Pulsar X2H Wired Medium
+KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="1403", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Pulsar X2A Medium Wired
+KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="1404", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Pulsar Xlite v4
+KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="3401", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Pulsar X3
+KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="3409", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Pulsar X3 LHD
+KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="3410", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"

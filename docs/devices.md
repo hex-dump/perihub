@@ -27,6 +27,7 @@ the same format.
 - [Glorious mice](#glorious-mice)
 - [Logitech G600](#logitech-g600)
 - [Roccat mice](#roccat-mice)
+- [Pulsar mice](#pulsar-mice)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
 ## SteelSeries
@@ -437,6 +438,39 @@ report it sends chooses which profile the next read returns.
 
 `1e7d:2dcb`, which libratbag also lists as a Kone Pure, is left out: its interfaces are laid out differently and no
 source says where its configuration is.
+
+## Pulsar mice
+
+🧪 Experimental: 7 Pulsar mice on their USB cable, built on a Sonix controller. Nobody has tried PeriHub on one yet.
+Their protocol comes from [pulsar-mouse-linux](https://github.com/packerlschupfer/pulsar-mouse-linux) (MIT), a
+recent project built from USB captures of Pulsar's own app, and is described in
+[protocols/pulsar-sonix.md](protocols/pulsar-sonix.md). That project's author tried the X2A, the X3 and the X3 LHD;
+the Xlite Wired and X2 Wired are said to speak the X2A's protocol, and the Xlite v4 was only partly read.
+
+- PeriHub reads the firmware, the profile in use, its DPI stages and the stage in use, and the global settings:
+  polling rate, debounce time, angle snapping, ripple control and motion sync.
+- **Save to memory** changes those global settings and the DPI of each stage of the profile in use, after the No
+  warranty box the first time. These mice store every change by themselves. PeriHub reads them again just before,
+  writes nothing if the profile in use changed, writes the stage in use and how many stages there are back as
+  read, reads everything back after, and puts it back after 15 seconds unless you keep the change.
+- A stage whose X and Y DPI differ is shown and not changed. A mouse that does not answer which profile is in use
+  shows its global settings without the DPI stages: PeriHub never guesses a profile.
+- Not offered yet: lift-off distance, lighting, buttons, the other profiles, polling rates above 1000 Hz. Never
+  sent: switching profile, and the profile reset, which also resets every global setting.
+- The wireless dongles, the CrazyLight and Feinmann mice, the first X2H (`3554`) and the X2 Wireless (`25a7`)
+  speak other protocols and are left out.
+
+| Mouse | USB ID | Opened on Linux |
+|---|---|---|
+| Xlite Wired | `3710:1401` | interface 3 (the configuration) |
+| X2 Wired | `3710:1402` | interface 3 |
+| X2H Wired Medium | `3710:1403` | interface 3 |
+| X2A Medium Wired | `3710:1404` | interface 3 |
+| Xlite v4 | `3710:3401` | interface 3 |
+| X3 | `3710:3409` | interface 3 |
+| X3 LHD | `3710:3410` | interface 3 |
+
+Interface 1, which carries the keys a button bound to a key or a macro types, is never opened.
 
 ## Keyboards with QMK firmware (Vial, VIA)
 

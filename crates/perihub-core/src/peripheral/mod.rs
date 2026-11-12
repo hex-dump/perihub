@@ -11,6 +11,7 @@
 
 pub mod asus;
 pub mod logitech_g600;
+pub mod pulsar;
 pub mod qmk;
 pub mod razer;
 #[rustfmt::skip]
@@ -65,6 +66,7 @@ pub struct Command {
 pub enum Protocol {
     Asus(asus::Params),
     LogitechG600,
+    Pulsar(pulsar::Params),
     Qmk(qmk::Params),
     Razer(razer::Params),
     Roccat(roccat::Params),
@@ -97,6 +99,7 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
         .chain(sinowealth::MODELS)
         .chain(logitech_g600::MODELS)
         .chain(roccat::MODELS)
+        .chain(pulsar::MODELS)
 }
 
 pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {
