@@ -357,7 +357,7 @@ impl PeripheralTask {
         // for when the device is back on its profile.
         if let Some(profile) = self.last_profile.filter(|&p| self.info.active_profile != Some(p)) {
             return Err(Error::Invalid(format!(
-                "the device switched from profile {profile} to {} since the change, so nothing was put back: switch it back to profile {profile} and undo again",
+                "the device switched from profile {profile} to {} since the change, so nothing was put back yet: switch it back to profile {profile}, then unplug it and plug it in again, and PeriHub puts the settings from before back",
                 self.info.active_profile.map(|p| p.to_string()).unwrap_or_else(|| "another one".into())
             )));
         }

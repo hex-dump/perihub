@@ -16,7 +16,7 @@
 - The credits in **Settings** name every source.
 
 ### Fixed
-- Other brands: the undo of a change, when its 15 seconds run out or when the device is connected again, never puts one profile's settings onto another. If the device switched profile since the change, nothing is written and PeriHub says which profile to switch back to; the backup stays.
+- Other brands: the undo of a change, when its 15 seconds run out or when the device is connected again, never puts one profile's settings onto another. If the device switched profile since the change, nothing is written: PeriHub says which profile to switch back to, and undoes the change when the device is plugged in again on that profile.
 
 ## 0.7.0 — 2026-11-11
 

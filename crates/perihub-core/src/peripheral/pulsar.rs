@@ -572,11 +572,20 @@ mod tests {
         let refused = task.undo_last_change().unwrap_err().to_string();
         assert!(refused.contains("switch it back to profile 2"), "{refused}");
         assert!(task.undo_pending(), "the pending undo stays");
+        let backups = task.backups().to_path_buf();
+        drop(task);
+        // Plugged in again, still on profile 3: still nothing.
+        let task = start_for_test(Box::new(fake(state.clone())), x3(), 0x3409, true, backups.clone()).unwrap();
+        assert!(task.undo_pending());
+        drop(task);
+        assert_eq!((profile_3(&state), state.lock().unwrap().stages[1].clone()), (0, changed));
+        // Back on profile 2 and plugged in again, as the message says: undone.
         state.lock().unwrap().profile = 2;
-        task.undo_last_change().unwrap();
+        let task = start_for_test(Box::new(fake(state.clone())), x3(), 0x3409, true, backups.clone()).unwrap();
+        assert!(!task.undo_pending());
         assert_eq!(state.lock().unwrap().stages[1], stages());
         assert_eq!(profile_3(&state), 0);
-        let _ = std::fs::remove_dir_all(task.backups());
+        let _ = std::fs::remove_dir_all(backups);
     }
 
     #[test]
