@@ -5,26 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Privacy policy · PeriHub</title>
   <meta name="description" content="What data the PeriHub website and app handle: no cookies, no analytics, no telemetry.">
+  <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0e0f13">
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="stylesheet" href="style.css">
   <link rel="canonical" href="https://hex-dump.github.io/perihub/privacy.html">
 </head>
 <body>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
   <header class="top">
     <div class="wrap top-row">
-      <a class="brand" href="./"><img src="icon.png" width="32" height="32" alt=""> PeriHub</a>
-      <nav>
-        <a href="./#features">Features</a>
-        <a href="./#devices">Devices</a>
-        <a href="./#download">Download</a>
-        <a href="./#support">Support</a>
-        <a class="star-link" href="https://github.com/hex-dump/perihub"><span aria-hidden="true">★</span> Star on GitHub</a>
+      <a class="logo" href="./"><img src="icon.png" width="32" height="32" alt=""> <span class="logo-text">PeriHub</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <button class="menu-button" type="button" popovertarget="site-menu" aria-controls="site-menu"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>Menu</button>
+        <ul id="site-menu" class="site-menu" popover>
+          <li><a href="./#features">Features</a></li>
+          <li><a href="./#devices">Devices</a></li>
+          <li><a href="./#download">Download</a></li>
+          <li><a href="./#support">Support</a></li>
+        </ul>
       </nav>
+      <a class="star-link" href="https://github.com/hex-dump/perihub"><span aria-hidden="true">★</span> Star<span class="star-more"> on GitHub</span></a>
     </div>
   </header>
 
-  <main class="wrap prose">
+  <main id="main" tabindex="-1" class="wrap prose">
     <h1>Privacy policy</h1>
     <p class="meta">Last updated: 6 November 2026</p>
 
@@ -91,16 +101,26 @@
     <p>For questions about this policy or your data, write to <a href="mailto:perihub.app@outlook.com">perihub.app@outlook.com</a>. You can also open a discussion on <a href="https://github.com/hex-dump/perihub/discussions">GitHub Discussions</a>, which is public. Security issues go through GitHub's <a href="https://github.com/hex-dump/perihub/security/advisories/new">private report</a> form, as explained in <a href="https://github.com/hex-dump/perihub/blob/main/SECURITY.md">SECURITY.md</a>.</p>
   </main>
 
-  <footer>
-    <div class="wrap foot">
-      <p>
-        <a href="./">Home</a> ·
-        <a href="https://github.com/hex-dump/perihub">GitHub</a> ·
-        <a href="https://github.com/hex-dump/perihub/discussions">Discussions</a> ·
-        <a href="https://github.com/hex-dump/perihub/blob/main/CODE_SIGNING.md">Code signing policy</a> ·
-        <a href="privacy.html">Privacy policy</a>
-      </p>
-      <p class="small">PeriHub is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master or EVGA. SteelSeries GG, Logitech G HUB, Corsair iCUE and the product names belong to their respective owners and are used only to describe compatibility.</p>
+  <footer class="site-foot">
+    <div class="wrap">
+      <div class="foot-top">
+        <div class="foot-brand">
+          <a class="logo" href="./"><img src="icon.png" width="28" height="28" alt=""> PeriHub</a>
+          <p>PeriHub for your peripherals. Free and open source, for Windows and Linux.</p>
+        </div>
+        <nav class="foot-links" aria-label="Footer">
+          <ul>
+            <li><a href="./">Home</a></li>
+            <li><a href="https://github.com/hex-dump/perihub">GitHub</a></li>
+            <li><a href="https://github.com/hex-dump/perihub/discussions">Discussions</a></li>
+          </ul>
+          <ul>
+            <li><a href="https://github.com/hex-dump/perihub/blob/main/CODE_SIGNING.md">Code signing policy</a></li>
+            <li><a href="privacy.html" aria-current="page">Privacy policy</a></li>
+          </ul>
+        </nav>
+      </div>
+      <p class="small disclaimer">PeriHub is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master or EVGA. SteelSeries GG, Logitech G HUB, Corsair iCUE and the product names belong to their respective owners and are used only to describe compatibility.</p>
     </div>
   </footer>
 </body>

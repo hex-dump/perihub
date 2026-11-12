@@ -7,6 +7,7 @@
   <meta name="description" content="Free, open-source app for your gaming peripherals on Windows and Linux, without Logitech G HUB, SteelSeries GG or Corsair iCUE: lighting, DPI, buttons, key remapping and macros, with no account and no telemetry.">
   <link rel="canonical" href="https://hex-dump.github.io/perihub/">
   <meta name="google-site-verification" content="KVLvAEzYk0dIyE8OSqlv4WGCeTM5UA_0ox9jzblj8tQ">
+  <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0e0f13">
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="stylesheet" href="style.css">
@@ -36,532 +37,627 @@
   </script>
 </head>
 <body>
+  <!-- Icons drawn for this page, used with <use>. All decorative: the text next to them says the same. -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-light" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/></symbol>
+    <symbol id="i-keys" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h1M10 10h1M14 10h1M18 10h0M7 14h10"/></symbol>
+    <symbol id="i-mouse" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="6"/><path d="M12 6.5v4"/></symbol>
+    <symbol id="i-macro" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5 3.5-5 3.5z"/></symbol>
+    <symbol id="i-apps" viewBox="0 0 24 24"><rect x="3" y="3" width="13" height="13" rx="2.5"/><path d="M8 21h10.5a2.5 2.5 0 0 0 2.5-2.5V8"/></symbol>
+    <symbol id="i-feather" viewBox="0 0 24 24"><path d="M20 4C11 4 5 10 5 19l4-4c6 0 10-5 11-11zM5 19l7-7"/></symbol>
+    <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M12 3 4 6.5v5c0 4.6 3.4 8.6 8 9.5 4.6-.9 8-4.9 8-9.5v-5z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8.5 7-5 5 5 5M15.5 7l5 5-5 5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-dot" viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7.5"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
   <header class="top">
     <div class="wrap top-row">
-      <a class="brand" href="./"><img src="icon.png" width="32" height="32" alt=""> PeriHub</a>
-      <nav>
-        <a href="#features">Features</a>
-        <a href="#devices">Devices</a>
-        <a href="#download">Download</a>
-        <a href="#support">Support</a>
-        <a class="star-link" href="https://github.com/hex-dump/perihub"><span aria-hidden="true">★</span> Star on GitHub</a>
+      <a class="logo" href="./"><img src="icon.png" width="32" height="32" alt=""> <span class="logo-text">PeriHub</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <button class="menu-button" type="button" popovertarget="site-menu" aria-controls="site-menu"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>Menu</button>
+        <ul id="site-menu" class="site-menu" popover>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#devices">Devices</a></li>
+          <li><a href="#download">Download</a></li>
+          <li><a href="#support">Support</a></li>
+        </ul>
       </nav>
+      <a class="star-link" href="https://github.com/hex-dump/perihub"><span aria-hidden="true">★</span> Star<span class="star-more"> on GitHub</span></a>
     </div>
   </header>
 
-  <main>
-    <section class="hero wrap">
-      <div class="hero-text">
-        <p class="eyebrow">Free and open source · Windows and Linux</p>
-        <h1>PeriHub for your peripherals</h1>
-        <p class="lead">One app for your gaming keyboard and mouse, without <b>SteelSeries GG</b> or <b>Logitech G HUB</b>. Lighting, key remapping, DPI, buttons and macros, in a small app with no account, no ads and no telemetry. <a href="#devices">See which devices work today</a>.</p>
+  <main id="main" tabindex="-1">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-text">
+          <p class="eyebrow">Free and open source · Windows and Linux</p>
+          <h1>PeriHub for your peripherals</h1>
+          <p class="lead">One app for your gaming keyboard and mouse, without <b>SteelSeries GG</b> or <b>Logitech G HUB</b>. Lighting, key remapping, DPI, buttons and macros, in a small app with no account, no ads and no telemetry. <a href="#devices">See which devices work today</a>.</p>
 
-        <div class="get" id="get">
-          <div class="buttons os-buttons">
-            <a class="btn primary" data-os="windows" href="%%EXE_URL%%">
-              <span class="btn-title">Download for Windows</span>
-              <span class="btn-sub">Installer · %%EXE_SIZE%%</span>
-            </a>
-            <a class="btn" data-os="linux" href="#linux">
-              <span class="btn-title">Download for Linux</span>
-              <span class="btn-sub">.deb, .rpm<!--if FLATPAK-->, Flatpak<!--end FLATPAK--> or AppImage</span>
-            </a>
-          </div>
-          <div class="linux-choices" hidden>
-            <p class="choices-title">Download for Linux</p>
-            <div class="buttons">
-              <a class="btn primary" href="%%DEB_URL%%">
-                <span class="btn-title">Debian, Ubuntu</span>
-                <span class="btn-sub">.deb · %%DEB_SIZE%%</span>
+          <div class="get" id="get">
+            <div class="buttons os-buttons">
+              <a class="btn primary" data-os="windows" href="%%EXE_URL%%">
+                <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+                <span class="btn-text"><span class="btn-title">Download for Windows</span>
+                <span class="btn-sub">Installer · %%EXE_SIZE%%</span></span>
               </a>
-              <a class="btn primary" href="%%RPM_URL%%">
-                <span class="btn-title">Fedora, openSUSE</span>
-                <span class="btn-sub">.rpm · %%RPM_SIZE%%</span>
+              <a class="btn" data-os="linux" href="#linux">
+                <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+                <span class="btn-text"><span class="btn-title">Download for Linux</span>
+                <span class="btn-sub">.deb, .rpm<!--if FLATPAK-->, Flatpak<!--end FLATPAK--> or AppImage</span></span>
               </a>
-              <a class="btn" href="%%APPIMAGE_URL%%">
-                <span class="btn-title">Any distribution</span>
-                <span class="btn-sub">AppImage · %%APPIMAGE_SIZE%%</span>
-              </a>
-              <!--if FLATPAK--><a class="btn" href="%%FLATPAK_URL%%">
-                <span class="btn-title">With Flatpak</span>
-                <span class="btn-sub">.flatpak · %%FLATPAK_SIZE%%</span>
-              </a><!--end FLATPAK-->
             </div>
-            <p class="small">The .deb and .rpm are smaller and set up USB access by themselves. On Arch and CachyOS, <a href="https://github.com/hex-dump/perihub#linux">build the package</a> from the repository.</p>
-          </div>
-          <div class="note mobile-note" hidden>
-            <p><b>PeriHub runs on Windows and Linux PCs.</b> Open this page on your computer to download it:</p>
-            <div class="copy-row">
-              <code class="url">hex-dump.github.io/perihub</code>
-              <button type="button" class="copy" data-copy="https://hex-dump.github.io/perihub/">Copy link</button>
+            <div class="linux-choices" hidden>
+              <p class="choices-title">Download for Linux</p>
+              <div class="buttons choice-grid">
+                <a class="btn primary" href="%%DEB_URL%%">
+                  <span class="btn-text"><span class="btn-title">Debian, Ubuntu</span>
+                  <span class="btn-sub">.deb · %%DEB_SIZE%%</span></span>
+                </a>
+                <a class="btn primary" href="%%RPM_URL%%">
+                  <span class="btn-text"><span class="btn-title">Fedora, openSUSE</span>
+                  <span class="btn-sub">.rpm · %%RPM_SIZE%%</span></span>
+                </a>
+                <a class="btn" href="%%APPIMAGE_URL%%">
+                  <span class="btn-text"><span class="btn-title">Any distribution</span>
+                  <span class="btn-sub">AppImage · %%APPIMAGE_SIZE%%</span></span>
+                </a>
+                <!--if FLATPAK--><a class="btn" href="%%FLATPAK_URL%%">
+                  <span class="btn-text"><span class="btn-title">With Flatpak</span>
+                  <span class="btn-sub">.flatpak · %%FLATPAK_SIZE%%</span></span>
+                </a><!--end FLATPAK-->
+              </div>
+              <p class="small">The .deb and .rpm are smaller and set up USB access by themselves. On Arch and CachyOS, <a href="https://github.com/hex-dump/perihub#linux">build the package</a> from the repository.</p>
             </div>
+            <div class="note mobile-note" hidden>
+              <p><b>PeriHub runs on Windows and Linux PCs.</b> Open this page on your computer to download it:</p>
+              <div class="copy-row">
+                <code class="url">hex-dump.github.io/perihub</code>
+                <button type="button" class="copy" data-copy="https://hex-dump.github.io/perihub/">Copy link</button>
+                <span class="copy-status" role="status"></span>
+              </div>
+            </div>
+            <div class="note mac-note" hidden>
+              <p><b>PeriHub is not available for macOS.</b> It runs on Windows and Linux.</p>
+            </div>
+            <p class="meta">Version %%VERSION%% · <a href="#download">Other packages and install notes</a></p>
           </div>
-          <div class="note mac-note" hidden>
-            <p><b>PeriHub is not available for macOS.</b> It runs on Windows and Linux.</p>
-          </div>
-          <p class="meta">Version %%VERSION%% · <a href="#download">Other packages and install notes</a></p>
         </div>
+        <figure class="hero-shot">
+          <img src="screenshots/keyboard-lighting.png" width="1160" height="780" fetchpriority="high" alt="PeriHub showing the keyboard lighting page with the wave effect">
+        </figure>
       </div>
-      <figure class="hero-shot">
-        <img src="screenshots/keyboard-lighting.png" width="1160" height="780" alt="PeriHub showing the keyboard lighting page with the wave effect">
-      </figure>
-    </section>
-
-    <section id="features" class="wrap section">
-      <h2>What it does</h2>
-      <div class="cards">
-        <article class="card">
-          <h3>Keyboard lighting</h3>
-          <p>Static colors for each zone, gradient, breathing, color cycle, wave, reactive (the zone of each key you press lights up) and the keyboard's built-in effects.</p>
-        </article>
-        <article class="card">
-          <h3>Key remapping</h3>
-          <p>Change any key, also on the layer you get while holding the SteelSeries key. Saved in the keyboard, so it works without PeriHub.</p>
-        </article>
-        <article class="card">
-          <h3>Mouse profiles</h3>
-          <p>Onboard profiles with DPI levels, polling rate, every button, G-Shift and lighting. All saved in the mouse.</p>
-        </article>
-        <article class="card">
-          <h3>Macros</h3>
-          <p>Record macros into the mouse memory, so they work on any PC. Software macros can also repeat, type text, or open a website or a program.</p>
-        </article>
-        <article class="card">
-          <h3>App profiles</h3>
-          <p>Switch lighting and mouse profile when a game is in focus, and switch back when you leave it. On Windows and on Hyprland.</p>
-        </article>
-        <article class="card">
-          <h3>Small and quiet</h3>
-          <p>A %%EXE_SIZE%% installer for Windows. Closed, it waits in the tray with about 3 MB of memory (measured on version 0.5.5). No background services.</p>
-        </article>
-      </div>
-
-      <div class="gallery">
-        <figure><img src="screenshots/keyboard-keys.png" width="1160" height="780" loading="lazy" alt="Key remapping"><figcaption>Key remapping</figcaption></figure>
-        <figure><img src="screenshots/mouse-dpi.png" width="1160" height="780" loading="lazy" alt="Mouse DPI and polling rate"><figcaption>DPI and polling rate</figcaption></figure>
-        <figure><img src="screenshots/mouse-buttons.png" width="1160" height="780" loading="lazy" alt="Mouse buttons"><figcaption>Mouse buttons</figcaption></figure>
-        <figure><img src="screenshots/mouse-lighting.png" width="1160" height="780" loading="lazy" alt="Mouse lighting"><figcaption>Mouse lighting</figcaption></figure>
-      </div>
-    </section>
-
-    <section id="devices" class="wrap section">
-      <h2>Devices</h2>
-      <p class="lead devices-lead">Four devices are tested on real hardware, and over 200 more mice and keyboards are recognized. PeriHub talks only to the devices on this page.</p>
-
-      <div class="tested">
-        <h3>Tested on real hardware</h3>
-        <ul>
-          <li><span class="led ok" aria-hidden="true"></span><b>Apex 3 TKL</b><span>SteelSeries keyboard</span></li>
-          <li><span class="led ok" aria-hidden="true"></span><b>G502 HERO</b><span>Logitech mouse</span></li>
-          <li><span class="led ok" aria-hidden="true"></span><b>G502 X Wireless</b><span>Logitech mouse, with its cable</span></li>
-          <li><span class="led ok" aria-hidden="true"></span><b>G300</b><span>Logitech mouse</span></li>
-        </ul>
-      </div>
-
-      <div class="finder" hidden>
-        <label class="finder-search">
-          <span class="visually-hidden">Find your device</span>
-          <input type="search" id="device-search" placeholder="Find your mouse or keyboard, e.g. G703 or DeathAdder" autocomplete="off" spellcheck="false">
-        </label>
-        <div class="finder-levels" role="group" aria-label="Show">
-          <button type="button" data-filter="all" aria-pressed="true">All</button>
-          <button type="button" data-filter="ok" aria-pressed="false"><span class="led ok" aria-hidden="true"></span>Supported</button>
-          <button type="button" data-filter="test" aria-pressed="false"><span class="led test" aria-hidden="true"></span>Experimental</button>
-          <button type="button" data-filter="ro" aria-pressed="false"><span class="led ro" aria-hidden="true"></span>Read-only</button>
-        </div>
-      </div>
-
-      <dl class="levels">
-        <div><dt><span class="led ok" aria-hidden="true"></span>Supported</dt><dd>Tested on real hardware: everything on its page works.</dd></div>
-        <div><dt><span class="led test" aria-hidden="true"></span>Experimental</dt><dd>Recognized, but nobody has tried it with PeriHub yet. Changes are at your own risk, with a warning on screen. Saving to the device's memory asks you to tick a <b>No warranty</b> box first, and each save is backed up and undone after 15 seconds unless you keep it.</dd></div>
-        <div><dt><span class="led ro" aria-hidden="true"></span>Read-only</dt><dd>Recognized: PeriHub shows its settings and changes nothing.</dd></div>
-      </dl>
-
-      <div class="catalogue">
-      <div class="brand-block">
-        <h3 class="brand-name">ASUS</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="test" data-models="ROG GX860 Buzzard|ROG Chakram Core|ROG Chakram|ROG Chakram X|ROG Gladius II|ROG Gladius II Origin|ROG Gladius II Origin PNK LTD|ROG Harpe Wireless|ROG Keris|ROG Keris Wireless AimPoint|ROG Keris Wireless|ROG Pugio|ROG Spatha X|ROG Strix Carry|ROG Strix Impact II|ROG Strix Impact II Wireless|ROG Strix Impact III|ROG Strix Impact|TUF Gaming M3 Gen II|TUF Gaming M4 Air|TUF Gaming Mini WL Mouse Miku" data-keys="">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>21 ROG and TUF mice</h4><span class="dev-level test">Experimental</span></div>
-              <p class="dev-sub">Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3 and more, with a cable or their own receiver</p>
-            <p class="dev-does">DPI, polling rate, button response, angle snapping and lighting.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">Cooler Master</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="test" data-models="MM530|MM711|MM720|MM730" data-keys="">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>MM530, MM711, MM720, MM730</h4><span class="dev-level test">Experimental</span></div>
-            <p class="dev-does">Lighting only: colour, brightness and mode, saved in the mouse.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">Corsair</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="test" data-models="KATAR PRO|KATAR PRO XT|M55 RGB PRO|M65 RGB ULTRA|M75|SABRE RGB PRO|SABRE PRO CS|IRONCLAW RGB WIRELESS|IRONCLAW WIRELESS SE|DARK CORE RGB PRO|DARK CORE RGB PRO SE|HARPOON RGB WIRELESS|HARPOON V2|M65 RGB ULTRA WIRELESS|M75 WIRELESS|M75 AIR WIRELESS|NIGHTSABRE WIRELESS|SCIMITAR RGB ELITE WIRELESS|SCIMITAR ELITE WIRELESS SE|SABRE RGB PRO WIRELESS|DARKSTAR RGB WIRELESS|SABRE V2 PRO|SABRE V2 PRO MG|SABRE V2 PRO CF|SCIMITAR RGB ELITE|M55|K55 PRO RGB|K55 RGB PRO XT|K55 CORE RGB|K55 CORE TKL RGB|K57 RGB WIRELESS|K60 RGB PRO|K60 RGB PRO LP|K65 PLUS WIRELESS|K65 PRO MINI|K65 RGB MINI|K70 CORE RGB|K70 CORE TKL|K70 CORE TKL WIRELESS|K70 MAX|K70 PRO|K70 PRO MINI WIRELESS|K70 PRO TKL|K70 RGB TKL|K70 RGB TKL CS|K95 RGB PLATINUM XT|K100 RGB|K100 AIR WIRELESS|MAKR 75" data-keys="">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>26 mice and 23 keyboards</h4><span class="dev-level test">Experimental</span></div>
-              <p class="dev-sub">The newer generation: KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100 and more, with a cable or their Slipstream receiver</p>
-            <p class="dev-does">PeriHub reads them, and can try one colour of lighting until you close it.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">EVGA</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="test" data-models="X12" data-keys="">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>X12</h4><span class="dev-level test">Experimental</span></div>
-              <p class="dev-sub">With a cable</p>
-            <p class="dev-does">Lighting: each zone off or steady, with its colour and brightness, saved in the mouse.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-          <li class="dev" data-level="ro" data-models="X20" data-keys="">
-            <div class="dev-head"><span class="led ro" aria-hidden="true"></span><h4>X20</h4><span class="dev-level ro">Read-only</span></div>
-              <p class="dev-sub">With a cable</p>
-            <p class="dev-does">Its lighting.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">Glorious</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="test" data-models="Model O/O-|Model D|Model O Eternal" data-keys="">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>Model O/O-, Model D, Model O Eternal</h4><span class="dev-level test">Experimental</span></div>
-              <p class="dev-sub">With a cable</p>
-            <p class="dev-does">DPI and polling rate, saved in the mouse. On Windows read-only for now.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">Lamzu</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="ro" data-models="Atlantis" data-keys="">
-            <div class="dev-head"><span class="led ro" aria-hidden="true"></span><h4>Atlantis</h4><span class="dev-level ro">Read-only</span></div>
-              <p class="dev-sub">With a cable</p>
-            <p class="dev-does">DPI, polling rate and its other settings.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">Logitech</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="ok" data-models="G502 HERO" data-keys="">
-            <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>G502 HERO</h4><span class="dev-level ok">Supported</span></div>
-            <p class="dev-does">Profiles, DPI, polling rate, buttons, G-Shift, macros and lighting, all saved in the mouse.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-          <li class="dev" data-level="ok" data-models="G502 X Wireless" data-keys="">
-            <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>G502 X Wireless</h4><span class="dev-level ok">Supported</span></div>
-              <p class="dev-sub">With its cable</p>
-            <p class="dev-does">Profiles, DPI, buttons and macros. Confirmed by a user on a real mouse.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-          <li class="dev" data-level="ok" data-models="G300" data-keys="">
-            <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>G300</h4><span class="dev-level ok">Supported</span></div>
-            <p class="dev-does">Its three profiles: DPI, polling rate, colour and buttons. Confirmed by a user on a real mouse.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-          <li class="dev" data-level="ok test ro" data-models="G502 Proteus Core|G502 Proteus Spectrum|G502 HERO Wireless|G502 X|G502 X PLUS|G Pro|G Pro Wireless|G Pro X Superlight|G102 / G103 / G203|G302|G303|G303 Shroud Edition|G402|G403|G403 HERO|G403 Wireless|G703|G703 HERO|G705|G900|G903|G903 HERO|MX518|G305|G603|G604" data-keys="lightspeed">
-            <div class="dev-head"><span class="led dep" aria-hidden="true"></span><h4>26 more G mice</h4><span class="dev-level dep">Depends on the mouse</span></div>
-              <p class="dev-sub">G Pro, G403, G703, G903, G305 and more, with a cable or a LIGHTSPEED receiver</p>
-            <p class="dev-does">Supported, experimental or read-only, by the memory each mouse reports. <a href="#logitech">Which ones?</a></p>
-            <p class="dev-match" hidden></p>
-          </li>
-          <li class="dev" data-level="test" data-models="G600" data-keys="">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>G600</h4><span class="dev-level test">Experimental</span></div>
-            <p class="dev-does">DPI, polling rate and lighting of the profile in use, saved in the mouse.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-          <li class="dev" data-level="test" data-models="" data-keys="bolt unifying mx master anywhere keys">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>Devices on a Logi Bolt or Unifying receiver</h4><span class="dev-level test">Experimental</span></div>
-              <p class="dev-sub">MX Master, MX Anywhere, MX Keys and the others</p>
-            <p class="dev-does">A page with battery and DPI. The DPI of those without onboard memory can be changed, and PeriHub sets it again every time they connect.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">Pulsar</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="test" data-models="Xlite Wired|X2 Wired|X2H Wired Medium|X2A Medium Wired|Xlite v4|X3|X3 LHD|Pulsar X2 CrazyLight|Pulsar X3 LHD CrazyLight" data-keys="">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>9 mice with a cable</h4><span class="dev-level test">Experimental</span></div>
-              <p class="dev-sub">Xlite, X2, X2H, X2A, Xlite v4, X3, X3 LHD, X2 CrazyLight, X3 LHD CrazyLight</p>
-            <p class="dev-does">DPI, polling rate, debounce, angle snapping, ripple control and motion sync, saved in the mouse. Lift-off too on the CrazyLight.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">Razer</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="test" data-models="Orochi 2011|Naga|Naga Epic|Abyssus 1800|Mamba 2012 (Wired)|Naga 2012|Imperator 2012|Ouroboros|Taipan|Naga Hex (Red)|DeathAdder 2013|DeathAdder 1800|Orochi 2013|Naga Epic Chroma (Wired)|Naga 2014|Naga Hex|Abyssus|DeathAdder Chroma|Mamba Chroma (Wired)|Mamba Tournament Edition|Orochi (Wired)|Diamondback Chroma|DeathAdder 2000|Naga Hex V2|Naga Chroma|DeathAdder 3500|Lancehead (Wired)|Abyssus V2|DeathAdder Elite|Abyssus 2000|Lancehead Tournament Edition|Basilisk|Basilisk Essential|Naga Trinity|Abyssus Elite (D.Va Edition)|Abyssus Essential|Mamba Elite|DeathAdder Essential|Lancehead Wireless (Wired)|DeathAdder Essential (White Edition)|Mamba Wireless (Wired)|Viper|Viper Ultimate (Wired)|DeathAdder V2 Pro (Wired)|Pro Click (Wired)|DeathAdder V2|Basilisk V2|Basilisk Ultimate|Viper Mini|DeathAdder V2 Mini|Naga Left Handed Edition 2020|Naga Pro (Wired)|Viper 8KHz|Naga X|DeathAdder Essential (2021)|Basilisk V3|Viper Mini SE (Wired)|DeathAdder V2 Lite|Cobra|Viper V2 Pro (Wired)|Naga V2 Pro (Wired)|Basilisk V3 Pro (Wired)|Cobra Pro (Wired)|DeathAdder V3|DeathAdder V3 Pro (Wired)|DeathAdder V4 Pro (Wired)|Viper V3 Pro (Wired)|DeathAdder V3 Pro (Wired)|Pro Click V2 Vertical Edition (Wired)|Basilisk V3 35K|Basilisk V3 Pro 35K (Wired)|Pro Click V2 (Wired)|Basilisk Mobile (Wired)|Basilisk V3 Pro 35K Phantom Green Edition (Wired)|Viper V3 Pro SE (Wired)" data-keys="">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>75 mice with a cable</h4><span class="dev-level test">Experimental</span></div>
-              <p class="dev-sub">DeathAdder, Viper, Basilisk, Naga, Orochi and more</p>
-            <p class="dev-does">DPI and polling rate, saved in the mouse.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">Roccat</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="ro" data-models="Kone Pure|Kone XTD|Kone EMP" data-keys="">
-            <div class="dev-head"><span class="led ro" aria-hidden="true"></span><h4>Kone Pure, Kone XTD, Kone EMP</h4><span class="dev-level ro">Read-only</span></div>
-            <p class="dev-does">Profile in use, DPI levels and polling rate.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">SteelSeries</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="ok" data-models="Apex 3 TKL" data-keys="">
-            <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>Apex 3 TKL</h4><span class="dev-level ok">Supported</span></div>
-              <p class="dev-sub">Keyboard</p>
-            <p class="dev-does">Lighting, brightness and key remapping on both layers, saved in the keyboard.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-          <li class="dev" data-level="test" data-models="Aerox 3|Aerox 3 Wireless|Aerox 5|Aerox 5 Wireless|Aerox 9 Wireless|Kana v2|Kinzu v2|Prime|Prime Mini|Prime+|Prime Wireless|Rival 100 / Rival 105|Rival 110 / Rival 106|Rival 3|Rival 300 / Rival|Rival 300S|Rival 310|Rival 3 Gen 2|Rival 3 Wireless|Rival 3 Wireless Gen 2|Rival 5|Rival 500|Rival 600|Rival 650 Wireless|Rival 700 / Rival 710|Rival 95 / Rival 100 PC Bang|Sensei 310|Sensei [RAW]|Sensei TEN|Aerox 3 Wireless (through its receiver)|Aerox 5 Wireless (through its receiver)|Aerox 9 Wireless (through its receiver)|Prime Wireless (through its receiver)" data-keys="">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>33 mice</h4><span class="dev-level test">Experimental</span></div>
-              <p class="dev-sub">Rival, Sensei, Aerox, Prime, Kana, Kinzu, with a cable or their own receiver</p>
-            <p class="dev-does">They cannot report their settings: DPI, polling rate, colours and effects are sent one at a time and last until the mouse is unplugged.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-          <li class="dev" data-level="ro" data-models="Apex 3" data-keys="">
-            <div class="dev-head"><span class="led none" aria-hidden="true"></span><h4>Apex 3</h4><span class="dev-level none">Not yet</span></div>
-              <p class="dev-sub">Keyboard, not the TKL</p>
-            <p class="dev-does">Recognized, but PeriHub sends nothing to it yet.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      <div class="brand-block">
-        <h3 class="brand-name">Any brand</h3>
-        <ul class="dev-list">
-          <li class="dev" data-level="test" data-models="" data-keys="qmk via vial keychron">
-            <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>Keyboards with QMK firmware</h4><span class="dev-level test">Experimental</span></div>
-              <p class="dev-sub">Every Vial keyboard, and VIA keyboards you turn on</p>
-            <p class="dev-does">Lighting, where the protocol says exactly how (VialRGB, VIA firmware from 2023). Keymaps stay with VIA and Vial.</p>
-            <p class="dev-match" hidden></p>
-          </li>
-        </ul>
-      </div>
-      </div>
-      <p class="finder-empty" hidden>Nothing matches. If your device is not here, PeriHub can ask for it: <b>Settings → Devices → Send a report</b> opens a device request already filled in.</p>
-
-      <details class="models-list">
-        <summary>The 26 Corsair mice and 23 Corsair keyboards</summary>
-        <h4 class="models-title">Mice</h4>
-        <ul class="models">
-          <li>KATAR PRO</li>
-          <li>KATAR PRO XT</li>
-          <li>M55 RGB PRO</li>
-          <li>M65 RGB ULTRA</li>
-          <li>M75</li>
-          <li>SABRE RGB PRO</li>
-          <li>SABRE PRO CS</li>
-          <li>IRONCLAW RGB WIRELESS</li>
-          <li>IRONCLAW WIRELESS SE</li>
-          <li>DARK CORE RGB PRO</li>
-          <li>DARK CORE RGB PRO SE</li>
-          <li>HARPOON RGB WIRELESS</li>
-          <li>HARPOON V2</li>
-          <li>M65 RGB ULTRA WIRELESS</li>
-          <li>M75 WIRELESS</li>
-          <li>M75 AIR WIRELESS</li>
-          <li>NIGHTSABRE WIRELESS</li>
-          <li>SCIMITAR RGB ELITE WIRELESS</li>
-          <li>SCIMITAR ELITE WIRELESS SE</li>
-          <li>SABRE RGB PRO WIRELESS</li>
-          <li>DARKSTAR RGB WIRELESS</li>
-          <li>SABRE V2 PRO</li>
-          <li>SABRE V2 PRO MG</li>
-          <li>SABRE V2 PRO CF</li>
-          <li>SCIMITAR RGB ELITE</li>
-          <li>M55</li>
-        </ul>
-        <h4 class="models-title">Keyboards</h4>
-        <ul class="models">
-          <li>K55 PRO RGB</li>
-          <li>K55 RGB PRO XT</li>
-          <li>K55 CORE RGB</li>
-          <li>K55 CORE TKL RGB</li>
-          <li>K57 RGB WIRELESS</li>
-          <li>K60 RGB PRO</li>
-          <li>K60 RGB PRO LP</li>
-          <li>K65 PLUS WIRELESS</li>
-          <li>K65 PRO MINI</li>
-          <li>K65 RGB MINI</li>
-          <li>K70 CORE RGB</li>
-          <li>K70 CORE TKL</li>
-          <li>K70 CORE TKL WIRELESS</li>
-          <li>K70 MAX</li>
-          <li>K70 PRO</li>
-          <li>K70 PRO MINI WIRELESS</li>
-          <li>K70 PRO TKL</li>
-          <li>K70 RGB TKL</li>
-          <li>K70 RGB TKL CS</li>
-          <li>K95 RGB PLATINUM XT</li>
-          <li>K100 RGB</li>
-          <li>K100 AIR WIRELESS</li>
-          <li>MAKR 75</li>
-        </ul>
-      </details>
-
-      <div class="logitech" id="logitech">
-        <h3>Which Logitech G mice are supported?</h3>
-        <p>The <b>G502 HERO</b> and the <b>G502 X Wireless</b> are supported whatever their firmware. For the other 26 Logitech G mice with onboard memory, what counts is the format of the memory the mouse reports, not the model. PeriHub reads it every time the mouse is plugged in, and the mouse page shows the level.</p>
-        <div class="matrix" role="table" aria-label="Level by memory format and sector size">
-          <div class="m-row m-head" role="row"><span role="columnheader"></span><span role="columnheader">255-byte sectors</span><span role="columnheader">256-byte sectors</span></div>
-          <div class="m-row" role="row"><span class="m-label" role="rowheader">Profile format 2</span><span class="m-cell test" role="cell"><span class="m-key">Format 2, 255-byte sectors</span><span class="led test" aria-hidden="true"></span>Experimental</span><span class="m-cell ok" role="cell"><span class="m-key">Format 2, 256-byte sectors</span><span class="led ok" aria-hidden="true"></span>Supported<small>as on the G502 HERO</small></span></div>
-          <div class="m-row" role="row"><span class="m-label" role="rowheader">Profile format 3</span><span class="m-cell ok" role="cell"><span class="m-key">Format 3, 255-byte sectors</span><span class="led ok" aria-hidden="true"></span>Supported<small>as on the G502 X Wireless</small></span><span class="m-cell test" role="cell"><span class="m-key">Format 3, 256-byte sectors</span><span class="led test" aria-hidden="true"></span>Experimental</span></div>
-          <div class="m-row" role="row"><span class="m-label" role="rowheader">Any other</span><span class="m-cell ro m-wide" role="cell"><span class="m-key">Any other format</span><span class="led ro" aria-hidden="true"></span>Read-only</span></div>
-        </div>
-        <p class="small">Experimental saves need the USB cable and the <b>No warranty</b> box, and each one is undone after 15 seconds unless you keep it. Through a LIGHTSPEED receiver nothing is saved: with a supported memory PeriHub switches the profile and DPI level, otherwise it only reads. What <a href="https://github.com/libratbag/libratbag">libratbag</a> found so far: the G900 uses format 3, the G203 format 4 and the G502 X PLUS format 5, so the last two are read-only.</p>
-        <details class="models-list">
-          <summary>The 28 Logitech G mice PeriHub recognizes</summary>
-          <h4 class="models-title">With a USB cable</h4>
-          <ul class="models">
-            <li>G502 HERO</li>
-            <li>G502 Proteus Core</li>
-            <li>G502 Proteus Spectrum</li>
-            <li>G502 HERO Wireless</li>
-            <li>G502 X</li>
-            <li>G502 X PLUS</li>
-            <li>G502 X Wireless</li>
-            <li>G Pro</li>
-            <li>G Pro Wireless</li>
-            <li>G Pro X Superlight</li>
-            <li>G102 / G103 / G203</li>
-            <li>G302</li>
-            <li>G303</li>
-            <li>G303 Shroud Edition</li>
-            <li>G402</li>
-            <li>G403</li>
-            <li>G403 HERO</li>
-            <li>G403 Wireless</li>
-            <li>G703</li>
-            <li>G703 HERO</li>
-            <li>G705</li>
-            <li>G900</li>
-            <li>G903</li>
-            <li>G903 HERO</li>
-            <li>MX518</li>
-          </ul>
-          <h4 class="models-title">Wireless, through a LIGHTSPEED receiver</h4>
-          <ul class="models">
-            <li>G502 HERO Wireless</li>
-            <li>G502 X Wireless</li>
-            <li>G502 X PLUS</li>
-            <li>G Pro Wireless</li>
-            <li>G Pro X Superlight</li>
-            <li>G403 Wireless</li>
-            <li>G703</li>
-            <li>G703 HERO</li>
-            <li>G705</li>
-            <li>G900</li>
-            <li>G903</li>
-            <li>G903 HERO</li>
-            <li>G305</li>
-            <li>G603</li>
-            <li>G604</li>
-          </ul>
-        </details>
-      </div>
-      <p class="small">USB ids, interfaces and the details of each family are in <a href="https://github.com/hex-dump/perihub/blob/main/docs/devices.md">docs/devices.md</a>.</p>
-
-      <div class="help" id="test-report">
-        <div>
-          <h3>Is your device on the list? Help make it supported</h3>
-          <ol class="steps">
-            <li>Install PeriHub and quit the maker's app (G HUB, GG, iCUE, Synapse…).</li>
-            <li>Connect the device with its USB cable.</li>
-            <li>Open its page in PeriHub and press <b>Open test form</b>. It opens a report on GitHub with what PeriHub read already filled in.</li>
-            <li>Check that it matches your device, and send it. You need a free GitHub account.</li>
-          </ol>
-          <p>It takes a few minutes and it is safe: sending a report only reads the device.</p>
-        </div>
-        <a class="btn" href="https://github.com/hex-dump/perihub/issues/new/choose"><span class="btn-title">Send a test report</span></a>
-      </div>
-      <p class="small">Not on the list? In PeriHub, <b>Settings → Devices → Send a report</b> lists the devices it does not know and opens a device request already filled in. You can also open a <a href="https://github.com/hex-dump/perihub/issues/new?template=device_request.yml">device request</a> on GitHub.</p>
-    </section>
-
-    <section id="download" class="wrap section">
-      <h2>Download</h2>
-      <p class="meta">Version %%VERSION%% · <a href="https://github.com/hex-dump/perihub/releases/latest">Release notes</a> · <a href="%%SUMS_URL%%">SHA-256 checksums</a></p>
-      <div class="platforms">
-        <div class="platform" id="windows">
-          <h3>Windows 10 and 11</h3>
-          <ul class="files">
-            <li><a href="%%EXE_URL%%">Installer (.exe)</a> <span>%%EXE_SIZE%%</span></li>
-            <li><a href="%%MSI_URL%%">Installer (.msi)</a> <span>%%MSI_SIZE%%</span></li>
-          </ul>
-          <div class="note warn">
-            <p><b>The installer is not code-signed yet.</b> Your browser may say the file is not commonly downloaded: choose <b>Keep</b>. If Windows SmartScreen blocks it, click <b>More info → Run anyway</b>.</p>
-            <p class="small">PeriHub has applied to <a href="https://signpath.org">SignPath Foundation</a> for free code signing for open source projects. See the <a href="https://github.com/hex-dump/perihub/blob/main/CODE_SIGNING.md">code signing policy</a>.</p>
-          </div>
-          <p>Before you start PeriHub, <b>quit SteelSeries GG and Logitech G HUB</b> and turn off their autostart: two apps talking to the same device get in each other's way.</p>
-          <p class="small">No drivers needed. PeriHub tells you when a new version is out and updates with one click. With Scoop: <a href="https://github.com/Kissshot-2003/perihub-scoop">community bucket</a>.</p>
-        </div>
-        <div class="platform" id="linux">
-          <h3>Linux</h3>
-          <ul class="files">
-            <li><a href="%%DEB_URL%%">Debian, Ubuntu (.deb)</a> <span>%%DEB_SIZE%%</span></li>
-            <li><a href="%%RPM_URL%%">Fedora, openSUSE (.rpm)</a> <span>%%RPM_SIZE%%</span></li>
-            <li><a href="%%APPIMAGE_URL%%">AppImage, any distribution</a> <span>%%APPIMAGE_SIZE%%</span></li>
-            <!--if FLATPAK--><li><a href="%%FLATPAK_URL%%">Flatpak, any distribution with Flatpak</a> <span>%%FLATPAK_SIZE%%</span></li><!--end FLATPAK-->
-          </ul>
-          <p>Pick the .deb or the .rpm if your distribution uses them: they are much smaller, because they use your system's web engine, and they set up USB access by themselves. The AppImage works everywhere and brings its own engine, which makes it larger.</p>
-          <p>With the AppImage<!--if FLATPAK--> or the Flatpak<!--end FLATPAK-->, see <a href="https://github.com/hex-dump/perihub#usb-permissions">USB permissions</a>.<!--if FLATPAK--> The Flatpak does not update by itself: <a href="https://github.com/hex-dump/perihub#linux">how to install it</a>.<!--end FLATPAK--> On Arch and CachyOS you can <a href="https://github.com/hex-dump/perihub#linux">build the package</a> from the repository.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="wrap section">
-      <h2>Safe by design</h2>
-      <ul class="safety">
-        <li><b>No firmware changes.</b> PeriHub only writes the settings the official apps write too, with commands verified one by one.</li>
-        <li><b>Checked writes and backups.</b> Everything written to a device is read back and compared, and the previous state is saved first.</li>
-        <li><b>Your data stays on your PC.</b> PeriHub works offline. On Windows it only asks GitHub for new versions, and you can turn that off.</li>
-        <li><b>Open source.</b> The code is on <a href="https://github.com/hex-dump/perihub">GitHub</a> under the MIT license. Details in the <a href="https://github.com/hex-dump/perihub#safety">README</a>.</li>
+      <ul class="facts wrap">
+        <li><svg class="icon" aria-hidden="true"><use href="#i-dot"/></svg>No account</li>
+        <li><svg class="icon" aria-hidden="true"><use href="#i-dot"/></svg>No ads, no telemetry</li>
+        <li><svg class="icon" aria-hidden="true"><use href="#i-dot"/></svg>No background services</li>
+        <li><svg class="icon" aria-hidden="true"><use href="#i-dot"/></svg>MIT license</li>
       </ul>
     </section>
-    <section id="support" class="wrap section">
-      <h2>Help PeriHub grow</h2>
-      <p class="lead">PeriHub is free, and one person makes it in their spare time. If it saved you from installing G HUB or GG, two things help a lot.</p>
-      <div class="support">
-        <article class="support-card star">
-          <h3><span class="support-icon" aria-hidden="true">★</span> Give it a star on GitHub</h3>
-          <p>It is free and takes a second: open the page and press <b>Star</b> at the top. Stars are how people find a project on GitHub, and more users mean more mice tested and supported.</p>
-          <a class="btn primary" href="https://github.com/hex-dump/perihub"><span class="btn-title">★ Star on GitHub</span><span class="btn-sub">Needs a free GitHub account</span></a>
-        </article>
-        <article class="support-card">
-          <h3><span class="support-icon" aria-hidden="true">☕</span> Buy me a coffee</h3>
-          <p>If you want to say thanks, a small donation keeps the project going. It is never required: every feature of PeriHub stays free.</p>
-          <a class="btn" href="https://buymeacoffee.com/hexdump1"><span class="btn-title">☕ Buy me a coffee</span><span class="btn-sub">buymeacoffee.com</span></a>
-        </article>
+
+    <section id="features" class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="kicker">Features</p>
+          <h2>What it does</h2>
+        </div>
+        <div class="cards">
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-light"/></svg>
+            <h3>Keyboard lighting</h3>
+            <p>Static colors for each zone, gradient, breathing, color cycle, wave, reactive (the zone of each key you press lights up) and the keyboard's built-in effects.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-keys"/></svg>
+            <h3>Key remapping</h3>
+            <p>Change any key, also on the layer you get while holding the SteelSeries key. Saved in the keyboard, so it works without PeriHub.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-mouse"/></svg>
+            <h3>Mouse profiles</h3>
+            <p>Onboard profiles with DPI levels, polling rate, every button, G-Shift and lighting. All saved in the mouse.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-macro"/></svg>
+            <h3>Macros</h3>
+            <p>Record macros into the mouse memory, so they work on any PC. Software macros can also repeat, type text, or open a website or a program.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-apps"/></svg>
+            <h3>App profiles</h3>
+            <p>Switch lighting and mouse profile when a game is in focus, and switch back when you leave it. On Windows and on Hyprland.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-feather"/></svg>
+            <h3>Small and quiet</h3>
+            <p>A %%EXE_SIZE%% installer for Windows. Closed, it waits in the tray with about 3 MB of memory (measured on version 0.5.5). No background services.</p>
+          </article>
+        </div>
+
+        <div class="gallery">
+          <figure><img src="screenshots/keyboard-keys.png" width="1160" height="780" loading="lazy" alt="Key remapping"><figcaption>Key remapping</figcaption></figure>
+          <figure><img src="screenshots/mouse-dpi.png" width="1160" height="780" loading="lazy" alt="Mouse DPI and polling rate"><figcaption>DPI and polling rate</figcaption></figure>
+          <figure><img src="screenshots/mouse-buttons.png" width="1160" height="780" loading="lazy" alt="Mouse buttons"><figcaption>Mouse buttons</figcaption></figure>
+          <figure><img src="screenshots/mouse-lighting.png" width="1160" height="780" loading="lazy" alt="Mouse lighting"><figcaption>Mouse lighting</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="devices" class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="kicker">Compatibility</p>
+          <h2>Devices</h2>
+          <p class="lead">Four devices are tested on real hardware, and over 200 more mice and keyboards are recognized. PeriHub talks only to the devices on this page.</p>
+        </div>
+
+        <div class="tested">
+          <h3>Tested on real hardware</h3>
+          <ul>
+            <li><span class="led ok" aria-hidden="true"></span><b>Apex 3 TKL</b><span>SteelSeries keyboard</span></li>
+            <li><span class="led ok" aria-hidden="true"></span><b>G502 HERO</b><span>Logitech mouse</span></li>
+            <li><span class="led ok" aria-hidden="true"></span><b>G502 X Wireless</b><span>Logitech mouse, with its cable</span></li>
+            <li><span class="led ok" aria-hidden="true"></span><b>G300</b><span>Logitech mouse</span></li>
+          </ul>
+        </div>
+
+        <dl class="levels">
+          <div><dt><span class="led ok" aria-hidden="true"></span>Supported</dt><dd>Tested on real hardware: everything on its page works.</dd></div>
+          <div><dt><span class="led test" aria-hidden="true"></span>Experimental</dt><dd>Recognized, but nobody has tried it with PeriHub yet. Changes are at your own risk, with a warning on screen. Saving to the device's memory asks you to tick a <b>No warranty</b> box first, and each save is backed up and undone after 15 seconds unless you keep it.</dd></div>
+          <div><dt><span class="led ro" aria-hidden="true"></span>Read-only</dt><dd>Recognized: PeriHub shows its settings and changes nothing.</dd></div>
+        </dl>
+
+        <div class="finder" hidden>
+          <label class="visually-hidden" for="device-search">Find your device</label>
+          <input type="search" id="device-search" class="finder-input" placeholder="Find your mouse or keyboard, e.g. G703 or DeathAdder" autocomplete="off" spellcheck="false">
+          <div class="finder-levels" role="group" aria-label="Show">
+            <button type="button" data-filter="all" aria-pressed="true">All</button>
+            <button type="button" data-filter="ok" aria-pressed="false"><span class="led ok" aria-hidden="true"></span>Supported</button>
+            <button type="button" data-filter="test" aria-pressed="false"><span class="led test" aria-hidden="true"></span>Experimental</button>
+            <button type="button" data-filter="ro" aria-pressed="false"><span class="led ro" aria-hidden="true"></span>Read-only</button>
+          </div>
+          <p class="finder-status" role="status"></p>
+        </div>
+
+        <div class="catalogue">
+          <div class="brand-block">
+            <h3 class="brand-name">ASUS</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="test" data-models="ROG GX860 Buzzard|ROG Chakram Core|ROG Chakram|ROG Chakram X|ROG Gladius II|ROG Gladius II Origin|ROG Gladius II Origin PNK LTD|ROG Harpe Wireless|ROG Keris|ROG Keris Wireless AimPoint|ROG Keris Wireless|ROG Pugio|ROG Spatha X|ROG Strix Carry|ROG Strix Impact II|ROG Strix Impact II Wireless|ROG Strix Impact III|ROG Strix Impact|TUF Gaming M3 Gen II|TUF Gaming M4 Air|TUF Gaming Mini WL Mouse Miku" data-keys="">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>21 ROG and TUF mice</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-sub">Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3 and more, with a cable or their own receiver</p>
+                <p class="dev-does">DPI, polling rate, button response, angle snapping and lighting.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block">
+            <h3 class="brand-name">Cooler Master</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="test" data-models="MM530|MM711|MM720|MM730" data-keys="">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>MM530, MM711, MM720, MM730</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-does">Lighting only: colour, brightness and mode, saved in the mouse.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block">
+            <h3 class="brand-name">Corsair</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="test" data-models="KATAR PRO|KATAR PRO XT|M55 RGB PRO|M65 RGB ULTRA|M75|SABRE RGB PRO|SABRE PRO CS|IRONCLAW RGB WIRELESS|IRONCLAW WIRELESS SE|DARK CORE RGB PRO|DARK CORE RGB PRO SE|HARPOON RGB WIRELESS|HARPOON V2|M65 RGB ULTRA WIRELESS|M75 WIRELESS|M75 AIR WIRELESS|NIGHTSABRE WIRELESS|SCIMITAR RGB ELITE WIRELESS|SCIMITAR ELITE WIRELESS SE|SABRE RGB PRO WIRELESS|DARKSTAR RGB WIRELESS|SABRE V2 PRO|SABRE V2 PRO MG|SABRE V2 PRO CF|SCIMITAR RGB ELITE|M55|K55 PRO RGB|K55 RGB PRO XT|K55 CORE RGB|K55 CORE TKL RGB|K57 RGB WIRELESS|K60 RGB PRO|K60 RGB PRO LP|K65 PLUS WIRELESS|K65 PRO MINI|K65 RGB MINI|K70 CORE RGB|K70 CORE TKL|K70 CORE TKL WIRELESS|K70 MAX|K70 PRO|K70 PRO MINI WIRELESS|K70 PRO TKL|K70 RGB TKL|K70 RGB TKL CS|K95 RGB PLATINUM XT|K100 RGB|K100 AIR WIRELESS|MAKR 75" data-keys="">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>26 mice and 23 keyboards</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-sub">The newer generation: KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100 and more, with a cable or their Slipstream receiver</p>
+                <p class="dev-does">PeriHub reads them, and can try one colour of lighting until you close it.</p>
+                <p class="dev-match" hidden></p>
+                <details class="models-list">
+                  <summary>The 26 Corsair mice and 23 Corsair keyboards</summary>
+                  <h5 class="models-title">Mice</h5>
+                  <ul class="models">
+                    <li>KATAR PRO</li>
+                    <li>KATAR PRO XT</li>
+                    <li>M55 RGB PRO</li>
+                    <li>M65 RGB ULTRA</li>
+                    <li>M75</li>
+                    <li>SABRE RGB PRO</li>
+                    <li>SABRE PRO CS</li>
+                    <li>IRONCLAW RGB WIRELESS</li>
+                    <li>IRONCLAW WIRELESS SE</li>
+                    <li>DARK CORE RGB PRO</li>
+                    <li>DARK CORE RGB PRO SE</li>
+                    <li>HARPOON RGB WIRELESS</li>
+                    <li>HARPOON V2</li>
+                    <li>M65 RGB ULTRA WIRELESS</li>
+                    <li>M75 WIRELESS</li>
+                    <li>M75 AIR WIRELESS</li>
+                    <li>NIGHTSABRE WIRELESS</li>
+                    <li>SCIMITAR RGB ELITE WIRELESS</li>
+                    <li>SCIMITAR ELITE WIRELESS SE</li>
+                    <li>SABRE RGB PRO WIRELESS</li>
+                    <li>DARKSTAR RGB WIRELESS</li>
+                    <li>SABRE V2 PRO</li>
+                    <li>SABRE V2 PRO MG</li>
+                    <li>SABRE V2 PRO CF</li>
+                    <li>SCIMITAR RGB ELITE</li>
+                    <li>M55</li>
+                  </ul>
+                  <h5 class="models-title">Keyboards</h5>
+                  <ul class="models">
+                    <li>K55 PRO RGB</li>
+                    <li>K55 RGB PRO XT</li>
+                    <li>K55 CORE RGB</li>
+                    <li>K55 CORE TKL RGB</li>
+                    <li>K57 RGB WIRELESS</li>
+                    <li>K60 RGB PRO</li>
+                    <li>K60 RGB PRO LP</li>
+                    <li>K65 PLUS WIRELESS</li>
+                    <li>K65 PRO MINI</li>
+                    <li>K65 RGB MINI</li>
+                    <li>K70 CORE RGB</li>
+                    <li>K70 CORE TKL</li>
+                    <li>K70 CORE TKL WIRELESS</li>
+                    <li>K70 MAX</li>
+                    <li>K70 PRO</li>
+                    <li>K70 PRO MINI WIRELESS</li>
+                    <li>K70 PRO TKL</li>
+                    <li>K70 RGB TKL</li>
+                    <li>K70 RGB TKL CS</li>
+                    <li>K95 RGB PLATINUM XT</li>
+                    <li>K100 RGB</li>
+                    <li>K100 AIR WIRELESS</li>
+                    <li>MAKR 75</li>
+                  </ul>
+                </details>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block">
+            <h3 class="brand-name">EVGA</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="test" data-models="X12" data-keys="">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>X12</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-sub">With a cable</p>
+                <p class="dev-does">Lighting: each zone off or steady, with its colour and brightness, saved in the mouse.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+              <li class="dev" data-level="ro" data-models="X20" data-keys="">
+                <div class="dev-head"><span class="led ro" aria-hidden="true"></span><h4>X20</h4><span class="dev-level ro">Read-only</span></div>
+                <p class="dev-sub">With a cable</p>
+                <p class="dev-does">Its lighting.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block">
+            <h3 class="brand-name">Glorious</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="test" data-models="Model O/O-|Model D|Model O Eternal" data-keys="">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>Model O/O-, Model D, Model O Eternal</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-sub">With a cable</p>
+                <p class="dev-does">DPI and polling rate, saved in the mouse. On Windows read-only for now.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block">
+            <h3 class="brand-name">Lamzu</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="ro" data-models="Atlantis" data-keys="">
+                <div class="dev-head"><span class="led ro" aria-hidden="true"></span><h4>Atlantis</h4><span class="dev-level ro">Read-only</span></div>
+                <p class="dev-sub">With a cable</p>
+                <p class="dev-does">DPI, polling rate and its other settings.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block wide">
+            <h3 class="brand-name">Logitech</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="ok" data-models="G502 HERO" data-keys="">
+                <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>G502 HERO</h4><span class="dev-level ok">Supported</span></div>
+                <p class="dev-does">Profiles, DPI, polling rate, buttons, G-Shift, macros and lighting, all saved in the mouse.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+              <li class="dev" data-level="ok" data-models="G502 X Wireless" data-keys="">
+                <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>G502 X Wireless</h4><span class="dev-level ok">Supported</span></div>
+                <p class="dev-sub">With its cable</p>
+                <p class="dev-does">Profiles, DPI, buttons and macros. Confirmed by a user on a real mouse.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+              <li class="dev" data-level="ok" data-models="G300" data-keys="">
+                <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>G300</h4><span class="dev-level ok">Supported</span></div>
+                <p class="dev-does">Its three profiles: DPI, polling rate, colour and buttons. Confirmed by a user on a real mouse.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+              <li class="dev" data-level="ok test ro" data-models="G502 Proteus Core|G502 Proteus Spectrum|G502 HERO Wireless|G502 X|G502 X PLUS|G Pro|G Pro Wireless|G Pro X Superlight|G102 / G103 / G203|G302|G303|G303 Shroud Edition|G402|G403|G403 HERO|G403 Wireless|G703|G703 HERO|G705|G900|G903|G903 HERO|MX518|G305|G603|G604" data-keys="lightspeed">
+                <div class="dev-head"><span class="led dep" aria-hidden="true"></span><h4>26 more G mice</h4><span class="dev-level dep">Depends on the mouse</span></div>
+                <p class="dev-sub">G Pro, G403, G703, G903, G305 and more, with a cable or a LIGHTSPEED receiver</p>
+                <p class="dev-does">Supported, experimental or read-only, by the memory each mouse reports. <a href="#logitech">Which ones?</a></p>
+                <p class="dev-match" hidden></p>
+              </li>
+              <li class="dev" data-level="test" data-models="G600" data-keys="">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>G600</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-does">DPI, polling rate and lighting of the profile in use, saved in the mouse.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+              <li class="dev" data-level="test" data-models="" data-keys="bolt unifying mx master anywhere keys">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>Devices on a Logi Bolt or Unifying receiver</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-sub">MX Master, MX Anywhere, MX Keys and the others</p>
+                <p class="dev-does">A page with battery and DPI. The DPI of those without onboard memory can be changed, and PeriHub sets it again every time they connect.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block">
+            <h3 class="brand-name">Pulsar</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="test" data-models="Xlite Wired|X2 Wired|X2H Wired Medium|X2A Medium Wired|Xlite v4|X3|X3 LHD|Pulsar X2 CrazyLight|Pulsar X3 LHD CrazyLight" data-keys="">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>9 mice with a cable</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-sub">Xlite, X2, X2H, X2A, Xlite v4, X3, X3 LHD, X2 CrazyLight, X3 LHD CrazyLight</p>
+                <p class="dev-does">DPI, polling rate, debounce, angle snapping, ripple control and motion sync, saved in the mouse. Lift-off too on the CrazyLight.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block">
+            <h3 class="brand-name">Razer</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="test" data-models="Orochi 2011|Naga|Naga Epic|Abyssus 1800|Mamba 2012 (Wired)|Naga 2012|Imperator 2012|Ouroboros|Taipan|Naga Hex (Red)|DeathAdder 2013|DeathAdder 1800|Orochi 2013|Naga Epic Chroma (Wired)|Naga 2014|Naga Hex|Abyssus|DeathAdder Chroma|Mamba Chroma (Wired)|Mamba Tournament Edition|Orochi (Wired)|Diamondback Chroma|DeathAdder 2000|Naga Hex V2|Naga Chroma|DeathAdder 3500|Lancehead (Wired)|Abyssus V2|DeathAdder Elite|Abyssus 2000|Lancehead Tournament Edition|Basilisk|Basilisk Essential|Naga Trinity|Abyssus Elite (D.Va Edition)|Abyssus Essential|Mamba Elite|DeathAdder Essential|Lancehead Wireless (Wired)|DeathAdder Essential (White Edition)|Mamba Wireless (Wired)|Viper|Viper Ultimate (Wired)|DeathAdder V2 Pro (Wired)|Pro Click (Wired)|DeathAdder V2|Basilisk V2|Basilisk Ultimate|Viper Mini|DeathAdder V2 Mini|Naga Left Handed Edition 2020|Naga Pro (Wired)|Viper 8KHz|Naga X|DeathAdder Essential (2021)|Basilisk V3|Viper Mini SE (Wired)|DeathAdder V2 Lite|Cobra|Viper V2 Pro (Wired)|Naga V2 Pro (Wired)|Basilisk V3 Pro (Wired)|Cobra Pro (Wired)|DeathAdder V3|DeathAdder V3 Pro (Wired)|DeathAdder V4 Pro (Wired)|Viper V3 Pro (Wired)|DeathAdder V3 Pro (Wired)|Pro Click V2 Vertical Edition (Wired)|Basilisk V3 35K|Basilisk V3 Pro 35K (Wired)|Pro Click V2 (Wired)|Basilisk Mobile (Wired)|Basilisk V3 Pro 35K Phantom Green Edition (Wired)|Viper V3 Pro SE (Wired)" data-keys="">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>75 mice with a cable</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-sub">DeathAdder, Viper, Basilisk, Naga, Orochi and more</p>
+                <p class="dev-does">DPI and polling rate, saved in the mouse.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block">
+            <h3 class="brand-name">Roccat</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="ro" data-models="Kone Pure|Kone XTD|Kone EMP" data-keys="">
+                <div class="dev-head"><span class="led ro" aria-hidden="true"></span><h4>Kone Pure, Kone XTD, Kone EMP</h4><span class="dev-level ro">Read-only</span></div>
+                <p class="dev-does">Profile in use, DPI levels and polling rate.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block">
+            <h3 class="brand-name">SteelSeries</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="ok" data-models="Apex 3 TKL" data-keys="">
+                <div class="dev-head"><span class="led ok" aria-hidden="true"></span><h4>Apex 3 TKL</h4><span class="dev-level ok">Supported</span></div>
+                <p class="dev-sub">Keyboard</p>
+                <p class="dev-does">Lighting, brightness and key remapping on both layers, saved in the keyboard.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+              <li class="dev" data-level="test" data-models="Aerox 3|Aerox 3 Wireless|Aerox 5|Aerox 5 Wireless|Aerox 9 Wireless|Kana v2|Kinzu v2|Prime|Prime Mini|Prime+|Prime Wireless|Rival 100 / Rival 105|Rival 110 / Rival 106|Rival 3|Rival 300 / Rival|Rival 300S|Rival 310|Rival 3 Gen 2|Rival 3 Wireless|Rival 3 Wireless Gen 2|Rival 5|Rival 500|Rival 600|Rival 650 Wireless|Rival 700 / Rival 710|Rival 95 / Rival 100 PC Bang|Sensei 310|Sensei [RAW]|Sensei TEN|Aerox 3 Wireless (through its receiver)|Aerox 5 Wireless (through its receiver)|Aerox 9 Wireless (through its receiver)|Prime Wireless (through its receiver)" data-keys="">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>33 mice</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-sub">Rival, Sensei, Aerox, Prime, Kana, Kinzu, with a cable or their own receiver</p>
+                <p class="dev-does">They cannot report their settings: DPI, polling rate, colours and effects are sent one at a time and last until the mouse is unplugged.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+              <li class="dev" data-level="ro" data-models="Apex 3" data-keys="">
+                <div class="dev-head"><span class="led none" aria-hidden="true"></span><h4>Apex 3</h4><span class="dev-level none">Not yet</span></div>
+                <p class="dev-sub">Keyboard, not the TKL</p>
+                <p class="dev-does">Recognized, but PeriHub sends nothing to it yet.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+          <div class="brand-block">
+            <h3 class="brand-name">Any brand</h3>
+            <ul class="dev-list">
+              <li class="dev" data-level="test" data-models="" data-keys="qmk via vial keychron">
+                <div class="dev-head"><span class="led test" aria-hidden="true"></span><h4>Keyboards with QMK firmware</h4><span class="dev-level test">Experimental</span></div>
+                <p class="dev-sub">Every Vial keyboard, and VIA keyboards you turn on</p>
+                <p class="dev-does">Lighting, where the protocol says exactly how (VialRGB, VIA firmware from 2023). Keymaps stay with VIA and Vial.</p>
+                <p class="dev-match" hidden></p>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <p class="finder-empty" hidden>Nothing matches. If your device is not here, PeriHub can ask for it: <b>Settings → Devices → Send a report</b> opens a device request already filled in.</p>
+
+        <div class="logitech" id="logitech">
+          <h3>Which Logitech G mice are supported?</h3>
+          <p>The <b>G502 HERO</b> and the <b>G502 X Wireless</b> are supported whatever their firmware. For the other 26 Logitech G mice with onboard memory, what counts is the format of the memory the mouse reports, not the model. PeriHub reads it every time the mouse is plugged in, and the mouse page shows the level.</p>
+          <div class="matrix-wrap">
+            <table class="matrix">
+              <caption class="visually-hidden">Level by memory format and sector size</caption>
+              <thead>
+                <tr><td></td><th scope="col">255-byte sectors</th><th scope="col">256-byte sectors</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Profile format 2</th>
+                  <td class="test" data-label="255-byte sectors"><span class="led test" aria-hidden="true"></span>Experimental</td>
+                  <td class="ok" data-label="256-byte sectors"><span class="led ok" aria-hidden="true"></span>Supported<small>as on the G502 HERO</small></td>
+                </tr>
+                <tr>
+                  <th scope="row">Profile format 3</th>
+                  <td class="ok" data-label="255-byte sectors"><span class="led ok" aria-hidden="true"></span>Supported<small>as on the G502 X Wireless</small></td>
+                  <td class="test" data-label="256-byte sectors"><span class="led test" aria-hidden="true"></span>Experimental</td>
+                </tr>
+                <tr>
+                  <th scope="row">Any other format</th>
+                  <td class="ro" colspan="2" data-label="Any sector size"><span class="led ro" aria-hidden="true"></span>Read-only</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="small">Experimental saves need the USB cable and the <b>No warranty</b> box, and each one is undone after 15 seconds unless you keep it. Through a LIGHTSPEED receiver nothing is saved: with a supported memory PeriHub switches the profile and DPI level, otherwise it only reads. What <a href="https://github.com/libratbag/libratbag">libratbag</a> found so far: the G900 uses format 3, the G203 format 4 and the G502 X PLUS format 5, so the last two are read-only.</p>
+          <details class="models-list">
+            <summary>The 28 Logitech G mice PeriHub recognizes</summary>
+            <h4 class="models-title">With a USB cable</h4>
+            <ul class="models">
+              <li>G502 HERO</li>
+              <li>G502 Proteus Core</li>
+              <li>G502 Proteus Spectrum</li>
+              <li>G502 HERO Wireless</li>
+              <li>G502 X</li>
+              <li>G502 X PLUS</li>
+              <li>G502 X Wireless</li>
+              <li>G Pro</li>
+              <li>G Pro Wireless</li>
+              <li>G Pro X Superlight</li>
+              <li>G102 / G103 / G203</li>
+              <li>G302</li>
+              <li>G303</li>
+              <li>G303 Shroud Edition</li>
+              <li>G402</li>
+              <li>G403</li>
+              <li>G403 HERO</li>
+              <li>G403 Wireless</li>
+              <li>G703</li>
+              <li>G703 HERO</li>
+              <li>G705</li>
+              <li>G900</li>
+              <li>G903</li>
+              <li>G903 HERO</li>
+              <li>MX518</li>
+            </ul>
+            <h4 class="models-title">Wireless, through a LIGHTSPEED receiver</h4>
+            <ul class="models">
+              <li>G502 HERO Wireless</li>
+              <li>G502 X Wireless</li>
+              <li>G502 X PLUS</li>
+              <li>G Pro Wireless</li>
+              <li>G Pro X Superlight</li>
+              <li>G403 Wireless</li>
+              <li>G703</li>
+              <li>G703 HERO</li>
+              <li>G705</li>
+              <li>G900</li>
+              <li>G903</li>
+              <li>G903 HERO</li>
+              <li>G305</li>
+              <li>G603</li>
+              <li>G604</li>
+            </ul>
+          </details>
+        </div>
+
+        <div class="help-grid">
+          <div class="help" id="test-report">
+            <h3>Is your device on the list? Help make it supported</h3>
+            <ol class="steps">
+              <li>Install PeriHub and quit the maker's app (G HUB, GG, iCUE, Synapse…).</li>
+              <li>Connect the device with its USB cable.</li>
+              <li>Open its page in PeriHub and press <b>Open test form</b>. It opens a report on GitHub with what PeriHub read already filled in.</li>
+              <li>Check that it matches your device, and send it. You need a free GitHub account.</li>
+            </ol>
+            <p>It takes a few minutes and it is safe: sending a report only reads the device.</p>
+            <a class="btn primary" href="https://github.com/hex-dump/perihub/issues/new/choose"><span class="btn-text"><span class="btn-title">Send a test report</span></span></a>
+          </div>
+          <div class="help">
+            <h3>Not on the list?</h3>
+            <p>In PeriHub, <b>Settings → Devices → Send a report</b> lists the devices it does not know and opens a device request already filled in. You can also open a device request on GitHub.</p>
+            <a class="btn" href="https://github.com/hex-dump/perihub/issues/new?template=device_request.yml"><span class="btn-text"><span class="btn-title">Request a device</span></span></a>
+          </div>
+        </div>
+        <p class="small">USB ids, interfaces and the details of each family are in <a href="https://github.com/hex-dump/perihub/blob/main/docs/devices.md">docs/devices.md</a>.</p>
+      </div>
+    </section>
+
+    <section id="download" class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="kicker">Get PeriHub</p>
+          <h2>Download</h2>
+          <p class="meta">Version %%VERSION%% · <a href="https://github.com/hex-dump/perihub/releases/latest">Release notes</a> · <a href="%%SUMS_URL%%">SHA-256 checksums</a></p>
+        </div>
+        <div class="platforms">
+          <div class="platform" id="windows">
+            <h3>Windows 10 and 11</h3>
+            <ul class="files">
+              <li><a href="%%EXE_URL%%"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Installer (.exe)</a> <span>%%EXE_SIZE%%</span></li>
+              <li><a href="%%MSI_URL%%"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Installer (.msi)</a> <span>%%MSI_SIZE%%</span></li>
+            </ul>
+            <div class="note warn">
+              <p><b>The installer is not code-signed yet.</b> Your browser may say the file is not commonly downloaded: choose <b>Keep</b>. If Windows SmartScreen blocks it, click <b>More info → Run anyway</b>.</p>
+              <p class="small">PeriHub has applied to <a href="https://signpath.org">SignPath Foundation</a> for free code signing for open source projects. See the <a href="https://github.com/hex-dump/perihub/blob/main/CODE_SIGNING.md">code signing policy</a>.</p>
+            </div>
+            <p>Before you start PeriHub, <b>quit SteelSeries GG and Logitech G HUB</b> and turn off their autostart: two apps talking to the same device get in each other's way.</p>
+            <p class="small">No drivers needed. PeriHub tells you when a new version is out and updates with one click. With Scoop: <a href="https://github.com/Kissshot-2003/perihub-scoop">community bucket</a>.</p>
+          </div>
+          <div class="platform" id="linux">
+            <h3>Linux</h3>
+            <ul class="files">
+              <li><a href="%%DEB_URL%%"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Debian, Ubuntu (.deb)</a> <span>%%DEB_SIZE%%</span></li>
+              <li><a href="%%RPM_URL%%"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Fedora, openSUSE (.rpm)</a> <span>%%RPM_SIZE%%</span></li>
+              <li><a href="%%APPIMAGE_URL%%"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>AppImage, any distribution</a> <span>%%APPIMAGE_SIZE%%</span></li>
+              <!--if FLATPAK--><li><a href="%%FLATPAK_URL%%"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Flatpak, any distribution with Flatpak</a> <span>%%FLATPAK_SIZE%%</span></li><!--end FLATPAK-->
+            </ul>
+            <p>Pick the .deb or the .rpm if your distribution uses them: they are much smaller, because they use your system's web engine, and they set up USB access by themselves. The AppImage works everywhere and brings its own engine, which makes it larger.</p>
+            <p class="small">With the AppImage<!--if FLATPAK--> or the Flatpak<!--end FLATPAK-->, see <a href="https://github.com/hex-dump/perihub#usb-permissions">USB permissions</a>.<!--if FLATPAK--> The Flatpak does not update by itself: <a href="https://github.com/hex-dump/perihub#linux">how to install it</a>.<!--end FLATPAK--> On Arch and CachyOS you can <a href="https://github.com/hex-dump/perihub#linux">build the package</a> from the repository.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="safety-title">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="kicker">Safety</p>
+          <h2 id="safety-title">Safe by design</h2>
+        </div>
+        <ul class="safety">
+          <li><svg class="card-icon" aria-hidden="true"><use href="#i-chip"/></svg><div><b>No firmware changes.</b> PeriHub only writes the settings the official apps write too, with commands verified one by one.</div></li>
+          <li><svg class="card-icon" aria-hidden="true"><use href="#i-check"/></svg><div><b>Checked writes and backups.</b> Everything written to a device is read back and compared, and the previous state is saved first.</div></li>
+          <li><svg class="card-icon" aria-hidden="true"><use href="#i-lock"/></svg><div><b>Your data stays on your PC.</b> PeriHub works offline. On Windows it only asks GitHub for new versions, and you can turn that off.</div></li>
+          <li><svg class="card-icon" aria-hidden="true"><use href="#i-code"/></svg><div><b>Open source.</b> The code is on <a href="https://github.com/hex-dump/perihub">GitHub</a> under the MIT license. Details in the <a href="https://github.com/hex-dump/perihub#safety">README</a>.</div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="support" class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="kicker">Support</p>
+          <h2>Help PeriHub grow</h2>
+          <p class="lead">PeriHub is free, and one person makes it in their spare time. If it saved you from installing G HUB or GG, two things help a lot.</p>
+        </div>
+        <div class="support">
+          <article class="support-card star">
+            <h3><span class="support-icon" aria-hidden="true">★</span> Give it a star on GitHub</h3>
+            <p>It is free and takes a second: open the page and press <b>Star</b> at the top. Stars are how people find a project on GitHub, and more users mean more mice tested and supported.</p>
+            <a class="btn primary" href="https://github.com/hex-dump/perihub"><span class="btn-text"><span class="btn-title">★ Star on GitHub</span><span class="btn-sub">Needs a free GitHub account</span></span></a>
+          </article>
+          <article class="support-card">
+            <h3><span class="support-icon" aria-hidden="true">☕</span> Buy me a coffee</h3>
+            <p>If you want to say thanks, a small donation keeps the project going. It is never required: every feature of PeriHub stays free.</p>
+            <a class="btn" href="https://buymeacoffee.com/hexdump1"><span class="btn-text"><span class="btn-title">☕ Buy me a coffee</span><span class="btn-sub">buymeacoffee.com</span></span></a>
+          </article>
+        </div>
       </div>
     </section>
   </main>
 
-  <footer>
-    <div class="wrap foot">
-      <p>
-        <a href="https://github.com/hex-dump/perihub">GitHub</a> ·
-        <a href="https://github.com/hex-dump/perihub/discussions">Discussions</a> ·
-        <a href="https://github.com/hex-dump/perihub/issues">Report a problem</a> ·
-        <a href="https://buymeacoffee.com/hexdump1">Buy me a coffee</a> ·
-        <a href="https://github.com/hex-dump/perihub/blob/main/CODE_SIGNING.md">Code signing policy</a> ·
-        <a href="privacy.html">Privacy policy</a>
-      </p>
-      <p class="small">PeriHub is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master or EVGA. SteelSeries GG, Logitech G HUB, Corsair iCUE and the product names belong to their respective owners and are used only to describe compatibility.</p>
+  <footer class="site-foot">
+    <div class="wrap">
+      <div class="foot-top">
+        <div class="foot-brand">
+          <a class="logo" href="./"><img src="icon.png" width="28" height="28" alt=""> PeriHub</a>
+          <p>PeriHub for your peripherals. Free and open source, for Windows and Linux.</p>
+        </div>
+        <nav class="foot-links" aria-label="Footer">
+          <ul>
+            <li><a href="https://github.com/hex-dump/perihub">GitHub</a></li>
+            <li><a href="https://github.com/hex-dump/perihub/discussions">Discussions</a></li>
+            <li><a href="https://github.com/hex-dump/perihub/issues">Report a problem</a></li>
+          </ul>
+          <ul>
+            <li><a href="https://buymeacoffee.com/hexdump1">Buy me a coffee</a></li>
+            <li><a href="https://github.com/hex-dump/perihub/blob/main/CODE_SIGNING.md">Code signing policy</a></li>
+            <li><a href="privacy.html">Privacy policy</a></li>
+          </ul>
+        </nav>
+      </div>
+      <p class="small disclaimer">PeriHub is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master or EVGA. SteelSeries GG, Logitech G HUB, Corsair iCUE and the product names belong to their respective owners and are used only to describe compatibility.</p>
     </div>
   </footer>
 </body>

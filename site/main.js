@@ -25,22 +25,39 @@
     show(".mac-note");
   }
 
-  // Clipboard access is often missing in the in-app browsers of social apps:
-  // the link stays visible and selectable as text either way.
+  // Clipboard access is often missing in the in-app browsers of social apps: the link stays visible
+  // and selectable as text either way. The result goes in a status line next to the button, so
+  // screen readers announce it too.
   document.querySelectorAll("[data-copy]").forEach((button) => {
+    const status = button.parentElement.querySelector(".copy-status");
+    let timer;
     button.addEventListener("click", async () => {
+      clearTimeout(timer);
+      let message;
       try {
         await navigator.clipboard.writeText(button.dataset.copy);
-        button.textContent = "Copied";
+        message = "Copied";
       } catch {
         const range = document.createRange();
         range.selectNodeContents(button.parentElement.querySelector(".url"));
         const selection = getSelection();
         selection.removeAllRanges();
         selection.addRange(range);
-        button.textContent = "Select and copy";
+        message = "Link selected: copy it from the menu";
       }
+      status.textContent = "";
+      requestAnimationFrame(() => (status.textContent = message));
+      timer = setTimeout(() => (status.textContent = ""), 4000);
     });
+  });
+})();
+
+// On narrow screens the header links are in a popover: close it when a link is picked.
+(function () {
+  const menu = document.getElementById("site-menu");
+  if (!menu || !menu.hidePopover) return;
+  menu.addEventListener("click", (event) => {
+    if (event.target.closest("a") && menu.matches(":popover-open")) menu.hidePopover();
   });
 })();
 
@@ -52,6 +69,7 @@
   finder.hidden = false;
   const input = document.getElementById("device-search");
   const buttons = finder.querySelectorAll("[data-filter]");
+  const status = finder.querySelector(".finder-status");
   const blocks = document.querySelectorAll(".brand-block");
   const empty = document.querySelector(".finder-empty");
   // "G 703", "g703" and "G-703" find the same mouse.
@@ -64,6 +82,7 @@
     match: el.querySelector(".dev-match"),
   }));
   let level = "all";
+  let announce;
 
   function update() {
     const query = norm(input.value);
@@ -83,6 +102,12 @@
     }
     blocks.forEach((block) => (block.hidden = !block.querySelector(".dev:not([hidden])")));
     empty.hidden = shown > 0;
+    // Said once the typing pauses, not at every key.
+    clearTimeout(announce);
+    const filtered = query || level !== "all";
+    announce = setTimeout(() => {
+      status.textContent = !filtered ? "" : shown === 0 ? "No matches" : `${shown} ${shown === 1 ? "entry" : "entries"} shown`;
+    }, 400);
   }
 
   input.addEventListener("input", update);
