@@ -90,17 +90,39 @@ nav { align-items: center; }
 .gallery figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 8px; text-align: center; }
 
 /* Devices */
-.devices { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; }
-.device-group { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
-.device-group ul { margin: 0 0 10px; padding-left: 20px; }
-.device-group li { margin-bottom: 4px; }
-.chip { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; margin-right: 6px; vertical-align: middle; }
+.chip { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; margin-right: 6px; vertical-align: middle; white-space: nowrap; }
 .chip.ok { color: var(--ok); background: var(--ok-soft); }
 .chip.test { color: var(--warn); background: var(--warn-soft); }
+.chip.ro, .chip.dep { color: var(--muted); background: var(--panel-2); border: 1px solid var(--line-strong); padding: 1px 9px; }
+.levels { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 8px; color: var(--muted); }
+.levels li { display: grid; grid-template-columns: 120px 1fr; align-items: baseline; }
+.levels .chip { justify-self: start; }
+.levels b { color: var(--text); }
+.table-wrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; margin-bottom: 16px; }
+.compat { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.95rem; }
+.compat th, .compat td { text-align: left; vertical-align: top; padding: 10px 16px; }
+.compat thead th { color: var(--muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--line-strong); }
+.compat td { border-top: 1px solid var(--line); }
+.compat td:first-child { width: 42%; }
+.compat td:nth-child(2) { width: 1%; white-space: nowrap; }
+.compat td:last-child { color: var(--muted); }
+.compat td b { color: var(--text); }
+.compat .brand-row th { padding-top: 18px; padding-bottom: 6px; font-size: 0.85rem; color: var(--accent-2); border-top: 1px solid var(--line-strong); }
+.compat tbody:first-of-type .brand-row th { border-top: 0; }
+.compat .brand-row + tr td, .compat thead + tbody > tr:first-child > td { border-top: 0; }
+.compat a { white-space: nowrap; }
 details summary { cursor: pointer; color: var(--accent-2); }
+.models-list { margin: 0 0 16px; }
+.models-list summary { font-weight: 600; padding: 4px 0; }
 .models-title { font-size: 0.9rem; color: var(--muted); font-weight: 600; margin: 14px 0 8px; }
-.models { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0 !important; margin: 0 0 4px !important; }
-.models li { margin: 0 !important; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--panel-2); font-size: 0.85rem; }
+.models { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0 0 4px; }
+.models li { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--panel-2); font-size: 0.85rem; }
+.logitech { margin-top: 40px; }
+.logitech > p { color: var(--muted); }
+.logitech > p b { color: var(--text); }
+.logitech .compat td:first-child { width: 38%; }
+.compat.known td:first-child { width: 22%; }
+.compat.known td:nth-child(2) { width: 30%; white-space: normal; }
 .steps { margin: 6px 0 12px; padding-left: 20px; color: var(--muted); }
 .steps li { margin-bottom: 6px; }
 .steps b { color: var(--text); }
@@ -137,7 +159,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 48px; }
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; padding-top: 36px; gap: 32px; }
   .cards { grid-template-columns: 1fr 1fr; }
-  .devices, .platforms, .safety, .support { grid-template-columns: 1fr; }
+  .platforms, .safety, .support { grid-template-columns: 1fr; }
   .help { flex-direction: column; align-items: flex-start; }
 }
 @media (max-width: 560px) {
@@ -162,4 +184,16 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 48px; }
 .prose li { margin-bottom: 6px; }
 .prose code { font-size: 0.9em; overflow-wrap: anywhere; }
 .summary { border: 1px solid rgba(60, 207, 145, 0.4); background: var(--ok-soft); border-radius: 12px; padding: 14px 16px; }
-.after-models { margin-top: 14px; }
+
+/* Devices on a phone: each row becomes a card, the level next to the device. */
+@media (max-width: 700px) {
+  .compat thead { display: none; }
+  .compat tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
+  .compat tr.brand-row { display: block; padding: 16px 14px 0; border-top: 1px solid var(--line-strong); }
+  .compat tbody:first-of-type tr.brand-row { border-top: 0; }
+  .compat tr.brand-row + tr { border-top: 0; }
+  .compat th, .compat td { padding: 0; border: 0; width: auto !important; }
+  .compat .brand-row th { padding: 0; border: 0; }
+  .compat td:last-child { grid-column: 1 / -1; }
+  .compat.known td:nth-child(2) { white-space: nowrap; }
+}

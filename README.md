@@ -50,7 +50,7 @@
 | **Logitech G502 HERO** mouse | ✅ Fully supported, tested on real hardware |
 | **Logitech G502 X Wireless** mouse | ✅ Supported: profiles, DPI, buttons and macros, confirmed by a user on a real mouse |
 | **Logitech G300** mouse | ✅ Supported: its three profiles can be read and edited, confirmed by a user on a real G300 |
-| 28 more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
+| 26 more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
 | Logitech devices on a **Logi Bolt** or **Unifying** receiver (MX Master, MX Anywhere, MX Keys…) | 🧪 Experimental: recognized by the features they report; the DPI of those without onboard memory can be changed, everything else is read |
 | 26 **Corsair mice** and 23 **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Experimental: read, and one colour of lighting for the session, at your own risk |
 | 33 **SteelSeries mice** (Rival, Sensei, Aerox, Prime, Kana, Kinzu) | 🧪 Experimental: these mice cannot report their settings; DPI, polling rate, colours and effects can be sent one at a time, never saved to the mouse ([how](#mice-and-keyboards-of-other-brands)) |

@@ -146,140 +146,226 @@
 
     <section id="devices" class="wrap section">
       <h2>Devices</h2>
-      <div class="devices">
-        <div class="device-group ok">
-          <h3><span class="chip ok">Tested</span> Fully supported now</h3>
-          <ul>
-            <li><b>SteelSeries Apex 3 TKL</b> keyboard</li>
-            <li><b>Logitech G502 HERO</b> mouse</li>
-            <li><b>Logitech G502 X Wireless</b> mouse, from 0.6.5</li>
-            <li><b>Logitech G300</b> mouse, from 0.6.4</li>
-            <li>From 0.6.7, <b>any Logitech G mouse</b> of the list below whose memory uses a format already tested on another mouse</li>
-          </ul>
-          <p class="small">Everything works, tested on real hardware. The G300 and G502 X Wireless were confirmed by users on real mice.</p>
+      <p class="lead">Tested on real hardware: the <b>SteelSeries Apex 3 TKL</b> keyboard and the <b>Logitech G502 HERO</b>, <b>G502 X Wireless</b> and <b>G300</b> mice. Over 200 more mice and keyboards are recognized. PeriHub talks only to the devices listed here.</p>
+      <ul class="levels">
+        <li><span class="chip ok">Supported</span><span>Tested on real hardware: everything on its page works.</span></li>
+        <li><span class="chip test">Experimental</span><span>Recognized, but nobody has tried it with PeriHub yet. Changes are at your own risk, after a <b>No warranty</b> box, with a backup and an undo wherever the device can report its settings.</span></li>
+        <li><span class="chip ro">Read-only</span><span>Recognized: PeriHub shows its settings and changes nothing.</span></li>
+      </ul>
+      <div class="table-wrap">
+        <table class="compat">
+          <thead><tr><th scope="col">Device</th><th scope="col">Level</th><th scope="col">What PeriHub does</th></tr></thead>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">ASUS</th></tr>
+            <tr><td>21 <b>ROG and TUF</b> mice (Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3…), with a cable or their own receiver</td><td><span class="chip test">Experimental</span></td><td>DPI, polling rate, button response, angle snapping and lighting</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">Cooler Master</th></tr>
+            <tr><td><b>MM530, MM711, MM720, MM730</b></td><td><span class="chip test">Experimental</span></td><td>Lighting only: colour, brightness and mode, saved in the mouse</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">Corsair</th></tr>
+            <tr><td>26 mice and 23 keyboards of the newer generation (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…), with a cable or their Slipstream receiver</td><td><span class="chip test">Experimental</span></td><td>Reads them, and can try one colour of lighting for the session</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">EVGA</th></tr>
+            <tr><td><b>X12</b>, with a cable</td><td><span class="chip test">Experimental</span></td><td>Lighting: each zone off or steady, with its colour and brightness, saved in the mouse</td></tr>
+            <tr><td><b>X20</b>, with a cable</td><td><span class="chip ro">Read-only</span></td><td>Its lighting</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">Glorious</th></tr>
+            <tr><td><b>Model O/O-, Model D, Model O Eternal</b>, with a cable</td><td><span class="chip test">Experimental</span></td><td>DPI and polling rate, saved in the mouse. On Windows read-only for now</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">Lamzu</th></tr>
+            <tr><td><b>Atlantis</b>, with a cable</td><td><span class="chip ro">Read-only</span></td><td>DPI, polling rate and its other settings</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">Logitech</th></tr>
+            <tr><td><b>G502 HERO</b></td><td><span class="chip ok">Supported</span></td><td>Profiles, DPI, polling rate, buttons, G-Shift, macros and lighting, all saved in the mouse</td></tr>
+            <tr><td><b>G502 X Wireless</b>, with its cable</td><td><span class="chip ok">Supported</span></td><td>Profiles, DPI, buttons and macros. Confirmed by a user on a real mouse</td></tr>
+            <tr><td><b>G300</b></td><td><span class="chip ok">Supported</span></td><td>Its three profiles: DPI, polling rate, colour and buttons. Confirmed by a user on a real mouse</td></tr>
+            <tr><td>26 more <b>G mice</b> with onboard memory (G Pro, G403, G703, G903, G305…)</td><td><span class="chip dep">Depends</span></td><td>Supported, experimental or read-only, by the memory each mouse reports: <a href="#logitech">see below</a></td></tr>
+            <tr><td>Wireless G mice through their <b>LIGHTSPEED</b> receiver</td><td><span class="chip test">Experimental</span></td><td>Reads them, and switches profile and DPI level when the memory was tested. Nothing is saved over the radio. Not tried with a real receiver yet</td></tr>
+            <tr><td><b>G600</b></td><td><span class="chip test">Experimental</span></td><td>DPI, polling rate and lighting of the profile in use, saved in the mouse</td></tr>
+            <tr><td>Devices on a <b>Logi Bolt</b> or <b>Unifying</b> receiver (MX Master, MX Anywhere, MX Keys…)</td><td><span class="chip test">Experimental</span></td><td>A page with battery and DPI. The DPI of those without onboard memory can be changed: PeriHub sets it again every time they connect</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">Pulsar</th></tr>
+            <tr><td><b>Xlite, X2, X2H, X2A, Xlite v4, X3, X3 LHD, X2 CrazyLight, X3 LHD CrazyLight</b>, with a cable</td><td><span class="chip test">Experimental</span></td><td>DPI, polling rate, debounce, angle snapping, ripple control and motion sync (lift-off too on the CrazyLight), saved in the mouse</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">Razer</th></tr>
+            <tr><td>75 mice with a cable (DeathAdder, Viper, Basilisk, Naga, Orochi…)</td><td><span class="chip test">Experimental</span></td><td>DPI and polling rate, saved in the mouse</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">Roccat</th></tr>
+            <tr><td><b>Kone Pure, Kone XTD, Kone EMP</b></td><td><span class="chip ro">Read-only</span></td><td>Profile in use, DPI levels and polling rate</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">SteelSeries</th></tr>
+            <tr><td><b>Apex 3 TKL</b> keyboard</td><td><span class="chip ok">Supported</span></td><td>Lighting, brightness and key remapping on both layers, saved in the keyboard</td></tr>
+            <tr><td>33 mice (Rival, Sensei, Aerox, Prime, Kana, Kinzu), with a cable or their own receiver</td><td><span class="chip test">Experimental</span></td><td>They cannot report their settings: DPI, polling rate, colours and effects are sent one at a time, until the mouse is unplugged, and never saved</td></tr>
+            <tr><td><b>Apex 3</b> (not TKL)</td><td><span class="chip ro">Not yet</span></td><td>Recognized, but PeriHub sends nothing to it yet</td></tr>
+          </tbody>
+          <tbody>
+            <tr class="brand-row"><th colspan="3" scope="colgroup">Any brand</th></tr>
+            <tr><td>Keyboards with <b>QMK firmware</b>: every Vial keyboard, and VIA keyboards you turn on</td><td><span class="chip test">Experimental</span></td><td>Lighting, where the protocol says exactly how (VialRGB, VIA firmware from 2023). Keymaps are left to VIA and Vial</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details class="models-list">
+        <summary>The 26 Corsair mice and 23 Corsair keyboards</summary>
+        <h4 class="models-title">Mice</h4>
+        <ul class="models">
+          <li>KATAR PRO</li>
+          <li>KATAR PRO XT</li>
+          <li>M55 RGB PRO</li>
+          <li>M65 RGB ULTRA</li>
+          <li>M75</li>
+          <li>SABRE RGB PRO</li>
+          <li>SABRE PRO CS</li>
+          <li>IRONCLAW RGB WIRELESS</li>
+          <li>IRONCLAW WIRELESS SE</li>
+          <li>DARK CORE RGB PRO</li>
+          <li>DARK CORE RGB PRO SE</li>
+          <li>HARPOON RGB WIRELESS</li>
+          <li>HARPOON V2</li>
+          <li>M65 RGB ULTRA WIRELESS</li>
+          <li>M75 WIRELESS</li>
+          <li>M75 AIR WIRELESS</li>
+          <li>NIGHTSABRE WIRELESS</li>
+          <li>SCIMITAR RGB ELITE WIRELESS</li>
+          <li>SCIMITAR ELITE WIRELESS SE</li>
+          <li>SABRE RGB PRO WIRELESS</li>
+          <li>DARKSTAR RGB WIRELESS</li>
+          <li>SABRE V2 PRO</li>
+          <li>SABRE V2 PRO MG</li>
+          <li>SABRE V2 PRO CF</li>
+          <li>SCIMITAR RGB ELITE</li>
+          <li>M55</li>
+        </ul>
+        <h4 class="models-title">Keyboards</h4>
+        <ul class="models">
+          <li>K55 PRO RGB</li>
+          <li>K55 RGB PRO XT</li>
+          <li>K55 CORE RGB</li>
+          <li>K55 CORE TKL RGB</li>
+          <li>K57 RGB WIRELESS</li>
+          <li>K60 RGB PRO</li>
+          <li>K60 RGB PRO LP</li>
+          <li>K65 PLUS WIRELESS</li>
+          <li>K65 PRO MINI</li>
+          <li>K65 RGB MINI</li>
+          <li>K70 CORE RGB</li>
+          <li>K70 CORE TKL</li>
+          <li>K70 CORE TKL WIRELESS</li>
+          <li>K70 MAX</li>
+          <li>K70 PRO</li>
+          <li>K70 PRO MINI WIRELESS</li>
+          <li>K70 PRO TKL</li>
+          <li>K70 RGB TKL</li>
+          <li>K70 RGB TKL CS</li>
+          <li>K95 RGB PLATINUM XT</li>
+          <li>K100 RGB</li>
+          <li>K100 AIR WIRELESS</li>
+          <li>MAKR 75</li>
+        </ul>
+      </details>
+
+      <div class="logitech" id="logitech">
+        <h3>Which Logitech G mice are supported?</h3>
+        <p>For the 28 Logitech G mice with onboard memory, what counts is not the model but the <b>format of the memory</b> the mouse reports. Many models share a format, and a firmware update can change it. PeriHub reads it every time the mouse is plugged in, and the mouse page shows the level.</p>
+        <div class="table-wrap">
+          <table class="compat">
+            <thead><tr><th scope="col">Memory the mouse reports</th><th scope="col">Level</th><th scope="col">With the USB cable</th></tr></thead>
+            <tbody>
+              <tr><td>Profile format 2 in 256-byte sectors, as on the G502 HERO</td><td><span class="chip ok">Supported</span></td><td>Everything, as on the G502 HERO</td></tr>
+              <tr><td>Profile format 3 in 255-byte sectors, as on the G502 X Wireless</td><td><span class="chip ok">Supported</span></td><td>Everything, as on the G502 X Wireless</td></tr>
+              <tr><td>Format 2 in 255-byte sectors, or format 3 in 256-byte sectors</td><td><span class="chip test">Experimental</span></td><td>Saves at your own risk, after a <b>No warranty</b> box. Each one is backed up and undone after 15 seconds unless you keep it</td></tr>
+              <tr><td>Any other format</td><td><span class="chip ro">Read-only</span></td><td>Profiles, DPI, buttons and lighting are shown, nothing is saved</td></tr>
+            </tbody>
+          </table>
         </div>
-        <div class="device-group test">
-          <h3><span class="chip test">Experimental</span> Recognized, not all tested yet</h3>
-          <p>28 more <b>Logitech G mice</b> are recognized: 25 with a USB cable, and 14 wireless models through their LIGHTSPEED receiver. PeriHub shows their profiles, DPI, buttons, lighting and battery. From 0.6.7 what it changes depends on the format of the memory each mouse reports, not on the model: a format already tested on another mouse makes the mouse supported; a format PeriHub can write but nobody has tried yet can be edited at your own risk with the USB cable, after a <b>No warranty</b> box, and every save is backed up and undone after 15 seconds unless you keep it; any other format is read-only. Nothing is saved through a receiver.</p>
+        <p>What is known so far about other models, from <a href="https://github.com/libratbag/libratbag">libratbag</a>:</p>
+        <div class="table-wrap">
+          <table class="compat known">
+            <thead><tr><th scope="col">Mouse</th><th scope="col">Memory found</th><th scope="col">Level</th></tr></thead>
+            <tbody>
+              <tr><td><b>G900</b></td><td>Format 3, sector size not known</td><td><span class="chip ok">Supported</span> with 255-byte sectors, <span class="chip test">Experimental</span> with 256</td></tr>
+              <tr><td><b>G203</b></td><td>Format 4</td><td><span class="chip ro">Read-only</span></td></tr>
+              <tr><td><b>G502 X PLUS</b></td><td>Format 5</td><td><span class="chip ro">Read-only</span></td></tr>
+              <tr><td>Every other model</td><td>Not known yet</td><td>Plug it in: its page in PeriHub shows the level</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small">Through a <b>LIGHTSPEED</b> receiver nothing is saved: with a supported memory PeriHub switches the profile and DPI level, otherwise it only reads.</p>
+        <details class="models-list">
+          <summary>The 28 Logitech G mice PeriHub recognizes</summary>
           <h4 class="models-title">With a USB cable</h4>
           <ul class="models">
-              <li>Logitech G502 Proteus Core</li>
-              <li>Logitech G502 Proteus Spectrum</li>
-              <li>Logitech G502 HERO Wireless</li>
-              <li>Logitech G502 X</li>
-              <li>Logitech G502 X PLUS</li>
-              <li>Logitech G Pro</li>
-              <li>Logitech G Pro Wireless</li>
-              <li>Logitech G Pro X Superlight</li>
-              <li>Logitech G102 / G103 / G203</li>
-              <li>Logitech G302</li>
-              <li>Logitech G303</li>
-              <li>Logitech G303 Shroud Edition</li>
-              <li>Logitech G402</li>
-              <li>Logitech G403</li>
-              <li>Logitech G403 HERO</li>
-              <li>Logitech G403 Wireless</li>
-              <li>Logitech G703</li>
-              <li>Logitech G703 HERO</li>
-              <li>Logitech G705</li>
-              <li>Logitech G900</li>
-              <li>Logitech G903</li>
-              <li>Logitech G903 HERO</li>
-              <li>Logitech MX518</li>
+            <li>G502 HERO</li>
+            <li>G502 Proteus Core</li>
+            <li>G502 Proteus Spectrum</li>
+            <li>G502 HERO Wireless</li>
+            <li>G502 X</li>
+            <li>G502 X PLUS</li>
+            <li>G502 X Wireless</li>
+            <li>G Pro</li>
+            <li>G Pro Wireless</li>
+            <li>G Pro X Superlight</li>
+            <li>G102 / G103 / G203</li>
+            <li>G302</li>
+            <li>G303</li>
+            <li>G303 Shroud Edition</li>
+            <li>G402</li>
+            <li>G403</li>
+            <li>G403 HERO</li>
+            <li>G403 Wireless</li>
+            <li>G703</li>
+            <li>G703 HERO</li>
+            <li>G705</li>
+            <li>G900</li>
+            <li>G903</li>
+            <li>G903 HERO</li>
+            <li>MX518</li>
           </ul>
-          <h4 class="models-title">Wireless, through a LIGHTSPEED receiver (not tried with a real receiver yet)</h4>
+          <h4 class="models-title">Wireless, through a LIGHTSPEED receiver</h4>
           <ul class="models">
-              <li>Logitech G502 HERO Wireless</li>
-              <li>Logitech G502 X Wireless</li>
-              <li>Logitech G502 X PLUS</li>
-              <li>Logitech G Pro Wireless</li>
-              <li>Logitech G Pro X Superlight</li>
-              <li>Logitech G403 Wireless</li>
-              <li>Logitech G703</li>
-              <li>Logitech G703 HERO</li>
-              <li>Logitech G705</li>
-              <li>Logitech G900</li>
-              <li>Logitech G903</li>
-              <li>Logitech G903 HERO</li>
-              <li>Logitech G305</li>
-              <li>Logitech G603</li>
-              <li>Logitech G604</li>
+            <li>G502 HERO Wireless</li>
+            <li>G502 X Wireless</li>
+            <li>G502 X PLUS</li>
+            <li>G Pro Wireless</li>
+            <li>G Pro X Superlight</li>
+            <li>G403 Wireless</li>
+            <li>G703</li>
+            <li>G703 HERO</li>
+            <li>G705</li>
+            <li>G900</li>
+            <li>G903</li>
+            <li>G903 HERO</li>
+            <li>G305</li>
+            <li>G603</li>
+            <li>G604</li>
           </ul>
-          <p class="after-models">From 0.6.7 the devices paired with a <b>Logi Bolt</b> or <b>Unifying</b> receiver (MX Master, MX Anywhere, MX Keys…) get a page of their own, built from the features they report, with their battery and DPI. On those without onboard memory the DPI can be changed, as an experimental feature that nobody has tried yet: PeriHub sets it in the device's RAM, and again every time the device connects. On Linux the Unifying receivers need an optional rule, because the typing of the keyboards paired with them goes through the same channel.</p>
-          <p class="after-models">From 0.6.0, <b>26 Corsair mice</b> and <b>23 Corsair keyboards</b> of the newer generation are recognized, on their USB cable or through their Slipstream receiver. Nobody has tested them yet: PeriHub reads them, and can try one colour of lighting for the session, at your own risk.</p>
-          <h4 class="models-title">Corsair mice</h4>
-          <ul class="models">
-              <li>Corsair KATAR PRO</li>
-              <li>Corsair KATAR PRO XT</li>
-              <li>Corsair M55 RGB PRO</li>
-              <li>Corsair M65 RGB ULTRA</li>
-              <li>Corsair M75</li>
-              <li>Corsair SABRE RGB PRO</li>
-              <li>Corsair SABRE PRO CS</li>
-              <li>Corsair IRONCLAW RGB WIRELESS</li>
-              <li>Corsair IRONCLAW WIRELESS SE</li>
-              <li>Corsair DARK CORE RGB PRO</li>
-              <li>Corsair DARK CORE RGB PRO SE</li>
-              <li>Corsair HARPOON RGB WIRELESS</li>
-              <li>Corsair HARPOON V2</li>
-              <li>Corsair M65 RGB ULTRA WIRELESS</li>
-              <li>Corsair M75 WIRELESS</li>
-              <li>Corsair M75 AIR WIRELESS</li>
-              <li>Corsair NIGHTSABRE WIRELESS</li>
-              <li>Corsair SCIMITAR RGB ELITE WIRELESS</li>
-              <li>Corsair SCIMITAR ELITE WIRELESS SE</li>
-              <li>Corsair SABRE RGB PRO WIRELESS</li>
-              <li>Corsair DARKSTAR RGB WIRELESS</li>
-              <li>Corsair SABRE V2 PRO</li>
-              <li>Corsair SABRE V2 PRO MG</li>
-              <li>Corsair SABRE V2 PRO CF</li>
-              <li>Corsair SCIMITAR RGB ELITE</li>
-              <li>Corsair M55</li>
-          </ul>
-          <h4 class="models-title">Corsair keyboards</h4>
-          <ul class="models">
-              <li>Corsair K55 PRO RGB</li>
-              <li>Corsair K55 RGB PRO XT</li>
-              <li>Corsair K55 CORE RGB</li>
-              <li>Corsair K55 CORE TKL RGB</li>
-              <li>Corsair K57 RGB WIRELESS</li>
-              <li>Corsair K60 RGB PRO</li>
-              <li>Corsair K60 RGB PRO LP</li>
-              <li>Corsair K65 PLUS WIRELESS</li>
-              <li>Corsair K65 PRO MINI</li>
-              <li>Corsair K65 RGB MINI</li>
-              <li>Corsair K70 CORE RGB</li>
-              <li>Corsair K70 CORE TKL</li>
-              <li>Corsair K70 CORE TKL WIRELESS</li>
-              <li>Corsair K70 MAX</li>
-              <li>Corsair K70 PRO</li>
-              <li>Corsair K70 PRO MINI WIRELESS</li>
-              <li>Corsair K70 PRO TKL</li>
-              <li>Corsair K70 RGB TKL</li>
-              <li>Corsair K70 RGB TKL CS</li>
-              <li>Corsair K95 RGB PLATINUM XT</li>
-              <li>Corsair K100 RGB</li>
-              <li>Corsair K100 AIR WIRELESS</li>
-              <li>Corsair MAKR 75</li>
-          </ul>
-          <p class="after-models">The <b>SteelSeries Apex 3</b> (not TKL) is recognized, but PeriHub sends nothing to it yet.</p>
-          <p class="after-models">From 0.7.0, <b>129 mice of three more brands</b> are recognized, from the published documentation of their protocols: 21 <b>ASUS ROG and TUF</b> (Chakram, Gladius II, Keris, Spatha X, Strix Impact…), 33 <b>SteelSeries</b> (Rival, Sensei, Aerox, Prime…) and 75 <b>Razer</b> on their USB cable (DeathAdder, Viper, Basilisk, Naga…). Nobody has tried them with PeriHub yet: PeriHub reads them, and changes their DPI, polling rate and more only at your own risk, with a backup and an undo wherever the mouse can report its settings. The full list is in <a href="https://github.com/hex-dump/perihub/blob/main/docs/devices.md">docs/devices.md</a>.</p>
-        </div>
+        </details>
       </div>
+      <p class="small">USB ids, interfaces and the details of each family are in <a href="https://github.com/hex-dump/perihub/blob/main/docs/devices.md">docs/devices.md</a>.</p>
+
       <div class="help" id="test-report">
         <div>
-          <h3>Is your mouse on the list? Help make it fully supported</h3>
+          <h3>Is your device on the list? Help make it supported</h3>
           <ol class="steps">
-            <li>Install PeriHub and quit Logitech G HUB.</li>
-            <li>Connect the mouse with its USB cable, or turn it on with its LIGHTSPEED receiver plugged in.</li>
-            <li>Open PeriHub, go to the mouse page and press <b>Open test form</b>. It opens the report on GitHub with what PeriHub read already filled in.</li>
-            <li>Check that profiles, DPI and buttons match your mouse, and send it. You need a free GitHub account.</li>
+            <li>Install PeriHub and quit the maker's app (G HUB, GG, iCUE, Synapse…).</li>
+            <li>Connect the device with its USB cable.</li>
+            <li>Open its page in PeriHub and press <b>Open test form</b>. It opens a report on GitHub with what PeriHub read already filled in.</li>
+            <li>Check that it matches your device, and send it. You need a free GitHub account.</li>
           </ol>
-          <p>It takes a few minutes and it is safe: sending a report only reads the mouse.</p>
+          <p>It takes a few minutes and it is safe: sending a report only reads the device.</p>
         </div>
-        <a class="btn" href="https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml"><span class="btn-title">Send a test report</span></a>
+        <a class="btn" href="https://github.com/hex-dump/perihub/issues/new/choose"><span class="btn-title">Send a test report</span></a>
       </div>
-      <p class="small">Another device? Open a <a href="https://github.com/hex-dump/perihub/issues/new?template=device_request.yml">device request</a>: new devices are added one at a time, after a test on real hardware. Other brands, like Corsair or Razer, can be requested too.</p>
+      <p class="small">Not on the list? In PeriHub, <b>Settings → Devices → Send a report</b> lists the devices it does not know and opens a device request already filled in. You can also open a <a href="https://github.com/hex-dump/perihub/issues/new?template=device_request.yml">device request</a> on GitHub.</p>
     </section>
 
     <section id="download" class="wrap section">
@@ -350,7 +436,7 @@
         <a href="https://github.com/hex-dump/perihub/blob/main/CODE_SIGNING.md">Code signing policy</a> ·
         <a href="privacy.html">Privacy policy</a>
       </p>
-      <p class="small">PeriHub is not affiliated with SteelSeries or Logitech. SteelSeries GG, Logitech G HUB and the product names belong to their respective owners and are used only to describe compatibility.</p>
+      <p class="small">PeriHub is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master or EVGA. SteelSeries GG, Logitech G HUB, Corsair iCUE and the product names belong to their respective owners and are used only to describe compatibility.</p>
     </div>
   </footer>
 </body>
