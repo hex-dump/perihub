@@ -174,7 +174,7 @@
         {/if}
         {#if info.profiles > 1}
           <dt>Profile</dt>
-          <dd>{info.active_profile ?? "?"} of {info.profiles} <span class="muted small">(the one in use; PeriHub reads and changes only this one)</span></dd>
+          <dd>{info.active_profile ?? "?"} of {info.profiles} <span class="muted small">(the one in use; PeriHub reads{#if info.editable} and changes{/if} only this one)</span></dd>
         {/if}
       </dl>
 

@@ -233,6 +233,8 @@ describe("a mouse of another brand", () => {
       screen.queryByRole("button", { name: "Save to memory…" }),
     ).toBeNull();
     expect(screen.queryByRole("combobox")).toBeNull();
+    expect(document.body.textContent).toContain("PeriHub reads only this one");
+    expect(document.body.textContent).not.toContain("changes only this one");
   });
 
   it("does not offer to change the DPI where the device's DPI is not changed", () => {
