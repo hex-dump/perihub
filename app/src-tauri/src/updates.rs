@@ -2,7 +2,8 @@
 //! once a day, and tells about a newer version in the tray and in the interface. As soon as it
 //! finds one it downloads the installer into its cache folder and checks its signature, so that
 //! "Update and restart" starts it at once; nothing is installed before that click. The installer
-//! closes PeriHub and starts the new version, with its window. On Linux updates come from the
+//! closes PeriHub and starts the new version, with its window (from the version after 0.7.0: the
+//! installer is started by the version being replaced). On Linux updates come from the
 //! packages, and on Windows from Scoop when Scoop installed PeriHub: nothing is checked.
 
 use std::path::PathBuf;
@@ -64,9 +65,11 @@ pub struct Available {
 }
 
 /// Asks GitHub for the latest release. The installer runs with the plugin's own restart turned
-/// off and `/R` instead: the plugin would start PeriHub again with the arguments it had, and a
-/// copy that autostart started with `--hidden` would come back without its window, as if the
-/// update had not finished. With `/R` and no `/ARGS`, Tauri's NSIS template starts it with none.
+/// off and `/R /ARGS --after-update` instead: the plugin would start PeriHub again with the
+/// arguments it had, and a copy that autostart started with `--hidden` would come back without
+/// its window, as if the update had not finished. Tauri's NSIS template starts PeriHub with what
+/// follows `/ARGS` (`${GetOptions} $CMDLINE "/ARGS"`, as the plugin's own restart does), and
+/// `--after-update` brings the window back even with "Always start hidden" on (see main.rs).
 async fn find(app: &AppHandle) -> Result<Option<Update>, String> {
     if let Some(manager) = package_manager() {
         return Err(format!("PeriHub was installed with {manager}: update it from there"));
@@ -77,7 +80,7 @@ async fn find(app: &AppHandle) -> Result<Option<Update>, String> {
     let updater = app
         .updater_builder()
         .restart_after_install(false)
-        .installer_arg(START_AFTER_INSTALL)
+        .installer_args([START_AFTER_INSTALL, "/ARGS", crate::AFTER_UPDATE_ARG])
         .build()
         .map_err(|e| e.to_string())?;
     updater.check().await.map_err(|e| format!("cannot check for updates: {e}"))

@@ -41,20 +41,35 @@ pub fn watch_focus(app: &AppHandle, profiles: &Arc<AppProfileEngine>) {
 
 /// Argument passed by autostart: start hidden in the system tray.
 pub const HIDDEN_ARG: &str = "--hidden";
+/// Argument the Windows installer passes when it starts PeriHub after an update (see updates.rs).
+pub const AFTER_UPDATE_ARG: &str = "--after-update";
+
+/// Whether PeriHub starts in the tray without its window. After an update the window comes back
+/// even with "Always start hidden" on: the update was started from the window or the tray, and
+/// a PeriHub that stayed hidden would look as if the update had not finished.
+fn starts_hidden(args: &[String], start_hidden_setting: bool) -> bool {
+    if args.iter().any(|a| a == AFTER_UPDATE_ARG) {
+        return false;
+    }
+    start_hidden_setting || args.iter().any(|a| a == HIDDEN_ARG)
+}
 
 fn main() {
     // PeriHub's own messages at info level, other libraries only when something goes wrong.
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn,perihub=info,perihub_core=info"))
         .target(env_logger::Target::Pipe(Box::new(logfile::LogWriter::open())))
         .init();
-    log::info!("PeriHub {} on {} {}", env!("CARGO_PKG_VERSION"), std::env::consts::OS, std::env::consts::ARCH);
-    let hidden_requested = std::env::args().any(|a| a == HIDDEN_ARG);
+    let args: Vec<String> = std::env::args().collect();
 
     tauri::Builder::default()
         // Launching a second time brings the already open window to the front, except autostart's
-        // launch, which comes after Windows has reopened a PeriHub left open at sign-out.
+        // launch, which comes after Windows has reopened a PeriHub left open at sign-out. The second
+        // copy closes before `setup`, so only the copy that stays logs its start.
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            if !args.iter().any(|a| a == HIDDEN_ARG) {
+            if args.iter().any(|a| a == HIDDEN_ARG) {
+                log::info!("PeriHub started again by autostart: it stays in the tray");
+            } else {
+                log::info!("PeriHub started again: showing its window");
                 window::show(app, None);
             }
         }))
@@ -65,6 +80,10 @@ fn main() {
             Some(vec![HIDDEN_ARG]),
         ))
         .setup(move |app| {
+            log::info!("PeriHub {} on {} {}", env!("CARGO_PKG_VERSION"), std::env::consts::OS, std::env::consts::ARCH);
+            if args.iter().any(|a| a == AFTER_UPDATE_ARG) {
+                log::info!("started by the update, with its window");
+            }
             // Autostart: the HKLM entry goes to HKCU, old entries get quoted (see autostart.rs).
             autostart::startup(app.handle());
             autostart::restart_hidden();
@@ -114,7 +133,7 @@ fn main() {
             if config.app_profiles.enabled {
                 watch_focus(app.handle(), &profiles);
             }
-            let start_hidden = hidden_requested || config.start_hidden;
+            let start_hidden = starts_hidden(&args, config.start_hidden);
             app.manage(AppState { manager, config: Mutex::new(config), profiles, soft, _devices: devices });
 
             app.manage(updates::Available::default());
@@ -220,4 +239,22 @@ fn main() {
                 api.prevent_exit();
             }
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn args(list: &[&str]) -> Vec<String> {
+        std::iter::once("perihub.exe").chain(list.iter().copied()).map(String::from).collect()
+    }
+
+    #[test]
+    fn the_window_comes_back_after_an_update_even_with_start_hidden_on() {
+        assert!(!starts_hidden(&args(&[]), false));
+        assert!(starts_hidden(&args(&[]), true));
+        assert!(starts_hidden(&args(&[HIDDEN_ARG]), false));
+        assert!(!starts_hidden(&args(&[AFTER_UPDATE_ARG]), true));
+        assert!(!starts_hidden(&args(&[AFTER_UPDATE_ARG, HIDDEN_ARG]), true));
+    }
 }
