@@ -124,6 +124,9 @@ pub struct PeripheralTask {
     last_saved: bool,
     /// The profile in use when the last change was made: its undo writes to that profile only.
     last_profile: Option<u8>,
+    /// An undo was refused because the device is on another profile: no new change until it is done,
+    /// or the new change would replace its backup.
+    undo_waits_for: Option<u8>,
     undo_at: Option<Instant>,
     last_refresh: Instant,
     /// What the device's memory is taken to hold: the settings read when PeriHub connected, until
@@ -181,6 +184,7 @@ impl PeripheralTask {
             last_backup: None,
             last_saved: false,
             last_profile: None,
+            undo_waits_for: None,
             undo_at: None,
             last_refresh: Instant::now(),
             in_memory: None,
@@ -274,6 +278,11 @@ impl PeripheralTask {
         if !self.info.editable {
             return Err(Error::Invalid(format!("nothing is changed on this device: {:?}", self.info.problem)));
         }
+        if let Some(waiting) = self.undo_waits_for {
+            return Err(Error::Invalid(format!(
+                "a change made on profile {waiting} is still waiting to be undone: switch the device back to profile {waiting}, then unplug it and plug it in again, and PeriHub puts the settings from before back. Until then nothing else is changed on it"
+            )));
+        }
         if profile.is_some() && profile != self.info.active_profile {
             return Err(Error::Invalid(format!(
                 "the device switched to profile {} since the page was edited: nothing was changed, check the page and try again",
@@ -356,6 +365,7 @@ impl PeripheralTask {
         // The settings of one profile never go onto another: the backup and the pending undo stay
         // for when the device is back on its profile.
         if let Some(profile) = self.last_profile.filter(|&p| self.info.active_profile != Some(p)) {
+            self.undo_waits_for = Some(profile);
             return Err(Error::Invalid(format!(
                 "the device switched from profile {profile} to {} since the change, so nothing was put back yet: switch it back to profile {profile}, then unplug it and plug it in again, and PeriHub puts the settings from before back",
                 self.info.active_profile.map(|p| p.to_string()).unwrap_or_else(|| "another one".into())
@@ -379,6 +389,7 @@ impl PeripheralTask {
         sent?;
         self.read()?;
         self.last_backup = None;
+        self.undo_waits_for = None;
         let _ = std::fs::remove_file(self.backups.join(PENDING_FILE));
         if self.info.settings != saved {
             return Err(Error::Protocol(format!("after the undo the device reads {:?}", self.info.settings)));

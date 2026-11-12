@@ -572,6 +572,12 @@ mod tests {
         let refused = task.undo_last_change().unwrap_err().to_string();
         assert!(refused.contains("switch it back to profile 2"), "{refused}");
         assert!(task.undo_pending(), "the pending undo stays");
+        // A new change would replace its backup: refused until the undo is done.
+        let mut on_3 = task.info.settings.clone();
+        on_3.polling_hz = Some(500);
+        let waiting = task.change(&on_3, false, Some(3)).unwrap_err().to_string();
+        assert!(waiting.contains("back to profile 2"), "{waiting}");
+        assert_eq!(state.lock().unwrap().globals[&POLLING], 8);
         let backups = task.backups().to_path_buf();
         drop(task);
         // Plugged in again, still on profile 3: still nothing.
