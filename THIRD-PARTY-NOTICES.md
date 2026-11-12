@@ -86,10 +86,40 @@ their cable, their USB ids, profiles and DPI ranges, and the Sonix protocol (`sr
 and the other models' drivers), rewritten in Rust in `crates/perihub-core/src/peripheral/pulsar.rs` (see
 `docs/protocols/pulsar-sonix.md`). What each of their USB interfaces carries comes from the protocol notes of
 [Pulsar-X3-Web-Config](https://github.com/santoshpanna/Pulsar-X3-Web-Config) (MIT, Copyright (c) 2026 Santosh
-Panna); nothing else was taken from it.
+Panna); nothing else was taken from it. The CrazyLight mice's protocol (`src/pulsar_mouse/drivers/nordic.py`,
+`x2_crazylight*.py`, `x3_lhd_crazylight.py`, `docs/protocol-x2-crazylight.md`) is rewritten in Rust in
+`crates/perihub-core/src/peripheral/nordic.rs` (see `docs/protocols/nordic-mice.md`).
 
 ```
 Copyright (c) 2026 Packerlschupfer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### lamzu-cfg
+
+<https://github.com/LeadSun/lamzu-cfg> (commit 51c0879), MIT or Apache-2.0, taken under MIT: the Lamzu Atlantis's
+USB ids, frames, checksum and addresses (`src/atlantis.rs`, `src/atlantis/hid.rs`), read in
+`crates/perihub-core/src/peripheral/nordic.rs` (see `docs/protocols/nordic-mice.md`).
+
+```
+Copyright (c) 2024 Contributors of Project lamzu-cfg
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

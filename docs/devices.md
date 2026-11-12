@@ -28,6 +28,7 @@ the same format.
 - [Logitech G600](#logitech-g600)
 - [Roccat mice](#roccat-mice)
 - [Pulsar mice](#pulsar-mice)
+- [Pulsar CrazyLight and Lamzu Atlantis](#pulsar-crazylight-and-lamzu-atlantis)
 - [Cooler Master mice](#cooler-master-mice)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
@@ -458,8 +459,8 @@ the Xlite Wired and X2 Wired are said to speak the X2A's protocol, and the Xlite
   shows its global settings without the DPI stages: PeriHub never guesses a profile.
 - Not offered yet: lift-off distance, lighting, buttons, the other profiles, polling rates above 1000 Hz. Never
   sent: switching profile, and the profile reset, which also resets every global setting.
-- The wireless dongles, the CrazyLight and Feinmann mice, the first X2H (`3554`) and the X2 Wireless (`25a7`)
-  speak other protocols and are left out.
+- The CrazyLight mice speak another protocol: see [Pulsar CrazyLight and Lamzu Atlantis](#pulsar-crazylight-and-lamzu-atlantis).
+  The wireless dongles, the Feinmann mice, the first X2H (`3554`) and the X2 Wireless (`25a7`) are left out.
 
 | Mouse | USB ID | Opened on Linux |
 |---|---|---|
@@ -472,6 +473,32 @@ the Xlite Wired and X2 Wired are said to speak the X2A's protocol, and the Xlite
 | X3 LHD | `3710:3410` | interface 3 |
 
 Interface 1, which carries the keys a button bound to a key or a macro types, is never opened.
+
+## Pulsar CrazyLight and Lamzu Atlantis
+
+🧪 Experimental: nobody has tried PeriHub on one yet. Three wired mice whose firmware shares one protocol (17-byte
+reports, report id 8), from [pulsar-mouse-linux](https://github.com/packerlschupfer/pulsar-mouse-linux), whose author
+confirmed reads and writes on both CrazyLight mice, and [lamzu-cfg](https://github.com/LeadSun/lamzu-cfg) (both MIT).
+Described in [protocols/nordic-mice.md](protocols/nordic-mice.md).
+
+- PeriHub reads the firmware, the profile in use, its DPI stages and the stage in use, polling rate, lift-off
+  distance, debounce time, motion sync, angle snapping and ripple control. Every value is checked against the
+  check byte the mouse stores beside it: one that does not add up leaves the mouse read-only.
+- **Save to memory** (CrazyLight only) changes those settings and the DPI of each stage, after the No warranty box the
+  first time, with backup, read-back and the 15-second undo. Each address PeriHub may write is a command of its own,
+  so nothing else can be written. Above 10240 DPI the mouse takes steps of 50, above 25600 steps of 100.
+- On the cable the mouse runs at 1000 Hz at most, but a profile may hold a faster rate for the dongle: then the
+  polling rate is shown and not changed.
+- The **Lamzu Atlantis** is read only: its vendor id is shared by other brands' mice, and only one small project has
+  tried writing to it.
+- Never sent: the factory reset, profile switches, buttons, macros. The wireless dongles and the Feinmann mice are
+  left out.
+
+| Mouse | USB ID | Opened on Linux |
+|---|---|---|
+| Pulsar X2 CrazyLight | `3710:3414` | interface 1 (configuration and the mouse's own input) |
+| Pulsar X3 LHD CrazyLight | `3710:3527` | interface 1 |
+| Lamzu Atlantis | `3554:f50f` | interface 1 |
 
 ## Cooler Master mice
 

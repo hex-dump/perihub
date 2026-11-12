@@ -24,8 +24,8 @@ Sources:
 | `3710:3409` | X3 (cable) | 6 | 100–32000, steps of 10 | yes |
 | `3710:3410` | X3 LHD (cable) | 6 | 100–32000, steps of 10 | yes |
 
-The wireless dongles, the Nordic mice (CrazyLight, Feinmann, the first X2H on `3554`) and the X2 Wireless on Areson
-ids speak other protocols and are left out.
+The CrazyLight mice speak another protocol: on their cable they are in [nordic-mice.md](nordic-mice.md). The wireless
+dongles, the Feinmann mice, the first X2H (on `3554`) and the X2 Wireless on Areson ids are left out.
 
 ## Interfaces
 

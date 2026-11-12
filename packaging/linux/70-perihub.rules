@@ -657,3 +657,12 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="2516", ATTRS{idProduct}=="0101", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="2516", ATTRS{idProduct}=="0141", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Cooler Master MM730
 KERNEL=="hidraw*", ATTRS{idVendor}=="2516", ATTRS{idProduct}=="0165", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+
+# Pulsar CrazyLight and Lamzu Atlantis on their cable (experimental, untested; protocol from pulsar-mouse-linux
+# and lamzu-cfg): interface 1, which carries their configuration and the mouse's own input, never a keyboard's typing.
+# Pulsar X2 CrazyLight
+KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="3414", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Pulsar X3 LHD CrazyLight
+KERNEL=="hidraw*", ATTRS{idVendor}=="3710", ATTRS{idProduct}=="3527", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Lamzu Atlantis (read only)
+KERNEL=="hidraw*", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f50f", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"

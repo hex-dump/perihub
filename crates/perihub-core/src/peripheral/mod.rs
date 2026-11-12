@@ -12,6 +12,7 @@
 pub mod asus;
 pub mod coolermaster;
 pub mod logitech_g600;
+pub mod nordic;
 pub mod pulsar;
 pub mod qmk;
 pub mod razer;
@@ -68,6 +69,7 @@ pub enum Protocol {
     Asus(asus::Params),
     CoolerMaster(coolermaster::Params),
     LogitechG600,
+    Nordic(nordic::Params),
     Pulsar(pulsar::Params),
     Qmk(qmk::Params),
     Razer(razer::Params),
@@ -103,6 +105,7 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
         .chain(roccat::MODELS)
         .chain(pulsar::MODELS)
         .chain(coolermaster::MODELS)
+        .chain(nordic::MODELS)
 }
 
 pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {
@@ -496,6 +499,39 @@ impl Io {
         self.output_exchange(payload, reply, timeout, |_| true)
     }
 
+    /// Sends `report` as an output report whose first byte is its report number, not 0 (the
+    /// Nordic mice), checked against the list like every other command, report number included, and
+    /// returns the first input report of `reply.len()` bytes that `answers` accepts within
+    /// `timeout`.
+    pub fn numbered_output_exchange(
+        &mut self,
+        report: &[u8],
+        reply: &mut [u8],
+        timeout: Duration,
+        answers: impl Fn(&[u8]) -> bool,
+    ) -> Result<()> {
+        if report.first().is_none_or(|&id| id == 0) {
+            return Err(Error::Invalid("a numbered output report needs its number".into()));
+        }
+        self.check(report)?;
+        self.hid.write(report)?;
+        let mut scratch = [0u8; 256];
+        let end = Instant::now() + timeout;
+        loop {
+            let left = end.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                self.note(format!("{} → no answer", hex(&report[..report.len().min(6)])));
+                return Err(Error::Timeout);
+            }
+            let n = self.hid.read_timeout(&mut scratch, left.as_millis().clamp(1, 1000) as i32)?;
+            if n == reply.len() && answers(&scratch[..n]) {
+                reply.copy_from_slice(&scratch[..n]);
+                self.note(format!("{} → {}", hex(&report[..report.len().min(6)]), hex(reply)));
+                return Ok(());
+            }
+        }
+    }
+
     /// [`Io::output_query`] that takes only an input report `answers` accepts: reports the device
     /// sends by itself on the same interface, of the same length, are skipped too.
     pub fn output_exchange(
@@ -620,6 +656,8 @@ pub(crate) mod fake {
         feature_answer: Option<Vec<u8>>,
         /// A device whose feature reports have numbers (SinoWealth): replaces `on_feature`.
         pub numbered: Option<(SetNumbered, GetNumbered)>,
+        /// A device whose output reports have numbers (the Nordic mice): `answer` gets them whole.
+        pub numbered_output: bool,
     }
 
     impl FakeHid {
@@ -633,6 +671,7 @@ pub(crate) mod fake {
                 on_feature: None,
                 feature_answer: None,
                 numbered: None,
+                numbered_output: false,
             })))
         }
 
@@ -644,8 +683,13 @@ pub(crate) mod fake {
     impl Hid for FakeHid {
         fn write(&self, data: &[u8]) -> Result<usize> {
             let mut state = self.0.lock().unwrap();
-            assert_eq!(data[0], 0, "output reports are sent with report number 0");
-            let payload = data[1..].to_vec();
+            let payload = if state.numbered_output {
+                assert_ne!(data[0], 0, "this device's output reports have numbers");
+                data.to_vec()
+            } else {
+                assert_eq!(data[0], 0, "output reports are sent with report number 0");
+                data[1..].to_vec()
+            };
             let answers = (state.answer)(&payload);
             state.sent.push(payload);
             state.pending.extend(answers);
