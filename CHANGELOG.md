@@ -24,6 +24,8 @@
 
 - **Faster updates on Windows**: as soon as PeriHub finds a new version it downloads the installer into its cache folder and checks its signature, so **Update and restart** starts it at once, without asking GitHub again; the button shows the download while it runs. After the update PeriHub comes back with its window, also when it had been started hidden at sign-in. The update runs in the version you have installed, so this speeds up the updates after this version, not the one to it. Not timed yet.
 
+- Dependencies: Vite 8.3.8 and the latest compatible Rust crates (among them wry 0.57.2 and rustls-webpki 0.103.17); the builds run on Node.js 26, the current LTS. Tauri, its plugins, Svelte and the other direct dependencies were already at their latest versions. TypeScript stays on 6.0: svelte-check does not support TypeScript 7 yet.
+
 ### Fixed
 - Mouse lighting: two quick changes on different zones both reach the mouse; before, only the last one was previewed.
 - Other brands: the undo of a change, when its 15 seconds run out or when the device is connected again, never puts one profile's settings onto another. If the device switched profile since the change, nothing is written: PeriHub says which profile to switch back to, and undoes the change when the device is plugged in again on that profile. Until then no other change is made on that device, so the waiting backup is never replaced.
