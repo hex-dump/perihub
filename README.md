@@ -5,8 +5,8 @@
 <h1 align="center">PeriHub</h1>
 
 <p align="center">
-  <b>PeriHub for your peripherals</b>: one open-source app for your gaming keyboard and mouse<br>
-  on <b>Windows and Linux</b>, without SteelSeries GG, Logitech G HUB or Corsair iCUE.
+  <b>One app for gaming mice and keyboards across brands</b><br>
+  Open source, on <b>Windows and Linux</b>, instead of Logitech G HUB, SteelSeries GG, Corsair iCUE and Razer Synapse.
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 ![Keyboard lighting](docs/screenshots/keyboard-lighting.png)
 
 - **Free and open source**, no account, no ads, no telemetry.
-- **Small**: a 4 MB installer, about 3 MB of memory while it waits in the tray.
+- **Small**: an installer under 5 MB, about 4 MB of memory while it waits in the tray.
 - **Settings stay in your devices**: key mapping, mouse profiles, DPI and macros keep working with PeriHub closed, on any PC.
 
 ## Contents
@@ -309,17 +309,19 @@ More: [how the release files are signed](CODE_SIGNING.md) · [reporting a securi
 
 ## Performance
 
-| PeriHub 0.5.5 on Windows | |
+| PeriHub 0.8.2 on Windows | |
 |---|---|
-| Download | **3.9 MB** installer |
-| On disk | **17 MB** |
-| In the tray | **3 MB** of memory, **0.05%** of one CPU core |
-| Window open | **39 MB** of memory, **0.2%** of one CPU core |
+| Download | **4.6 MB** installer |
+| On disk | **19 MB** |
+| In the tray | **3 MB** of memory, **0.08%** of one CPU core |
+| Window open | **39 MB** of memory, **0.35%** of one CPU core |
 | Background services, account, ads, telemetry | none |
+
+These numbers come from a clean Windows virtual machine with no devices connected. On a real Windows 11 PC with a keyboard and a mouse connected, PeriHub 0.8.2 used 4 MB of memory and 0.4 to 0.7% of one core in the tray.
 
 PeriHub is written in Rust and draws its window with WebView2, the web engine of Windows, instead of shipping its own browser. The engine runs only while the window is open. An animated lighting effect, drawn by PeriHub frame by frame, adds about 0.6% of one core. How these numbers were measured: [docs/development.md](docs/development.md#performance-measurements).
 
-We do not publish numbers for G HUB or GG: we have not measured them on the same machine, and they support many more devices and features. To compare on your PC, run one app at a time and look at Task Manager → Processes. G HUB is a trademark of Logitech, SteelSeries GG of SteelSeries, iCUE of Corsair; PeriHub is not affiliated with them.
+We do not publish numbers for G HUB or GG: we have not measured them on the same machine, and they support many more devices and features. To compare on your PC, run one app at a time and look at Task Manager → Processes. G HUB is a trademark of Logitech, SteelSeries GG of SteelSeries, iCUE of Corsair, Synapse of Razer; PeriHub is not affiliated with them.
 
 ## FAQ
 
