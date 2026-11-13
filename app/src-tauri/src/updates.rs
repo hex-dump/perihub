@@ -57,6 +57,8 @@ struct Progress {
 /// Newer version found by the last check, if any, with what is needed to install it.
 #[derive(Default)]
 pub struct Available {
+    /// PeriHub was started by the installer of an update: the window says so once.
+    just_updated: Mutex<bool>,
     info: Mutex<Option<UpdateInfo>>,
     /// The update itself, so that installing it does not ask GitHub again.
     update: Mutex<Option<Update>>,
@@ -64,7 +66,9 @@ pub struct Available {
     downloading: tauri::async_runtime::Mutex<()>,
 }
 
-/// Asks GitHub for the latest release. The installer runs with the plugin's own restart turned
+/// Asks GitHub for the latest release. The installer runs silently (`installMode` "quiet" in
+/// tauri.conf.json): no installer window, PeriHub says what happens before and after. The installer
+/// is a per-user one, so it needs no administrator rights. It runs with the plugin's own restart turned
 /// off and `/R /ARGS --after-update` instead: the plugin would start PeriHub again with the
 /// arguments it had, and a copy that autostart started with `--hidden` would come back without
 /// its window, as if the update had not finished. Tauri's NSIS template starts PeriHub with what
@@ -196,6 +200,20 @@ pub async fn update_check(app: AppHandle) -> Result<Option<UpdateInfo>, String> 
     let info = update.as_ref().map(|u| UpdateInfo { version: u.version.clone() });
     found(&app, update);
     Ok(info)
+}
+
+impl Available {
+    /// Called at start when the installer of an update started PeriHub.
+    pub fn started_by_update(&self) {
+        *self.just_updated.lock().unwrap() = true;
+    }
+}
+
+/// The version now running, the first time the window asks after an update installed it; then
+/// nothing, so the message is shown once.
+#[tauri::command]
+pub fn update_just_installed(app: AppHandle, available: State<'_, Available>) -> Option<String> {
+    std::mem::take(&mut *available.just_updated.lock().unwrap()).then(|| app.package_info().version.to_string())
 }
 
 /// Result of the last check, without asking GitHub again.

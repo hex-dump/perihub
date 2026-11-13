@@ -795,6 +795,8 @@ export const api = {
   onUpdate: (handler: (update: UpdateInfo) => void): Promise<UnlistenFn> =>
     listen<UpdateInfo>("update-available", (event) => handler(event.payload)),
   installUpdate: () => invoke<void>("update_install"),
+  /** The version now running, once, when the installer of an update started PeriHub. */
+  updateJustInstalled: () => invoke<string | null>("update_just_installed"),
   onUpdateProgress: (handler: (progress: UpdateProgress) => void): Promise<UnlistenFn> =>
     listen<UpdateProgress>("update-progress", (event) => handler(event.payload)),
 };

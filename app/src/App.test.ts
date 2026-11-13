@@ -68,6 +68,25 @@ afterEach(() => {
 });
 
 describe("Sidebar", () => {
+  it("says once that an update was installed, until the message is closed", async () => {
+    calls.status = vi.fn(async () => empty());
+    calls.updateJustInstalled = vi.fn(async () => "0.8.2");
+    render(App);
+    await wait();
+    expect(screen.getByText("PeriHub was updated to 0.8.2.")).toBeTruthy();
+    (screen.getByRole("button", { name: "Close" }) as HTMLButtonElement).click();
+    await wait();
+    expect(screen.queryByText("PeriHub was updated to 0.8.2.")).toBeNull();
+  });
+
+  it("says nothing about updates after a normal start", async () => {
+    calls.status = vi.fn(async () => empty());
+    calls.updateJustInstalled = vi.fn(async () => null);
+    render(App);
+    await wait();
+    expect(document.body.textContent).not.toContain("was updated to");
+  });
+
   it("lists nothing until PeriHub has looked for devices", async () => {
     calls.status = vi.fn(() => new Promise(() => {}));
     render(App);

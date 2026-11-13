@@ -8,6 +8,9 @@
   - On 27 of them **Send** shows one colour on every column of the mouse's custom frame (which lights it covers has not been checked), sent the way OpenRazer draws one, without saving it to the mouse's memory. Their lighting effect cannot be read back, so PeriHub cannot show it, check the colour or put the effect from before back: the page says so whenever it offers the colour. Nobody has checked yet how long the colour lasts.
   - PeriHub never stores a lighting effect on them: the list of commands their driver goes through holds the storage byte, so a stored effect, an unstored brightness and every other effect are refused before they leave.
 
+### Changed
+- **Updates on Windows install without the installer's window**: after "Update and restart" PeriHub closes, the installer runs silently (it is a per-user one, so it needs no administrator rights) and starts PeriHub again, which then says which version it was updated to. Before, a small installer window with a progress bar showed up. This takes effect from the update after the one that brings it, since the version being replaced runs the installer.
+
 ## 0.8.1 — 2026-11-13
 
 The older Logitech G mice whose software Logitech removed on 31 October 2026: the G500s and G700s are read and their DPI in use can be changed, the G9, G9x, G500 and G700 are read. Nobody has tried them with PeriHub yet, and PeriHub never writes their memory.

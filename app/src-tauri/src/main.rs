@@ -137,6 +137,9 @@ fn main() {
             app.manage(AppState { manager, config: Mutex::new(config), profiles, soft, _devices: devices });
 
             app.manage(updates::Available::default());
+            if args.iter().any(|a| a == AFTER_UPDATE_ARG) {
+                app.state::<updates::Available>().started_by_update();
+            }
             window::build_tray(app.handle())?;
             updates::watch(app.handle().clone());
 
@@ -230,6 +233,7 @@ fn main() {
             updates::update_check,
             updates::update_available,
             updates::update_install,
+            updates::update_just_installed,
         ])
         .build(tauri::generate_context!())
         .expect("failed to start PeriHub")

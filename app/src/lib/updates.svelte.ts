@@ -10,6 +10,8 @@ export const updates = $state({
   error: null as string | null,
   /** The download of the installer, which starts as soon as an update is found. */
   progress: null as UpdateProgress | null,
+  /** The version an update just installed, until the message is closed. */
+  installed: null as string | null,
 });
 
 /** What the update button says while it works. */
@@ -21,6 +23,9 @@ export function installingText(progress: UpdateProgress | null): string {
   }
   return "Installing…";
 }
+
+/** What happens once the installer starts: there is no installer window. */
+export const INSTALL_NOTE = "PeriHub closes, installs the update without any window and opens again by itself in a few seconds.";
 
 export async function checkForUpdate() {
   if (updates.checking || updates.installing) return;

@@ -146,6 +146,7 @@
     api.status().then(received);
     // PeriHub checks for updates in the background, also while this window is closed.
     api.updateAvailable().then((u) => u && (updates.available = u));
+    api.updateJustInstalled().then((v) => v && (updates.installed = v));
     const unlistenUpdate = api.onUpdate((u) => (updates.available = u));
     const unlistenProgress = api.onUpdateProgress((p) => (updates.progress = p));
     const onHash = () => {
@@ -304,6 +305,12 @@
 
   <main>
     <div class="content">
+      {#if updates.installed}
+        <div class="notice ok row updated">
+          <span>PeriHub was updated to {updates.installed}.</span>
+          <button class="tiny" onclick={() => (updates.installed = null)}>Close</button>
+        </div>
+      {/if}
       {#each status.conflicts as name (name)}
         <div class="notice error conflict">
           {#if name === "Logitech Gaming Software"}
@@ -462,6 +469,13 @@
   }
 
   .conflict {
+    margin-bottom: 18px;
+  }
+
+  .updated {
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 18px;
   }
 

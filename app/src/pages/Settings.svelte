@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type AppSettings, type DeviceStatus } from "../lib/api";
-  import { checkForUpdate, installUpdate, installingText, updates } from "../lib/updates.svelte";
+  import { INSTALL_NOTE, checkForUpdate, installUpdate, installingText, updates } from "../lib/updates.svelte";
   import TestReport from "../components/TestReport.svelte";
 
   interface Props {
@@ -90,11 +90,12 @@
           {#if updates.checked}<span class="muted small">PeriHub {version} is the latest version.</span>{/if}
         {/if}
       </div>
+      {#if updates.installing}<p class="muted small">{INSTALL_NOTE}</p>{/if}
       {#if updates.error}<div class="notice error">{updates.error}</div>{/if}
       <p class="muted small">
         PeriHub asks GitHub for the latest release: nothing else is sent. When it finds a new version it downloads it
         right away, so the update starts at once, but installs it only when you click “Update and restart”, after its
-        signature is checked. Your settings and the devices' memory are not touched.
+        signature is checked. The installer shows no window: PeriHub closes and opens again by itself. Your settings and the devices' memory are not touched.
       </p>
     </div>
   {/if}

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const api = vi.hoisted(() => ({
@@ -18,6 +18,7 @@ vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.5.2" }));
 
 import type { AppSettings, DeviceStatus } from "../lib/api";
 import Settings from "./Settings.svelte";
+import { updates } from "../lib/updates.svelte";
 
 const settings = (autostart: boolean): AppSettings => ({
   start_hidden: false,
@@ -78,6 +79,20 @@ describe("Settings", () => {
     window.dispatchEvent(new Event("focus"));
 
     expect(api.appSettings).not.toHaveBeenCalled();
+  });
+
+  it("says before installing that there is no installer window and PeriHub opens again by itself", async () => {
+    api.appSettings.mockResolvedValue({ ...settings(true), updates_supported: true, check_updates: true });
+    api.installUpdate.mockReturnValue(new Promise(() => {}));
+    updates.available = { version: "0.8.2" };
+    render(Settings, { props: { status } });
+    const button = await screen.findByRole("button", { name: "Update and restart" });
+    expect(document.body.textContent).not.toContain("installs the update without any window");
+    await fireEvent.click(button);
+    expect(api.installUpdate).toHaveBeenCalled();
+    expect(document.body.textContent).toContain("installs the update without any window and opens again by itself");
+    updates.available = null;
+    updates.installing = false;
   });
 
   it("offers the test report only with a mouse connected", async () => {
