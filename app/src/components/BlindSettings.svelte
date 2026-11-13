@@ -1,7 +1,7 @@
 <script lang="ts">
-  // The settings of a device that cannot report them (most SteelSeries mice): PeriHub sends one at a
-  // time and never saves it to the device's memory. It cannot show, check or undo them, so the
-  // warning is always on screen; unplugging the device brings back what it has saved.
+  // The settings of a device that cannot report them (most SteelSeries mice), or that a readable
+  // device cannot report (the colour of Razer mice): PeriHub sends one at a time and never saves it
+  // to the device's memory. It cannot show, check or undo them, so the warning is always on screen.
   import { api, errorText, type BlindSetting, type BlindValue, type PeripheralInfo } from "../lib/api";
 
   interface Props {
@@ -89,7 +89,14 @@
   }
 </script>
 
-{#if info.editable}
+{#if info.editable && info.readable}
+  <div class="notice warn">
+    <b>Experimental. PeriHub cannot read the lighting effect of the {name},</b> so it cannot show it, check a colour or
+    put the effect from before back. <b>Send</b> shows one colour the way {info.source.replace(" (facts only)", "")} does,
+    without saving it to the mouse's memory. Nobody has checked yet how long it lasts, or which lighting comes back
+    after the mouse is unplugged. The brightness above is a separate setting, saved with an undo.
+  </div>
+{:else if info.editable}
   <div class="notice warn">
     <b>Experimental. The {name} cannot report its settings,</b> so PeriHub cannot show them, check a change or undo it.
     <b>Send</b> changes one setting until the mouse is unplugged or turned off: PeriHub never saves to its memory before

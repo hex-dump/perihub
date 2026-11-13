@@ -232,7 +232,12 @@ export function peripheralTest(info: PeripheralInfo, version: string, system: st
         ? `DPI levels: ${set.dpi_levels.join(" / ") || "-"}, polling: ${set.polling_hz ?? "not read"} Hz`
         : null,
       options ? `Other settings: ${options}` : null,
-      ...set.leds.map((l, i) => `LED ${i + 1}: mode ${l.mode}, brightness ${l.brightness ?? "-"}, ${l.color}`),
+      ...set.leds.map((l, i) => {
+        const limits = info.limits.leds[i];
+        return limits && limits.modes.length === 0 && !limits.color
+          ? `${limits.name}: brightness ${l.brightness ?? "-"} %`
+          : `LED ${i + 1}: mode ${l.mode}, brightness ${l.brightness ?? "-"}, ${l.color}`;
+      }),
       ...(info.details ?? []).map(([label, value]) => `${label}: ${value}`),
       ...info.buttons.map((b) => `Button ${b.name}: ${b.action}`),
       `Changes: ${info.problem ? `off (${info.problem})` : info.editable ? "available (experimental)" : "off (read-only)"}`,

@@ -194,8 +194,8 @@ was copied.
 - The `lsusb -v` dumps of [linuxhw/LsUSB](https://github.com/linuxhw/LsUSB): which interfaces the Logitech G600
   and the Roccat Kone mice have.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse
-  its USB interface, transaction ids and maximum DPI, read as text by `tools/openrazer_facts.py` (see
-  `docs/protocols/razer-mice.md`).
+  its USB interface, transaction ids, maximum DPI, lights with a brightness and custom frame width, read as text
+  by `tools/openrazer_facts.py` (see `docs/protocols/razer-mice.md`).
 - [ckb-next](https://github.com/ckb-next/ckb-next) (GPL-2.0-only) and
   [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub) (GPL-3.0): Corsair's protocol.
 - [QMK](https://github.com/qmk/qmk_firmware) (GPL-2.0-or-later), [vial-qmk](https://github.com/vial-kb/vial-qmk)

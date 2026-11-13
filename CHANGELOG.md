@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Lighting of Razer mice (experimental)**, from facts found in OpenRazer (GPL-2.0; no code copied), extracted by `tools/openrazer_facts.py`. Nobody has tried them with PeriHub yet.
+  - On 47 of the 75 mice the page shows the brightness of each light (logo, scroll wheel, sides, backlight) and changes it with **Save to memory**, as OpenRazer sends it, after the No warranty box, with backup, read-back and the 15-second undo; an undo writes back the exact value first read. A mouse that does not take the brightness command is shown without its lights.
+  - On 27 of them **Send** shows one colour on the lights, as a custom frame sent the way OpenRazer draws one, without saving it to the mouse's memory. Their lighting effect cannot be read back, so PeriHub cannot show it, check the colour or put the effect from before back: the page says so whenever it offers the colour. Nobody has checked yet how long the colour lasts.
+  - PeriHub never stores a lighting effect on them: the list of commands their driver goes through holds the storage byte, so a stored effect, an unstored brightness and every other effect are refused before they leave.
+
 ## 0.8.1 — 2026-11-13
 
 The older Logitech G mice whose software Logitech removed on 31 October 2026: the G500s and G700s are read and their DPI in use can be changed, the G9, G9x, G500 and G700 are read. Nobody has tried them with PeriHub yet, and PeriHub never writes their memory.

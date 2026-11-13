@@ -241,6 +241,7 @@
                 <th>{limits?.name ?? `LED ${i + 1}`}</th>
                 <td class="led">
                   {#if info.editable && limits}
+                    {#if limits.modes.length > 0}
                     <select aria-label={`${limits.name} mode`} value={led.mode} disabled={!!busy}
                       onchange={(e) => edit((s) => (s.leds[i].mode = Number(e.currentTarget.value)))}>
                       {#if !limits.modes.some(([m]) => m === led.mode)}
@@ -248,6 +249,7 @@
                       {/if}
                       {#each limits.modes as [mode, label] (mode)}<option value={mode}>{label}</option>{/each}
                     </select>
+                    {/if}
                     {#if limits.color}
                       <input type="color" aria-label={`${limits.name} colour`} value={led.color} disabled={!!busy}
                         onchange={(e) => edit((s) => (s.leds[i].color = e.currentTarget.value))} />
@@ -258,6 +260,8 @@
                         onchange={(e) => edit((s) => (s.leds[i].brightness = Number(e.currentTarget.value)))} />
                       <span class="small">{led.brightness} %</span>
                     {/if}
+                  {:else if limits && limits.modes.length === 0 && !limits.color}
+                    {led.brightness !== null ? `${led.brightness} %` : "not read"}
                   {:else}
                     <span class="swatch" style:background={led.color}></span>{modeName(i, led.mode)}{#if led.brightness !== null}, {led.brightness} %{/if}
                   {/if}
@@ -266,6 +270,11 @@
             {/each}
           </tbody>
         </table>
+      {/if}
+
+      {#if info.blind.length > 0}
+        <h2>Colour</h2>
+        <BlindSettings {info} onchange={(i) => (live = i)} />
       {/if}
 
       {#if info.buttons.length > 0}

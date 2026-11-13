@@ -465,6 +465,86 @@ describe("a mouse that stores every change", () => {
   });
 });
 
+describe("the lights of a Razer mouse", () => {
+  const razer: PeripheralInfo = {
+    ...info,
+    key: "1532:0084",
+    vendor_id: 0x1532,
+    product_id: 0x0084,
+    brand: "Razer",
+    model: "DeathAdder V2",
+    source: "OpenRazer (facts only)",
+    profiles: 1,
+    active_profile: null,
+    active_dpi: null,
+    can_save: false,
+    changes_stay: true,
+    settings: {
+      dpi_levels: [800],
+      polling_hz: 1000,
+      options: {},
+      leds: [
+        { mode: 0, brightness: 100, color: "#000000" },
+        { mode: 0, brightness: 50, color: "#000000" },
+      ],
+    },
+    limits: {
+      dpi: { min: 100, max: 20000, step: 50 },
+      polling_hz: [125, 500, 1000],
+      options: [],
+      leds: [
+        { name: "Logo", modes: [], brightness_step: 1, color: false },
+        { name: "Scroll wheel", modes: [], brightness_step: 1, color: false },
+      ],
+    },
+    buttons: [],
+    blind: [{ id: "color", label: "One colour, not saved", kind: { type: "color" }, last: null }],
+  };
+
+  it("changes only the brightness, saved with the undo, and no mode or colour of a light", async () => {
+    render(Peripheral, { props: { info: razer, error: null } });
+    expect(screen.queryByRole("combobox", { name: "Logo mode" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Logo colour" })).toBeNull();
+    const wheel = screen.getByRole("slider", { name: "Scroll wheel brightness" }) as HTMLInputElement;
+    wheel.value = "80";
+    await fireEvent.change(wheel);
+    await fireEvent.click(screen.getByRole("button", { name: "Save to memory…" }));
+    // The No warranty box, unless an earlier test of this mouse already accepted it in this session.
+    const box = screen.queryByRole("checkbox");
+    if (box) {
+      expect(api.peripheralChange).not.toHaveBeenCalled();
+      await fireEvent.click(box);
+      await fireEvent.click(screen.getByRole("button", { name: "Save to memory" }));
+    }
+    await wait(0);
+    const leds = [razer.settings.leds[0], { ...razer.settings.leds[1], brightness: 80 }];
+    expect(api.peripheralChange).toHaveBeenCalledWith("1532:0084", { ...razer.settings, leds }, false, null);
+  });
+
+  it("sends one colour by itself, with the warning that it cannot be read or put back", async () => {
+    api.peripheralSetBlind.mockResolvedValue(razer);
+    render(Peripheral, { props: { info: razer, error: null } });
+    const text = document.body.textContent!.replace(/\s+/g, " ");
+    expect(text).toContain("cannot read the lighting effect of the Razer DeathAdder V2");
+    expect(text).toContain("the way OpenRazer does, without saving it to the mouse's memory");
+    expect(document.body.textContent).not.toContain("cannot report its settings");
+    await fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenCalledWith("1532:0084", "color", { type: "color", value: "#ffffff" });
+    expect(api.peripheralChange).not.toHaveBeenCalled();
+  });
+
+  it("shows the brightness alone on a read-only connection, and names the lights in the test report", () => {
+    render(Peripheral, { props: { info: { ...razer, editable: false }, error: null } });
+    expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
+    expect(document.body.textContent).not.toContain("Other (mode 0)");
+    expect(document.body.textContent).toContain("50 %");
+    const report = peripheralTest(razer, "0.8.2", "Linux").report;
+    expect(report).toContain("Logo: brightness 100 %");
+    expect(report).toContain("Scroll wheel: brightness 50 %");
+  });
+});
+
 describe("a QMK keyboard", () => {
   const keyboard: PeripheralInfo = {
     ...info,

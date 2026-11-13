@@ -2,7 +2,8 @@
 
 How PeriHub talks to Razer mice. **No mouse has been tried with PeriHub yet.** This is written in PeriHub's own words
 from facts found in [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0, commit 477f4d6): the report layout,
-the commands, and per mouse its USB interface, transaction ids and maximum DPI. No code was copied.
+the commands, and per mouse its USB interface, transaction ids, maximum DPI, its lights and the width of its custom
+colour frame. No code was copied.
 `tools/openrazer_facts.py` reads OpenRazer's driver and daemon as text and writes the facts into
 `crates/perihub-core/src/peripheral/razer_models.rs`.
 
@@ -28,9 +29,34 @@ the commands, and per mouse its USB interface, transaction ids and maximum DPI. 
 | `04 05` | Set the DPI | `01` (stored), X, Y, `00 00` |
 | `00 85` | Read the polling rate | answer: `01` 1000 Hz, `02` 500 Hz, `08` 125 Hz |
 | `00 05` | Set the polling rate | the same codes |
+| `0f 84` | Read the brightness of one light | `01` (stored), LED; answer: storage, LED, brightness 0–255 |
+| `0f 04` | Set the brightness of one light | `01` (stored), LED, brightness 0–255 |
+| `03 83`, `03 03` | The same two on older mice | the same arguments |
+| `0f 03` | One row of the custom colour frame | two unused bytes, row (`00` on a mouse), first and last column, then red, green and blue for each column |
+| `0f 02` | Show the custom frame | `00` (not stored), LED `00`, effect `08` |
 
-Everything else (lighting, DPI stages, device mode, macros, firmware) is not in the list of commands PeriHub may
-send.
+Everything else (the other lighting effects, DPI stages, device mode, macros, firmware) is not in the list of
+commands PeriHub may send. For the lights the list also holds the storage byte: a brightness only with `01`,
+the effect only as `00 00 08`, so a stored effect never leaves PeriHub.
+
+## Lights
+
+The LEDs, by the id OpenRazer sends: `01` scroll wheel, `04` logo, `05` backlight, `10` right side, `11` left side.
+Per mouse, `tools/openrazer_facts.py` keeps:
+
+- **Brightness**: the lights OpenRazer's daemon offers a brightness for, where its driver reads and writes it
+  with the same pair of commands and the same transaction id. PeriHub shows it in percent, writes it with
+  storage `01` as OpenRazer does, reads it back, and on an undo writes back the exact value first read. A mouse
+  that answers "not supported" is shown without its lights.
+- **Custom frame**: where the daemon draws custom frames on a single row, with the class 0f frame command and
+  the custom effect, both with the same transaction id. The number of columns is the daemon's matrix width.
+  Most mice take the row in a packet of size `47`; the Mamba Elite and the newer Nagas take its own size, five
+  bytes plus three per column. OpenRazer draws by sending the row first, then the effect.
+
+OpenRazer has no command that reads the effect in use on these mice, and sends every effect other than the
+custom frame with storage `01`. So PeriHub stores no effect: it offers only one colour, sent as a custom frame
+with storage `00`, as a setting it cannot read back. What the mouse shows after it is unplugged has not been
+checked.
 
 ## Saving
 
@@ -45,4 +71,4 @@ unless the user keeps the change.
   are reached on their USB cable.
 - Mice whose DPI or polling rate OpenRazer reads with another command (a one-byte DPI, the 8000 Hz polling of newer
   mice): shown where PeriHub can read them, not changed.
-- DPI stages, lighting, buttons and battery.
+- DPI stages, lighting effects other than one colour, buttons and battery.
