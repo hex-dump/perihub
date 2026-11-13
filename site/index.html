@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PeriHub for your peripherals: open-source alternative to G HUB and GG</title>
+  <title>PeriHub: one app for gaming mice and keyboards, instead of G HUB, GG, iCUE and Synapse</title>
   <meta name="description" content="Free, open-source app for your gaming peripherals on Windows and Linux, without Logitech G HUB, SteelSeries GG or Corsair iCUE: lighting, DPI, buttons, key remapping and macros, with no account and no telemetry.">
   <link rel="canonical" href="https://hex-dump.github.io/perihub/">
   <meta name="google-site-verification" content="KVLvAEzYk0dIyE8OSqlv4WGCeTM5UA_0ox9jzblj8tQ">
@@ -12,8 +12,8 @@
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="stylesheet" href="style.css">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="PeriHub for your peripherals">
-  <meta property="og:description" content="One open-source app for your gaming keyboard and mouse on Windows and Linux, without G HUB or GG.">
+  <meta property="og:title" content="PeriHub: one app for gaming mice and keyboards">
+  <meta property="og:description" content="Open source, for Windows and Linux, instead of G HUB, GG, iCUE and Synapse. No account, no telemetry.">
   <meta property="og:url" content="https://hex-dump.github.io/perihub/">
   <meta property="og:image" content="https://hex-dump.github.io/perihub/social-preview.png?v=2">
   <meta name="twitter:card" content="summary_large_image">
@@ -77,8 +77,8 @@
       <div class="wrap hero-grid">
         <div class="hero-text">
           <p class="eyebrow">Free and open source · Windows and Linux</p>
-          <h1>PeriHub for your peripherals</h1>
-          <p class="lead">One app for your gaming keyboard and mouse, without <b>SteelSeries GG</b> or <b>Logitech G HUB</b>. Lighting, key remapping, DPI, buttons and macros, in a small app with no account, no ads and no telemetry. <a href="#devices">See which devices work today</a>.</p>
+          <h1>One app for gaming mice and keyboards across brands</h1>
+          <p class="lead">Instead of <b>G HUB</b>, <b>GG</b>, <b>iCUE</b> and <b>Synapse</b>: lighting, DPI, buttons, key remapping and macros, on Windows and Linux. No account, no telemetry. <a href="#devices">See which devices work today</a>.</p>
 
           <div class="get" id="get">
             <div class="buttons os-buttons">
@@ -141,6 +141,31 @@
       </ul>
     </section>
 
+    <section id="about" class="section">
+      <div class="wrap about-grid">
+        <div class="why">
+          <p class="kicker">About</p>
+          <h2>Why I made this</h2>
+          <p>I'm a computer science student. My desk has a SteelSeries Apex 3 TKL and a Logitech G502 HERO, which meant two apps from two companies, both heavy, just to set some colors and a few buttons.</p>
+          <p>Then I moved my gaming PC to Linux, and neither app exists there. So I wrote one app for both. It does a few things and tries to do them well: lights, key remapping, DPI, macros, and a profile that switches when a game opens.</p>
+          <p>I make it with the help of AI, and I review it and try it on my own keyboard and mouse. Support for other devices comes from people who own them and send a test report.</p>
+          <p class="sign"><a href="https://github.com/hex-dump">hex-dump</a></p>
+        </div>
+        <div class="limits-box" id="limits">
+          <h2>Not there yet</h2>
+          <ul class="limits">
+            <li>Only four devices are tested on real hardware: G502 HERO, G502 X Wireless, G300 and Apex 3 TKL. The other 200+ are <a href="#devices">experimental or read-only</a> until someone with one sends a report.</li>
+            <li>Logitech mice on a LIGHTSPEED receiver are never saved to: use the cable.</li>
+            <li>Corsair devices are only read, plus one color until you close PeriHub.</li>
+            <li>No macOS.</li>
+            <li>The Windows installer is not code-signed yet, so SmartScreen warns you.</li>
+            <li>It can't share a device with the official app: quit G HUB, GG, iCUE or Synapse first.</li>
+            <li>Profiles that follow the game in focus work on Windows and on Hyprland, not on other Linux desktops yet.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
     <section id="features" class="section">
       <div class="wrap">
         <div class="section-head">
@@ -175,8 +200,8 @@
           </article>
           <article class="card">
             <svg class="card-icon" aria-hidden="true"><use href="#i-feather"/></svg>
-            <h3>Small and quiet</h3>
-            <p>A %%EXE_SIZE%% installer for Windows. Closed, it waits in the tray with about 3 MB of memory (measured on version 0.5.5). No background services.</p>
+            <h3>Light on your PC</h3>
+            <p>A %%EXE_SIZE%% installer for Windows. With the window closed it sits in the tray using about 4 MB of memory and under 1% of one CPU core (version 0.8.2 on Windows 11). No background services.</p>
           </article>
         </div>
 
@@ -706,7 +731,7 @@
       <div class="wrap">
         <div class="section-head">
           <p class="kicker">Safety</p>
-          <h2>Safe by design</h2>
+          <h2>What it writes, and what it doesn't</h2>
         </div>
         <ul class="safety">
           <li><svg class="card-icon" aria-hidden="true"><use href="#i-chip"/></svg><div><b>No firmware changes.</b> PeriHub only writes the settings the official apps write too, with commands verified one by one.</div></li>
@@ -721,18 +746,18 @@
       <div class="wrap">
         <div class="section-head">
           <p class="kicker">Support</p>
-          <h2>Help PeriHub grow</h2>
-          <p class="lead">PeriHub is free, and one person makes it in their spare time. If it saved you from installing G HUB or GG, two things help a lot.</p>
+          <h2>Support</h2>
+          <p class="lead">PeriHub is free and made by one person in their spare time.</p>
         </div>
         <div class="support">
           <article class="support-card star">
-            <h3><span class="support-icon" aria-hidden="true">★</span> Give it a star on GitHub</h3>
-            <p>It is free and takes a second: open the page and press <b>Star</b> at the top. Stars are how people find a project on GitHub, and more users mean more mice tested and supported.</p>
-            <a class="btn primary" href="https://github.com/hex-dump/perihub"><span class="btn-text"><span class="btn-title">★ Star on GitHub</span><span class="btn-sub">Needs a free GitHub account</span></span></a>
+            <h3><span class="support-icon" aria-hidden="true">★</span> Star it on GitHub</h3>
+            <p>It helps other people find the project.</p>
+            <a class="btn primary" href="https://github.com/hex-dump/perihub"><span class="btn-text"><span class="btn-title">★ Star on GitHub</span></span></a>
           </article>
           <article class="support-card">
             <h3><span class="support-icon" aria-hidden="true">☕</span> Buy me a coffee</h3>
-            <p>If you want to say thanks, a small donation keeps the project going. It is never required: every feature of PeriHub stays free.</p>
+            <p>Only if you want to. Every feature stays free.</p>
             <a class="btn" href="https://buymeacoffee.com/hexdump1"><span class="btn-text"><span class="btn-title">☕ Buy me a coffee</span><span class="btn-sub">buymeacoffee.com</span></span></a>
           </article>
         </div>
@@ -745,7 +770,7 @@
       <div class="foot-top">
         <div class="foot-brand">
           <a class="logo" href="./"><img src="icon.png" width="28" height="28" alt=""> PeriHub</a>
-          <p>PeriHub for your peripherals. Free and open source, for Windows and Linux.</p>
+          <p>One app for gaming mice and keyboards. Free and open source, for Windows and Linux.</p>
         </div>
         <nav class="foot-links" aria-label="Footer">
           <ul>

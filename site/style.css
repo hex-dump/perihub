@@ -315,6 +315,18 @@ details summary:hover { color: var(--accent); }
 .steps li::marker { color: var(--accent-2); font-weight: 700; }
 .steps b { color: var(--text); }
 
+/* About: why it exists, and its limits */
+.about-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+.why p { color: var(--muted); max-width: 62ch; font-size: 1.05rem; }
+.why .sign { color: var(--text); }
+.limits-box { background: var(--panel); border: 1px solid rgba(255, 194, 77, 0.35); border-radius: var(--radius); padding: var(--space-5); }
+.limits-box h2 { font-size: 1.35rem; margin-top: 0; }
+.limits { list-style: none; padding: 0; margin: 0; }
+.limits li { position: relative; padding-left: 1.4rem; color: var(--muted); margin-bottom: var(--space-3); }
+.limits li:last-child { margin-bottom: 0; }
+.limits li::before { content: ""; position: absolute; left: 0.2rem; top: 0.6em; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--warn); }
+@media (max-width: 860px) { .about-grid { grid-template-columns: 1fr; } }
+
 /* Download */
 .platforms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
 .platform { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--space-5); }
