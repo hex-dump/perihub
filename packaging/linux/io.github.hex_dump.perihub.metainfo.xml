@@ -94,6 +94,11 @@
   </requires>
 
   <releases>
+    <release version="0.8.2" date="2026-11-13">
+      <description>
+        <p>Lighting for Razer mice: the brightness of each light on 47 of them, and one colour that is not saved on 27. Nobody has tried it on a Razer mouse yet: it can be changed at your own risk.</p>
+      </description>
+    </release>
     <release version="0.8.1" date="2026-11-13">
       <description>
         <p>The older Logitech G mice whose software Logitech removed: the G500s and G700s are read and their DPI in use can be changed, the G9, G9x, G500 and G700 are read. Nobody has tried them yet, and PeriHub never writes their memory.</p>

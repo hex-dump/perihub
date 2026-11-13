@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.8.2 — 2026-11-13
+
+Lighting for Razer mice: the brightness of each light on 47 of them, saved with the undo, and one colour that is not saved on 27. Nobody has tried it on a Razer mouse yet. Also: on Windows, from the next update on, the installer shows no window.
 
 ### Added
 - **Lighting of Razer mice (experimental)**, from facts found in OpenRazer (GPL-2.0; no code copied), extracted by `tools/openrazer_facts.py`. Nobody has tried them with PeriHub yet.
