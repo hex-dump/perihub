@@ -1,5 +1,5 @@
 pkgbase = perihub-bin
-	pkgdesc = PeriHub for your peripherals: gaming keyboards and mice without SteelSeries GG, Logitech G HUB or Corsair iCUE
+	pkgdesc = One app for gaming mice and keyboards across brands, instead of G HUB, GG, iCUE and Synapse
 	pkgver = 0.8.2
 	pkgrel = 1
 	url = https://github.com/hex-dump/perihub
