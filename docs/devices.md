@@ -300,8 +300,9 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
   first time. These mice store every change by themselves, the way OpenRazer sends it, so there is
   no change that lasts only until they are unplugged: PeriHub saves the settings first, reads them
   back, and puts them back after 15 seconds unless you keep the change.
-- **One colour, not saved** (27 mice): **Send** shows one colour on the lights, as a custom frame
-  sent the way OpenRazer sends it, without saving it to the mouse's memory. The lighting effect of
+- **One colour, not saved** (27 mice): **Send** shows one colour on every column of the mouse's custom
+  frame, sent the way OpenRazer sends it, without saving it to the mouse's memory. Which lights the frame
+  covers has not been checked: on some mice OpenRazer gives it fewer columns than they have lights. The lighting effect of
   these mice cannot be read back, so PeriHub cannot show it, check the colour or put the effect from
   before back, and the warning stays on screen. Nobody has checked yet how long the colour lasts or
   what comes back after the mouse is unplugged. PeriHub never stores a lighting effect on them.
