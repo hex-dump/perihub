@@ -14,7 +14,8 @@ use crate::hidpp::macros::{self, Macro, Packer};
 use crate::hidpp::models::MouseModel;
 use crate::hidpp::profile::{self, ButtonAction, LedEffect, ProfileSettings};
 use crate::hidpp::{
-    Access, Battery, DpiCapabilities, FeatureEntry, FirmwareEntity, HidppDevice, LedZone, OnboardInfo, ROM_SECTOR_BASE,
+    Access, Battery, BatteryState, DpiCapabilities, FeatureEntry, FirmwareEntity, HidppDevice, LedZone, OnboardInfo,
+    ROM_SECTOR_BASE,
 };
 use crate::worker::DeviceTask;
 
@@ -55,8 +56,8 @@ pub struct MouseInfo {
     /// saves are experimental, and each one is undone unless the user keeps it.
     pub experimental: bool,
     /// A save to this mouse was neither kept nor undone (PeriHub was closed, or the mouse
-    /// unplugged, during the countdown), and the mouse cannot be written to now (it came back
-    /// through its receiver): the backup goes back when it is connected with its cable.
+    /// unplugged, during the countdown), and the mouse cannot be written to now: the backup goes
+    /// back when it can be (with its cable, or through its receiver on a tested memory).
     pub pending_undo: bool,
     /// Connected through a LIGHTSPEED receiver instead of its cable.
     pub receiver: bool,
@@ -190,14 +191,20 @@ impl Support {
 ///   whether to keep each one; the command line never saves to such a mouse);
 /// - any other memory: read-only.
 ///
-/// Saves only with the USB cable: a write over the radio that stops halfway has never been tried.
+/// Through a LIGHTSPEED receiver, as G HUB does, but experimental and only on a tested
+/// memory: PeriHub has never saved over the radio on a real mouse, so each save is undone unless
+/// the user keeps it, and a memory nobody has tested is not tried over the radio on top of that.
 pub fn support(model: &MouseModel, onboard: &OnboardInfo, receiver: bool, untested_saves: bool) -> Support {
     let known = WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
         && WRITABLE_SECTOR_SIZES.contains(&(onboard.sector_size as usize));
     let tested = model.verified || (known && TESTED_MEMORY.contains(&(onboard.profile_format, onboard.sector_size)));
-    let writable = known && !receiver && (tested || untested_saves);
-    Support { tested, experimental: writable && !tested, writable, writable_format: known }
+    let writable = known && if receiver { tested && untested_saves } else { tested || untested_saves };
+    Support { tested, experimental: writable && (!tested || receiver), writable, writable_format: known }
 }
+
+/// Below this charge a save over the radio is refused: a mouse that turns off halfway leaves a
+/// profile half written until the undo can run.
+const MIN_BATTERY_FOR_RADIO_SAVE: u8 = 15;
 
 /// Whether `new` changes an LED slot of the profile that is not one of the mouse's LED zones.
 fn unknown_led_slots_changed(current: &ProfileSettings, new: &ProfileSettings, zones: &[u8]) -> bool {
@@ -401,7 +408,8 @@ impl MouseTask {
     /// The list of enabled profiles (sector 0) is written only on tested mice: on an experimental
     /// one a list that went wrong could not be put back with the usual undo.
     fn check_tested(&self) -> Result<()> {
-        if self.info.verified {
+        // Experimental saves (an untested memory, or through the receiver) leave the list alone.
+        if self.info.verified && !self.info.experimental {
             Ok(())
         } else {
             Err(Error::Invalid("enabling or disabling profiles needs a tested memory format".into()))
@@ -861,6 +869,9 @@ impl MouseTask {
     /// put back, and the undo is armed before the first write, so that a save that stops halfway
     /// is undone too, also if PeriHub is closed or the mouse unplugged (see [`Self::finish_pending_undo`]).
     fn backup_before_writing(&mut self, label: &str) -> Result<()> {
+        if self.info.receiver {
+            self.check_battery_for_radio_save()?;
+        }
         let sectors = self.backup_all(label)?;
         if !self.info.experimental {
             return Ok(());
@@ -885,6 +896,24 @@ impl MouseTask {
             Err(undo) => Err(Error::Protocol(format!(
                 "{error}. Putting the backup back failed too ({undo}): try Backups…, or Logitech G HUB."
             ))),
+        }
+    }
+
+    /// Through the receiver: a battery that is nearly empty and not charging stops the save.
+    fn check_battery_for_radio_save(&mut self) -> Result<()> {
+        let battery = match self.dev.battery() {
+            Ok(battery) => battery,
+            Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
+            Err(_) => None,
+        };
+        match battery {
+            Some(b) if b.state == BatteryState::Discharging && b.percent < MIN_BATTERY_FOR_RADIO_SAVE => {
+                Err(Error::Invalid(format!(
+                    "nothing was saved: the battery is at {}%. Charge the mouse, or connect it with its USB cable, and save again",
+                    b.percent
+                )))
+            }
+            _ => Ok(()),
         }
     }
 
@@ -1265,10 +1294,13 @@ mod tests {
             assert_eq!(support(g403, memory, false, false), supported);
             assert_eq!(support(g403, memory, false, true), supported);
         }
-        // Through a receiver: nothing is saved, the profile is switched.
+        // Through a receiver: experimental saves on a tested memory, in the interface only.
         let over_radio = support(g403, &g502, true, true);
-        assert_eq!(over_radio, Support { writable: false, ..supported });
-        assert_eq!(over_radio.access(), Access::Ram);
+        assert_eq!(over_radio, Support { experimental: true, ..supported });
+        assert_eq!(over_radio.access(), Access::Full);
+        let command_line = support(g403, &g502, true, false);
+        assert_eq!(command_line, Support { writable: false, ..supported });
+        assert_eq!(command_line.access(), Access::Ram);
 
         // A memory PeriHub can write but never saved to: experimental, only where saves can be undone.
         let untested = OnboardInfo { sector_size: 255, ..g502.clone() };
@@ -1844,13 +1876,29 @@ mod tests {
     }
 
     #[test]
-    fn nothing_is_saved_through_a_receiver() {
-        // A tested memory: the profile is switched, nothing is written.
+    fn a_save_through_a_receiver_is_experimental_and_can_be_undone() {
+        // A tested memory (issue #4): saved over the radio, with the 15-second undo.
         let (mut task, sim) = open_sim_through(g502_x(), G502_X_WIRELESS, true, true);
+        assert!(task.info.verified && task.info.writable && task.info.experimental);
+        let before = sim.lock().unwrap().user.clone();
+        let state = task.state().unwrap();
+        let saved = task.save_profile(2, &edited(&state, 2)).unwrap();
+        assert_eq!(saved.profiles[1].settings.dpi_levels[0], 3250);
+        assert!(task.pending_undo_path().exists(), "the undo is armed");
+        assert_eq!(sim.lock().unwrap().written, [2]);
+        task.undo_last_write().unwrap();
+        assert_eq!(sim.lock().unwrap().user, before);
+        assert!(!task.pending_undo_path().exists());
+        // The profile list stays as it is.
+        assert!(task.set_profile_enabled(2, false).is_err());
+        task.set_active_profile(2).unwrap();
+        forget_test_files();
+
+        // The command line never saves over the radio: the profile is switched, nothing is written.
+        let (mut task, sim) = open_sim_through(g502_x(), G502_X_WIRELESS, false, true);
         assert!(task.info.verified && !task.info.writable && !task.info.experimental);
         let state = task.state().unwrap();
         assert!(task.save_profile(2, &edited(&state, 2)).is_err());
-        assert!(task.set_profile_enabled(2, false).is_err());
         let sector = sim.lock().unwrap().user[2].clone();
         assert!(task.dev.write_sector(2, &sector, &task.info.onboard).is_err());
         task.set_active_profile(2).unwrap();

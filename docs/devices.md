@@ -67,11 +67,12 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   of the factory profiles. With an untested one PeriHub does not create it: save a profile once
   with Logitech G HUB or Onboard Memory Manager first.
 - **Wireless models** are also recognized through their LIGHTSPEED receiver (`046d:c539`, `c53a`,
-  `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`). Nothing is saved over the radio:
-  with a tested memory format PeriHub switches the profile and DPI level, otherwise it only reads. A G903 HERO
+  `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`). With a tested memory format PeriHub
+  switches the profile and DPI level, and saves over the radio as G HUB does, as an experimental
+  feature (No warranty box, 15-second undo, not below 15% battery); otherwise it only reads. A G903 HERO
   was reached and read through a `c539` receiver on Linux
-  ([issue #22](https://github.com/hex-dump/perihub/issues/22)); Windows and the POWERPLAY mat (`c53a`)
-  are not confirmed yet: reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4).
+  ([issue #22](https://github.com/hex-dump/perihub/issues/22)), and a G502 HERO Wireless through a
+  POWERPLAY mat (`c53a`) on Windows ([issue #4](https://github.com/hex-dump/perihub/issues/4)).
 - **The Logi Bolt receiver** (`046d:c548`) and **the Unifying receivers** (`046d:c52b`, `c532`)
   are recognized. Every device paired with them that answers, mouse or keyboard, gets a page of
   its own in the sidebar, built from the HID++ features it reports: what kind of device it is, what

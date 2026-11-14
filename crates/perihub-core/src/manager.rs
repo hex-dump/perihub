@@ -781,7 +781,7 @@ impl Manager {
                 };
                 let wireless_id = model.wireless_id.unwrap_or_default();
                 let link = ReceiverLink { receiver_id: paths.0.product_id(), slot, wireless_id };
-                // Nothing is saved over the radio: `mouse::support` grants at most RAM changes here.
+                // Over the radio `mouse::support` grants experimental saves on a tested memory, RAM changes otherwise.
                 let result = open_behind(api, paths, slot, true)
                     .and_then(|dev| MouseTask::open(dev, model, self.untested_saves))
                     .map(|mut task| {

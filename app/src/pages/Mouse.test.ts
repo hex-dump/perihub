@@ -606,6 +606,26 @@ describe("a tested mouse", () => {
     expect(api.saveProfile).toHaveBeenCalledOnce();
   });
 
+  // Issue #4: saves over the radio, as G HUB does, experimental on a tested memory format.
+  it("saves through its receiver after the No warranty box, with the undo", async () => {
+    await open({ ...info, product_id: 0xc08d, model: "G502 HERO Wireless", receiver: true, experimental: true });
+    expect(screen.getByText(/Experimental: saving through the receiver/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open test form" })).toBeTruthy();
+    expect((screen.getAllByRole("checkbox", { name: "Enabled" })[0] as HTMLInputElement).disabled).toBe(true);
+    await changeFirstLevel(1000);
+    await fireEvent.click(screen.getByRole("button", { name: "Save to mouse" }));
+    await wait(0);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain("never through a LIGHTSPEED receiver");
+    expect(dialog.textContent).not.toContain("saving through a LIGHTSPEED receiver");
+    expect(api.saveProfile).not.toHaveBeenCalled();
+    await fireEvent.click(screen.getByRole("checkbox", { name: /I have read this/ }));
+    await fireEvent.click(within(dialog).getByRole("button", { name: "Save to mouse" }));
+    await wait(0);
+    expect(api.saveProfile).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Keep changes" })).toBeTruthy();
+  });
+
   it("switches profiles through its receiver but does not save there", async () => {
     await open({ ...info, receiver: true, writable: false });
     expect(screen.getByText(/it does not save: a write over the\s+radio has never been tried/)).toBeTruthy();

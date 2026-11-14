@@ -62,9 +62,12 @@
   /** A tested mouse, or one with experimental saves: the controls are enabled. */
   const editable = $derived(!!info && (info.verified || info.experimental));
 
-  /** Runs a write, after the "No warranty" box the first time the mouse's memory format is untested. */
+  /** Saves over the radio are accepted apart from saves with the cable. */
+  const warrantyKey = $derived(info ? (info.receiver ? `${info.product_id}-radio` : info.product_id) : 0);
+
+  /** Runs a write, after the "No warranty" box the first time a save to the mouse is experimental. */
   function guarded(action: string, write: () => Promise<void>) {
-    if (info?.experimental && !noWarrantyAccepted(info.product_id)) pendingWrite = { action, write };
+    if (info?.experimental && !noWarrantyAccepted(warrantyKey)) pendingWrite = { action, write };
     else write();
   }
 
@@ -72,7 +75,7 @@
     const pending = pendingWrite;
     pendingWrite = null;
     if (!pending || !info) return;
-    acceptNoWarranty(info.product_id);
+    acceptNoWarranty(warrantyKey);
     pending.write();
   }
 
@@ -352,7 +355,17 @@
     {/if}
   {/each}
 {/if}
-{#if info?.experimental}
+{#if info?.experimental && info.receiver}
+  <div class="notice error">
+    <b>Experimental: saving through the receiver.</b> PeriHub has saved to this memory format with the USB cable, but
+    never over the radio, as Logitech G HUB does. You can change and save the {info.model}'s profiles at your own risk:
+    every save is backed up, and undone after 15 seconds unless you keep it. Keep the mouse charged and close to its
+    receiver while saving. Whether it works or not, please send your feedback with a mouse test report.
+    <div class="row report">
+      <TestReport mouse={info} />
+    </div>
+  </div>
+{:else if info?.experimental}
   <div class="notice error">
     <b>Experimental: not tested yet.</b> PeriHub has never saved to a mouse whose memory uses this format (profile
     format {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors). You can change and save the
@@ -408,6 +421,7 @@
     profileFormat={info.onboard.profile_format}
     sectorSize={info.onboard.sector_size}
     action={pendingWrite.action}
+    receiver={info.receiver}
     onconfirm={confirmWrite}
     onclose={() => (pendingWrite = null)}
   />
@@ -469,8 +483,12 @@
             <input
               type="checkbox"
               checked={profile.enabled}
-              disabled={!!busy || !info.writable || !info.verified}
-              title={info.verified ? undefined : "Needs a tested memory format"}
+              disabled={!!busy || !info.writable || !info.verified || info.experimental}
+              title={!info.verified
+                ? "Needs a tested memory format"
+                : info.experimental
+                  ? "Needs the USB cable"
+                  : undefined}
               onchange={(e) => toggleEnabled(profile.number, e.target as HTMLInputElement)}
             />
             Enabled

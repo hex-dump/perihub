@@ -2,9 +2,12 @@
 
 ## Unreleased
 
+### Added
+- **Saving through a LIGHTSPEED receiver (experimental)** ([issue #4](https://github.com/hex-dump/perihub/issues/4)): a mouse with a tested memory format can be saved to without its cable, as Logitech G HUB does. The commands are the ones sent with the cable, but PeriHub has never saved over the radio on a real mouse, so it is experimental: PeriHub asks for the **No warranty** box before the first save through the receiver, backs up the memory, and undoes each save after 15 seconds unless you keep it. It does not save while the battery is below 15% and not charging, and enabling or disabling profiles still needs the cable. A memory format nobody has tested stays read-only through the receiver, and the command line never saves over the radio.
+
 ### Fixed
 - **A mouse behind a LIGHTSPEED, Bolt or Unifying receiver is found on Windows** ([issue #4](https://github.com/hex-dump/perihub/issues/4)): on Windows a receiver has two HID++ collections, and PeriHub asked each slot who was there on the short one and listened only there. The receiver's errors for empty slots come back on it, but a mouse answers with a long report, which comes on the other collection, so a paired mouse never seemed to answer ("slot 1: no answer"). PeriHub now listens on both. On Linux both are the same device, which is why the G903 HERO in issue #22 was found. In test reports each slot's answer says which collection it came on, and a slot that does not answer lists the other reports that came for it.
-- **The test report can be sent from the page of a mouse reached through its receiver** ([issue #4](https://github.com/hex-dump/perihub/issues/4)): the notice that says PeriHub does not save over the radio now has **Copy test report** and **Open test form**, as the other notices do. Before, the report was only in Settings → Problems.
+- **The test report can be sent from the page of a mouse reached through its receiver** ([issue #4](https://github.com/hex-dump/perihub/issues/4)): its notice now has **Copy test report** and **Open test form**, as the other notices do. Before, the report was only in Settings → Problems.
 - **Macros recorded by G HUB no longer show modifier keys twice**: G HUB stores a modifier key with its own modifier held, so Ctrl+Shift+Tab read "Ctrl+Ctrl Shift+Shift Tab" in the buttons list and "Press Ctrl+Ctrl" in the editor. Only the text changes: the macro in the mouse's memory stays as it is.
 
 ## 0.8.3 — 2026-11-14

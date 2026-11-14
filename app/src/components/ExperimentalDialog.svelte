@@ -9,11 +9,13 @@
     sectorSize: number;
     /** The button that goes on with the write, e.g. "Save to mouse". */
     action: string;
+    /** Through a LIGHTSPEED receiver, on a tested memory format: the radio is what is untested. */
+    receiver?: boolean;
     onconfirm: () => void;
     onclose: () => void;
   }
 
-  let { model, profileFormat, sectorSize, action, onconfirm, onclose }: Props = $props();
+  let { model, profileFormat, sectorSize, action, receiver = false, onconfirm, onclose }: Props = $props();
 
   let understood = $state(false);
 
@@ -27,30 +29,45 @@
 <div class="backdrop">
   <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="experimental-title">
     <h2 id="experimental-title">Save to the {model}?</h2>
-    <p>
-      The {model} keeps its profiles in a memory format PeriHub has never saved to on a real mouse (profile format
-      {profileFormat}, {sectorSize}-byte sectors). PeriHub writes it the same way as on the mice it was tested on, so
-      saving should work, but it has not been proven.
-    </p>
+    {#if receiver}
+      <p>
+        PeriHub has saved to the {model}'s memory format with the USB cable, but never through a LIGHTSPEED receiver.
+        Logitech G HUB saves this way too, and the commands are the same as with the cable, so saving should work, but
+        PeriHub has not proven it yet.
+      </p>
+    {:else}
+      <p>
+        The {model} keeps its profiles in a memory format PeriHub has never saved to on a real mouse (profile format
+        {profileFormat}, {sectorSize}-byte sectors). PeriHub writes it the same way as on the mice it was tested on, so
+        saving should work, but it has not been proven.
+      </p>
+    {/if}
     <ul>
       <li>
-        <b>What could go wrong:</b> a profile saved wrong, buttons or lighting that do not behave as set. In the worst
+        <b>What could go wrong:</b> {#if receiver}a save that stops halfway, if the mouse turns off or loses its receiver
+          while saving.{:else}a profile saved wrong, buttons or lighting that do not behave as set.{/if} In the worst
         case the mouse keeps a broken profile until it is fixed with a backup or with Logitech G HUB.
       </li>
       <li>
         <b>What PeriHub does to protect the mouse:</b> it accepts only the DPI and polling values the mouse itself
         reports, saves a backup before every write and reads every write back. After each save it asks whether to keep
         the changes, and puts the backup back by itself after 15 seconds without an answer. If PeriHub is closed or the
-        mouse unplugged before that, it does so the next time the mouse is connected with its cable.
+        mouse unplugged before that, it does so the next time the mouse is connected{#if receiver}.
+          Through the receiver it does not save when the battery is below 15%.{:else} with its cable.{/if}
       </li>
       <li>
-        <b>What stays off:</b> enabling or disabling profiles, and saving through a LIGHTSPEED receiver. Use the USB
-        cable.
+        {#if receiver}
+          <b>What stays off:</b> enabling or disabling profiles. Use the USB cable for that.
+        {:else}
+          <b>What stays off:</b> enabling or disabling profiles, and saving through a LIGHTSPEED receiver. Use the USB
+          cable.
+        {/if}
       </li>
     </ul>
     <p class="muted small">
-      PeriHub asks this only before your first save to the {model}. Whether it works or not, please send a mouse test
-      report: one report makes this memory format tested for every mouse that uses it.
+      PeriHub asks this only before your first save to the {model}{#if receiver} through its receiver{/if}. Whether it
+      works or not, please send a mouse test report{#if !receiver}: one report makes this memory format tested for every
+        mouse that uses it{/if}.
     </p>
     <NoWarranty device={`Logitech ${model}`} bind:accepted={understood} />
     <div class="row end">
