@@ -98,7 +98,9 @@ fn udev_rule_opens_only_interface_1_of_the_g300() {
 #[test]
 fn udev_rule_matches_the_other_brands_tables() {
     use perihub_core::peripheral::models;
-    for vendor in perihub_core::peripheral::vendors() {
+    // The Wraith W60 is opened on Linux only by a rule the user turns on, not by this one: its
+    // configuration collection can carry how far each key is pressed.
+    for vendor in perihub_core::peripheral::vendors().filter(|&v| v != 0x2E3C) {
         let tag = format!(r#"ATTRS{{idVendor}}=="{vendor:04x}""#);
         let lines: Vec<&str> = RULE.lines().filter(|l| !l.trim_start().starts_with('#') && l.contains(&tag)).collect();
         // Devices of the same vendor handled by PeriHub's own drivers (the Apex 3 TKL).
@@ -135,5 +137,12 @@ fn udev_rule_matches_the_other_brands_tables() {
 fn udev_rule_never_opens_the_asus_omni_receiver() {
     for line in RULE.lines().filter(|l| !l.trim_start().starts_with('#')) {
         assert!(!line.contains(r#"ATTRS{idProduct}=="1ace""#), "{line}");
+    }
+}
+
+#[test]
+fn udev_rule_never_opens_the_wraith_keyboard() {
+    for line in RULE.lines().filter(|l| !l.trim_start().starts_with('#')) {
+        assert!(!line.contains(r#"ATTRS{idVendor}=="2e3c""#), "{line}");
     }
 }

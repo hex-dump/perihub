@@ -147,11 +147,12 @@
     <p class="muted small">
       Protocols reconstructed thanks to the work of OpenRGB (Apex lighting), libratbag (Logitech HID++, G600, the older
       Logitech G mice, ASUS, Glorious and Roccat mice), gorkemgun/apex-3-tkl (Apex key mapping), ckb-next and OpenLinkHub (Corsair, no code
-      copied), OpenRazer (Razer mice, no code copied), rivalcfg (SteelSeries mice), QMK and Vial (QMK keyboards, no
+      copied), OpenRazer (Razer mice and keyboards, no code copied), rivalcfg (SteelSeries mice), QMK and Vial (QMK keyboards, no
       code copied), pulsar-mouse-linux and Pulsar-X3-Web-Config (Pulsar mice), lamzu-cfg (Lamzu), the captures of
-      Cooler Master's app shared on OpenRGB (Cooler Master mice, no code copied) and OpenRGB's EVGA drivers (EVGA mice,
-      no code copied). PeriHub is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat,
-      Pulsar, Lamzu, Cooler Master or EVGA.
+      Cooler Master's app shared on OpenRGB (Cooler Master mice, no code copied), OpenRGB's EVGA drivers (EVGA mice,
+      no code copied), claws-mouse-linux, EWEADN-GS02-Pro-Control and OpenMouse (mice on the YJX receiver, no code
+      copied from OpenMouse) and AulaControl (Wraith W60). PeriHub is not affiliated with SteelSeries, Logitech,
+      Corsair, ASUS, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, MAMBASNAKE, Wraith or AULA.
     </p>
   </div>
 

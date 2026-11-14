@@ -180,20 +180,33 @@ impl Razer {
         })
     }
 
-    /// Sends a request and returns the answer's arguments, after checking that the answer is for
-    /// this request and that the mouse carried it out.
     fn query(&self, io: &mut Io, tid: u8, command: [u8; 2], size: u8, args: &[u8]) -> Result<[u8; 80]> {
-        let req = request(tid, command, size, args);
-        let wait = Duration::from_micros(self.p.wait_us.max(600) as u64) + Duration::from_millis(2);
-        let answer = io.feature_query(&req, wait, |a| a[0] != STATUS_BUSY)?;
-        if answer[2..4] != req[2..4] || answer[6..8] != req[6..8] {
-            return Err(Error::Protocol(format!("the answer is not for this request: {}", super::hex(&answer[..8]))));
-        }
-        match answer[0] {
-            STATUS_OK => Ok(answer[8..88].try_into().unwrap()),
-            0x05 => Err(Error::Invalid("the mouse does not support this command".into())),
-            status => Err(Error::Protocol(format!("the mouse answered with status {status:02x}"))),
-        }
+        exchange(io, self.p.wait_us, tid, command, size, args)
+    }
+}
+
+/// Status of an answer the device could not carry out in time: a wireless keyboard that is off or
+/// asleep, through its receiver.
+pub const STATUS_TIMEOUT: u8 = 0x04;
+/// Status of a command the device does not support.
+pub const STATUS_NOT_SUPPORTED: u8 = 0x05;
+
+/// Sends a request and returns the answer's arguments, after checking that the answer is for this
+/// request and that the device carried it out. `wait_us`: how long the device needs before its
+/// answer can be read.
+pub fn exchange(io: &mut Io, wait_us: u32, tid: u8, command: [u8; 2], size: u8, args: &[u8]) -> Result<[u8; 80]> {
+    let req = request(tid, command, size, args);
+    let wait = Duration::from_micros(wait_us.max(600) as u64) + Duration::from_millis(2);
+    let answer = io.feature_query(&req, wait, |a| a[0] != STATUS_BUSY)?;
+    if answer[2..4] != req[2..4] || answer[6..8] != req[6..8] {
+        return Err(Error::Protocol(format!("the answer is not for this request: {}", super::hex(&answer[..8]))));
+    }
+    match answer[0] {
+        STATUS_OK => Ok(answer[8..88].try_into().unwrap()),
+        STATUS_NOT_SUPPORTED => Err(Error::Invalid("the device does not support this command".into())),
+        // Asked again later, like a device that does not answer.
+        STATUS_TIMEOUT => Err(Error::Timeout),
+        status => Err(Error::Protocol(format!("the device answered with status {status:02x}"))),
     }
 }
 
@@ -439,7 +452,8 @@ mod tests {
     #[test]
     fn the_table_is_consistent() {
         let mut ids: Vec<u16> = Vec::new();
-        for m in models().filter(|m| m.vendor_id == 0x1532) {
+        // The mice's table: the keyboards have a driver of their own.
+        for m in models().filter(|m| m.vendor_id == 0x1532 && m.kind == super::super::Kind::Mouse) {
             let Protocol::Razer(p) = m.protocol else { panic!("{}", m.name) };
             assert!(matches!(m.interface, Some(0) | Some(3)), "{}", m.name);
             if p.tid.dpi_set.is_some() {
@@ -669,7 +683,8 @@ mod tests {
     #[test]
     fn the_light_facts_are_consistent() {
         let (mut bright, mut frames) = (0, 0);
-        for m in models().filter(|m| m.vendor_id == 0x1532) {
+        // The mice's table: the keyboards have a driver of their own.
+        for m in models().filter(|m| m.vendor_id == 0x1532 && m.kind == super::super::Kind::Mouse) {
             let Protocol::Razer(p) = m.protocol else { panic!("{}", m.name) };
             if let Some(b) = p.brightness {
                 bright += 1;
