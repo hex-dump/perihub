@@ -124,6 +124,51 @@ describe("Sidebar", () => {
     expect(nav().textContent).toContain("Apex 3 TKL");
     expect(nav().textContent).toContain("Not opened");
   });
+
+  // Issue #4: a POWERPLAY receiver whose mouse never answered left only "No device found".
+  const receiver = {
+    product_id: 0xc53a,
+    name: "LIGHTSPEED receiver",
+    collections: ["interface 2, usage page ff00, usage 0001", "interface 2, usage page ff00, usage 0002"],
+    bolt: false,
+    unifying: false,
+    reachable: true,
+    denied: false,
+    slots: ["slot 1: no answer", "slot 2: no answer"],
+    open_slots: [],
+    unsupported: [],
+  };
+
+  it("lists a receiver nothing answered through, under the mouse", async () => {
+    calls.status = vi.fn(async () => ({ ...empty(), receivers: [receiver] }));
+    render(App);
+    await wait();
+    expect(nav().textContent).toContain("Logitech mouse");
+    expect(nav().textContent).not.toContain("Send a report");
+  });
+
+  it("does not add a mouse for a receiver whose devices have pages of their own", async () => {
+    const device = {
+      slot: 1,
+      name: "MX Master 3S",
+      kind: 3,
+      protocol: "4.5",
+      wireless_id: null,
+      device_info: null,
+      firmware: [],
+      features: [],
+      dpi: null,
+      report_rates_ms: [],
+      onboard: null,
+      read_errors: [],
+    };
+    const bolt = { ...receiver, product_id: 0xc548, name: "Logi Bolt receiver", bolt: true, unsupported: [device] };
+    calls.status = vi.fn(async () => ({ ...empty(), receivers: [bolt] }));
+    render(App);
+    await wait();
+    expect(nav().textContent).toContain("Logitech MX Master 3S");
+    expect(nav().textContent).not.toContain("Logitech mouse");
+  });
 });
 
 describe("Device request", () => {

@@ -14,7 +14,7 @@ use crate::hidpp::macros::{self, Macro, Packer};
 use crate::hidpp::models::MouseModel;
 use crate::hidpp::profile::{self, ButtonAction, LedEffect, ProfileSettings};
 use crate::hidpp::{
-    Access, Battery, DpiCapabilities, FirmwareEntity, HidppDevice, LedZone, OnboardInfo, ROM_SECTOR_BASE,
+    Access, Battery, DpiCapabilities, FeatureEntry, FirmwareEntity, HidppDevice, LedZone, OnboardInfo, ROM_SECTOR_BASE,
 };
 use crate::worker::DeviceTask;
 
@@ -71,6 +71,9 @@ pub struct MouseInfo {
     pub dpi: DpiCapabilities,
     pub report_rates_ms: Vec<u8>,
     pub led_zones: Vec<LedZone>,
+    /// The HID++ features the mouse lists, for test reports: they show what a mouse has that
+    /// PeriHub does not read yet (such as lighting through another feature than 0x8070).
+    pub features: Vec<FeatureEntry>,
     pub onboard: OnboardInfo,
     pub writable: bool,
     /// PeriHub knows how to write the memory format the mouse reports: with its cable (and in the
@@ -294,6 +297,12 @@ impl MouseTask {
             dpi: dev.dpi_capabilities(0)?,
             report_rates_ms: missing_as_empty(dev.report_rates())?,
             led_zones: missing_as_empty(dev.led_zones())?,
+            // Only for the test report: a list that cannot be read leaves it empty.
+            features: match dev.feature_table() {
+                Ok(features) => features,
+                Err(Error::Unreachable) => return Err(Error::Unreachable),
+                Err(_) => Vec::new(),
+            },
             writable: support.writable,
             writable_format: support.writable_format,
             profile_list: ProfileList::Own,

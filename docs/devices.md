@@ -68,9 +68,10 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   with Logitech G HUB or Onboard Memory Manager first.
 - **Wireless models** are also recognized through their LIGHTSPEED receiver (`046d:c539`, `c53a`,
   `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`). Nothing is saved over the radio:
-  with a tested memory format PeriHub switches the profile and DPI level, otherwise it only reads. The receiver support has not
-  been tried on real hardware yet: reports are welcome in
-  [issue #4](https://github.com/hex-dump/perihub/issues/4).
+  with a tested memory format PeriHub switches the profile and DPI level, otherwise it only reads. A G903 HERO
+  was reached and read through a `c539` receiver on Linux
+  ([issue #22](https://github.com/hex-dump/perihub/issues/22)); Windows and the POWERPLAY mat (`c53a`)
+  are not confirmed yet: reports are welcome in [issue #4](https://github.com/hex-dump/perihub/issues/4).
 - **The Logi Bolt receiver** (`046d:c548`) and **the Unifying receivers** (`046d:c52b`, `c532`)
   are recognized. Every device paired with them that answers, mouse or keyboard, gets a page of
   its own in the sidebar, built from the HID++ features it reports: what kind of device it is, what
@@ -134,6 +135,7 @@ the format a mouse reports in PeriHub's test report is what counts.
 | G502 X Wireless | 3 | 255 bytes | PeriHub ([issue #15](https://github.com/hex-dump/perihub/issues/15)) |
 | G900 | 3 | | libratbag ([PR #1676](https://github.com/libratbag/libratbag/pull/1676)) |
 | G203 | 4 | | libratbag ([PR #1676](https://github.com/libratbag/libratbag/pull/1676)) |
+| G903 HERO | 4 | 255 bytes | PeriHub ([issue #22](https://github.com/hex-dump/perihub/issues/22)) |
 | G502 X PLUS | 5 | | libratbag ([issue #1344](https://github.com/libratbag/libratbag/issues/1344)) |
 | G Pro X Superlight 2 (not recognized yet) | 6, then 7 after a firmware update | | libratbag ([issue #1572](https://github.com/libratbag/libratbag/issues/1572)) |
 

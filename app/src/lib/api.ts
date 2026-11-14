@@ -236,6 +236,13 @@ export interface ReceiverLink {
   wireless_id: number;
 }
 
+/** An entry of a Logitech device's HID++ feature table: kind holds the flags (0x80 obsolete, 0x40 hidden, 0x20 engineering). */
+export interface HidppFeature {
+  id: number;
+  kind: number;
+  version: number;
+}
+
 export interface MouseInfo {
   product_id: number;
   /** Model name from PeriHub's list, e.g. "G502 HERO". */
@@ -260,6 +267,8 @@ export interface MouseInfo {
   dpi: { min: number; max: number; step: number; list: number[] };
   report_rates_ms: number[];
   led_zones: LedZone[];
+  /** The HID++ features the mouse lists, for test reports. */
+  features: HidppFeature[];
   onboard: {
     memory_model: number;
     profile_format: number;
@@ -342,8 +351,8 @@ export interface UnsupportedReceiverDevice {
   /** HID++ 0x0003 function 0 as read, in hex, with the unit id left out ("xx"). */
   device_info: string | null;
   firmware: string[];
-  /** Its HID++ feature table: kind holds the flags (0x80 obsolete, 0x40 hidden, 0x20 engineering). */
-  features: { id: number; kind: number; version: number }[];
+  /** Its HID++ feature table. */
+  features: HidppFeature[];
   /** The DPI it accepts (0x2201), if it has that feature. */
   dpi: { min: number; max: number; step: number; list: number[] } | null;
   /** The polling rates it offers, in milliseconds (0x8060). */

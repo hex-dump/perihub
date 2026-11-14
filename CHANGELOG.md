@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- **A LIGHTSPEED receiver whose mouse never answers is no longer hidden** ([issue #4](https://github.com/hex-dump/perihub/issues/4)): with a receiver connected (a POWERPLAY mat's too) and no mouse answering through it, the sidebar said "No device found" and the receiver could be found nowhere, not even on the report page, which leaves out the devices PeriHub knows. The sidebar now lists the mouse entry, whose page says that nothing paired with the receiver has answered and offers its test report. The same goes for a Logi Bolt or Unifying receiver with nothing paired answering. The log also says once what the receiver's slots answered, or which HID collections it has when PeriHub finds none to reach it through.
+
+### Added
+- **The mouse test report lists the mouse's HID++ features** ([issue #22](https://github.com/hex-dump/perihub/issues/22)): it shows what a mouse has that PeriHub does not read yet, such as lighting through another feature than the one PeriHub reads (0x8070), where the report said "LEDs: none reported".
+- A G903 HERO was read through its LIGHTSPEED receiver on Linux ([issue #22](https://github.com/hex-dump/perihub/issues/22)): the first mouse reached through a receiver in a test report. Its memory uses profile format 4 with 255-byte sectors, which PeriHub does not write, so it stays read-only.
+
 ## 0.8.2 — 2026-11-13
 
 Lighting for Razer mice: the brightness of each light on 47 of them, saved with the undo, and one colour that is not saved on 27. Nobody has tried it on a Razer mouse yet. Also: on Windows, from the next update on, the installer shows no window.

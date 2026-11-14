@@ -19,6 +19,10 @@ const cable: MouseInfo = {
   dpi: { min: 100, max: 25600, step: 50, list: [] },
   report_rates_ms: [1, 2, 4, 8],
   led_zones: [{ index: 0, location: 1, effects: [0, 1, 3] }],
+  features: [
+    { id: 0x0001, kind: 0, version: 1 },
+    { id: 0x8071, kind: 0x40, version: 4 },
+  ],
   onboard: {
     memory_model: 1,
     profile_format: 2,
@@ -105,6 +109,12 @@ describe("testReport", () => {
     expect(report).toContain("DPI: 400, 800, 1600");
     expect(report).toContain("LEDs: none reported");
     expect(report).toContain("Polling (ms): none reported");
+  });
+
+  // Issue #22: "LEDs: none reported" on a G903 HERO; the feature list shows what it has instead.
+  it("lists the mouse's HID++ features, or says they were not read", () => {
+    expect(testReport(cable, "0.8.3", "linux x86_64")).toContain("Features: 0001 v1, 8071 v4 (flags 40)");
+    expect(testReport({ ...cable, features: [] }, "0.8.3", "linux x86_64")).toContain("Features: not read");
   });
 });
 

@@ -1,7 +1,7 @@
 import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
-import type { MouseInfo, ReportDevice } from "./api";
+import type { HidppFeature, MouseInfo, ReportDevice } from "./api";
 import { kindName } from "./logitechFeatures";
 
 const LOGITECH = "046d";
@@ -40,6 +40,13 @@ function support(mouse: MouseInfo): string {
   return mouse.writable_format ? "read-only on this connection" : "read-only (memory format PeriHub cannot write)";
 }
 
+/** A HID++ feature table as one line: "0001 v1, 2201 v2 (flags 40)". */
+function featureList(features: HidppFeature[]): string {
+  return features
+    .map((f) => `${hex(f.id)} v${f.version}${f.kind ? ` (flags ${f.kind.toString(16).padStart(2, "0")})` : ""}`)
+    .join(", ");
+}
+
 function dpiRange({ dpi }: MouseInfo): string {
   return dpi.list.length ? dpi.list.join(", ") : `${dpi.min}-${dpi.max}, step ${dpi.step}`;
 }
@@ -63,6 +70,7 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
     `DPI: ${dpiRange(mouse)}`,
     `Polling (ms): ${mouse.report_rates_ms.join(", ") || "none reported"}`,
     `LEDs: ${zones.join("; ") || "none reported"}`,
+    `Features: ${featureList(mouse.features) || "not read"}`,
   ].join("\n");
 }
 
@@ -123,9 +131,6 @@ export function receiverTest(
     `Slots: ${receiver.slots.join("; ") || "not asked"}`,
   ];
   if (device) {
-    const features = device.features.map(
-      (f) => `${hex(f.id)} v${f.version}${f.kind ? ` (flags ${f.kind.toString(16).padStart(2, "0")})` : ""}`,
-    );
     const dpi = device.dpi
       ? device.dpi.list.length
         ? device.dpi.list.join(", ")
@@ -139,7 +144,7 @@ export function receiverTest(
       `Kind: ${kindName(device.kind)}${device.kind === null ? "" : ` (${device.kind})`}`,
       `Device info (0x0003): ${device.device_info ?? "not read"}`,
       `Firmware: ${device.firmware.join(", ") || "not read"}`,
-      `Features: ${features.join(", ") || "not read"}`,
+      `Features: ${featureList(device.features) || "not read"}`,
       `DPI: ${dpi}`,
       `Polling (ms): ${device.report_rates_ms.join(", ") || "none reported"}`,
       `Onboard memory: ${onboard}`,

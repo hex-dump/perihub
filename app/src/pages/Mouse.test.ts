@@ -43,6 +43,7 @@ const info: MouseInfo = {
   dpi: { min: 100, max: 25600, step: 50, list: [] },
   report_rates_ms: [1, 2, 4, 8],
   led_zones: [],
+  features: [],
   onboard: {
     memory_model: 1,
     profile_format: 2,
@@ -327,10 +328,27 @@ describe("a device on a receiver that PeriHub does not support", () => {
     expect(screen.getByRole("button", { name: "Open test form" })).toBeTruthy();
   });
 
-  it("says nothing about a LIGHTSPEED receiver that is reached", async () => {
-    const lightspeed = { ...bolt, product_id: 0xc539, name: "LIGHTSPEED receiver", bolt: false, unsupported: [] };
+  // Issue #4: a G502 on a POWERPLAY receiver, and PeriHub showed nothing at all.
+  it("offers a report when a LIGHTSPEED receiver is reached but nothing answered", async () => {
+    const lightspeed = {
+      ...bolt,
+      product_id: 0xc53a,
+      name: "LIGHTSPEED receiver",
+      bolt: false,
+      slots: ["slot 1: no answer", "slot 2: no answer"],
+      unsupported: [],
+    };
     render(Mouse, { props: { info: null, error: null, asleep: null, receivers: [lightspeed] } });
     await wait(0);
+    expect(screen.getByText(/PeriHub sees your LIGHTSPEED receiver, but nothing paired with it has answered/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open test form" })).toBeTruthy();
+  });
+
+  it("only says the mouse is asleep when it is", async () => {
+    const lightspeed = { ...bolt, product_id: 0xc539, name: "LIGHTSPEED receiver", bolt: false, unsupported: [] };
+    render(Mouse, { props: { info: null, error: null, asleep: "G903 HERO", receivers: [lightspeed] } });
+    await wait(0);
+    expect(screen.getByText(/The G903 HERO is turned off or asleep/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Open test form" })).toBeNull();
   });
 

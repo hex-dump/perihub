@@ -108,7 +108,10 @@
   // The sidebar lists only the devices that are there: connected, asleep, or there but not opened
   // (the error says why, such as a missing permission). With none, it offers a report instead.
   const keyboardThere = $derived(!!(status.keyboard || status.keyboard_error || status.unsupported_keyboard));
-  const mouseThere = $derived(!!(status.mouse || status.mouse_error || status.mouse_asleep));
+  // A receiver without a device page of its own is there too: the mouse page says what it answered,
+  // with a test report.
+  const receiverAlone = $derived(status.receivers.some((r) => r.unsupported.length === 0));
+  const mouseThere = $derived(!!(status.mouse || status.mouse_error || status.mouse_asleep || receiverAlone));
   const g300There = $derived(!!(status.g300 || status.g300_error));
   const corsairThere = $derived(status.corsair.length > 0 || !!status.corsair_error);
   const peripheralThere = $derived(status.peripherals.length > 0 || !!status.peripheral_error);

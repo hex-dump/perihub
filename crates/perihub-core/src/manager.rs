@@ -598,6 +598,14 @@ impl Manager {
         {
             let mut slots = self.slots.lock().unwrap();
             if slots.receivers != reports {
+                for report in reports.iter().filter(|r| !r.reachable && !slots.receivers.contains(r)) {
+                    log::info!(
+                        "{} {:04x}: no HID++ collection to reach it through ({})",
+                        report.name,
+                        report.product_id,
+                        report.collections.join("; ")
+                    );
+                }
                 slots.receivers = reports;
                 changed = true;
             }
@@ -724,8 +732,14 @@ impl Manager {
             };
             {
                 let mut slots = self.slots.lock().unwrap();
-                slots.receiver_answers.insert(path.clone(), answers);
                 let online = found.as_ref().map(|f| f.online.clone()).unwrap_or_default();
+                let sleeping = found.as_ref().is_ok_and(|f| f.asleep);
+                // Once per change: what the slots of a receiver with nothing to open answered.
+                let previous = slots.receiver_answers.insert(path.clone(), answers.clone());
+                if online.is_empty() && !sleeping && previous.as_ref() != Some(&answers) {
+                    let id = paths.0.product_id();
+                    log::info!("{} {id:04x}: nothing paired answers ({})", receiver::name(id), answers.join("; "));
+                }
                 slots.receiver_online.insert(path.clone(), online);
                 if matches!(&found, Err(error) if is_permission_error(error)) {
                     slots.receiver_denied.insert(path.clone());

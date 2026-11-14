@@ -333,7 +333,7 @@
     {/if}
     {#if receiver.unifying && receiver.denied}
       <!-- Said by the permission above. -->
-    {:else if receiver.unsupported.length === 0 && (receiver.bolt || receiver.unifying || !receiver.reachable)}
+    {:else if receiver.unsupported.length === 0 && (receiver.bolt || receiver.unifying || !receiver.reachable || !asleep)}
       <div class="notice info">
         {#if receiver.reachable}
           <b>PeriHub sees your {receiver.name}, but nothing paired with it has answered.</b> Move the mouse to wake it up.
