@@ -157,26 +157,30 @@ pub fn decode_config(a: &[u8; REPORT]) -> (Config, Vec<String>) {
 
 pub struct Yjx {
     p: Params,
-    /// The format, once the descriptor was read.
-    framing: Option<Option<Framing>>,
-    /// The version answer's text, read once.
-    version: Option<Option<String>>,
 }
 
 impl Yjx {
     pub fn new(p: Params) -> Self {
-        Self { p, framing: None, version: None }
+        Self { p }
     }
 
     fn query(&self, io: &mut Io, req: &[u8; REPORT]) -> Result<[u8; REPORT]> {
         let mut reply = [0u8; REPORT];
         let command = req[1];
-        io.output_exchange(req, &mut reply, TIMEOUT, |r| r[0] == ANSWER && r[1] == command).map_err(|e| match e {
-            // Through the receiver, a mouse that is off does not answer: asked again later.
-            Error::Timeout if self.p.receiver => Error::Unreachable,
-            e => e,
-        })?;
+        io.output_exchange(req, &mut reply, TIMEOUT, |r| r[0] == ANSWER && r[1] == command)?;
         Ok(reply)
+    }
+
+    /// A mouse that does not answer still gets its page and test report, with the descriptor: the
+    /// most likely way an untried format fails. Read again every few seconds, so it fills in once the
+    /// mouse answers.
+    fn no_answer(&self) -> Reading {
+        let hint =
+            if self.p.receiver { "if the mouse is on and near its receiver" } else { "if the mouse is plugged in" };
+        Reading {
+            details: vec![("Status".into(), format!("no answer yet: {hint}, please send a test report"))],
+            ..Default::default()
+        }
     }
 }
 
@@ -200,10 +204,8 @@ impl Driver for Yjx {
     fn read(&mut self, io: &mut Io) -> Result<Reading> {
         // Only read for now: the page shows it read-only.
         io.forbid_changes();
-        if self.framing.is_none() {
-            self.framing = Some(io.report_descriptor().ok().and_then(|d| framing(&d)));
-        }
-        match self.framing.clone().flatten() {
+        // Read at every pass, so that the test report always holds it.
+        match io.report_descriptor().ok().and_then(|d| framing(&d)) {
             Some(Framing::Plain) => {}
             other => {
                 let why = match other {
@@ -220,11 +222,16 @@ impl Driver for Yjx {
                 });
             }
         }
-        if self.version.is_none() {
-            let answer = self.query(io, &request(GET_VERSION, &[]))?;
-            self.version = Some(version_text(&answer));
-        }
-        let config = self.query(io, &request(GET_CONFIG, &[]))?;
+        let version = match self.query(io, &request(GET_VERSION, &[])) {
+            Ok(answer) => version_text(&answer),
+            Err(Error::Timeout) => return Ok(self.no_answer()),
+            Err(e) => return Err(e),
+        };
+        let config = match self.query(io, &request(GET_CONFIG, &[])) {
+            Ok(answer) => answer,
+            Err(Error::Timeout) => return Ok(self.no_answer()),
+            Err(e) => return Err(e),
+        };
         let (c, mut problems) = decode_config(&config);
         let battery = match self.query(io, &request(GET_BATTERY, &BATTERY_TAIL)) {
             Ok(a) if a[8] <= 100 && a[9] <= 1 => Some((a[8], a[9] == 1)),
@@ -233,12 +240,12 @@ impl Driver for Yjx {
                 None
             }
             // A mouse on its cable may not answer this.
-            Err(Error::Timeout | Error::Unreachable) => None,
+            Err(Error::Timeout) => None,
             Err(e) => return Err(e),
         };
         let mut details = Vec::new();
-        if let Some(Some(text)) = &self.version {
-            details.push(("Model".into(), text.clone()));
+        if let Some(text) = version {
+            details.push(("Model".into(), text));
         }
         details.push(("Lighting mode".into(), format!("{}", c.light_mode)));
         details.push(("Lift-off distance".into(), format!("{}", c.lift_off)));
@@ -367,11 +374,24 @@ mod tests {
     }
 
     #[test]
-    fn a_mouse_that_is_off_is_asked_again_later() {
+    fn a_mouse_that_is_off_gets_its_page_and_test_report() {
         let hid = FakeHid::new(|_| Vec::new());
         hid.0.lock().unwrap().descriptor = Some(PLAIN.to_vec());
         let model = find(0xA8A5, 0x2255).unwrap();
-        assert!(matches!(start_for_test(Box::new(hid), model, 0x2255, true, temp("off")), Err(Error::Unreachable)));
+        let task = start_for_test(Box::new(hid), model, 0x2255, true, temp("off")).unwrap();
+        assert!(task.info.details[0].1.starts_with("no answer yet"), "{:?}", task.info.details);
+        assert_eq!(task.info.problem, None, "no problem kept once it answers");
+        assert!(task.info.raw.iter().any(|l| l.starts_with("report descriptor")));
+    }
+
+    #[test]
+    fn the_test_report_keeps_the_descriptor_and_version_after_a_refresh() {
+        let model = find(0xA8A5, 0x2255).unwrap();
+        let mut task = start_for_test(Box::new(m4(PLAIN)), model, 0x2255, true, temp("refresh")).unwrap();
+        task.info().unwrap();
+        let raw = task.info().unwrap().raw;
+        assert!(raw.iter().any(|l| l.starts_with("report descriptor")), "{raw:?}");
+        assert!(raw.iter().any(|l| l.starts_with("55 03")), "{raw:?}");
     }
 
     #[test]

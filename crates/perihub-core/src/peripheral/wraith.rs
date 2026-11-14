@@ -79,14 +79,11 @@ fn light_text(a: &[u8; REPORT]) -> Option<String> {
     ))
 }
 
-pub struct Wraith {
-    /// Model and build date, read once.
-    info: Option<Vec<(String, String)>>,
-}
+pub struct Wraith;
 
 impl Wraith {
     pub fn new(_p: Params) -> Self {
-        Self { info: None }
+        Self
     }
 }
 
@@ -115,20 +112,31 @@ impl Driver for Wraith {
     fn read(&mut self, io: &mut Io) -> Result<Reading> {
         // Only read for now: the page shows it read-only.
         io.forbid_changes();
-        if self.info.is_none() {
-            // One request, two answers: the model and the build date, in either order.
-            let mut first = [0u8; REPORT];
-            io.numbered_output_exchange(&request(DEVICE_INFO, 0), &mut first, TIMEOUT, answers(DEVICE_INFO))?;
-            let mut second = [0u8; REPORT];
-            let second = io.read_matching(&mut second, TIMEOUT, answers(DEVICE_INFO)).ok().map(|_| second);
-            let mut info = Vec::new();
-            for text in std::iter::once(first).chain(second).filter_map(|a| info_text(&a)) {
-                let label = if MONTHS.iter().any(|m| text.starts_with(m)) { "Firmware date" } else { "Model" };
-                info.push((label.to_string(), text));
+        // For the test report, at every pass.
+        let _ = io.report_descriptor();
+        // One request, two answers: the model and the build date, in either order.
+        let mut first = [0u8; REPORT];
+        match io.numbered_output_exchange(&request(DEVICE_INFO, 0), &mut first, TIMEOUT, answers(DEVICE_INFO)) {
+            Ok(()) => {}
+            // The page and its test report show it, and it is read again every few seconds.
+            Err(Error::Timeout) => {
+                return Ok(Reading {
+                    details: vec![(
+                        "Status".into(),
+                        "no answer yet: if the keyboard is plugged in, please send a test report".into(),
+                    )],
+                    ..Default::default()
+                });
             }
-            self.info = Some(info);
+            Err(e) => return Err(e),
         }
-        let mut details = self.info.clone().unwrap_or_default();
+        let mut second = [0u8; REPORT];
+        let second = io.read_matching(&mut second, TIMEOUT, answers(DEVICE_INFO)).ok().map(|_| second);
+        let mut details = Vec::new();
+        for text in std::iter::once(first).chain(second).filter_map(|a| info_text(&a)) {
+            let label = if MONTHS.iter().any(|m| text.starts_with(m)) { "Firmware date" } else { "Model" };
+            details.push((label.to_string(), text));
+        }
         let mut problems = Vec::new();
         for (command, label) in [(KEY_LIGHT, "Key lighting"), (SIDE_LIGHT, "Side lighting")] {
             let mut a = [0u8; REPORT];
@@ -191,6 +199,19 @@ mod tests {
         });
         hid.0.lock().unwrap().numbered_output = true;
         hid
+    }
+
+    #[test]
+    fn a_keyboard_that_does_not_answer_gets_its_page_and_test_report() {
+        let hid = FakeHid::new(|_| Vec::new());
+        hid.0.lock().unwrap().numbered_output = true;
+        hid.0.lock().unwrap().descriptor = Some(vec![0x06, 0x1B, 0xFF, 0x09, 0x91, 0xA1, 0x01, 0x85, 0x01, 0xC0]);
+        let model = find(0x2E3C, 0xC368).unwrap();
+        let backups = std::env::temp_dir().join(format!("perihub-test-wraith-off-{}", std::process::id()));
+        let mut task = start_for_test(Box::new(hid), model, 0xC368, true, backups).unwrap();
+        assert!(task.info.details[0].1.starts_with("no answer yet"));
+        let raw = task.info().unwrap().raw;
+        assert!(raw.iter().any(|l| l.starts_with("report descriptor")), "kept after a refresh: {raw:?}");
     }
 
     #[test]

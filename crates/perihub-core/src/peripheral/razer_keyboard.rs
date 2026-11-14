@@ -120,7 +120,23 @@ impl Driver for RazerKeyboard {
         // Only read for now: the page shows it read-only.
         io.forbid_changes();
         let p = self.p;
-        let fw = self.query(io, p.tid_firmware, GET_FIRMWARE, 0x02, &[])?;
+        // For the test report: whether interface 3 declares the 90-byte feature report.
+        let _ = io.report_descriptor();
+        let fw = match self.query(io, p.tid_firmware, GET_FIRMWARE, 0x02, &[]) {
+            Ok(fw) => fw,
+            // Off, asleep or away from the receiver, or a status the keyboard was not expected to
+            // give: the page and its test report show it, and it is read again every few seconds.
+            Err(e @ (Error::Timeout | Error::Protocol(_))) => {
+                return Ok(Reading {
+                    details: vec![(
+                        "Status".into(),
+                        format!("no answer yet ({e}): if the keyboard is on, please send a test report"),
+                    )],
+                    ..Default::default()
+                });
+            }
+            Err(e) => return Err(e),
+        };
         let mut problems = Vec::new();
         let mut details = Vec::new();
         let level = self.query(io, p.tid_battery, GET_BATTERY, 0x02, &[])?[1];
@@ -231,11 +247,16 @@ mod tests {
     }
 
     #[test]
-    fn a_keyboard_away_from_its_receiver_is_asked_again_later() {
+    fn a_keyboard_away_from_its_receiver_gets_its_page_and_test_report() {
         let sent = Arc::new(Mutex::new(Vec::new()));
         let model = find(0x1532, 0x02BA).unwrap();
         let backups = std::env::temp_dir().join(format!("perihub-test-razer-kb-away-{}", std::process::id()));
-        let result = start_for_test(Box::new(fake(sent, 0x04, true)), model, 0x02BA, true, backups);
-        assert!(matches!(result, Err(Error::Timeout)));
+        let hid = fake(sent, 0x04, true);
+        hid.0.lock().unwrap().descriptor = Some(vec![0x05, 0x0C, 0x09, 0x01, 0xA1, 0x01, 0xC0]);
+        let mut task = start_for_test(Box::new(hid), model, 0x02BA, true, backups).unwrap();
+        assert!(task.info.details[0].1.starts_with("no answer yet"), "{:?}", task.info.details);
+        assert_eq!(task.info.problem, None);
+        let raw = task.info().unwrap().raw;
+        assert!(raw.iter().any(|l| l.starts_with("report descriptor")), "kept after a refresh: {raw:?}");
     }
 }
