@@ -359,8 +359,11 @@ impl HidppDevice {
         match self.exchange(index, function, params) {
             // On Windows the receiver says that the mouse is asleep on its other collection: ask there.
             Err(Error::Timeout) if self.behind_receiver => {
-                let channel = self.short.as_deref().unwrap_or(&*self.dev);
-                match receiver::ping(channel, self.device_index)? {
+                let (channel, long) = match self.short.as_deref() {
+                    Some(short) => (short, Some(&*self.dev)),
+                    None => (&*self.dev, None),
+                };
+                match receiver::ping(channel, long, self.device_index)? {
                     Presence::Online => Err(Error::Timeout),
                     Presence::Asleep | Presence::Empty => Err(Error::Unreachable),
                 }

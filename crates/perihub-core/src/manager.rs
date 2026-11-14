@@ -165,31 +165,27 @@ fn open_channel(api: &HidApi, info: &DeviceInfo) -> Result<hidapi::HidDevice> {
 fn probe(api: &HidApi, (long, short): &ReceiverPaths) -> Result<Probe> {
     let long_dev = open_channel(api, long)?;
     let short_dev = short.as_ref().map(|d| open_channel(api, d)).transpose()?;
-    let channel: &dyn Transport = match &short_dev {
-        Some(dev) => dev,
-        None => &long_dev,
+    // On Windows the ping goes to the short collection, and the answer is read on both.
+    let (channel, long): (&dyn Transport, Option<&dyn Transport>) = match &short_dev {
+        Some(dev) => (dev, Some(&long_dev)),
+        None => (&long_dev, None),
     };
     let mut found = Probe::default();
     let mut timeouts = 0;
     for slot in receiver::SLOTS {
-        match receiver::ping_answer(channel, slot) {
-            Ok((presence, answer)) => {
-                found.answers.push(format!("slot {slot}: {answer}"));
-                match presence {
-                    Presence::Online => found.online.push(slot),
-                    Presence::Asleep => found.asleep = true,
-                    Presence::Empty => {}
-                }
-            }
-            Err(Error::Timeout) => {
-                found.answers.push(format!("slot {slot}: no answer"));
+        let (presence, answer) = receiver::ping_answer(channel, long, slot)?;
+        found.answers.push(format!("slot {slot}: {answer}"));
+        match presence {
+            Some(Presence::Online) => found.online.push(slot),
+            Some(Presence::Asleep) => found.asleep = true,
+            Some(Presence::Empty) => {}
+            None => {
                 // A receiver that does not answer twice: nothing more to ask it in this pass.
                 timeouts += 1;
                 if timeouts == 2 {
                     break;
                 }
             }
-            Err(error) => return Err(error),
         }
     }
     Ok(found)

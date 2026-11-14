@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- **A mouse behind a LIGHTSPEED, Bolt or Unifying receiver is found on Windows** ([issue #4](https://github.com/hex-dump/perihub/issues/4)): on Windows a receiver has two HID++ collections, and PeriHub asked each slot who was there on the short one and listened only there. The receiver's errors for empty slots come back on it, but a mouse answers with a long report, which comes on the other collection, so a paired mouse never seemed to answer ("slot 1: no answer"). PeriHub now listens on both. On Linux both are the same device, which is why the G903 HERO in issue #22 was found. In test reports each slot's answer says which collection it came on, and a slot that does not answer lists the other reports that came for it.
+
 ## 0.8.3 — 2026-11-14
 
 A LIGHTSPEED receiver whose mouse does not answer, such as a POWERPLAY mat's, is shown again with a test report instead of "No device found", and the mouse test report lists the mouse's HID++ features. A G903 HERO is the first mouse read through a LIGHTSPEED receiver.

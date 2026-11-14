@@ -64,16 +64,26 @@ pub enum Presence {
     Empty,
 }
 
+/// How long each of a receiver's two collections is read in turn, on Windows.
+const SLICE_MS: i32 = 10;
+
 /// Asks the device in `slot` for its HID++ version, which only reads. The request is a short
 /// report, which the receiver answers for every slot: on Windows `channel` must be the
-/// receiver's short HID++ collection.
-pub fn ping(channel: &dyn Transport, slot: u8) -> Result<Presence> {
-    Ok(ping_answer(channel, slot)?.0)
+/// receiver's short HID++ collection, and `long` its long one. The receiver's errors come back
+/// on the short collection, the device's answer as a long report on the long one (issue #4):
+/// both are read. On Linux both are the same hidraw node, and `long` is `None`.
+pub fn ping(channel: &dyn Transport, long: Option<&dyn Transport>, slot: u8) -> Result<Presence> {
+    ping_answer(channel, long, slot)?.0.ok_or(Error::Timeout)
 }
 
 /// [`ping`], with what the slot answered, for test reports: the device's HID++ version, or the
-/// receiver's HID++ 1.0 error code.
-pub fn ping_answer(channel: &dyn Transport, slot: u8) -> Result<(Presence, String)> {
+/// receiver's HID++ 1.0 error code, and on Windows the collection it came on. `None` when nothing
+/// answered in time; the text then lists the other reports that came for the slot, if any.
+pub fn ping_answer(
+    channel: &dyn Transport,
+    long: Option<&dyn Transport>,
+    slot: u8,
+) -> Result<(Option<Presence>, String)> {
     const MARK: u8 = 0x5A;
     let address = (1 << 4) | SOFTWARE_ID;
     let mut request = [0u8; SHORT_LEN];
@@ -81,26 +91,46 @@ pub fn ping_answer(channel: &dyn Transport, slot: u8) -> Result<(Presence, Strin
     request[6] = MARK;
     channel.write(&request)?;
 
+    let mut channels: Vec<(&dyn Transport, &str)> = vec![(channel, "short collection")];
+    channels.extend(long.map(|l| (l, "long collection")));
+    let split = channels.len() > 1;
     let deadline = Instant::now() + PING_TIMEOUT;
     let mut buf = [0u8; 64];
+    let mut others: Vec<String> = Vec::new();
     loop {
-        let remaining = deadline.saturating_duration_since(Instant::now());
-        if remaining.is_zero() {
-            return Err(Error::Timeout);
-        }
-        let n = channel.read_timeout(&mut buf, remaining.as_millis().max(1) as i32)?;
-        if n < SHORT_LEN || !(buf[0] == REPORT_SHORT || buf[0] == REPORT_LONG) || buf[1] != slot {
-            continue;
-        }
-        if buf[2] == 0 && buf[3] == address && buf[6] == MARK {
-            let presence = if buf[4] >= 2 { Presence::Online } else { Presence::Empty };
-            return Ok((presence, format!("HID++ {}.{}", buf[4], buf[5])));
-        }
-        if buf[0] == REPORT_SHORT && buf[2] == HIDPP10_ERROR && buf[3] == 0 && buf[4] == address {
-            // 0x08 is an empty slot, 0x01 a HID++ 1.0 device.
-            let asleep = unreachable_code(buf[5]) && buf[5] != 0x08;
-            let presence = if asleep { Presence::Asleep } else { Presence::Empty };
-            return Ok((presence, format!("HID++ 1.0 error {:#04x}", buf[5])));
+        for &(dev, label) in &channels {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                let text = if others.is_empty() {
+                    "no answer".to_string()
+                } else {
+                    format!("no answer (other reports: {})", others.join(", "))
+                };
+                return Ok((None, text));
+            }
+            let mut wait = remaining.as_millis().max(1) as i32;
+            if split {
+                wait = wait.min(SLICE_MS);
+            }
+            let n = dev.read_timeout(&mut buf, wait)?;
+            if n < SHORT_LEN || !(buf[0] == REPORT_SHORT || buf[0] == REPORT_LONG) || buf[1] != slot {
+                continue;
+            }
+            let from = |text: String| if split { format!("{text} ({label})") } else { text };
+            if buf[2] == 0 && buf[3] == address && buf[6] == MARK {
+                let presence = if buf[4] >= 2 { Presence::Online } else { Presence::Empty };
+                return Ok((Some(presence), from(format!("HID++ {}.{}", buf[4], buf[5]))));
+            }
+            if buf[0] == REPORT_SHORT && buf[2] == HIDPP10_ERROR && buf[3] == 0 && buf[4] == address {
+                // 0x08 is an empty slot, 0x01 a HID++ 1.0 device.
+                let asleep = unreachable_code(buf[5]) && buf[5] != 0x08;
+                let presence = if asleep { Presence::Asleep } else { Presence::Empty };
+                return Ok((Some(presence), from(format!("HID++ 1.0 error {:#04x}", buf[5]))));
+            }
+            // Something else for this slot: its first bytes say what, for the test report.
+            if others.len() < 3 {
+                others.push(from(crate::peripheral::hex(&buf[..n.min(7)])));
+            }
         }
     }
 }
@@ -256,18 +286,95 @@ mod tests {
     #[test]
     fn ping_tells_online_asleep_and_empty_slots_apart() {
         let receiver = receiver();
-        assert_eq!(ping(&receiver, 1).unwrap(), Presence::Online);
-        assert_eq!(ping(&receiver, 2).unwrap(), Presence::Asleep);
-        assert_eq!(ping(&receiver, 3).unwrap(), Presence::Empty);
-        assert_eq!(ping_answer(&receiver, 1).unwrap().1, "HID++ 4.2");
-        assert_eq!(ping_answer(&receiver, 2).unwrap().1, "HID++ 1.0 error 0x09");
+        assert_eq!(ping(&receiver, None, 1).unwrap(), Presence::Online);
+        assert_eq!(ping(&receiver, None, 2).unwrap(), Presence::Asleep);
+        assert_eq!(ping(&receiver, None, 3).unwrap(), Presence::Empty);
+        assert_eq!(ping_answer(&receiver, None, 1).unwrap().1, "HID++ 4.2");
+        assert_eq!(ping_answer(&receiver, None, 2).unwrap().1, "HID++ 1.0 error 0x09");
+    }
+
+    /// Reports waiting to be read from a collection.
+    type Queue = std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<Vec<u8>>>>;
+
+    /// Sends a report written to the short collection to the queue it is answered on.
+    type Route = Box<dyn Fn(&[u8]) + Send>;
+
+    /// One of a receiver's two collections on Windows: `queue` holds what is read from it.
+    struct Collection {
+        queue: Queue,
+        /// Where the reports written here go (the receiver's two queues), or `None` for the long
+        /// collection, which the ping never writes to.
+        route: Option<Route>,
+    }
+
+    impl Transport for Collection {
+        fn write(&self, data: &[u8]) -> Result<()> {
+            (self.route.as_ref().expect("the ping writes to the short collection"))(data);
+            Ok(())
+        }
+
+        fn read_timeout(&self, buf: &mut [u8], millis: i32) -> Result<usize> {
+            match self.queue.lock().unwrap().pop_front() {
+                Some(report) => {
+                    buf[..report.len()].copy_from_slice(&report);
+                    Ok(report.len())
+                }
+                None => {
+                    std::thread::sleep(Duration::from_millis(millis.clamp(0, 5) as u64));
+                    Ok(0)
+                }
+            }
+        }
+    }
+
+    /// A receiver as Windows shows it (issue #4): the receiver's errors come on the short
+    /// collection, the mouse in slot 1 answers with a long report, which comes on the long one.
+    fn split_receiver() -> (Collection, Collection) {
+        let short_queue = Queue::default();
+        let long_queue = Queue::default();
+        let (sq, lq) = (short_queue.clone(), long_queue.clone());
+        let route = move |request: &[u8]| match request[1] {
+            1 => lq.lock().unwrap().push_back(reply(request, &[4, 2, request[6]])),
+            2 => sq.lock().unwrap().push_back(receiver_error(request, 0x09)),
+            _ => sq.lock().unwrap().push_back(receiver_error(request, 0x08)),
+        };
+        (Collection { queue: short_queue, route: Some(Box::new(route)) }, Collection { queue: long_queue, route: None })
+    }
+
+    #[test]
+    fn ping_reads_the_long_collection_too_when_it_has_its_own_path() {
+        let (short, long) = split_receiver();
+        assert_eq!(
+            ping_answer(&short, Some(&long), 1).unwrap(),
+            (Some(Presence::Online), "HID++ 4.2 (long collection)".into())
+        );
+        assert_eq!(
+            ping_answer(&short, Some(&long), 2).unwrap(),
+            (Some(Presence::Asleep), "HID++ 1.0 error 0x09 (short collection)".into())
+        );
+        assert_eq!(ping(&short, Some(&long), 3).unwrap(), Presence::Empty);
+        // Read on the short collection alone, as before, the mouse in slot 1 never answers.
+        assert_eq!(ping_answer(&short, None, 1).unwrap(), (None, "no answer".into()));
+    }
+
+    #[test]
+    fn a_ping_without_answer_lists_the_other_reports_for_the_slot() {
+        let receiver = FakeDevice::new(|request| {
+            let mut other = request.to_vec();
+            other[2] = 0x41;
+            vec![other]
+        });
+        let (presence, text) = ping_answer(&receiver, None, 1).unwrap();
+        assert_eq!(presence, None);
+        assert_eq!(text, "no answer (other reports: 10 01 41 1b 00 00 5a)");
+        assert!(matches!(ping(&receiver, None, 1), Err(Error::Timeout)));
     }
 
     #[test]
     fn ping_only_sends_a_short_hidpp_20_version_request() {
         let receiver = receiver();
         for slot in SLOTS {
-            ping(&receiver, slot).unwrap();
+            ping(&receiver, None, slot).unwrap();
         }
         for (request, slot) in receiver.written.lock().unwrap().iter().zip(SLOTS) {
             // Short report, the slot, root feature (0), function 1 (version): never a register.
