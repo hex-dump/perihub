@@ -611,6 +611,8 @@ describe("a tested mouse", () => {
     expect(screen.getByText(/it does not save: a write over the\s+radio has never been tried/)).toBeTruthy();
     expect(firstLevel().matches(":disabled")).toBe(false);
     expect((screen.getByRole("button", { name: "Save to mouse" }) as HTMLButtonElement).disabled).toBe(true);
+    // Issue #4: the tester was asked for a report from this page.
+    expect(screen.getByRole("button", { name: "Open test form" })).toBeTruthy();
   });
 });
 

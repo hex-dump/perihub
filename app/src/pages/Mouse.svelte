@@ -390,6 +390,9 @@
     {#if info.receiver}
       Through its {receiverName(info.link?.receiver_id)} PeriHub switches profiles and DPI levels, but it does not save:
       a write over the radio has never been tried. Connect the {info.model} with its USB cable to save.
+      <div class="row report">
+        <TestReport mouse={info} />
+      </div>
     {:else}
       This mouse now reports a memory format PeriHub cannot write (profile format {info.onboard.profile_format},
       {info.onboard.sector_size}-byte sectors): saving is disabled. A mouse test report helps add it.

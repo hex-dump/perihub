@@ -50,7 +50,9 @@ export const DEFAULT_DELAY_MS = 50;
 export const MAX_DELAY_MS = 65535;
 
 function keyName(modifiers: number, key: number): string {
-  const mods = MODIFIER_KEYS.filter((m) => modifiers & m.bit).map((m) => m.label);
+  // G HUB records a modifier key with its own bit set too: Ctrl down is key Ctrl + modifier Ctrl.
+  const own = key >= 0xe0 && key <= 0xe7 ? 1 << (key - 0xe0) : 0;
+  const mods = MODIFIER_KEYS.filter((m) => modifiers & m.bit & ~own).map((m) => m.label);
   return [...mods, ...(key ? [keyLabel(key)] : [])].join("+");
 }
 
