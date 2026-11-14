@@ -94,6 +94,11 @@
   </requires>
 
   <releases>
+    <release version="0.8.3" date="2026-11-14">
+      <description>
+        <p>A LIGHTSPEED receiver whose mouse does not answer, such as a POWERPLAY mat's, is shown with a test report instead of "No device found", and the mouse test report lists the mouse's HID++ features.</p>
+      </description>
+    </release>
     <release version="0.8.2" date="2026-11-13">
       <description>
         <p>Lighting for Razer mice: the brightness of each light on 47 of them, and one colour that is not saved on 27. Nobody has tried it on a Razer mouse yet: it can be changed at your own risk.</p>

@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.8.3 — 2026-11-14
+
+A LIGHTSPEED receiver whose mouse does not answer, such as a POWERPLAY mat's, is shown again with a test report instead of "No device found", and the mouse test report lists the mouse's HID++ features. A G903 HERO is the first mouse read through a LIGHTSPEED receiver.
 
 ### Fixed
 - **A LIGHTSPEED receiver whose mouse never answers is no longer hidden** ([issue #4](https://github.com/hex-dump/perihub/issues/4)): with a receiver connected (a POWERPLAY mat's too) and no mouse answering through it, the sidebar said "No device found" and the receiver could be found nowhere, not even on the report page, which leaves out the devices PeriHub knows. The sidebar now lists the mouse entry, whose page says that nothing paired with the receiver has answered and offers its test report. The same goes for a Logi Bolt or Unifying receiver with nothing paired answering. The log also says once what the receiver's slots answered, or which HID collections it has when PeriHub finds none to reach it through.
