@@ -1381,6 +1381,7 @@ mod tests {
         feature::ADJUSTABLE_DPI,
         feature::REPORT_RATE,
         feature::ONBOARD_PROFILES,
+        feature::FEATURE_SET,
     ];
 
     /// The memory and state of a HID++ mouse with onboard profiles, as far as PeriHub talks to one.
@@ -1467,6 +1468,12 @@ mod tests {
             Ok(match (feature, function) {
                 (feature::DEVICE_INFO, 0) => vec![1],
                 (feature::DEVICE_INFO, 1) => vec![0, b'U', b'1', b' ', 0x27, 0x03, 0x00, 0x00],
+                // The count leaves out the root, at index 0.
+                (feature::FEATURE_SET, 0) => vec![SIM_FEATURES.len() as u8 - 1],
+                (feature::FEATURE_SET, 1) => {
+                    let id = *SIM_FEATURES.get(p[0] as usize).ok_or(INVALID_ARGUMENT)?;
+                    vec![(id >> 8) as u8, id as u8, 0, 0]
+                }
                 (feature::DEVICE_NAME, 0) => vec![4],
                 (feature::DEVICE_NAME, 1) => b"Test".to_vec(),
                 // 100 to 25600 DPI in steps of 50.
@@ -1823,6 +1830,17 @@ mod tests {
         assert!(task.dev.set_onboard_mode(HOST_MODE).is_err());
         let mouse = sim.lock().unwrap();
         assert!(mouse.written.is_empty() && mouse.selected.is_empty());
+    }
+
+    #[test]
+    fn the_feature_list_is_read_from_a_read_only_mouse_behind_a_receiver() {
+        // Issue #22: a G903 HERO, profile format 4 with 255-byte sectors, through its receiver.
+        let (memory, onboard) = g502_memory();
+        let format_4 = Sim::new(memory, onboard).resized(255, 4);
+        let (task, _) = open_sim_through(format_4, G502_X_PLUS, true, true);
+        assert!(!task.info.writable && !task.info.writable_format && !task.info.experimental);
+        let ids: Vec<u16> = task.info.features.iter().map(|f| f.id).collect();
+        assert_eq!(ids, SIM_FEATURES[1..]);
     }
 
     #[test]

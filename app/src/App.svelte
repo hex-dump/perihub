@@ -109,8 +109,11 @@
   // (the error says why, such as a missing permission). With none, it offers a report instead.
   const keyboardThere = $derived(!!(status.keyboard || status.keyboard_error || status.unsupported_keyboard));
   // A receiver without a device page of its own is there too: the mouse page says what it answered,
-  // with a test report.
-  const receiverAlone = $derived(status.receivers.some((r) => r.unsupported.length === 0));
+  // with a test report. Not a Unifying receiver Linux keeps closed: its rule is optional, for those
+  // who look for it.
+  const receiverAlone = $derived(
+    status.receivers.some((r) => r.unsupported.length === 0 && !(r.unifying && r.denied)),
+  );
   const mouseThere = $derived(!!(status.mouse || status.mouse_error || status.mouse_asleep || receiverAlone));
   const g300There = $derived(!!(status.g300 || status.g300_error));
   const corsairThere = $derived(status.corsair.length > 0 || !!status.corsair_error);

@@ -344,6 +344,16 @@ describe("a device on a receiver that PeriHub does not support", () => {
     expect(screen.getByRole("button", { name: "Open test form" })).toBeTruthy();
   });
 
+  it("does not say nothing answered when a mouse answered but could not be opened", async () => {
+    const lightspeed = { ...bolt, product_id: 0xc539, name: "LIGHTSPEED receiver", bolt: false, unsupported: [] };
+    const error = "LIGHTSPEED receiver c539: onboard profile memory uses an unknown format";
+    render(Mouse, { props: { info: null, error, asleep: null, receivers: [lightspeed] } });
+    await wait(0);
+    expect(screen.getByText(error)).toBeTruthy();
+    expect(screen.queryByText(/nothing paired with it has answered/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Open test form" })).toBeTruthy();
+  });
+
   it("only says the mouse is asleep when it is", async () => {
     const lightspeed = { ...bolt, product_id: 0xc539, name: "LIGHTSPEED receiver", bolt: false, unsupported: [] };
     render(Mouse, { props: { info: null, error: null, asleep: "G903 HERO", receivers: [lightspeed] } });

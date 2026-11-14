@@ -147,6 +147,15 @@ describe("Sidebar", () => {
     expect(nav().textContent).not.toContain("Send a report");
   });
 
+  it("does not add a mouse for a Unifying receiver Linux keeps closed", async () => {
+    const unifying = { ...receiver, product_id: 0xc52b, name: "Unifying receiver", unifying: true, reachable: false, denied: true };
+    calls.status = vi.fn(async () => ({ ...empty(), receivers: [unifying] }));
+    render(App);
+    await wait();
+    expect(nav().textContent).not.toContain("Logitech mouse");
+    expect(nav().textContent).toContain("Send a report");
+  });
+
   it("does not add a mouse for a receiver whose devices have pages of their own", async () => {
     const device = {
       slot: 1,

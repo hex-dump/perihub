@@ -335,7 +335,10 @@
       <!-- Said by the permission above. -->
     {:else if receiver.unsupported.length === 0 && (receiver.bolt || receiver.unifying || !receiver.reachable || !asleep)}
       <div class="notice info">
-        {#if receiver.reachable}
+        {#if receiver.reachable && connectError}
+          <!-- Something answered but could not be opened: the error above says what. -->
+          A test report of your {receiver.name} on PeriHub's GitHub page helps find out why.
+        {:else if receiver.reachable}
           <b>PeriHub sees your {receiver.name}, but nothing paired with it has answered.</b> Move the mouse to wake it up.
           If this stays, a test report on PeriHub's GitHub page helps find out why.
         {:else}
