@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/perihub-core", "crates/perihub-cli", "app/src-tauri"]
+members = ["crates/perihub-core", "crates/perihub-cli", "crates/xtask", "app/src-tauri"]
 
 [workspace.package]
 version = "0.8.4"

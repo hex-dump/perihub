@@ -1,0 +1,3863 @@
+{
+  "about": "Devices PeriHub recognizes, generated from its driver tables (cargo xtask gen). Levels: https://github.com/hex-dump/perihub/blob/main/docs/devices.md",
+  "devices": [
+    {
+      "family": "apex",
+      "brand": "SteelSeries",
+      "name": "Apex 3 TKL",
+      "kind": "keyboard",
+      "level": "supported",
+      "usb_ids": [
+        "1038:1622"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "apex",
+      "brand": "SteelSeries",
+      "name": "Apex 3",
+      "kind": "keyboard",
+      "level": "recognized",
+      "usb_ids": [
+        "1038:161a"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G502 HERO",
+      "kind": "mouse",
+      "level": "supported",
+      "usb_ids": [
+        "046d:c08b"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G502 Proteus Core",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c07d"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G502 Proteus Spectrum",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c332"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G502 HERO Wireless",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c08d"
+      ],
+      "wireless_id": "407f",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G502 X",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c099"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G502 X Wireless",
+      "kind": "mouse",
+      "level": "supported",
+      "usb_ids": [
+        "046d:c098"
+      ],
+      "wireless_id": "409f",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G502 X PLUS",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c095"
+      ],
+      "wireless_id": "4099",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G Pro",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c085"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G Pro",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c08c"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G Pro Wireless",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c088"
+      ],
+      "wireless_id": "4079",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G Pro X Superlight",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c094"
+      ],
+      "wireless_id": "4093",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G102/G103/G203",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c084"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G102/G103/G203",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c092"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G102/G103/G203",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c09d"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G302",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c07f"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G303",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c080"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G303 Shroud Edition",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c097"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G402",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c07e"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G403",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c083"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G403 HERO",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c08f"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G403 Wireless",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c082"
+      ],
+      "wireless_id": "405d",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G703",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c087"
+      ],
+      "wireless_id": "4070",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G703 HERO",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c090"
+      ],
+      "wireless_id": "4086",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G705",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c096"
+      ],
+      "wireless_id": "409d",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G900",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c081"
+      ],
+      "wireless_id": "4053",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G903",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c086"
+      ],
+      "wireless_id": "4067",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G903 HERO",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c091"
+      ],
+      "wireless_id": "4087",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "MX518",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c08e"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G305",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [],
+      "wireless_id": "4074",
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G603",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [],
+      "wireless_id": "406c",
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "G604",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [],
+      "wireless_id": "4085",
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "lightspeed",
+      "brand": "Logitech",
+      "name": "LIGHTSPEED receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c539"
+      ],
+      "linux": {
+        "kind": "receiver_hidpp"
+      }
+    },
+    {
+      "family": "lightspeed",
+      "brand": "Logitech",
+      "name": "LIGHTSPEED receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c53a"
+      ],
+      "linux": {
+        "kind": "receiver_hidpp"
+      }
+    },
+    {
+      "family": "lightspeed",
+      "brand": "Logitech",
+      "name": "LIGHTSPEED receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c53d"
+      ],
+      "linux": {
+        "kind": "receiver_hidpp"
+      }
+    },
+    {
+      "family": "lightspeed",
+      "brand": "Logitech",
+      "name": "LIGHTSPEED receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c53f"
+      ],
+      "linux": {
+        "kind": "receiver_hidpp"
+      }
+    },
+    {
+      "family": "lightspeed",
+      "brand": "Logitech",
+      "name": "LIGHTSPEED receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c541"
+      ],
+      "linux": {
+        "kind": "receiver_hidpp"
+      }
+    },
+    {
+      "family": "lightspeed",
+      "brand": "Logitech",
+      "name": "LIGHTSPEED receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c543"
+      ],
+      "linux": {
+        "kind": "receiver_hidpp"
+      }
+    },
+    {
+      "family": "lightspeed",
+      "brand": "Logitech",
+      "name": "LIGHTSPEED receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c545"
+      ],
+      "linux": {
+        "kind": "receiver_hidpp"
+      }
+    },
+    {
+      "family": "lightspeed",
+      "brand": "Logitech",
+      "name": "LIGHTSPEED receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c547"
+      ],
+      "linux": {
+        "kind": "receiver_hidpp"
+      }
+    },
+    {
+      "family": "lightspeed",
+      "brand": "Logitech",
+      "name": "LIGHTSPEED receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c54d"
+      ],
+      "linux": {
+        "kind": "receiver_hidpp"
+      }
+    },
+    {
+      "family": "bolt",
+      "brand": "Logitech",
+      "name": "Logi Bolt receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c548"
+      ],
+      "linux": {
+        "kind": "receiver_hidpp"
+      }
+    },
+    {
+      "family": "unifying",
+      "brand": "Logitech",
+      "name": "Unifying receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c52b"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "unifying",
+      "brand": "Logitech",
+      "name": "Unifying receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c532"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "g300",
+      "brand": "Logitech",
+      "name": "G300",
+      "kind": "mouse",
+      "level": "supported",
+      "usb_ids": [
+        "046d:c246"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "KATAR PRO",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b93"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "KATAR PRO XT",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bac"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "M55 RGB PRO",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b70"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "M65 RGB ULTRA",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b9e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "M75",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bf0"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "SABRE RGB PRO",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b79"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "SABRE PRO CS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b7a"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "IRONCLAW RGB WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b4c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "IRONCLAW WIRELESS SE",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b32"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "DARK CORE RGB PRO",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b80"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "DARK CORE RGB PRO SE",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b7e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "HARPOON RGB WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b5e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "HARPOON V2",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b2e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "M65 RGB ULTRA WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bb5"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "M65 RGB ULTRA WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bd6"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "M75 WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bf1"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "M75 WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b08"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "M75 AIR WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bf2"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "NIGHTSABRE WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bb8"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "SCIMITAR RGB ELITE WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bdb"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "SCIMITAR ELITE WIRELESS SE",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b22"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "SABRE RGB PRO WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b98"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "DARKSTAR RGB WIRELESS",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bb2"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "SABRE V2 PRO",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b28"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "SABRE V2 PRO MG",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b29"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "SABRE V2 PRO CF",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b25"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "SCIMITAR RGB ELITE",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1be3"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-mouse",
+      "brand": "Corsair",
+      "name": "M55",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b03"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K55 PRO RGB",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1ba4"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K55 RGB PRO XT",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1ba1"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K55 CORE RGB",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bfe"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K55 CORE RGB",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b05"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K55 CORE TKL RGB",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b20"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K57 RGB WIRELESS",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b6e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K60 RGB PRO",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1ba0"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K60 RGB PRO LP",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bad"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K65 PLUS WIRELESS",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b10"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K65 PLUS WIRELESS",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b11"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K65 PLUS WIRELESS",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b23"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K65 PRO MINI",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bd7"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K65 RGB MINI",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1baf"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K65 RGB MINI",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bc3"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K65 RGB MINI",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bcf"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 CORE RGB",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bfd"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 CORE RGB",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bff"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 CORE RGB",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b0a"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 CORE TKL",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b01"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 CORE TKL WIRELESS",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b02"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 MAX",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bc0"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 PRO",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bb3"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 PRO",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bc4"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 PRO",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bc6"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 PRO",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bd4"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 PRO MINI WIRELESS",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bb6"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 PRO TKL",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b14"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 RGB TKL",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b73"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 RGB TKL CS",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bb9"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K95 RGB PLATINUM XT",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b89"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K100 RGB",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b7c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K100 RGB",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b7d"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K100 RGB",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bc5"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K100 AIR WIRELESS",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bab"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "MAKR 75",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b04"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-receiver",
+      "brand": "Corsair",
+      "name": "SLIPSTREAM WIRELESS USB Receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1ba6"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-receiver",
+      "brand": "Corsair",
+      "name": "SLIPSTREAM WIRELESS USB Receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bdc"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-receiver",
+      "brand": "Corsair",
+      "name": "SLIPSTREAM WIRELESS USB Receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:2b00"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-receiver",
+      "brand": "Corsair",
+      "name": "HARPOON RGB WIRELESS receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b65"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-receiver",
+      "brand": "Corsair",
+      "name": "DARK CORE RGB PRO SE receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b7f"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-receiver",
+      "brand": "Corsair",
+      "name": "DARK CORE RGB PRO receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b81"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-receiver",
+      "brand": "Corsair",
+      "name": "IRONCLAW RGB WIRELESS receiver",
+      "kind": "receiver",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1b66"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG GX860 Buzzard",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1816"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Chakram Core",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1958"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Chakram",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:18e3",
+        "0b05:18e5"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Chakram X",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1a18",
+        "0b05:1a1a"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Gladius II",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1845"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Gladius II Origin",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1877"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Gladius II Origin PNK LTD",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:18cd"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Harpe Wireless",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1a92"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Keris",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:195c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Keris Wireless AimPoint",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1a66",
+        "0b05:1a68"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Keris Wireless",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:195e",
+        "0b05:1960"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Pugio",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1846"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Spatha X",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1979",
+        "0b05:1977"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Strix Carry",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:18b4"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Strix Impact II",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:18e1"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Strix Impact II Wireless",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1947",
+        "0b05:1949"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Strix Impact III",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1a88"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "ROG Strix Impact",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1847"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "TUF Gaming M3 Gen II",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1a9b"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "TUF Gaming M4 Air",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1a03"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "asus",
+      "brand": "ASUS",
+      "name": "TUF Gaming Mini WL Mouse Miku",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "0b05:1c56",
+        "0b05:1c57"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Aerox 3",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1836"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Aerox 3 Wireless",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:183a",
+        "1038:187a"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Aerox 5",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1850"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Aerox 5 Wireless",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1854",
+        "1038:185e",
+        "1038:1862"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Aerox 9 Wireless",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:185a",
+        "1038:1876"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Kana v2",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:137a"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Kinzu v2",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1366",
+        "1038:1378"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Prime",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:182e",
+        "1038:182a",
+        "1038:1856"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Prime Mini",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:184d"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Prime+",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:182c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Prime Wireless",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1842",
+        "1038:184a"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 100 / Rival 105",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1702",
+        "1038:170a",
+        "1038:170b",
+        "1038:170c",
+        "1038:1814"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 110 / Rival 106",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1729",
+        "1038:1816"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 3",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1824",
+        "1038:184c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 300 / Rival",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1384",
+        "1038:1392",
+        "1038:1710",
+        "1038:1712",
+        "1038:171c",
+        "1038:1394",
+        "1038:171a",
+        "1038:1716",
+        "1038:1714",
+        "1038:1718"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 300S",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1810"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 310",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1720",
+        "1038:171e",
+        "1038:1736"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 3 Gen 2",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1870"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 3 Wireless",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1830"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 3 Wireless Gen 2",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1872"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 5",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:183c",
+        "1038:183e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 500",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:170e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 600",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1724",
+        "1038:172e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 650 Wireless",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:172b",
+        "1038:1726"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 700 / Rival 710",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1700",
+        "1038:1730"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Rival 95 / Rival 100 PC Bang",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1706",
+        "1038:1707",
+        "1038:1704",
+        "1038:1708"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Sensei 310",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1722"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Sensei [RAW]",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1369",
+        "1038:1362",
+        "1038:136d",
+        "1038:136f",
+        "1038:1380",
+        "1038:1390"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Sensei TEN",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1832",
+        "1038:1834"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Aerox 3 Wireless (through its receiver)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1838",
+        "1038:1878"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Aerox 5 Wireless (through its receiver)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1852",
+        "1038:185c",
+        "1038:1860"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Aerox 9 Wireless (through its receiver)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1858",
+        "1038:1874"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "steelseries-mice",
+      "brand": "SteelSeries",
+      "name": "Prime Wireless (through its receiver)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1038:1840",
+        "1038:1848"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Orochi 2011",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0013"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0015"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga Epic",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:001f"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Abyssus 1800",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0020"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Mamba 2012 (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0024"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga 2012",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:002e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Imperator 2012",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:002f"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Ouroboros",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0032"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Taipan",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0034"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga Hex (Red)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0036"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder 2013",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0037"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder 1800",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0038"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Orochi 2013",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0039"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga Epic Chroma (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:003e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga 2014",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0040"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga Hex",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0041"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Abyssus",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0042"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder Chroma",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0043"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Mamba Chroma (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0044"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Mamba Tournament Edition",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0046"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Orochi (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0048"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Diamondback Chroma",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:004c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder 2000",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:004f"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga Hex V2",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0050"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga Chroma",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0053"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder 3500",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0054"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Lancehead (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0059"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Abyssus V2",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:005b"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder Elite",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:005c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Abyssus 2000",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:005e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Lancehead Tournament Edition",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0060"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Basilisk",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0064"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Basilisk Essential",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0065"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga Trinity",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0067"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Abyssus Elite (D.Va Edition)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:006a"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Abyssus Essential",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:006b"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Mamba Elite",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:006c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder Essential",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:006e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Lancehead Wireless (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0070"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder Essential (White Edition)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0071"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Mamba Wireless (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0073"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0078"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper Ultimate (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:007a"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder V2 Pro (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:007c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Pro Click (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0080"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder V2",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0084"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Basilisk V2",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0085"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Basilisk Ultimate",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0086"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper Mini",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:008a"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder V2 Mini",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:008c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga Left Handed Edition 2020",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:008d"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga Pro (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:008f"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper 8KHz",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0091"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga X",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0096"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder Essential (2021)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0098"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Basilisk V3",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:0099"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper Mini SE (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:009e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder V2 Lite",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00a1"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Cobra",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00a3"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper V2 Pro (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00a5"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Naga V2 Pro (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00a7"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Basilisk V3 Pro (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00aa"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Cobra Pro (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00af"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder V3",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00b2"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder V3 Pro (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00b6"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder V4 Pro (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00be"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper V3 Pro (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00c0"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "DeathAdder V3 Pro (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00c2"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Pro Click V2 Vertical Edition (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00c7"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Basilisk V3 35K",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00cb"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Basilisk V3 Pro 35K (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00cc"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Pro Click V2 (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00d0"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Basilisk Mobile (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00d3"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Basilisk V3 Pro 35K Phantom Green Edition (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00d6"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper V3 Pro SE (Wired)",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "1532:00de"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "glorious",
+      "brand": "Glorious",
+      "name": "Model O/O-",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "258a:0036"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "glorious",
+      "brand": "Glorious",
+      "name": "Model D",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "258a:0033"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "glorious",
+      "brand": "Glorious",
+      "name": "Model O Eternal",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3794:a000"
+      ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "g600",
+      "brand": "Logitech",
+      "name": "G600",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c24a"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "logitech-hidpp10",
+      "brand": "Logitech",
+      "name": "G9",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "046d:c048"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "logitech-hidpp10",
+      "brand": "Logitech",
+      "name": "G9x",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "046d:c066"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "logitech-hidpp10",
+      "brand": "Logitech",
+      "name": "G9x (Call of Duty MW3 Edition)",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "046d:c249"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "logitech-hidpp10",
+      "brand": "Logitech",
+      "name": "G500",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "046d:c068"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "logitech-hidpp10",
+      "brand": "Logitech",
+      "name": "G500s",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c24e"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "logitech-hidpp10",
+      "brand": "Logitech",
+      "name": "G700",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "046d:c06b"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "logitech-hidpp10",
+      "brand": "Logitech",
+      "name": "G700s",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "046d:c07c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "roccat",
+      "brand": "Roccat",
+      "name": "Kone Pure",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "1e7d:2dbe",
+        "1e7d:2dc2"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "roccat",
+      "brand": "Roccat",
+      "name": "Kone XTD",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "1e7d:2e22"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "roccat",
+      "brand": "Roccat",
+      "name": "Kone EMP",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "1e7d:2e24"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      }
+    },
+    {
+      "family": "pulsar",
+      "brand": "Pulsar",
+      "name": "Xlite Wired",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3710:1401"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "pulsar",
+      "brand": "Pulsar",
+      "name": "X2 Wired",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3710:1402"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "pulsar",
+      "brand": "Pulsar",
+      "name": "X2H Wired Medium",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3710:1403"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "pulsar",
+      "brand": "Pulsar",
+      "name": "X2A Medium Wired",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3710:1404"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "pulsar",
+      "brand": "Pulsar",
+      "name": "Xlite v4",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3710:3401"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "pulsar",
+      "brand": "Pulsar",
+      "name": "X3",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3710:3409"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "pulsar",
+      "brand": "Pulsar",
+      "name": "X3 LHD",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3710:3410"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "coolermaster",
+      "brand": "Cooler Master",
+      "name": "MM530",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "2516:0065"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "coolermaster",
+      "brand": "Cooler Master",
+      "name": "MM711",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "2516:0101"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "coolermaster",
+      "brand": "Cooler Master",
+      "name": "MM720",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "2516:0141"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "coolermaster",
+      "brand": "Cooler Master",
+      "name": "MM730",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "2516:0165"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "nordic",
+      "brand": "Pulsar",
+      "name": "X2 CrazyLight",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3710:3414"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "nordic",
+      "brand": "Pulsar",
+      "name": "X3 LHD CrazyLight",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3710:3527"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "nordic",
+      "brand": "Lamzu",
+      "name": "Atlantis",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "3554:f50f"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "evga",
+      "brand": "EVGA",
+      "name": "X12",
+      "kind": "mouse",
+      "level": "experimental",
+      "usb_ids": [
+        "3842:2422"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "evga",
+      "brand": "EVGA",
+      "name": "X20",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "3842:2420"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    }
+  ]
+}

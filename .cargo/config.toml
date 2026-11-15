@@ -1,0 +1,3 @@
+[alias]
+# cargo xtask gen: writes the files generated from the device tables; cargo xtask check: fails if one is out of date.
+xtask = "run --quiet --package xtask --"

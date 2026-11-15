@@ -8,6 +8,7 @@ KERNEL=="hidraw*", SUBSYSTEMS=="usb", ENV{ID_USB_INTERFACE_NUM}=="", IMPORT{buil
 # SteelSeries Apex 3 TKL: only the configuration interface (lighting, brightness, key mapping).
 # The interfaces that report key presses stay closed: see 71-perihub-keys.rules.
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1622", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+
 # Logitech mice (the G502 HERO is tested, the others are read-only until they are)
 # Logitech G502 HERO
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c08b", TAG+="uaccess"
@@ -78,16 +79,20 @@ KERNEL=="hidraw*", KERNELS=="0003:046D:C543.*", ENV{ID_USB_INTERFACE_NUM}=="02",
 KERNEL=="hidraw*", KERNELS=="0003:046D:C545.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 KERNEL=="hidraw*", KERNELS=="0003:046D:C547.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 KERNEL=="hidraw*", KERNELS=="0003:046D:C54D.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+
 # Logi Bolt receiver: PeriHub only reads what is paired with it, for test reports.
 KERNEL=="hidraw*", KERNELS=="0003:046D:C548.*", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+
 # Unifying receivers (c52b, c532) are left out on purpose. Linux puts them in DJ mode, where what is
 # typed on the keyboards paired with them arrives on the same interface as HID++ (02): opening it
 # to the user would let any program running as the user read that typing. PeriHub offers the
 # optional 73-perihub-unifying.rules, with that warning, and reads them where another rule already
 # opens them, such as Solaar's.
+
 # Logitech G300 (read only): interface 1, which holds its profiles. It also has a keyboard collection,
 # which sends only the keys assigned to the mouse's own buttons.
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c246", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+
 # Corsair mice (experimental, untested), on their USB cable: only the control interface; the others report movements and clicks.
 # Corsair KATAR PRO
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b93", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
@@ -145,6 +150,7 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b25", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1be3", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair M55
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b03", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+
 # Corsair keyboards (experimental, untested), on their USB cable: only the control interface (1). Key presses arrive on
 # interface 0, and in software mode on interface 2 (OpenLinkHub): both stay closed.
 # Corsair K55 PRO RGB
@@ -217,6 +223,7 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bc5", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bab", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair MAKR 75
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b04", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+
 # Corsair wireless receivers (experimental, untested): only the control interface.
 # Corsair SLIPSTREAM WIRELESS USB Receiver
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1ba6", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
@@ -232,6 +239,7 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b7f", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b81", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair IRONCLAW RGB WIRELESS receiver
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b66", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+
 # ASUS ROG and TUF mice (experimental, untested; protocol from libratbag). The configuration collection
 # shares its interface with the mouse's movements and the keys assigned to its buttons, as on the
 # Logitech mice above. Where no source names that interface, the whole mouse is opened. The ROG Omni
@@ -242,11 +250,9 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1816", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1958", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # ASUS ROG Chakram
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="18e3", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# ASUS ROG Chakram
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="18e5", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # ASUS ROG Chakram X
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a18", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# ASUS ROG Chakram X
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a1a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # ASUS ROG Gladius II
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1845", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
@@ -260,17 +266,14 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a92", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="195c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # ASUS ROG Keris Wireless AimPoint
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a66", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# ASUS ROG Keris Wireless AimPoint
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a68", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # ASUS ROG Keris Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="195e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# ASUS ROG Keris Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1960", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # ASUS ROG Pugio
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1846", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 # ASUS ROG Spatha X
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1979", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# ASUS ROG Spatha X
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1977", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # ASUS ROG Strix Carry
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="18b4", TAG+="uaccess"
@@ -278,7 +281,6 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="18b4", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="18e1", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # ASUS ROG Strix Impact II Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1947", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# ASUS ROG Strix Impact II Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1949", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # ASUS ROG Strix Impact III
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a88", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
@@ -290,8 +292,8 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a9b", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a03", TAG+="uaccess"
 # ASUS TUF Gaming Mini WL Mouse Miku
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1c56", TAG+="uaccess"
-# ASUS TUF Gaming Mini WL Mouse Miku
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1c57", TAG+="uaccess"
+
 # SteelSeries mice (experimental, untested; commands from rivalcfg): only the interface rivalcfg sends
 # to. On the mice where that is interface 0 it also carries the mouse's movements and clicks, as on
 # the Logitech mice above. The 2.4 GHz receivers listed are the mice's own, not shared ones.
@@ -299,31 +301,24 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1c57", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1836", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Aerox 3 Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="183a", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Aerox 3 Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="187a", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Aerox 5
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1850", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Aerox 5 Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1854", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Aerox 5 Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="185e", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Aerox 5 Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1862", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Aerox 9 Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="185a", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Aerox 9 Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1876", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Kana v2
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="137a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Kinzu v2
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1366", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Kinzu v2
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1378", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Prime
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="182e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Prime
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="182a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Prime
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1856", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Prime Mini
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="184d", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
@@ -331,53 +326,35 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="184d", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="182c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Prime Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1842", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Prime Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="184a", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Rival 100 / Rival 105
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1702", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 100 / Rival 105
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="170a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 100 / Rival 105
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="170b", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 100 / Rival 105
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="170c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 100 / Rival 105
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1814", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Rival 110 / Rival 106
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1729", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 110 / Rival 106
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1816", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Rival 3
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1824", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Rival 3
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="184c", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Rival 300 / Rival
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1384", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 300 / Rival
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1392", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 300 / Rival
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1710", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 300 / Rival
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1712", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 300 / Rival
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="171c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 300 / Rival
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1394", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 300 / Rival
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="171a", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 300 / Rival
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1716", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 300 / Rival
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1714", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 300 / Rival
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1718", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Rival 300S
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1810", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Rival 310
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1720", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 310
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="171e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 310
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1736", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Rival 3 Gen 2
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1870", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
@@ -387,66 +364,49 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1830", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1872", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Rival 5
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="183c", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 5
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="183e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Rival 500
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="170e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Rival 600
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1724", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 600
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="172e", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Rival 650 Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="172b", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 650 Wireless
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1726", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Rival 700 / Rival 710
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1700", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 700 / Rival 710
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1730", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Rival 95 / Rival 100 PC Bang
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1706", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 95 / Rival 100 PC Bang
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1707", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 95 / Rival 100 PC Bang
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1704", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Rival 95 / Rival 100 PC Bang
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1708", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Sensei 310
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1722", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Sensei [RAW]
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1369", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Sensei [RAW]
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1362", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Sensei [RAW]
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="136d", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Sensei [RAW]
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="136f", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Sensei [RAW]
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1380", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Sensei [RAW]
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1390", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Sensei TEN
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1832", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# SteelSeries Sensei TEN
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1834", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # SteelSeries Aerox 3 Wireless (through its receiver)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1838", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Aerox 3 Wireless (through its receiver)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1878", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Aerox 5 Wireless (through its receiver)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1852", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Aerox 5 Wireless (through its receiver)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="185c", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Aerox 5 Wireless (through its receiver)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1860", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Aerox 9 Wireless (through its receiver)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1858", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Aerox 9 Wireless (through its receiver)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1874", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # SteelSeries Prime Wireless (through its receiver)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1840", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
-# SteelSeries Prime Wireless (through its receiver)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1848", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+
 # Razer mice (experimental, untested; facts from OpenRazer): only the interface OpenRazer sends to (0, or 3
 # on some newer mice). Interface 0 also carries the mouse's movements and clicks, as on the Logitech mice
 # above. Receivers and docks are left out: some can be shared with a keyboard.
@@ -621,30 +581,30 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c24a", ENV{ID_USB
 # Logitech HID++ 1.0 mice (experimental, untested; protocol from libratbag, interface from Solaar):
 # interface 1, with their HID++ registers and onboard memory. It may also carry the keys and macros
 # the mouse's own buttons send, never what is typed on a keyboard.
-# Logitech G9
+# Logitech G9 (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c048", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
-# Logitech G9x
+# Logitech G9x (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c066", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
-# Logitech G9x (Call of Duty MW3 Edition)
+# Logitech G9x (Call of Duty MW3 Edition) (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c249", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
-# Logitech G500
+# Logitech G500 (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c068", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Logitech G500s
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c24e", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
-# Logitech G700 (cable)
+# Logitech G700 (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c06b", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
-# Logitech G700s (cable)
+# Logitech G700s
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c07c", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 
 # Roccat mice (read only, untested; protocol from libratbag): interface 0, the boot mouse interface,
 # where the kernel's own Roccat drivers find their configuration. Interface 1, with the keys the
 # mouse's buttons can send, stays closed.
-# Roccat Kone Pure
+# Roccat Kone Pure (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2dbe", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2dc2", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# Roccat Kone XTD
+# Roccat Kone XTD (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2e22", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
-# Roccat Kone EMP
+# Roccat Kone EMP (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1e7d", ATTRS{idProduct}=="2e24", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 
 # Pulsar mice on their cable (experimental, untested; protocol from pulsar-mouse-linux): interface 3,

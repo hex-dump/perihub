@@ -79,7 +79,7 @@ const FRAME_COMMANDS: &[Command] = &[
 ];
 
 /// The lights by the LED id OpenRazer sends for them.
-const LIGHTS: [(u8, &str); 5] =
+pub const LIGHTS: [(u8, &str); 5] =
     [(0x04, "Logo"), (0x01, "Scroll wheel"), (0x11, "Left side"), (0x10, "Right side"), (0x05, "Backlight")];
 /// The id of the blind colour setting.
 const COLOR: &str = "color";

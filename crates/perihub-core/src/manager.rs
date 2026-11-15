@@ -40,9 +40,9 @@ const CONFLICT_CHECK_EVERY: u32 = 5;
 const RECEIVER_SCAN_EVERY: u32 = 5;
 
 const STEELSERIES: u16 = 0x1038;
-const APEX_3_TKL: u16 = 0x1622;
+pub const APEX_3_TKL: u16 = 0x1622;
 /// Recognized but not supported yet: never opened, see issue #9.
-const APEX_3: u16 = 0x161A;
+pub const APEX_3: u16 = 0x161A;
 const LOGITECH: u16 = 0x046D;
 /// Shown while a mouse PeriHub has not seen yet sleeps behind its receiver.
 const WIRELESS_MOUSE: &str = "Wireless mouse";

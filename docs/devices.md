@@ -98,35 +98,38 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   ask, after the warning, and can remove. With Solaar installed its own rule already opens them.
   Windows is not affected.
 
-| Mouse | USB ID | Through a receiver |
-|---|---|---|
-| G502 Proteus Core | `046d:c07d` | |
-| G502 Proteus Spectrum | `046d:c332` | |
-| G502 HERO Wireless | `046d:c08d` | `407f` |
-| G502 X | `046d:c099` | |
-| G502 X Wireless | `046d:c098` | `409f` |
-| G502 X PLUS | `046d:c095` | `4099` |
-| G Pro | `046d:c085`, `046d:c08c` | |
-| G Pro Wireless | `046d:c088` | `4079` |
-| G Pro X Superlight | `046d:c094` | `4093` |
-| G102 / G103 / G203 | `046d:c084`, `046d:c092`, `046d:c09d` | |
-| G302 | `046d:c07f` | |
-| G303 | `046d:c080` | |
-| G303 Shroud Edition | `046d:c097` | |
-| G402 | `046d:c07e` | |
-| G403 | `046d:c083` | |
-| G403 HERO | `046d:c08f` | |
-| G403 Wireless | `046d:c082` | `405d` |
-| G703 | `046d:c087` | `4070` |
-| G703 HERO | `046d:c090` | `4086` |
-| G705 | `046d:c096` | `409d` |
-| G900 | `046d:c081` | `4053` |
-| G903 | `046d:c086` | `4067` |
-| G903 HERO | `046d:c091` | `4087` |
-| MX518 | `046d:c08e` | |
-| G305 | wireless only | `4074` |
-| G603 | wireless only | `406c` |
-| G604 | wireless only | `4085` |
+<!-- generated: table logitech-onboard -->
+| Mouse | USB ID | Opened on Linux | Level | Through a receiver |
+|---|---|---|---|---|
+| G502 HERO | `046d:c08b` | whole mouse | ✅ Supported |  |
+| G502 Proteus Core | `046d:c07d` | whole mouse | depends on its memory format |  |
+| G502 Proteus Spectrum | `046d:c332` | whole mouse | depends on its memory format |  |
+| G502 HERO Wireless | `046d:c08d` | whole mouse | depends on its memory format | `407f` |
+| G502 X | `046d:c099` | whole mouse | depends on its memory format |  |
+| G502 X Wireless | `046d:c098` | whole mouse | ✅ Supported | `409f` |
+| G502 X PLUS | `046d:c095` | whole mouse | depends on its memory format | `4099` |
+| G Pro | `046d:c085`, `046d:c08c` | whole mouse | depends on its memory format |  |
+| G Pro Wireless | `046d:c088` | whole mouse | depends on its memory format | `4079` |
+| G Pro X Superlight | `046d:c094` | whole mouse | depends on its memory format | `4093` |
+| G102/G103/G203 | `046d:c084`, `046d:c092`, `046d:c09d` | whole mouse | depends on its memory format |  |
+| G302 | `046d:c07f` | whole mouse | depends on its memory format |  |
+| G303 | `046d:c080` | whole mouse | depends on its memory format |  |
+| G303 Shroud Edition | `046d:c097` | whole mouse | depends on its memory format |  |
+| G402 | `046d:c07e` | whole mouse | depends on its memory format |  |
+| G403 | `046d:c083` | whole mouse | depends on its memory format |  |
+| G403 HERO | `046d:c08f` | whole mouse | depends on its memory format |  |
+| G403 Wireless | `046d:c082` | whole mouse | depends on its memory format | `405d` |
+| G703 | `046d:c087` | whole mouse | depends on its memory format | `4070` |
+| G703 HERO | `046d:c090` | whole mouse | depends on its memory format | `4086` |
+| G705 | `046d:c096` | whole mouse | depends on its memory format | `409d` |
+| G900 | `046d:c081` | whole mouse | depends on its memory format | `4053` |
+| G903 | `046d:c086` | whole mouse | depends on its memory format | `4067` |
+| G903 HERO | `046d:c091` | whole mouse | depends on its memory format | `4087` |
+| MX518 | `046d:c08e` | whole mouse | depends on its memory format |  |
+| G305 | wireless only | through a receiver | depends on its memory format | `4074` |
+| G603 | wireless only | through a receiver | depends on its memory format | `406c` |
+| G604 | wireless only | through a receiver | depends on its memory format | `4085` |
+<!-- end generated -->
 
 **Memory formats known so far.** What other projects found, for mice PeriHub has not seen yet:
 the format a mouse reports in PeriHub's test report is what counts.
@@ -169,7 +172,7 @@ kept was undone. No G300 has been tried on Linux yet. Something does not work on
 
 ## Corsair
 
-🧪 Experimental: 26 mice and 23 keyboards of Corsair's newer generation, on their USB cable, and
+🧪 Experimental: <!-- generated: count corsair-mouse -->26<!-- end generated --> mice and <!-- generated: count corsair-keyboard -->23<!-- end generated --> keyboards of Corsair's newer generation, on their USB cable, and
 the wireless ones also through their receiver (Slipstream `1ba6`, `1bdc`, `2b00`, and the older
 HARPOON, DARK CORE RGB PRO and IRONCLAW receivers; not yet the Slipstream V2).
 
@@ -179,16 +182,23 @@ HARPOON, DARK CORE RGB PRO and IRONCLAW receivers; not yet the Slipstream V2).
   anything fails. Nothing is written to its memory.
 - With more than one device on the same receiver, PeriHub shows the first one only, for now.
 
-**Mice:** KATAR PRO, KATAR PRO XT, M55, M55 RGB PRO, M65 RGB ULTRA, M65 RGB ULTRA WIRELESS, M75,
-M75 WIRELESS, M75 AIR WIRELESS, SABRE RGB PRO, SABRE RGB PRO WIRELESS, SABRE PRO CS, SABRE V2 PRO
-(and MG, CF: no lighting), IRONCLAW RGB WIRELESS, IRONCLAW WIRELESS SE, DARK CORE RGB PRO,
-DARK CORE RGB PRO SE, HARPOON RGB WIRELESS, HARPOON V2, NIGHTSABRE WIRELESS, SCIMITAR RGB ELITE,
-SCIMITAR RGB ELITE WIRELESS, SCIMITAR ELITE WIRELESS SE, DARKSTAR RGB WIRELESS.
+**Mice:**
+<!-- generated: names corsair-mouse -->
+KATAR PRO, KATAR PRO XT, M55 RGB PRO, M65 RGB ULTRA, M75, SABRE RGB PRO, SABRE PRO CS,
+IRONCLAW RGB WIRELESS, IRONCLAW WIRELESS SE, DARK CORE RGB PRO, DARK CORE RGB PRO SE,
+HARPOON RGB WIRELESS, HARPOON V2, M65 RGB ULTRA WIRELESS, M75 WIRELESS, M75 AIR WIRELESS,
+NIGHTSABRE WIRELESS, SCIMITAR RGB ELITE WIRELESS, SCIMITAR ELITE WIRELESS SE,
+SABRE RGB PRO WIRELESS, DARKSTAR RGB WIRELESS, SABRE V2 PRO, SABRE V2 PRO MG, SABRE V2 PRO CF,
+SCIMITAR RGB ELITE, M55.
+<!-- end generated -->
 
-**Keyboards:** K55 PRO RGB, K55 RGB PRO XT, K55 CORE RGB, K55 CORE TKL RGB, K57 RGB WIRELESS,
-K60 RGB PRO, K60 RGB PRO LP, K65 PLUS WIRELESS, K65 PRO MINI, K65 RGB MINI, K70 CORE RGB,
-K70 CORE TKL, K70 CORE TKL WIRELESS, K70 MAX, K70 PRO, K70 PRO MINI WIRELESS, K70 PRO TKL,
-K70 RGB TKL, K70 RGB TKL CS, K95 RGB PLATINUM XT, K100 RGB, K100 AIR WIRELESS, MAKR 75.
+**Keyboards:**
+<!-- generated: names corsair-keyboard -->
+K55 PRO RGB, K55 RGB PRO XT, K55 CORE RGB, K55 CORE TKL RGB, K57 RGB WIRELESS, K60 RGB PRO,
+K60 RGB PRO LP, K65 PLUS WIRELESS, K65 PRO MINI, K65 RGB MINI, K70 CORE RGB, K70 CORE TKL,
+K70 CORE TKL WIRELESS, K70 MAX, K70 PRO, K70 PRO MINI WIRELESS, K70 PRO TKL, K70 RGB TKL,
+K70 RGB TKL CS, K95 RGB PLATINUM XT, K100 RGB, K100 AIR WIRELESS, MAKR 75.
+<!-- end generated -->
 
 USB IDs, packet sizes and LED counts are in [protocols/corsair-bragi.md](protocols/corsair-bragi.md).
 Older Corsair devices (K70 RGB MK.2, K95 RGB PLATINUM, M65 RGB ELITE and others) speak an older
@@ -199,7 +209,7 @@ Own one? Send a [device test report](https://github.com/hex-dump/perihub/issues/
 
 ## ASUS
 
-🧪 Experimental: 21 ASUS ROG and TUF mice, on their USB cable and through their own wireless
+🧪 Experimental: <!-- generated: count asus -->21<!-- end generated --> ASUS ROG and TUF mice, on their USB cable and through their own wireless
 receiver. Nobody has tried PeriHub on one yet. Their protocol comes from
 [libratbag](https://github.com/libratbag/libratbag) (MIT), and is described in
 [protocols/asus-rog.md](protocols/asus-rog.md).
@@ -216,6 +226,7 @@ receiver. Nobody has tried PeriHub on one yet. Their protocol comes from
 - On Linux the udev rule opens, where a source says which, only the interface of the configuration
   collection; elsewhere the whole mouse, as for the Logitech mice.
 
+<!-- generated: table asus -->
 | Mouse | USB ID | Opened on Linux | Notes |
 |---|---|---|---|
 | ROG GX860 Buzzard | `0b05:1816` | whole mouse | no lighting |
@@ -239,10 +250,11 @@ receiver. Nobody has tried PeriHub on one yet. Their protocol comes from
 | TUF Gaming M3 Gen II | `0b05:1a9b` | interface 2 | — |
 | TUF Gaming M4 Air | `0b05:1a03` | whole mouse | no lighting |
 | TUF Gaming Mini WL Mouse Miku | `0b05:1c56`, `0b05:1c57` | whole mouse | DPI shown, not changed (separate X and Y); LED brightness kept as it is |
+<!-- end generated -->
 
 ## SteelSeries mice
 
-🧪 Experimental: 33 SteelSeries mice (Rival, Sensei, Aerox, Prime, Kana, Kinzu), on their cable and
+🧪 Experimental: <!-- generated: count steelseries-mice -->33<!-- end generated --> SteelSeries mice (Rival, Sensei, Aerox, Prime, Kana, Kinzu), on their cable and
 through their own 2.4 GHz receiver. Nobody has tried PeriHub on one yet. Their commands come from
 [rivalcfg](https://github.com/flozz/rivalcfg) (WTFPL), described in
 [protocols/steelseries-mice.md](protocols/steelseries-mice.md); PeriHub sends the same bytes as
@@ -256,45 +268,47 @@ rivalcfg's own tests expect (616 reports compared).
   undo a save. Unplugging the mouse brings back the settings saved in it.
 - Not offered yet: button mapping, colour gradients, reactive colours, separate X and Y DPI.
 
-| Mouse | USB ID | Interface | Settings PeriHub sends |
+<!-- generated: table steelseries-mice -->
+| Mouse | USB ID | Opened on Linux | Settings PeriHub sends |
 |---|---|---|---|
-| Aerox 3 | `1038:1836` | 3 | 8 |
-| Aerox 3 Wireless | `1038:183a`, `1038:187a` | 3 | 8, battery |
-| Aerox 5 | `1038:1850` | 3 | 8 |
-| Aerox 5 Wireless | `1038:1854`, `1038:185e`, `1038:1862` | 3 | 8, battery |
-| Aerox 9 Wireless | `1038:185a`, `1038:1876` | 3 | 8, battery |
-| Kana v2 | `1038:137a` | 0 | 5 |
-| Kinzu v2 | `1038:1366`, `1038:1378` | 0 | 3 |
-| Prime | `1038:182e`, `1038:182a`, `1038:1856` | 0 | 4 |
-| Prime Mini | `1038:184d` | 3 | 4 |
-| Prime+ | `1038:182c` | 0 | 4 |
-| Prime Wireless | `1038:1842`, `1038:184a` | 3 | 6, battery |
-| Rival 100 / Rival 105 | `1038:1702`, `1038:170a`, `1038:170b`, `1038:170c`, `1038:1814` | 0 | 6 |
-| Rival 110 / Rival 106 | `1038:1729`, `1038:1816` | 0 | 6 |
-| Rival 3 | `1038:1824`, `1038:184c` | 3 | 7 |
-| Rival 300 / Rival | `1038:1384`, `1038:1392`, `1038:1710`, `1038:1712`, `1038:171c`, `1038:1394`, `1038:171a`, `1038:1716`, `1038:1714`, `1038:1718` | 0 | 7 |
-| Rival 300S | `1038:1810` | 0 | 6 |
-| Rival 310 | `1038:1720`, `1038:171e`, `1038:1736` | 0 | 3 |
-| Rival 3 Gen 2 | `1038:1870` | 3 | 7 |
-| Rival 3 Wireless | `1038:1830` | 3 | 2, battery |
-| Rival 3 Wireless Gen 2 | `1038:1872` | 3 | 1, battery |
-| Rival 5 | `1038:183c`, `1038:183e` | 0 | 14 |
-| Rival 500 | `1038:170e` | 0 | 3 |
-| Rival 600 | `1038:1724`, `1038:172e` | 0 | 3 |
-| Rival 650 Wireless | `1038:172b`, `1038:1726` | 0 | 5, battery |
-| Rival 700 / Rival 710 | `1038:1700`, `1038:1730` | 0 | 3 |
-| Rival 95 / Rival 100 PC Bang | `1038:1706`, `1038:1707`, `1038:1704`, `1038:1708` | 0 | 4 |
-| Sensei 310 | `1038:1722` | 0 | 3 |
-| Sensei [RAW] | `1038:1369`, `1038:1362`, `1038:136d`, `1038:136f`, `1038:1380`, `1038:1390` | 0 | 5 |
-| Sensei TEN | `1038:1832`, `1038:1834` | 0 | 2 |
-| Aerox 3 Wireless (through its receiver) | `1038:1838`, `1038:1878` | 3 | 8, battery |
-| Aerox 5 Wireless (through its receiver) | `1038:1852`, `1038:185c`, `1038:1860` | 3 | 8, battery |
-| Aerox 9 Wireless (through its receiver) | `1038:1858`, `1038:1874` | 3 | 8, battery |
-| Prime Wireless (through its receiver) | `1038:1840`, `1038:1848` | 3 | 6, battery |
+| Aerox 3 | `1038:1836` | interface 3 | 8 |
+| Aerox 3 Wireless | `1038:183a`, `1038:187a` | interface 3 | 8, battery |
+| Aerox 5 | `1038:1850` | interface 3 | 8 |
+| Aerox 5 Wireless | `1038:1854`, `1038:185e`, `1038:1862` | interface 3 | 8, battery |
+| Aerox 9 Wireless | `1038:185a`, `1038:1876` | interface 3 | 8, battery |
+| Kana v2 | `1038:137a` | interface 0 | 5 |
+| Kinzu v2 | `1038:1366`, `1038:1378` | interface 0 | 3 |
+| Prime | `1038:182e`, `1038:182a`, `1038:1856` | interface 0 | 4 |
+| Prime Mini | `1038:184d` | interface 3 | 4 |
+| Prime+ | `1038:182c` | interface 0 | 4 |
+| Prime Wireless | `1038:1842`, `1038:184a` | interface 3 | 6, battery |
+| Rival 100 / Rival 105 | `1038:1702`, `1038:170a`, `1038:170b`, `1038:170c`, `1038:1814` | interface 0 | 6 |
+| Rival 110 / Rival 106 | `1038:1729`, `1038:1816` | interface 0 | 6 |
+| Rival 3 | `1038:1824`, `1038:184c` | interface 3 | 7 |
+| Rival 300 / Rival | `1038:1384`, `1038:1392`, `1038:1710`, `1038:1712`, `1038:171c`, `1038:1394`, `1038:171a`, `1038:1716`, `1038:1714`, `1038:1718` | interface 0 | 7 |
+| Rival 300S | `1038:1810` | interface 0 | 6 |
+| Rival 310 | `1038:1720`, `1038:171e`, `1038:1736` | interface 0 | 3 |
+| Rival 3 Gen 2 | `1038:1870` | interface 3 | 7 |
+| Rival 3 Wireless | `1038:1830` | interface 3 | 2, battery |
+| Rival 3 Wireless Gen 2 | `1038:1872` | interface 3 | 1, battery |
+| Rival 5 | `1038:183c`, `1038:183e` | interface 0 | 14 |
+| Rival 500 | `1038:170e` | interface 0 | 3 |
+| Rival 600 | `1038:1724`, `1038:172e` | interface 0 | 3 |
+| Rival 650 Wireless | `1038:172b`, `1038:1726` | interface 0 | 5, battery |
+| Rival 700 / Rival 710 | `1038:1700`, `1038:1730` | interface 0 | 3 |
+| Rival 95 / Rival 100 PC Bang | `1038:1706`, `1038:1707`, `1038:1704`, `1038:1708` | interface 0 | 4 |
+| Sensei 310 | `1038:1722` | interface 0 | 3 |
+| Sensei [RAW] | `1038:1369`, `1038:1362`, `1038:136d`, `1038:136f`, `1038:1380`, `1038:1390` | interface 0 | 5 |
+| Sensei TEN | `1038:1832`, `1038:1834` | interface 0 | 2 |
+| Aerox 3 Wireless (through its receiver) | `1038:1838`, `1038:1878` | interface 3 | 8, battery |
+| Aerox 5 Wireless (through its receiver) | `1038:1852`, `1038:185c`, `1038:1860` | interface 3 | 8, battery |
+| Aerox 9 Wireless (through its receiver) | `1038:1858`, `1038:1874` | interface 3 | 8, battery |
+| Prime Wireless (through its receiver) | `1038:1840`, `1038:1848` | interface 3 | 6, battery |
+<!-- end generated -->
 
 ## Razer mice
 
-🧪 Experimental: 75 Razer mice, on their USB cable. Nobody has tried PeriHub on one yet. Their protocol
+🧪 Experimental: <!-- generated: count razer -->74<!-- end generated --> Razer mice, on their USB cable. Nobody has tried PeriHub on one yet. Their protocol
 is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts found in
 [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): no code was copied.
 
@@ -304,7 +318,7 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
   first time. These mice store every change by themselves, the way OpenRazer sends it, so there is
   no change that lasts only until they are unplugged: PeriHub saves the settings first, reads them
   back, and puts them back after 15 seconds unless you keep the change.
-- **One colour, not saved** (27 mice): **Send** shows one colour on every column of the mouse's custom
+- **One colour, not saved** (<!-- generated: count colour -->27<!-- end generated --> mice): **Send** shows one colour on every column of the mouse's custom
   frame, sent the way OpenRazer sends it, without saving it to the mouse's memory. Which lights the frame
   covers has not been checked: on some mice OpenRazer gives it fewer columns than they have lights. The lighting effect of
   these mice cannot be read back, so PeriHub cannot show it, check the colour or put the effect from
@@ -313,87 +327,88 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 - Their wireless receivers and docks are left out, since some can be shared with a keyboard: use
   the USB cable. Not offered yet: DPI stages, lighting effects, buttons, battery.
 
-| Mouse | USB ID | Interface | What PeriHub changes |
+<!-- generated: table razer -->
+| Mouse | USB ID | Opened on Linux | What PeriHub changes |
 |---|---|---|---|
-| Orochi 2011 | `1532:0013` | 0 | polling rate shown |
-| Naga | `1532:0015` | 0 | polling rate |
-| Naga Epic | `1532:001f` | 0 | polling rate; brightness of scroll wheel |
-| Abyssus 1800 | `1532:0020` | 0 | polling rate |
-| Mamba 2012 (Wired) | `1532:0024` | 0 | DPI up to 6400, polling rate; brightness of scroll wheel |
-| Naga 2012 | `1532:002e` | 0 | polling rate |
-| Imperator 2012 | `1532:002f` | 0 | DPI up to 6400, polling rate |
-| Ouroboros | `1532:0032` | 0 | DPI up to 8200, polling rate; brightness of scroll wheel |
-| Taipan | `1532:0034` | 0 | DPI up to 8200, polling rate |
-| Naga Hex (Red) | `1532:0036` | 0 | polling rate |
-| DeathAdder 2013 | `1532:0037` | 0 | polling rate |
-| DeathAdder 1800 | `1532:0038` | 0 | polling rate |
-| Orochi 2013 | `1532:0039` | 0 | DPI up to 6400, polling rate |
-| Naga Epic Chroma (Wired) | `1532:003e` | 0 | DPI up to 8200, polling rate; brightness of scroll wheel and backlight |
-| Naga 2014 | `1532:0040` | 0 | DPI up to 8200, polling rate |
-| Naga Hex | `1532:0041` | 0 | polling rate |
-| Abyssus | `1532:0042` | 0 | polling rate |
-| DeathAdder Chroma | `1532:0043` | 0 | DPI up to 10000, polling rate; brightness of logo and scroll wheel |
-| Mamba Chroma (Wired) | `1532:0044` | 0 | DPI up to 16000, polling rate shown |
-| Mamba Tournament Edition | `1532:0046` | 0 | DPI up to 16000; brightness of backlight |
-| Orochi (Wired) | `1532:0048` | 0 | DPI up to 8200, polling rate; brightness of scroll wheel |
-| Diamondback Chroma | `1532:004c` | 0 | DPI up to 16000; brightness of backlight |
-| DeathAdder 2000 | `1532:004f` | 0 | DPI up to 2000, polling rate; brightness of logo and scroll wheel |
-| Naga Hex V2 | `1532:0050` | 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel and backlight |
-| Naga Chroma | `1532:0053` | 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel and backlight; one colour, not saved |
-| DeathAdder 3500 | `1532:0054` | 0 | DPI up to 3500, polling rate; brightness of logo and scroll wheel |
-| Lancehead (Wired) | `1532:0059` | 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
-| Abyssus V2 | `1532:005b` | 0 | DPI up to 5000, polling rate; brightness of logo and scroll wheel |
-| DeathAdder Elite | `1532:005c` | 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Abyssus 2000 | `1532:005e` | 0 | DPI up to 2000, polling rate |
-| Lancehead Tournament Edition | `1532:0060` | 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
-| Basilisk | `1532:0064` | 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Basilisk Essential | `1532:0065` | 0 | DPI up to 6400, polling rate; brightness of logo; one colour, not saved |
-| Naga Trinity | `1532:0067` | 0 | DPI up to 16000, polling rate |
-| Abyssus Elite (D.Va Edition) | `1532:006a` | 0 | DPI up to 7200, polling rate; brightness of logo |
-| Abyssus Essential | `1532:006b` | 0 | DPI up to 7200, polling rate; brightness of logo |
-| Mamba Elite | `1532:006c` | 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
-| DeathAdder Essential | `1532:006e` | 0 | DPI up to 6400, polling rate; brightness of logo and scroll wheel |
-| Lancehead Wireless (Wired) | `1532:0070` | 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
-| DeathAdder Essential (White Edition) | `1532:0071` | 0 | DPI up to 6400, polling rate; brightness of logo and scroll wheel |
-| Mamba Wireless (Wired) | `1532:0073` | 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Viper | `1532:0078` | 0 | DPI up to 16000, polling rate; brightness of logo; one colour, not saved |
-| Viper Ultimate (Wired) | `1532:007a` | 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved |
-| DeathAdder V2 Pro (Wired) | `1532:007c` | 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved |
-| Pro Click (Wired) | `1532:0080` | 0 | DPI up to 16000, polling rate |
-| DeathAdder V2 | `1532:0084` | 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Basilisk V2 | `1532:0085` | 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Basilisk Ultimate | `1532:0086` | 0 | DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
-| Viper Mini | `1532:008a` | 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
-| DeathAdder V2 Mini | `1532:008c` | 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
-| Naga Left Handed Edition 2020 | `1532:008d` | 0 | DPI up to 20000, polling rate; brightness of logo, scroll wheel and right side; one colour, not saved |
-| Naga Pro (Wired) | `1532:008f` | 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Viper 8KHz | `1532:0091` | 0 | DPI up to 20000; brightness of logo |
-| Naga X | `1532:0096` | 3 | DPI up to 18000, polling rate; brightness of scroll wheel and left side; one colour, not saved |
-| DeathAdder Essential (2021) | `1532:0098` | 0 | DPI up to 6400, polling rate; brightness of logo |
-| Basilisk V3 | `1532:0099` | 3 | DPI up to 26000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Viper Mini SE (Wired) | `1532:009e` | 0 | DPI up to 30000 |
-| DeathAdder V2 Lite | `1532:00a1` | 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
-| Cobra | `1532:00a3` | 0 | DPI up to 8500, polling rate; brightness of logo |
-| Viper V2 Pro (Wired) | `1532:00a5` | 0 | DPI up to 30000, polling rate |
-| Naga V2 Pro (Wired) | `1532:00a7` | 0 | DPI up to 30000, polling rate; brightness of logo; one colour, not saved |
-| Basilisk V3 Pro (Wired) | `1532:00aa` | 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Cobra Pro (Wired) | `1532:00af` | 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel |
-| DeathAdder V3 | `1532:00b2` | 0 | DPI up to 30000 |
-| DeathAdder V3 Pro (Wired) | `1532:00b6` | 0 | DPI up to 35000, polling rate |
-| DeathAdder V4 Pro (Wired) | `1532:00be` | 0 | DPI up to 45000 |
-| Viper V3 Pro (Wired) | `1532:00c0` | 0 | DPI up to 35000, polling rate |
-| DeathAdder V3 Pro (Wired) | `1532:00c2` | 0 | DPI up to 35000, polling rate |
-| Pro Click V2 Vertical Edition (Wired) | `1532:00c7` | 0 | DPI up to 30000, polling rate |
-| Basilisk V3 35K | `1532:00cb` | 3 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Basilisk V3 Pro 35K (Wired) | `1532:00cc` | 0 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Pro Click V2 (Wired) | `1532:00d0` | 0 | DPI up to 30000, polling rate |
-| Basilisk Mobile (Wired) | `1532:00d3` | 0 | DPI up to 18000, polling rate |
-| Basilisk V3 Pro 35K Phantom Green Edition (Wired) | `1532:00d6` | 0 | DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved |
-| Viper V3 Pro SE (Wired) | `1532:00de` | 0 | DPI up to 35000, polling rate |
+| Orochi 2011 | `1532:0013` | interface 0 | polling rate shown |
+| Naga | `1532:0015` | interface 0 | polling rate |
+| Naga Epic | `1532:001f` | interface 0 | polling rate; brightness of scroll wheel |
+| Abyssus 1800 | `1532:0020` | interface 0 | polling rate |
+| Mamba 2012 (Wired) | `1532:0024` | interface 0 | DPI up to 6400, polling rate; brightness of scroll wheel |
+| Naga 2012 | `1532:002e` | interface 0 | polling rate |
+| Imperator 2012 | `1532:002f` | interface 0 | DPI up to 6400, polling rate |
+| Ouroboros | `1532:0032` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel |
+| Taipan | `1532:0034` | interface 0 | DPI up to 8200, polling rate |
+| Naga Hex (Red) | `1532:0036` | interface 0 | polling rate |
+| DeathAdder 2013 | `1532:0037` | interface 0 | polling rate |
+| DeathAdder 1800 | `1532:0038` | interface 0 | polling rate |
+| Orochi 2013 | `1532:0039` | interface 0 | DPI up to 6400, polling rate |
+| Naga Epic Chroma (Wired) | `1532:003e` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel and backlight |
+| Naga 2014 | `1532:0040` | interface 0 | DPI up to 8200, polling rate |
+| Naga Hex | `1532:0041` | interface 0 | polling rate |
+| Abyssus | `1532:0042` | interface 0 | polling rate |
+| DeathAdder Chroma | `1532:0043` | interface 0 | DPI up to 10000, polling rate; brightness of logo and scroll wheel |
+| Mamba Chroma (Wired) | `1532:0044` | interface 0 | DPI up to 16000, polling rate shown |
+| Mamba Tournament Edition | `1532:0046` | interface 0 | DPI up to 16000; brightness of backlight |
+| Orochi (Wired) | `1532:0048` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel |
+| Diamondback Chroma | `1532:004c` | interface 0 | DPI up to 16000; brightness of backlight |
+| DeathAdder 2000 | `1532:004f` | interface 0 | DPI up to 2000, polling rate; brightness of logo and scroll wheel |
+| Naga Hex V2 | `1532:0050` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel and backlight |
+| Naga Chroma | `1532:0053` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel and backlight; one colour, not saved |
+| DeathAdder 3500 | `1532:0054` | interface 0 | DPI up to 3500, polling rate; brightness of logo and scroll wheel |
+| Lancehead (Wired) | `1532:0059` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| Abyssus V2 | `1532:005b` | interface 0 | DPI up to 5000, polling rate; brightness of logo and scroll wheel |
+| DeathAdder Elite | `1532:005c` | interface 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Abyssus 2000 | `1532:005e` | interface 0 | DPI up to 2000, polling rate |
+| Lancehead Tournament Edition | `1532:0060` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| Basilisk | `1532:0064` | interface 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Basilisk Essential | `1532:0065` | interface 0 | DPI up to 6400, polling rate; brightness of logo; one colour, not saved |
+| Naga Trinity | `1532:0067` | interface 0 | DPI up to 16000, polling rate |
+| Abyssus Elite (D.Va Edition) | `1532:006a` | interface 0 | DPI up to 7200, polling rate; brightness of logo |
+| Abyssus Essential | `1532:006b` | interface 0 | DPI up to 7200, polling rate; brightness of logo |
+| Mamba Elite | `1532:006c` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| DeathAdder Essential | `1532:006e` | interface 0 | DPI up to 6400, polling rate; brightness of logo and scroll wheel |
+| Lancehead Wireless (Wired) | `1532:0070` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| DeathAdder Essential (White Edition) | `1532:0071` | interface 0 | DPI up to 6400, polling rate; brightness of logo and scroll wheel |
+| Mamba Wireless (Wired) | `1532:0073` | interface 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Viper | `1532:0078` | interface 0 | DPI up to 16000, polling rate; brightness of logo; one colour, not saved |
+| Viper Ultimate (Wired) | `1532:007a` | interface 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved |
+| DeathAdder V2 Pro (Wired) | `1532:007c` | interface 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved |
+| Pro Click (Wired) | `1532:0080` | interface 0 | DPI up to 16000, polling rate |
+| DeathAdder V2 | `1532:0084` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Basilisk V2 | `1532:0085` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Basilisk Ultimate | `1532:0086` | interface 0 | DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| Viper Mini | `1532:008a` | interface 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
+| DeathAdder V2 Mini | `1532:008c` | interface 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
+| Naga Left Handed Edition 2020 | `1532:008d` | interface 0 | DPI up to 20000, polling rate; brightness of logo, scroll wheel and right side; one colour, not saved |
+| Naga Pro (Wired) | `1532:008f` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Viper 8KHz | `1532:0091` | interface 0 | DPI up to 20000; brightness of logo |
+| Naga X | `1532:0096` | interface 3 | DPI up to 18000, polling rate; brightness of scroll wheel and left side; one colour, not saved |
+| DeathAdder Essential (2021) | `1532:0098` | interface 0 | DPI up to 6400, polling rate; brightness of logo |
+| Basilisk V3 | `1532:0099` | interface 3 | DPI up to 26000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Viper Mini SE (Wired) | `1532:009e` | interface 0 | DPI up to 30000 |
+| DeathAdder V2 Lite | `1532:00a1` | interface 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
+| Cobra | `1532:00a3` | interface 0 | DPI up to 8500, polling rate; brightness of logo |
+| Viper V2 Pro (Wired) | `1532:00a5` | interface 0 | DPI up to 30000, polling rate |
+| Naga V2 Pro (Wired) | `1532:00a7` | interface 0 | DPI up to 30000, polling rate; brightness of logo; one colour, not saved |
+| Basilisk V3 Pro (Wired) | `1532:00aa` | interface 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Cobra Pro (Wired) | `1532:00af` | interface 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel |
+| DeathAdder V3 | `1532:00b2` | interface 0 | DPI up to 30000 |
+| DeathAdder V3 Pro (Wired) | `1532:00b6`, `1532:00c2` | interface 0 | DPI up to 35000, polling rate |
+| DeathAdder V4 Pro (Wired) | `1532:00be` | interface 0 | DPI up to 45000 |
+| Viper V3 Pro (Wired) | `1532:00c0` | interface 0 | DPI up to 35000, polling rate |
+| Pro Click V2 Vertical Edition (Wired) | `1532:00c7` | interface 0 | DPI up to 30000, polling rate |
+| Basilisk V3 35K | `1532:00cb` | interface 3 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Basilisk V3 Pro 35K (Wired) | `1532:00cc` | interface 0 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Pro Click V2 (Wired) | `1532:00d0` | interface 0 | DPI up to 30000, polling rate |
+| Basilisk Mobile (Wired) | `1532:00d3` | interface 0 | DPI up to 18000, polling rate |
+| Basilisk V3 Pro 35K Phantom Green Edition (Wired) | `1532:00d6` | interface 0 | DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved |
+| Viper V3 Pro SE (Wired) | `1532:00de` | interface 0 | DPI up to 35000, polling rate |
+<!-- end generated -->
 
 ## Glorious mice
 
-🧪 Experimental: 3 Glorious mice with a cable, built on a SinoWealth controller. Nobody has tried PeriHub
+🧪 Experimental: <!-- generated: count glorious -->3<!-- end generated --> Glorious mice with a cable, built on a SinoWealth controller. Nobody has tried PeriHub
 on one yet. Their protocol comes from [libratbag](https://github.com/libratbag/libratbag) (MIT), and is
 described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md).
 
@@ -412,11 +427,13 @@ described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md
   Model D, which speak another protocol. Not offered yet: lighting, buttons, debounce time.
 - On Linux the udev rule opens the whole mouse: no source names the interface of the configuration.
 
-| Mouse | USB ID | Firmware | Opened on Linux |
+<!-- generated: table glorious -->
+| Mouse | USB ID | Opened on Linux | Firmware |
 |---|---|---|---|
-| Model O/O- | `258a:0036` | `V103` | whole mouse |
-| Model D | `258a:0033` | `V102` | whole mouse |
-| Model O Eternal | `3794:a000` | `1009` | whole mouse |
+| Model O/O- | `258a:0036` | whole mouse | `V103` |
+| Model D | `258a:0033` | whole mouse | `V102` |
+| Model O Eternal | `3794:a000` | whole mouse | `1009` |
+<!-- end generated -->
 
 ## Logitech G600
 
@@ -433,9 +450,11 @@ described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md
   slot that was in use, and puts the profile back after 15 seconds unless you keep the change.
 - Not offered yet: buttons, G-Shift, the other two profiles, switching profile.
 
+<!-- generated: table g600 -->
 | Mouse | USB ID | Opened on Linux |
 |---|---|---|
-| G600 | `046d:c24a` | interface 1 (with the keys its own side buttons send) |
+| G600 | `046d:c24a` | interface 1 |
+<!-- end generated -->
 
 ## Older Logitech mice: G9, G9x, G500, G500s, G700, G700s
 
@@ -458,14 +477,17 @@ Logitech removed their software, Logitech Gaming Software, from its site on 31 O
 - Not supported: the **G400s** (`046d:c24c`). The only tool known to configure it sends a raw USB request
   that PeriHub cannot send, and nothing can be read back from it.
 
-| Mouse | USB ID | Level | Opened on Linux |
+<!-- generated: table logitech-hidpp10 -->
+| Mouse | USB ID | Opened on Linux | Level |
 |---|---|---|---|
-| G500s | `046d:c24e` | 🧪 Experimental (DPI in use) | interface 1 (with the keys and macros its own buttons send) |
-| G700s | `046d:c07c` | 🧪 Experimental (DPI in use) | interface 1 |
-| G9x | `046d:c066`, `046d:c249` (Call of Duty MW3 Edition) | 👁 Read-only | interface 1 |
-| G9 | `046d:c048` | 👁 Read-only | interface 1 |
-| G500 | `046d:c068` | 👁 Read-only | interface 1 |
-| G700 | `046d:c06b` | 👁 Read-only | interface 1 |
+| G9 | `046d:c048` | interface 1 | 👁 Read-only |
+| G9x | `046d:c066` | interface 1 | 👁 Read-only |
+| G9x (Call of Duty MW3 Edition) | `046d:c249` | interface 1 | 👁 Read-only |
+| G500 | `046d:c068` | interface 1 | 👁 Read-only |
+| G500s | `046d:c24e` | interface 1 | 🧪 Experimental |
+| G700 | `046d:c06b` | interface 1 | 👁 Read-only |
+| G700s | `046d:c07c` | interface 1 | 🧪 Experimental |
+<!-- end generated -->
 
 ## Roccat mice
 
@@ -475,18 +497,20 @@ Logitech removed their software, Logitech Gaming Software, from its site on 31 O
 on, the slot in use and the polling rate, and changes nothing: the sources disagree on what a write needs. The only
 report it sends chooses which profile the next read returns.
 
+<!-- generated: table roccat -->
 | Mouse | USB ID | Opened on Linux |
 |---|---|---|
-| Kone Pure | `1e7d:2dbe`, `1e7d:2dc2` | interface 0 (the boot mouse) |
+| Kone Pure | `1e7d:2dbe`, `1e7d:2dc2` | interface 0 |
 | Kone XTD | `1e7d:2e22` | interface 0 |
 | Kone EMP | `1e7d:2e24` | interface 0 |
+<!-- end generated -->
 
 `1e7d:2dcb`, which libratbag also lists as a Kone Pure, is left out: its interfaces are laid out differently and no
 source says where its configuration is.
 
 ## Pulsar mice
 
-🧪 Experimental: 7 Pulsar mice on their USB cable, built on a Sonix controller. Nobody has tried PeriHub on one yet.
+🧪 Experimental: <!-- generated: count pulsar -->7<!-- end generated --> Pulsar mice on their USB cable, built on a Sonix controller. Nobody has tried PeriHub on one yet.
 Their protocol comes from [pulsar-mouse-linux](https://github.com/packerlschupfer/pulsar-mouse-linux) (MIT), a
 recent project built from USB captures of Pulsar's own app, and is described in
 [protocols/pulsar-sonix.md](protocols/pulsar-sonix.md). That project's author tried the X2A, the X3 and the X3 LHD;
@@ -505,15 +529,17 @@ the Xlite Wired and X2 Wired are said to speak the X2A's protocol, and the Xlite
 - The CrazyLight mice speak another protocol: see [Pulsar CrazyLight and Lamzu Atlantis](#pulsar-crazylight-and-lamzu-atlantis).
   The wireless dongles, the Feinmann mice, the first X2H (`3554`) and the X2 Wireless (`25a7`) are left out.
 
+<!-- generated: table pulsar -->
 | Mouse | USB ID | Opened on Linux |
 |---|---|---|
-| Xlite Wired | `3710:1401` | interface 3 (the configuration) |
+| Xlite Wired | `3710:1401` | interface 3 |
 | X2 Wired | `3710:1402` | interface 3 |
 | X2H Wired Medium | `3710:1403` | interface 3 |
 | X2A Medium Wired | `3710:1404` | interface 3 |
 | Xlite v4 | `3710:3401` | interface 3 |
 | X3 | `3710:3409` | interface 3 |
 | X3 LHD | `3710:3410` | interface 3 |
+<!-- end generated -->
 
 Interface 1, which carries the keys a button bound to a key or a macro types, is never opened.
 
@@ -537,11 +563,13 @@ Described in [protocols/nordic-mice.md](protocols/nordic-mice.md).
 - Never sent: the factory reset, profile switches, buttons, macros. The wireless dongles and the Feinmann mice are
   left out.
 
-| Mouse | USB ID | Opened on Linux |
-|---|---|---|
-| Pulsar X2 CrazyLight | `3710:3414` | interface 1 (configuration and the mouse's own input) |
-| Pulsar X3 LHD CrazyLight | `3710:3527` | interface 1 |
-| Lamzu Atlantis | `3554:f50f` | interface 1 |
+<!-- generated: table nordic -->
+| Mouse | USB ID | Opened on Linux | Level |
+|---|---|---|---|
+| Pulsar X2 CrazyLight | `3710:3414` | interface 1 | 🧪 Experimental |
+| Pulsar X3 LHD CrazyLight | `3710:3527` | interface 1 | 🧪 Experimental |
+| Lamzu Atlantis | `3554:f50f` | interface 1 | 👁 Read-only |
+<!-- end generated -->
 
 ## Cooler Master mice
 
@@ -557,12 +585,14 @@ Cooler Master's own app that users attached to OpenRGB's device requests (facts 
 - In stars, indicator, custom or multilayer mode the lighting is shown and not changed.
 - Not offered: effect speed, colours per zone, buttons, DPI. The MM531 and MM712 are left out.
 
+<!-- generated: table coolermaster -->
 | Mouse | USB ID | Opened on Linux |
 |---|---|---|
-| MM530 | `2516:0065` | interface 1 (lighting only) |
+| MM530 | `2516:0065` | interface 1 |
 | MM711 | `2516:0101` | interface 1 |
 | MM720 | `2516:0141` | interface 1 |
 | MM730 | `2516:0165` | interface 1 |
+<!-- end generated -->
 
 Interface 2, which carries the keys a button bound to a key types, is never opened.
 
@@ -579,10 +609,12 @@ drivers (no code copied), described in [protocols/evga-mice.md](protocols/evga-m
   the mouse answers, so they wait for a tester. Its wireless receiver is left out.
 - The **Z15 and Z20 keyboards** are left out: their lighting shares an interface that may carry what is typed.
 
-| Mouse | USB ID | Opened on Linux |
-|---|---|---|
-| X12 | `3842:2422` | interface 1 |
-| X20 | `3842:2420` | interface 2 (read only) |
+<!-- generated: table evga -->
+| Mouse | USB ID | Opened on Linux | Level |
+|---|---|---|---|
+| X12 | `3842:2422` | interface 1 | 🧪 Experimental |
+| X20 | `3842:2420` | interface 2 | 👁 Read-only |
+<!-- end generated -->
 
 ## Keyboards with QMK firmware (Vial, VIA)
 

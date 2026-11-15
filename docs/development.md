@@ -67,6 +67,7 @@ crates/perihub-core     Rust library: protocols, effects, device detection, conf
   src/worker.rs         one thread per device, so requests never interleave
   tests/fixtures/       real G502 HERO sectors used by the tests
 crates/perihub-cli      command-line tool
+crates/xtask            generates the device lists from the driver tables (cargo xtask gen)
 app/                    UI: Tauri 2 + Svelte 5
 packaging/linux         udev rules
 packaging/aur           perihub-bin PKGBUILD
@@ -81,6 +82,32 @@ docs/protocols          protocols described in our own words, written before the
 - Each device family is a separate module in `perihub-core`, which is where new hardware is added.
 - New protocols are first described in `docs/protocols/`, in our own words and with their sources,
   and the code is written from that page. No code from other projects is copied.
+
+## Adding a device
+
+The driver tables in `perihub-core` are the only list of devices: `peripheral::models()` for the
+other brands, `hidpp::models::MODELS` and `hidpp::receiver::RECEIVERS` for Logitech,
+`corsair::models` for Corsair. Everything else that names devices is generated from them:
+
+```sh
+cargo xtask gen     # writes the generated files
+cargo xtask check   # fails if one is out of date (cargo test runs it too, so CI does)
+```
+
+| File | What is generated |
+|---|---|
+| `packaging/linux/70-perihub.rules` | the whole file: one rule per USB id, with the interface the table names |
+| `docs/devices.md`, `README.md` | the tables, lists and counts between `<!-- generated: … -->` and `<!-- end generated -->` |
+| `site/index.html` | the same, and the `data-models` the search uses after each `data-catalog` |
+| `packaging/linux/…metainfo.xml` | `<modalias>` entries, so software centres suggest PeriHub for a supported device |
+| `site/devices.json` | every device, its level and USB ids, published with the website |
+
+The text around the generated blocks is written by hand. What a block lists is a selector, described in
+`crates/xtask/src/select.rs`: a family (`razer`), a brand (`Cooler Master`), a level
+(`experimental`), a kind (`mouse`), joined with `:` (all of them) and `+` (either). A new
+family needs a header in `crates/xtask/src/udev.rs`, which says what the rule opens and why: the
+generator stops until it is there. The level is worked out from the driver: read-only when it may
+send only read commands, experimental otherwise.
 
 ## Performance measurements
 

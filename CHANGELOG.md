@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.
+
+### Changed
+- The udev rule, the device list, the website's catalogue and the AppStream metadata are now generated from PeriHub's own driver tables, so they can no longer disagree. The rule opens exactly the same interfaces as before. Razer mice are counted by name: 74, not 75, since the DeathAdder V3 Pro (Wired) has two USB ids.
+
 ## 0.8.4 — 2026-11-15
 
 On Windows a mouse behind a LIGHTSPEED, Bolt or Unifying receiver is found, and a mouse with a tested memory format can be saved to through its receiver, as an experimental feature: a G502 HERO Wireless on a POWERPLAY mat was the first. Also: the G502 HERO Wireless's lights have the right names.

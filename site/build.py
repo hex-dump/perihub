@@ -69,7 +69,7 @@ def main() -> None:
             stamp = hashlib.sha256((SITE / name).read_bytes()).hexdigest()[:10]
             html = html.replace(f'"{name}"', f'"{name}?v={stamp}"')
         (out / page.name).write_text(html)
-    for name in ("style.css", "main.js"):
+    for name in ("style.css", "main.js", "devices.json"):
         shutil.copy(SITE / name, out / name)
     for shot in (ROOT / "docs" / "screenshots").glob("*.png"):
         shutil.copy(shot, out / "screenshots" / shot.name)
