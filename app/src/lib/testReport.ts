@@ -7,6 +7,18 @@ import { effectName, kindName, zoneName } from "./logitechFeatures";
 const LOGITECH = "046d";
 const TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml";
 
+/** "4-7,9,12" for [4, 5, 6, 7, 9, 12]: short enough for the test form's address. */
+function ranges(ids: number[]): string {
+  const out: string[] = [];
+  for (let i = 0; i < ids.length; i++) {
+    let j = i;
+    while (j + 1 < ids.length && ids[j + 1] === ids[j] + 1) j++;
+    out.push(j > i ? `${ids[i]}-${ids[j]}` : `${ids[i]}`);
+    i = j;
+  }
+  return out.join(",");
+}
+
 /** What a device's lighting features told, in a few lines, with every reply as it came: the
  * replies tell the meaning of the bytes that is not documented yet (issue #30). */
 function lightingLines(lighting: HidppLighting, kind: number | null): string[] {
@@ -14,15 +26,16 @@ function lightingLines(lighting: HidppLighting, kind: number | null): string[] {
   const e = lighting.effects;
   const power = (name: string, p: NonNullable<HidppLighting["effects"]>["startup"]) =>
     p ? `${name} ${p.enabled ? "on" : "off"} (${p.colors.join(" ")})` : `${name} not read`;
+  // Names only: the ids, settings and periods are in the replies below.
   const zones = e?.zones.map(
-    (z) => `${zoneName(z.location, kind)} (zone ${z.index}, location ${z.location}): ${z.effects.map((f) => `${effectName(f.id)} [${f.id}, caps ${hex(f.caps)}, ${f.period_ms} ms]`).join(", ") || "no effects"}`,
+    (z) => `${zoneName(z.location, kind)} (location ${z.location}): ${z.effects.map((f) => effectName(f.id)).join(", ") || "no effects"}`,
   );
   return [
     `Brightness: ${b ? `${b.min}-${b.max}, ${b.steps} levels${b.on_off ? ", can be turned off" : ""}` : "no 0x8040"}`,
     `Lighting zones: ${zones?.join("; ") || "no 0x8071"}`,
     `Startup and shutdown: ${e ? `${power("startup", e.startup)}, ${power("shutdown", e.shutdown)}` : "no 0x8071"}`,
     `Lights dim after: ${e?.idle_s != null ? `${e.idle_s} s, off after ${e.sleep_s} s` : "not read"}`,
-    `Per-key lighting: ${lighting.keys.length ? `${lighting.keys.length} keys (${lighting.keys.join(" ")})` : "none"}`,
+    `Per-key lighting: ${lighting.keys.length ? `${lighting.keys.length} keys (${ranges(lighting.keys)})` : "none"}`,
     `Layout (0x4540): ${lighting.layout ?? "not read"}`,
     `Lighting replies: ${lighting.raw.join(" | ") || "none"}`,
   ];

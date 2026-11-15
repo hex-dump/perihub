@@ -258,18 +258,18 @@ describe("receiverTest", () => {
     const report = receiverTest(bolt, keyboard, "0.8.5", "windows x86_64", live).report.split("\n");
     expect(report).toContain("Brightness: 0-100, 5 levels, can be turned off");
     expect(report).toContain(
-      "Lighting zones: Keys (zone 0, location 1): Off [0, caps 0000, 0 ms], Fixed colour [1, caps 0001, 0 ms], Colour cycle [21, caps 0004, 10000 ms]",
+      "Lighting zones: Keys (location 1): Off, Fixed colour, Colour cycle",
     );
     expect(report).toContain("Startup and shutdown: startup on (#ff0081 #80aaff), shutdown not read");
     expect(report).toContain("Lights dim after: 60 s, off after 300 s");
-    expect(report).toContain("Per-key lighting: 4 keys (4 5 6 7)");
+    expect(report).toContain("Per-key lighting: 4 keys (4-7)");
     expect(report).toContain("Layout (0x4540): 1");
     expect(report).toContain("Lighting replies: 8071 0 (ff ff 00): ff ff 01 00 00 00 01 | 8040 0: 00 64 05 04");
     expect(report).toContain("Lighting now: brightness 50, on, driven by the device (0)");
     expect(report).toContain("Could not read: 8071 function 3 (00 00 40): HID++ error 0x02");
 
     // A full-size keyboard: 2 zones of 16 effects, 110 keys and every reply. The form's address stays
-    // under the 8000 characters browsers and GitHub take.
+    // well under the 8000 characters browsers and GitHub take.
     const zone = (index: number) => ({
       index,
       location: index + 1,
@@ -277,8 +277,51 @@ describe("receiverTest", () => {
     });
     const raw = Array.from({ length: 40 }, (_, i) => `8071 0 (00 ${i.toString(16).padStart(2, "0")} 00): 00 01 00 0a 80 05 13 88`);
     const big = { ...lighting, effects: { ...lighting.effects, zones: [zone(0), zone(1)] }, keys: Array.from({ length: 110 }, (_, i) => i + 1), raw };
-    const fields = receiverTest(bolt, { ...keyboard, lighting: big }, "0.8.5", "windows x86_64", live);
-    expect(deviceTestFormUrl(fields, "0.8.5", "windows x86_64").length).toBeLessThan(8000);
+    // The G915 X LS of issue #30: its 34 features, firmware and device info.
+    const g915 = {
+      ...keyboard,
+      device_info: "05 xx xx xx xx 00 0e b3 8a 40 b5 c3 56 00 01 00",
+      firmware: ["BL1 84.00.0012", " 00.00.0123", "MPK 26.00.0012"],
+      features: [
+        { id: 0x0001, kind: 0x0, version: 2 },
+        { id: 0x0003, kind: 0x0, version: 6 },
+        { id: 0x0005, kind: 0x0, version: 5 },
+        { id: 0x1d4b, kind: 0x0, version: 0 },
+        { id: 0x0020, kind: 0x0, version: 0 },
+        { id: 0x0007, kind: 0x0, version: 0 },
+        { id: 0x0011, kind: 0x0, version: 0 },
+        { id: 0x1004, kind: 0x0, version: 5 },
+        { id: 0x8071, kind: 0x0, version: 4 },
+        { id: 0x8081, kind: 0x0, version: 0 },
+        { id: 0x1b10, kind: 0x0, version: 0 },
+        { id: 0x4523, kind: 0x0, version: 1 },
+        { id: 0x4540, kind: 0x0, version: 1 },
+        { id: 0x8040, kind: 0x0, version: 0 },
+        { id: 0x8101, kind: 0x0, version: 0 },
+        { id: 0x1b05, kind: 0x0, version: 1 },
+        { id: 0x8051, kind: 0x0, version: 0 },
+        { id: 0x00d0, kind: 0x0, version: 3 },
+        { id: 0x1802, kind: 0x70, version: 0 },
+        { id: 0x1803, kind: 0x70, version: 0 },
+        { id: 0x1807, kind: 0x70, version: 3 },
+        { id: 0x1817, kind: 0x70, version: 0 },
+        { id: 0x1805, kind: 0x60, version: 0 },
+        { id: 0x1830, kind: 0x70, version: 0 },
+        { id: 0x1890, kind: 0x68, version: 9 },
+        { id: 0x1891, kind: 0x68, version: 9 },
+        { id: 0x18a1, kind: 0x70, version: 0 },
+        { id: 0x1e00, kind: 0x40, version: 0 },
+        { id: 0x1e02, kind: 0x60, version: 0 },
+        { id: 0x1602, kind: 0x0, version: 0 },
+        { id: 0x1eb0, kind: 0x70, version: 0 },
+        { id: 0x1861, kind: 0x70, version: 1 },
+        { id: 0x18b0, kind: 0x70, version: 1 },
+        { id: 0x1801, kind: 0x70, version: 0 },
+      ],
+      lighting: big,
+    };
+    const fields = receiverTest(bolt, g915, "0.8.5", "windows x86_64", live);
+    expect(deviceTestFormUrl(fields, "0.8.5", "windows x86_64").length).toBeLessThan(7000);
   });
 
   it("says when the system refused to open a Unifying receiver", () => {

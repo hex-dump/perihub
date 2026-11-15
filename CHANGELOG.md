@@ -14,7 +14,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 - The udev rule, the device list, the website's catalogue and the AppStream metadata are now generated from PeriHub's own driver tables, so they can no longer disagree. The rule opens exactly the same interfaces as before. Razer mice are counted by name: 74, not 75, since the DeathAdder V3 Pro (Wired) has two USB ids.
 
 ### Fixed
-- **No "Logitech mouse" entry for a keyboard behind a receiver** ([issue #30](https://github.com/hex-dump/perihub/issues/30)): with a keyboard such as the G915 X LS paired with a LIGHTSPEED receiver, the sidebar listed a "Logitech mouse — Not opened" next to the keyboard's own entry, appearing and disappearing as the keyboard woke up and fell asleep. The note that the device "is not supported yet" was shown as the mouse's error; a device with a page of its own no longer adds it, and a keyboard asleep is no longer shown as a mouse asleep.
+- **No "Logitech mouse" entry for a keyboard behind a receiver** ([issue #30](https://github.com/hex-dump/perihub/issues/30)): with a keyboard such as the G915 X LS paired with a LIGHTSPEED receiver, the sidebar listed a "Logitech mouse — Not opened" next to the keyboard's own entry, appearing and disappearing as the keyboard woke up and fell asleep. The note that the device "is not supported yet" was shown as the mouse's error; a device with a page of its own no longer adds it, and a keyboard PeriHub has seen awake is no longer shown as a mouse asleep when it sleeps.
 
 ## 0.8.4 — 2026-11-15
 
