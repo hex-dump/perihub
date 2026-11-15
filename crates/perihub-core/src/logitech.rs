@@ -3,8 +3,11 @@
 //! user chose, and the lights of a keyboard PeriHub drives in host mode (see [`crate::hidpp::host`]).
 //!
 //! Host mode lasts for the session: the manager keeps the look and shows it again every time the
-//! keyboard connects. PeriHub gives the lights back when the user asks, when G HUB or Solaar starts,
-//! when a command fails, when the thread stops and when PeriHub quits.
+//! keyboard connects (see [`LightsMemory`]); the look itself is saved in PeriHub's settings, but the
+//! lights are only taken when the user asks. PeriHub gives the lights back when the user asks, when
+//! G HUB or Solaar starts, when a command is refused and taking the lights again fails too, and when
+//! PeriHub quits. A keyboard that does not answer for a while ends the thread without giving them
+//! back: the manager opens it again and takes them again.
 //!
 //! The DPI goes to the device's RAM only (0x2201 function 3): nothing is written to its memory. Such
 //! devices forget it when they are turned off or fall asleep, so PeriHub sets it again every time
@@ -12,13 +15,14 @@
 //! again when it is back). Changing it is an experimental feature: it has not been tried on such a
 //! device yet.
 
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
 use crate::error::{Error, Result};
 use crate::hidpp::host::{self, Host, HostStatus, Look};
-use crate::hidpp::lighting::LightingNow;
+use crate::hidpp::lighting::{Lighting, LightingNow};
 use crate::hidpp::receiver::UnsupportedDevice;
 use crate::hidpp::{Access, Battery, DpiCapabilities, HidppDevice, feature};
 use crate::worker::DeviceTask;
@@ -29,6 +33,60 @@ const CHECK_EVERY: Duration = Duration::from_secs(10);
 /// checks that it still has the lights and that no other Logitech program started.
 const EVENTS_EVERY: Duration = Duration::from_millis(200);
 const HOST_CHECK_EVERY: Duration = Duration::from_secs(5);
+/// Calls in a row the keyboard does not answer before the thread ends, to be opened again. One
+/// missed reply is common over the radio: the G915 X LS took up to 1.4 s to answer in the G HUB
+/// captures of issue #30.
+const TIMEOUTS_IN_A_ROW: u32 = 3;
+
+/// How host mode went this session, across give-backs and reconnections, for the test report.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+pub struct HostLog {
+    /// Times PeriHub took the lights, and of them when the keyboard connected again.
+    pub taken: u32,
+    pub on_connect: u32,
+    /// Times PeriHub gave them back, and why the last time ("asked" when the user did).
+    pub given_back: u32,
+    pub last_reason: Option<String>,
+    /// Calls the keyboard did not answer in time while PeriHub drove it.
+    pub timeouts: u32,
+    pub idle_events: u32,
+    pub active_events: u32,
+    pub retaken: u32,
+    pub shown: u32,
+    pub resets: u32,
+}
+
+/// What the manager keeps about a keyboard's lights while its thread comes and goes.
+#[derive(Debug, Clone, Default)]
+pub struct LightsMemory {
+    /// PeriHub drives the lights this session: shown again every time the keyboard connects.
+    pub driving: Option<Look>,
+    /// The last look the user showed, saved in PeriHub's settings: the editor starts from it.
+    pub saved: Option<Look>,
+    pub log: Arc<Mutex<HostLog>>,
+}
+
+/// What to do when a call fails while PeriHub drives the lights.
+#[derive(Debug, PartialEq, Eq)]
+enum AfterError {
+    /// The keyboard is gone (asleep, turned off, out of reach): end the thread without giving the
+    /// lights back; the manager opens it again and takes them again.
+    EndThread,
+    /// No answer in time: paint again at the next tick.
+    TryAgain,
+    /// Refused (such as error 5, "not allowed", once the keyboard left host mode): take the lights
+    /// again, and give them back only if that fails too.
+    TakeAgain,
+}
+
+fn after_error(error: &Error, timeouts_in_a_row: u32) -> AfterError {
+    match error {
+        Error::Hid(_) | Error::Unreachable => AfterError::EndThread,
+        Error::Timeout if timeouts_in_a_row >= TIMEOUTS_IN_A_ROW => AfterError::EndThread,
+        Error::Timeout => AfterError::TryAgain,
+        _ => AfterError::TakeAgain,
+    }
+}
 
 /// What changes while the device is in use.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -44,6 +102,10 @@ pub struct LogitechLive {
     pub host: Option<HostLive>,
     /// Why PeriHub gave the lights back on its own, if it did.
     pub gave_back: Option<String>,
+    /// The last look shown on the keyboard, kept in PeriHub's settings.
+    pub saved_look: Option<Look>,
+    /// How host mode went this session, once PeriHub took the lights.
+    pub host_log: Option<HostLog>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -62,6 +124,8 @@ pub struct LogitechTask {
     host: Option<Host>,
     last_host_check: Instant,
     gave_back: Option<String>,
+    lights: LightsMemory,
+    timeouts_in_a_row: u32,
     /// Finds the Logitech programs running now (see [`other_programs`]); tests replace it.
     programs: fn() -> Vec<&'static str>,
 }
@@ -110,13 +174,14 @@ impl LogitechTask {
     /// checked first, and a different device gives [`Error::OtherDevice`] with nothing sent to it but
     /// reads.
     ///
-    /// `look`: what PeriHub showed on the keyboard earlier in the session, shown again now (see
-    /// [`LogitechTask::drive_lights`]).
+    /// `lights`: what the manager keeps about the keyboard's lights. If PeriHub drove them before
+    /// the keyboard went away this session, it takes them again and shows the same look, even if
+    /// the keyboard still says a program drives them: that program was PeriHub.
     pub fn open(
         mut dev: HidppDevice,
         device: UnsupportedDevice,
         saved_dpi: Option<u16>,
-        look: Option<Look>,
+        lights: LightsMemory,
     ) -> Result<Self> {
         if let Some(unit) = device.unit_id {
             let info = dev.device_info()?;
@@ -137,7 +202,10 @@ impl LogitechTask {
             host: None,
             last_host_check: Instant::now(),
             gave_back: None,
-            programs: other_programs,
+            lights: lights.clone(),
+            timeouts_in_a_row: 0,
+            // Tests never look at the programs running on the machine that runs them.
+            programs: if cfg!(test) { Vec::new } else { other_programs },
         };
         if let Some(dpi) = saved_dpi {
             match task.apply_dpi(dpi) {
@@ -146,8 +214,8 @@ impl LogitechTask {
                 Err(e) => log::warn!("{}: setting the DPI again failed: {e}", task.device.label()),
             }
         }
-        if let Some(look) = look {
-            match task.drive_lights(look) {
+        if let Some(look) = lights.driving {
+            match task.drive(look, true) {
                 Ok(_) => log::info!("{}: PeriHub drives the lights again", task.device.label()),
                 Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
                 Err(e) => log::warn!("{}: driving the lights again failed: {e}", task.device.label()),
@@ -160,10 +228,17 @@ impl LogitechTask {
     /// them already. Refused while G HUB or Solaar runs, or while the keyboard says a program drives
     /// its lights. Returns the key to keep the look under for the session.
     pub fn drive_lights(&mut self, look: Look) -> Result<String> {
+        self.drive(look, false)
+    }
+
+    /// `again`: PeriHub drove the lights before the keyboard went away, so a program driving them
+    /// (mode 3) is PeriHub itself, unless G HUB or Solaar runs.
+    fn drive(&mut self, look: Look, again: bool) -> Result<String> {
         let lighting = self.device.lighting.clone().filter(|_| lights_drivable(&self.device));
         let lighting =
             lighting.ok_or_else(|| Error::Invalid("PeriHub cannot drive the lights of this device".into()))?;
         host::check(&look, &lighting)?;
+        let kept = look.clone();
         let result = match self.host.as_mut() {
             Some(host) => host.show(&mut self.dev, &lighting, look),
             None => {
@@ -175,45 +250,97 @@ impl LogitechTask {
                     )));
                 }
                 let control = host::who_drives(&mut self.dev)?;
-                if control != 0 {
+                if control != 0 && !again {
                     return Err(Error::Invalid(format!(
                         "another program drives the lights (mode {control}): quit it first, such as G HUB"
                     )));
                 }
+                if control != 0 {
+                    log::info!(
+                        "{}: the keyboard is still in host mode from before: taking it again",
+                        self.device.label()
+                    );
+                }
+                let label = self.device.label();
                 Host::take(&mut self.dev, &lighting, look).map(|host| {
-                    log::info!("{}: PeriHub drives the lights (host mode)", self.device.label());
+                    log::info!("{label}: PeriHub drives the lights (host mode)");
                     self.host = Some(host);
                     self.last_host_check = Instant::now();
+                    self.timeouts_in_a_row = 0;
                     self.gave_back = None;
+                    let mut log = self.lights.log.lock().unwrap();
+                    log.taken += 1;
+                    log.on_connect += again as u32;
                 })
             }
         };
         match result {
-            Ok(()) => Ok(self.device.settings_key()),
+            Ok(()) => {
+                self.lights.saved = Some(kept);
+                Ok(self.device.settings_key())
+            }
+            // No answer in time while PeriHub drives the lights: the next tick paints again.
+            Err(Error::Timeout) if self.host.is_some() => {
+                self.lights.saved = Some(kept);
+                self.lights.log.lock().unwrap().timeouts += 1;
+                if let Some(host) = self.host.as_mut() {
+                    host.paint_later();
+                }
+                Err(Error::Protocol("the keyboard did not answer in time: PeriHub shows it again in a moment".into()))
+            }
             Err(error) => {
-                self.release(&format!("a command failed: {error}"));
+                self.release(&format!("a command failed: {error}"), true);
                 Err(Error::Protocol(format!("{error}. The keyboard has its own lights back.")))
             }
         }
     }
 
-    /// Gives the lights back to the keyboard. Returns the settings key, to forget the look.
+    /// Gives the lights back to the keyboard. Returns the settings key, to stop showing the look
+    /// when the keyboard connects (it stays in the editor).
     pub fn give_back_lights(&mut self) -> Result<String> {
-        self.release("");
+        self.release("asked", false);
         self.gave_back = None;
         Ok(self.device.settings_key())
     }
 
-    /// Back to the keyboard's own lights, best effort: it may be gone already. `why` is shown on
-    /// the page when PeriHub did it on its own.
-    fn release(&mut self, why: &str) {
-        if self.host.take().is_some() {
+    /// Ends host mode without a word to the keyboard (it is gone), keeping the counts.
+    fn end_host(&mut self) -> Option<Host> {
+        let host = self.host.take()?;
+        let status = host.status();
+        let mut log = self.lights.log.lock().unwrap();
+        log.idle_events += status.idle_events;
+        log.active_events += status.active_events;
+        log.retaken += status.retaken;
+        log.shown += status.shown;
+        log.resets += status.resets;
+        Some(host)
+    }
+
+    /// How host mode went this session, the lights PeriHub drives now included.
+    fn host_log(&self) -> HostLog {
+        let mut log = self.lights.log.lock().unwrap().clone();
+        if let Some(status) = self.host.as_ref().map(|h| h.status()) {
+            log.idle_events += status.idle_events;
+            log.active_events += status.active_events;
+            log.retaken += status.retaken;
+            log.shown += status.shown;
+            log.resets += status.resets;
+        }
+        log
+    }
+
+    /// Back to the keyboard's own lights, best effort: it may be gone already. `notice`: `why` is
+    /// shown on the page, PeriHub did it on its own.
+    fn release(&mut self, why: &str, notice: bool) {
+        if self.end_host().is_some() {
             match host::give_back(&mut self.dev) {
-                Ok(()) => log::info!("{}: lights given back to the keyboard", self.device.label()),
+                Ok(()) => log::info!("{}: lights given back to the keyboard ({why})", self.device.label()),
                 Err(e) => log::warn!("{}: giving the lights back failed: {e}", self.device.label()),
             }
-            if !why.is_empty() {
-                log::info!("{}: lights given back: {why}", self.device.label());
+            let mut log = self.lights.log.lock().unwrap();
+            log.given_back += 1;
+            log.last_reason = Some(why.to_string());
+            if notice {
                 self.gave_back = Some(why.to_string());
             }
         }
@@ -229,44 +356,75 @@ impl LogitechTask {
     }
 
     /// While PeriHub drives the lights: the keyboard's notices, the off timer, and every few seconds
-    /// whether PeriHub still has the lights and no other program started.
+    /// whether PeriHub still has the lights and no other program started. A failed call never gives
+    /// the lights back at once (see [`after_error`]): before, one missed reply or one refused call
+    /// gave them back, and a keyboard that went away and came back still in host mode was not taken
+    /// again (issue #30: "the Drive the lights button is there again").
     fn drive_tick(&mut self) -> Result<()> {
         let Some(lighting) = self.device.lighting.clone() else { return Ok(()) };
-        let events = self.dev.events(0)?;
         let check = self.last_host_check.elapsed() >= HOST_CHECK_EVERY;
-        let Some(host) = self.host.as_mut() else { return Ok(()) };
-        let mut result = host.on_events(&mut self.dev, &lighting, &events).and_then(|()| host.on_timer(&mut self.dev));
-        if result.is_ok() && check {
+        if check {
             self.last_host_check = Instant::now();
             self.last_check = Instant::now();
             let others = (self.programs)();
             if !others.is_empty() {
-                self.release(&format!("{} started", others.join(" and ")));
+                self.release(&format!("{} started", others.join(" and ")), true);
                 return Ok(());
             }
-            result = match host::who_drives(&mut self.dev) {
-                // The keyboard is on its own lights again: it restarted without PeriHub noticing.
-                Ok(0) => {
-                    log::info!("{}: the keyboard took its lights back: taking them again", self.device.label());
-                    host.retake(&mut self.dev, &lighting)
-                }
-                Ok(_) => Ok(()),
-                Err(e) => Err(e),
-            };
         }
-        match result {
-            Ok(()) => Ok(()),
-            Err(e @ (Error::Hid(_) | Error::Unreachable)) => {
-                // Asleep or turned off: it has its own lights when it is back, and the manager
-                // shows the look again then.
-                self.host = None;
-                Err(e)
+        let error = match self.drive_step(&lighting, check) {
+            Ok(()) => {
+                self.timeouts_in_a_row = 0;
+                return Ok(());
             }
-            Err(error) => {
-                self.release(&format!("a command failed: {error}"));
+            Err(error) => error,
+        };
+        if matches!(error, Error::Timeout) {
+            self.timeouts_in_a_row += 1;
+            self.lights.log.lock().unwrap().timeouts += 1;
+        }
+        match after_error(&error, self.timeouts_in_a_row) {
+            AfterError::EndThread => {
+                log::info!("{}: the keyboard does not answer ({error}): opened again later", self.device.label());
+                self.end_host();
+                Err(error)
+            }
+            AfterError::TryAgain => {
+                if let Some(host) = self.host.as_mut() {
+                    host.paint_later();
+                }
                 Ok(())
             }
+            AfterError::TakeAgain => {
+                log::info!("{}: {error}: taking the lights again", self.device.label());
+                let Some(host) = self.host.as_mut() else { return Ok(()) };
+                match host.retake(&mut self.dev, &lighting) {
+                    Ok(()) => Ok(()),
+                    Err(e @ (Error::Hid(_) | Error::Unreachable | Error::Timeout)) => {
+                        self.end_host();
+                        Err(e)
+                    }
+                    Err(e) => {
+                        self.release(&format!("a command failed: {error}, then {e}"), true);
+                        Ok(())
+                    }
+                }
+            }
         }
+    }
+
+    fn drive_step(&mut self, lighting: &Lighting, check: bool) -> Result<()> {
+        let events = self.dev.events(0)?;
+        let Some(host) = self.host.as_mut() else { return Ok(()) };
+        host.catch_up(&mut self.dev, lighting)?;
+        host.on_events(&mut self.dev, lighting, &events)?;
+        host.on_timer(&mut self.dev)?;
+        // The keyboard is on its own lights again: it restarted without PeriHub noticing.
+        if check && host::who_drives(&mut self.dev)? == 0 {
+            log::info!("{}: the keyboard took its lights back: taking them again", self.device.label());
+            host.retake(&mut self.dev, lighting)?;
+        }
+        Ok(())
     }
 
     pub fn live(&mut self) -> Result<LogitechLive> {
@@ -294,7 +452,17 @@ impl LogitechTask {
             None => None,
         };
         let host = self.host.as_ref().map(|h| HostLive { look: h.look.clone(), status: h.status() });
-        Ok(LogitechLive { battery, dpi, saved_dpi: self.saved_dpi, lighting, host, gave_back: self.gave_back.clone() })
+        let log = self.host_log();
+        Ok(LogitechLive {
+            battery,
+            dpi,
+            saved_dpi: self.saved_dpi,
+            lighting,
+            host,
+            gave_back: self.gave_back.clone(),
+            saved_look: self.lights.saved.clone(),
+            host_log: (log.taken > 0).then_some(log),
+        })
     }
 
     fn apply_dpi(&mut self, dpi: u16) -> Result<()> {
@@ -327,7 +495,7 @@ impl LogitechTask {
 
 impl Drop for LogitechTask {
     fn drop(&mut self) {
-        self.release("");
+        self.release("PeriHub stopped driving them", false);
     }
 }
 
@@ -440,7 +608,7 @@ mod tests {
             lighting: None,
             read_errors: Vec::new(),
         };
-        (LogitechTask::open(dev, device, saved, None), mouse)
+        (LogitechTask::open(dev, device, saved, LightsMemory::default()), mouse)
     }
 
     #[test]
@@ -517,7 +685,7 @@ mod tests {
     mod keyboard {
         use super::*;
         use crate::hidpp::FeatureEntry;
-        use crate::hidpp::host::tests::{RED, calls, g915x, keyboard_read_only, look, zone};
+        use crate::hidpp::host::tests::{Pending, RED, calls, g915x, idle_event, keyboard_read_only, look, zone};
         use crate::hidpp::host::{Power, effect};
 
         fn device() -> UnsupportedDevice {
@@ -548,13 +716,93 @@ mod tests {
         type Kb = std::sync::Arc<std::sync::Mutex<crate::hidpp::host::tests::Keyboard>>;
 
         fn open(look: Option<Look>) -> (LogitechTask, Kb) {
-            let (dev, state, _) = keyboard_read_only();
-            let mut task = LogitechTask::open(dev, device(), None, None).unwrap();
+            let (task, state, _) = open_with(look, LightsMemory::default());
+            (task, state)
+        }
+
+        fn open_with(look: Option<Look>, lights: LightsMemory) -> (LogitechTask, Kb, Pending) {
+            let (dev, state, pending) = keyboard_read_only();
+            let mut task = LogitechTask::open(dev, device(), None, lights).unwrap();
             task.programs = Vec::new;
             if let Some(look) = look {
                 task.drive_lights(look).unwrap();
             }
-            (task, state)
+            (task, state, pending)
+        }
+
+        #[test]
+        fn a_keyboard_that_went_away_in_host_mode_is_taken_again_when_it_answers() {
+            let lights = LightsMemory::default();
+            let (mut task, state, _) = open_with(Some(look()), lights.clone());
+            // Out of reach for a moment: the thread ends without giving the lights back.
+            state.lock().unwrap().asleep = true;
+            task.last_host_check = Instant::now() - HOST_CHECK_EVERY;
+            assert!(matches!(task.tick(), Err(Error::Unreachable)));
+            drop(task);
+            let k = state.lock().unwrap();
+            assert!(k.host_mode && k.control == 3, "not given back");
+            assert!(!k.calls.iter().any(|c| c.0 == feature::PROFILE_MANAGEMENT && c.2 == [3]));
+            drop(k);
+            // Back, still in host mode (mode 3): the manager opens it with the look it drove.
+            let (dev, state, _) = keyboard_read_only();
+            {
+                let mut k = state.lock().unwrap();
+                k.control = 3;
+                k.host_mode = true;
+            }
+            let memory = LightsMemory { driving: Some(look()), ..lights };
+            let mut again = LogitechTask::open(dev, device(), None, memory).unwrap();
+            again.programs = Vec::new;
+            let live = again.live().unwrap();
+            assert!(live.host.is_some(), "taken again");
+            let log = live.host_log.unwrap();
+            assert_eq!((log.taken, log.on_connect, log.given_back), (2, 1, 0));
+            assert_eq!(live.saved_look, Some(look()));
+            // Asked by the user, mode 3 is still refused.
+            again.give_back_lights().unwrap();
+            state.lock().unwrap().control = 3;
+            assert!(matches!(again.drive_lights(look()), Err(Error::Invalid(_))));
+        }
+
+        #[test]
+        fn a_refused_command_takes_the_lights_again_instead_of_giving_them_back() {
+            let (mut task, state, pending) = open_with(Some(look()), LightsMemory::default());
+            pending.lock().unwrap().push_back(idle_event(false));
+            task.tick().unwrap();
+            assert_eq!(task.live().unwrap().host.unwrap().status.power, Power::Dimmed);
+            // The keyboard restarted on its own lights: turning them off is refused (error 5).
+            {
+                let mut k = state.lock().unwrap();
+                k.control = 0;
+                k.host_mode = false;
+                k.calls.clear();
+            }
+            task.host.as_mut().unwrap().idle_for(Duration::from_secs(270));
+            task.tick().unwrap();
+            let live = task.live().unwrap();
+            assert!(live.host.is_some() && live.gave_back.is_none(), "{live:?}");
+            assert_eq!(live.host_log.unwrap().retaken, 1);
+            let k = state.lock().unwrap();
+            assert!(k.host_mode && k.control == 3);
+        }
+
+        #[test]
+        fn what_to_do_when_a_call_fails() {
+            assert_eq!(after_error(&Error::Unreachable, 0), AfterError::EndThread);
+            assert_eq!(after_error(&Error::Timeout, 1), AfterError::TryAgain);
+            assert_eq!(after_error(&Error::Timeout, TIMEOUTS_IN_A_ROW), AfterError::EndThread);
+            assert_eq!(after_error(&Error::Hidpp(crate::error::HidppErrorCode(5)), 0), AfterError::TakeAgain);
+        }
+
+        #[test]
+        fn the_last_look_and_the_session_counts_stay_after_giving_back() {
+            let (mut task, _state) = open(Some(look()));
+            task.give_back_lights().unwrap();
+            let live = task.live().unwrap();
+            assert!(live.host.is_none() && live.gave_back.is_none());
+            assert_eq!(live.saved_look, Some(look()));
+            let log = live.host_log.unwrap();
+            assert_eq!((log.taken, log.given_back, log.last_reason.as_deref()), (1, 1, Some("asked")));
         }
 
         #[test]

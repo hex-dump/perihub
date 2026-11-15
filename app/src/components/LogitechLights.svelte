@@ -10,6 +10,7 @@
     effectTakesColor,
     effectTakesPeriod,
     keyGroups,
+    perKeyKeys,
     settableEffect,
     waveDirections,
     zoneName,
@@ -46,7 +47,7 @@
   const name = $derived(device.name ?? "keyboard");
   const lighting = $derived(device.lighting!);
   const zones = $derived(lighting.effects?.zones ?? []);
-  const groups = $derived(keyGroups(lighting.keys));
+  const groups = $derived(keyGroups(perKeyKeys(lighting)));
   const host = $derived(live?.host ?? null);
   const warrantyKey = $derived(`lights:${name}`);
 
@@ -61,11 +62,12 @@
   let understood = $state(false);
   let loaded = false;
 
-  // The editors start from what PeriHub shows, or from a white fixed colour.
+  // The editors start from what PeriHub shows, or the last look it showed (kept in its settings, also
+  // after a restart), or a white fixed colour.
   $effect(() => {
     if (loaded || !live) return;
     loaded = true;
-    const look = live.host?.look;
+    const look = live.host?.look ?? live.saved_look;
     for (const zone of zones) {
       const shown = look?.zones.find((z) => z.zone === zone.index);
       const perKey = shown?.effect === EFFECT.fixed && zone.location === 1 && !!look?.keys.length;

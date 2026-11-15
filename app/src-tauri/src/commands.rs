@@ -241,8 +241,9 @@ pub async fn logitech_reset_dpi(state: State<'_, AppState>, receiver_id: u16, sl
 }
 
 /// Takes the lights of a keyboard PeriHub knows by its features over (host mode, experimental) and
-/// shows `look`, or shows it if PeriHub drives them already. The look is kept for the session, and
-/// shown again every time the keyboard connects.
+/// shows `look`, or shows it if PeriHub drives them already. The look is shown again every time the
+/// keyboard connects this session, and saved in the settings for the editor (the lights are not
+/// taken at startup: only when the user asks).
 #[tauri::command]
 pub async fn logitech_drive_lights(
     app: AppHandle,
@@ -254,9 +255,11 @@ pub async fn logitech_drive_lights(
     let manager = state.manager.clone();
     let kept = look.clone();
     let key = blocking(move || manager.logitech(receiver_id, slot)?.call(move |d| d.drive_lights(look))).await?;
-    state.manager.set_logitech_look(key, Some(kept));
+    state.manager.set_logitech_look(key.clone(), Some(kept.clone()));
     crate::window::refresh_menu(&app);
-    Ok(())
+    let mut config = state.config.lock().unwrap();
+    config.logitech_looks.insert(key, kept);
+    config.save().map_err(|e| e.to_string())
 }
 
 /// Gives the keyboard its own lights back.

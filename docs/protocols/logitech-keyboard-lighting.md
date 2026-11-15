@@ -89,11 +89,31 @@ own lights (0):
 
 1. 0x8101 function 6 `05`: host mode (G HUB, Solaar and logi-ghub-linux send it; it ends at a power cycle).
 2. 0x8071 function 5 `01 03 06`. Byte 1 hands over the zones (0x01) and the power modes (0x02); byte 2 asks for
-   the notices of user activity (0x02) and of no activity (0x04). Solaar sends `04`, G HUB `05` and `03`
-   (captures on a G515 and a G915 X), logi-ghub-linux `06`: with `04` alone, it notes, a G915 X puts its own
-   lighting back over the host's after a minute (**unconfirmed**, one source).
-3. The effects (function 1, persistence 0x01), then the per-key colours (0x8081). The first per-key frame after
-   the take-over is sent twice, as Solaar does: it can come before the keyboard has left its own mode.
+   the notices of effect sync (0x01), user activity (0x02) and no activity (0x04). Solaar sends `04`,
+   logi-ghub-linux `06`: with `04` alone, it notes, a G915 X puts its own lighting back over the host's after a
+   minute (**unconfirmed**, one source). G HUB re-arms the one notice it waits for: `01 03 05` while the keyboard
+   is in use (effect sync and no activity) and `01 03 03` once it is idle (effect sync and activity), within 9 ms
+   of each notice (USB captures by the tester of issue #30 on the G915 X LS, and ksanislo's on a G515). PeriHub
+   keeps `06`: with it the G915 X LS of issue #30 dimmed after a minute, turned off later and lit again at the
+   first key, and PeriHub has no use for the effect sync events (event 0) that `05` adds.
+3. Function 8 `01 01 00`: lights on (tried three times, 100 ms apart). Until the take-over the keyboard dims its
+   lights and turns them off by itself when nobody types; once the power modes are the program's, it stays as it
+   was. Without it the keys stayed dark at a first take-over in issue #30 (the user had been clicking with the
+   mouse; a second take-over, after typing, was right). G HUB sends no function 8 in the captures, which never
+   reach the off timer.
+4. The effect of the keys' zone (function 1, persistence 0x01), the per-key colours (0x8081), then the effects of
+   the other zones, the logo last. The first per-key frame after the take-over is sent twice, as Solaar does: it
+   can come before the keyboard has left its own mode. The logo's key (210) is left out of the per-key frame
+   unless the logo zone has a fixed colour, and then it gets that colour: with the logo in the frame, the logo's
+   breathing never showed and its colour cycle stayed on the keys' red in issue #30. (G HUB never sets the logo
+   zone on its own in the captures: it sends one effect on all zones, `ff 06 …`, the keyboard's multi-zone effect
+   0x18 with two colours, a 3000 ms period and intensity 100, or 50 while idle.)
+
+A new look is sent the same way, without the take-over. Leaving a wave "to the centre" (direction 8) is the
+exception: the G915 X LS of issue #30 kept that wave, its period too, through every later effect of the zone
+until the lights were given back and taken again, so PeriHub does just that (function 5 `01 00 00`, 0x8101 `03`,
+150 ms, then steps 1–4). That this direction alone does it is **unconfirmed**: the test report counts the looks
+shown and these resets.
 
 The keyboard then sends 0x8071 **event 1** (software id 0) with byte 0 = 0 when nobody has used it for the time in
 function 7 (60 s on the G915 X LS), and 1 when it is used again, each several times in a row. PeriHub dims the
@@ -104,9 +124,30 @@ notice never comes while a program drives the lights. On use it sends function 8
 keyboard went back to its own lights (it restarted), and PeriHub takes them again.
 
 To give the lights back: function 5 `01 00 00`, then 0x8101 function 6 `03`. PeriHub does it when the user asks,
-when G HUB or Solaar starts, when a command fails, when the device's thread ends, and before it quits or installs
-an update. A keyboard that stops answering has its own lights when it comes back, after a power cycle or a deep
-sleep; PeriHub shows its look again when it connects, for the rest of the session.
+when G HUB or Solaar starts, and before it quits or installs an update. (G HUB, when its on-board memory mode is
+turned on, sends function 5 `01 00 00` and 0x8101 function 6 `0f`, which answers `03 00 01`: issue #30
+captures.)
+
+When a call fails while PeriHub drives the lights:
+
+- no answer in time (1 s): the next tick paints the look again. The keyboard can be slow: in the captures of
+  issue #30 it took 1 s to answer G HUB's first call and 1.4 s while another G HUB client was busy with it. After
+  three in a row, as when the keyboard is gone (the receiver says it is asleep or out of reach), the device's
+  thread ends **without** giving the lights back;
+- refused (such as error 5 once the keyboard left host mode on its own): PeriHub takes the lights again, and
+  gives them back only if that fails too.
+
+Before, any failed call gave the lights back, and a keyboard that went away for a moment came back still in host
+mode (function 5 reads 3): PeriHub then refused to take it again, as if another program drove it, and its page
+showed **Drive the lights** with the editor back to white (issue #30, "after a while"). Now, when the keyboard
+answers again, PeriHub takes the lights again and shows the same look even if function 5 reads 3, unless G HUB or
+Solaar runs; when the user asks, 3 is still refused. A keyboard that was turned off or slept deeply has its own
+lights when it comes back, and PeriHub shows its look again too, for the rest of the session.
+
+The last look shown is saved in PeriHub's settings, and the editor starts from it after a restart, but PeriHub
+takes the lights only when the user asks. The test report counts, over the whole session, the take-overs (and
+those on a reconnection), the give-backs and the last reason, the calls not answered in time, the notices, the
+looks shown and the wave resets: the counts of one take-over alone started again from 0 at each one.
 
 A reply with error 8 (busy) is asked again after 30, 60 and 90 ms, as Solaar does; a per-key frame that failed
 half-way gets no end of frame. Calls that keep something in the keyboard's memory are refused even in host mode

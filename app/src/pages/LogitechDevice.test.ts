@@ -58,7 +58,7 @@ async function open(props: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
-  live = { battery: { percent: 80, estimated: false, state: "discharging" }, dpi: 1000, saved_dpi: null, lighting: null, host: null, gave_back: null };
+  live = { battery: { percent: 80, estimated: false, state: "discharging" }, dpi: 1000, saved_dpi: null, lighting: null, host: null, gave_back: null, saved_look: null, host_log: null };
   api.logitechLive.mockImplementation(async () => live);
   api.logitechSetDpi.mockImplementation(async (_r: number, _s: number, dpi: number) => {
     live = { ...live, dpi, saved_dpi: dpi };
@@ -105,7 +105,7 @@ describe("a Logitech keyboard's lighting", () => {
   const keyboard = { ...device, name: "G915 X LS", kind: 0, dpi: null, features: [], lighting };
 
   it("is shown as read, with nothing to change", async () => {
-    live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: true, control: 0 }, host: null, gave_back: null };
+    live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: true, control: 0 }, host: null, gave_back: null, saved_look: null, host_log: null };
     await open({ device: keyboard, receiver: { ...receiver, unsupported: [keyboard] } });
     const card = screen.getByRole("heading", { name: /Lighting/ }).closest("section")!;
     expect(card.textContent).toContain("Read only");
@@ -119,7 +119,7 @@ describe("a Logitech keyboard's lighting", () => {
   });
 
   it("says when a program drives the lights", async () => {
-    live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: false, control: 3 }, host: null, gave_back: null };
+    live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: false, control: 3 }, host: null, gave_back: null, saved_look: null, host_log: null };
     await open({ device: keyboard, receiver: { ...receiver, unsupported: [keyboard] } });
     const card = screen.getByRole("heading", { name: /Lighting/ }).closest("section")!;
     expect(card.textContent).toContain("A program, such as G HUB");
@@ -167,6 +167,8 @@ describe("a Logitech keyboard whose lights PeriHub can drive", () => {
     idle_events: 0,
     active_events: 0,
     retaken: 0,
+    shown: 0,
+    resets: 0,
   });
 
   beforeEach(() => {
@@ -177,6 +179,8 @@ describe("a Logitech keyboard whose lights PeriHub can drive", () => {
       lighting: { brightness: 100, on: null, control: 0 },
       host: null,
       gave_back: null,
+    saved_look: null,
+    host_log: null,
     };
     api.logitechDriveLights.mockImplementation(async (_r: number, _s: number, look) => {
       live = { ...live, host: host(look), lighting: { brightness: 100, on: null, control: 3 } };
@@ -239,11 +243,13 @@ describe("a Logitech keyboard whose lights PeriHub can drive", () => {
       { zone: 0, effect: 1, color: "#ff0000", period_ms: null, direction: null },
       { zone: 1, effect: 0x0a, color: "#ffffff", period_ms: 3000, direction: null },
     ]);
-    expect(look.keys).toHaveLength(keys.length);
+    // The logo follows its own zone: its key is not among the colours per key.
+    expect(look.keys).toHaveLength(keys.length - 1);
     expect(look.keys.filter(([, c]: [number, string]) => c === "#0000ff").map(([k]: [number, string]) => k)).toEqual(
       Array.from({ length: 26 }, (_, i) => i + 1),
     );
-    expect(look.keys.find(([k]: [number, string]) => k === 210)).toEqual([210, "#ff0000"]);
+    expect(look.keys.find(([k]: [number, string]) => k === 210)).toBeUndefined();
+    expect(screen.queryByLabelText("Logo")).toBeNull();
 
     await fireEvent.change(select("Effect, Keys"), { target: { value: "22" } });
     expect([...select("Direction").options].map((o) => o.value)).toEqual(["0", "1", "6", "2", "7", "3", "8"]);
@@ -268,6 +274,23 @@ describe("a Logitech keyboard whose lights PeriHub can drive", () => {
     live = { ...live, host: null, gave_back: "Logitech G HUB started" };
     await open(props);
     expect(screen.getByText(/PeriHub gave the G915 X LS its own lights back: Logitech G HUB started/)).toBeTruthy();
+  });
+
+  it("starts from the last look PeriHub showed, also after a restart, without taking the lights", async () => {
+    const look = {
+      zones: [
+        { zone: 0, effect: 0x16, color: null, period_ms: 5000, direction: 8 },
+        { zone: 1, effect: 0x0a, color: "#00ff00", period_ms: 4000, direction: null },
+      ],
+      keys: [],
+    };
+    live = { ...live, saved_look: look };
+    await open(props);
+    expect(select("Effect, Keys").value).toBe("22");
+    expect(select("Direction").value).toBe("8");
+    expect(select("Effect, Logo").value).toBe("10");
+    expect(screen.getByRole("button", { name: "Drive the lights" })).toBeTruthy();
+    expect(api.logitechDriveLights).not.toHaveBeenCalled();
   });
 
   it("sets the brightness", async () => {

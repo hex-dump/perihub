@@ -63,6 +63,9 @@ pub struct AppConfig {
     /// The DPI PeriHub sets every time a Logitech device it knows by its features connects, by the
     /// device's settings key (see `UnsupportedDevice::settings_key`).
     pub logitech_dpi: std::collections::HashMap<String, u16>,
+    /// The last look PeriHub showed on a Logitech keyboard whose lights it drove, by the keyboard's
+    /// settings key: shown in the editor again. The lights are only taken when the user asks.
+    pub logitech_looks: std::collections::HashMap<String, crate::hidpp::host::Look>,
     /// Keyboards with a raw HID collection the user turned on as VIA keyboards, by "vvvv:pppp".
     pub qmk_keyboards: Vec<String>,
 }
@@ -77,6 +80,7 @@ impl Default for AppConfig {
             check_updates: true,
             software_macros: Vec::new(),
             logitech_dpi: std::collections::HashMap::new(),
+            logitech_looks: std::collections::HashMap::new(),
             qmk_keyboards: Vec::new(),
         }
     }

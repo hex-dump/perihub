@@ -209,13 +209,17 @@ export function receiverTest(
         );
       }
       if (live.host) {
-        const h = live.host;
+        lines.push(`Lights driven by PeriHub: ${live.host.power}`, `PeriHub shows: ${lookText(live.host.look)}`);
+      } else {
+        if (live.gave_back) lines.push(`PeriHub gave the lights back: ${live.gave_back}`);
+        if (live.saved_look) lines.push(`Last look PeriHub showed: ${lookText(live.saved_look)}`);
+      }
+      // Counted over the whole session: every take-over, give-back and reconnection.
+      const s = live.host_log;
+      if (s) {
         lines.push(
-          `Lights driven by PeriHub: ${h.power}, idle notices ${h.idle_events}, in-use notices ${h.active_events}, taken again ${h.retaken}`,
-          `PeriHub shows: ${lookText(h.look)}`,
+          `Host mode this session: taken ${s.taken} (${s.on_connect} on reconnection), given back ${s.given_back}${s.last_reason ? ` (last: ${s.last_reason})` : ""}, timeouts ${s.timeouts}, idle notices ${s.idle_events}, in-use notices ${s.active_events}, taken again ${s.retaken}, looks shown ${s.shown}, wave resets ${s.resets}`,
         );
-      } else if (live.gave_back) {
-        lines.push(`PeriHub gave the lights back: ${live.gave_back}`);
       }
     }
     const errors = [...device.read_errors, ...(device.lighting?.errors ?? [])];

@@ -22,6 +22,7 @@ use crate::hidpp::models::{self, MouseModel};
 use crate::hidpp::receiver::{self, Presence, UnsupportedDevice};
 use crate::hidpp::{HidppDevice, Transport};
 use crate::keyboard::{KeyInterfaces, KeyboardInfo, KeyboardTask};
+use crate::logitech::LightsMemory;
 use crate::logitech::LogitechTask;
 use crate::mouse::{MouseInfo, MouseTask, ReceiverLink};
 use crate::peripheral::qmk::{self, Found};
@@ -395,9 +396,10 @@ pub struct Manager {
     untested_saves: bool,
     /// The DPI to set on the devices PeriHub knows by their features, by settings key.
     logitech_dpi: Arc<Mutex<HashMap<String, u16>>>,
-    /// What PeriHub shows on the keyboards whose lights it drives, for this session only, by
-    /// settings key: shown again every time such a keyboard connects.
-    logitech_looks: Arc<Mutex<HashMap<String, Look>>>,
+    /// The lights of the keyboards PeriHub knows by their features, by settings key: the look it
+    /// shows again every time such a keyboard connects (this session only), the last look shown
+    /// (saved in the settings), and how host mode went.
+    logitech_lights: Arc<Mutex<HashMap<String, LightsMemory>>>,
     /// Keyboards with a raw HID collection the user turned on as VIA keyboards, by "vvvv:pppp".
     qmk_enabled: Arc<Mutex<HashSet<String>>>,
 }
@@ -408,11 +410,14 @@ impl Manager {
     /// unless the user keeps it. Only the interface asks that; the command line never saves to one.
     /// `logitech_dpi`: the DPI to set on the devices PeriHub knows by their features every time they
     /// connect, by settings key (see [`Manager::set_logitech_dpi`]). `qmk_keyboards`: the keyboards
-    /// the user turned on as VIA keyboards (see [`Manager::set_qmk_enabled`]).
+    /// the user turned on as VIA keyboards (see [`Manager::set_qmk_enabled`]). `logitech_looks`: the
+    /// last look shown on each keyboard whose lights PeriHub drove, for the editor; the lights are
+    /// only taken again when the user asks.
     pub fn start(
         keyboard_config: KeyboardConfig,
         untested_saves: bool,
         logitech_dpi: HashMap<String, u16>,
+        logitech_looks: HashMap<String, Look>,
         qmk_keyboards: Vec<String>,
         listener: Listener,
     ) -> Self {
@@ -421,7 +426,12 @@ impl Manager {
             keyboard_config: Arc::new(Mutex::new(keyboard_config)),
             untested_saves,
             logitech_dpi: Arc::new(Mutex::new(logitech_dpi)),
-            logitech_looks: Arc::new(Mutex::new(HashMap::new())),
+            logitech_lights: Arc::new(Mutex::new(
+                logitech_looks
+                    .into_iter()
+                    .map(|(key, look)| (key, LightsMemory { saved: Some(look), ..LightsMemory::default() }))
+                    .collect(),
+            )),
             qmk_enabled: Arc::new(Mutex::new(qmk_keyboards.into_iter().collect())),
         };
         let background = manager.clone();
@@ -871,9 +881,9 @@ impl Manager {
         };
         for (paths, slot, device) in to_open {
             let saved = self.logitech_dpi.lock().unwrap().get(&device.settings_key()).copied();
-            let look = self.logitech_looks.lock().unwrap().get(&device.settings_key()).cloned();
+            let lights = self.logitech_lights.lock().unwrap().entry(device.settings_key()).or_default().clone();
             let receiver_id = paths.0.product_id();
-            match open_behind(api, &paths, slot, true).and_then(|dev| LogitechTask::open(dev, device, saved, look)) {
+            match open_behind(api, &paths, slot, true).and_then(|dev| LogitechTask::open(dev, device, saved, lights)) {
                 Ok(task) => {
                     log::info!(
                         "{} connected through the {}, slot {slot} (read by its features)",
@@ -922,25 +932,28 @@ impl Manager {
         };
     }
 
-    /// Keeps the look to show on a keyboard every time it connects, for this session (`None`: PeriHub
-    /// no longer drives its lights).
+    /// Keeps the look to show on a keyboard every time it connects, for this session, and as the
+    /// last look shown (`None`: PeriHub no longer drives its lights; the last look stays).
     pub fn set_logitech_look(&self, key: String, look: Option<Look>) {
-        let mut looks = self.logitech_looks.lock().unwrap();
-        match look {
-            Some(look) => looks.insert(key, look),
-            None => looks.remove(&key),
-        };
+        let mut lights = self.logitech_lights.lock().unwrap();
+        let memory = lights.entry(key).or_default();
+        if look.is_some() {
+            memory.saved.clone_from(&look);
+        }
+        memory.driving = look;
     }
 
     /// PeriHub drives the lights of a keyboard this session.
     pub fn drives_logitech_lights(&self) -> bool {
-        !self.logitech_looks.lock().unwrap().is_empty()
+        self.logitech_lights.lock().unwrap().values().any(|m| m.driving.is_some())
     }
 
     /// Gives the lights of every keyboard PeriHub drives back to the keyboard (tray menu, quitting
-    /// PeriHub, installing an update), and forgets the looks.
+    /// PeriHub, installing an update): they are no longer taken when the keyboard connects.
     pub fn release_logitech(&self) {
-        self.logitech_looks.lock().unwrap().clear();
+        for memory in self.logitech_lights.lock().unwrap().values_mut() {
+            memory.driving = None;
+        }
         let workers: Vec<_> = self.slots.lock().unwrap().logitech.values().map(|(w, _)| w.clone()).collect();
         for worker in workers {
             let _ = worker.call(|d| d.give_back_lights());

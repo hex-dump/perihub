@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("./api", () => ({}));
 
 import type { UnsupportedReceiverDevice } from "./api";
-import { capabilities, kindIcon, kindName, keyGroups, lightsDrivable, waveDirections } from "./logitechFeatures";
+import { capabilities, kindIcon, kindName, keyGroups, lightsDrivable, perKeyKeys, waveDirections } from "./logitechFeatures";
 
 /** The feature table of the MX Master 3S, as Solaar's device documentation lists it (ids only). */
 const MX_MASTER_3S = [
@@ -83,6 +83,13 @@ describe("driving a keyboard's lights", () => {
     ]);
     expect(groups.flatMap((g) => g.keys).sort((a, b) => a - b)).toEqual(keys);
     expect(keyGroups([1, 2]).map((g) => g.name)).toEqual(["Letters"]);
+  });
+
+  it("leaves the logo out of the colours per key when the keyboard has a logo zone", () => {
+    const zones = (locations: number[]) => ({ zones: locations.map((location) => ({ location })) });
+    expect(perKeyKeys({ keys: [1, 2, 210], effects: zones([1, 2]) })).toEqual([1, 2]);
+    expect(perKeyKeys({ keys: [1, 2, 210], effects: zones([1]) })).toEqual([1, 2, 210]);
+    expect(keyGroups(perKeyKeys({ keys: [1, 210], effects: zones([1, 2]) })).map((g) => g.name)).toEqual(["Letters"]);
   });
 
   it("offers only the wave directions the keyboard lists", () => {

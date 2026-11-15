@@ -221,7 +221,7 @@ describe("receiverTest", () => {
   });
 
   it("adds the DPI now and the DPI PeriHub sets, for a device that is open", () => {
-    const live = { battery: null, dpi: 1600, saved_dpi: 1600, lighting: null, host: null, gave_back: null };
+    const live = { battery: null, dpi: 1600, saved_dpi: 1600, lighting: null, host: null, gave_back: null, saved_look: null, host_log: null };
     const report = receiverTest(bolt, bolt.unsupported[0], "0.6.7", "linux x86_64", live).report;
     expect(report).toContain("DPI now: 1600");
     expect(report).toContain("DPI set by PeriHub at every connection: 1600");
@@ -254,7 +254,7 @@ describe("receiverTest", () => {
       errors: ["8071 function 3 (00 00 40): HID++ error 0x02"],
     };
     const keyboard = { ...bolt.unsupported[0], name: "G915 X LS", kind: 0, dpi: null, lighting };
-    const live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: true, control: 0 }, host: null, gave_back: null };
+    const live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: true, control: 0 }, host: null, gave_back: null, saved_look: null, host_log: null };
     const report = receiverTest(bolt, keyboard, "0.8.5", "windows x86_64", live).report.split("\n");
     expect(report).toContain("Brightness: 0-100, 5 levels, can be turned off");
     expect(report).toContain(
@@ -334,20 +334,35 @@ describe("receiverTest", () => {
       ],
       keys,
     };
-    const host = { look, power: "dimmed" as const, idle_events: 2, active_events: 1, retaken: 0 };
-    const live = { battery: null, dpi: null, saved_dpi: null, lighting: null, host, gave_back: null };
+    const host = { look, power: "dimmed" as const, idle_events: 2, active_events: 1, retaken: 0, shown: 3, resets: 1 };
+    const host_log = {
+      taken: 3,
+      on_connect: 1,
+      given_back: 2,
+      last_reason: "asked",
+      timeouts: 4,
+      idle_events: 5,
+      active_events: 4,
+      retaken: 0,
+      shown: 9,
+      resets: 1,
+    };
+    const live = { battery: null, dpi: null, saved_dpi: null, lighting: null, host, gave_back: null, saved_look: look, host_log };
     const fields = receiverTest(bolt, keyboard, "0.8.5", "windows x86_64", live);
     const report = fields.report.split("\n");
-    expect(report).toContain("Lights driven by PeriHub: dimmed, idle notices 2, in-use notices 1, taken again 0");
+    expect(report).toContain("Lights driven by PeriHub: dimmed");
+    expect(report).toContain(
+      "Host mode this session: taken 3 (1 on reconnection), given back 2 (last: asked), timeouts 4, idle notices 5, in-use notices 4, taken again 0, looks shown 9, wave resets 1",
+    );
     expect(report).toContain(
       "PeriHub shows: zone 0 effect 0x01 #ff0000; zone 1 effect 0x16 2976 ms direction 6; 126 keys in 2 colours",
     );
     expect(deviceTestFormUrl(fields, "0.8.5", "windows x86_64").length).toBeLessThan(7000);
 
     const back = { ...live, host: null, gave_back: "Logitech G HUB started" };
-    expect(receiverTest(bolt, keyboard, "0.8.5", "windows x86_64", back).report).toContain(
-      "PeriHub gave the lights back: Logitech G HUB started",
-    );
+    const backReport = receiverTest(bolt, keyboard, "0.8.5", "windows x86_64", back).report;
+    expect(backReport).toContain("PeriHub gave the lights back: Logitech G HUB started");
+    expect(backReport).toContain("Last look PeriHub showed: zone 0 effect 0x01 #ff0000;");
   });
 
   it("says when the system refused to open a Unifying receiver", () => {

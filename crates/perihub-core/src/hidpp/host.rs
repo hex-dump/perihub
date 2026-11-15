@@ -32,8 +32,9 @@ pub mod effect {
 const HOST_MODE: u8 = 0x05;
 const ONBOARD_MODE: u8 = 0x03;
 /// 0x8071 function 5: the lights and their power modes go to PeriHub (0x03), and the keyboard tells
-/// when nobody uses it and when it is used again (0x06). G HUB sends 0x05 and 0x03 on the same
-/// keyboard; with only the idle notice, a G915 X puts its own lighting back over the host's.
+/// when nobody uses it and when it is used again (0x06). G HUB sends 0x05 (effect sync and the idle
+/// notice) and, once idle, 0x03 (effect sync and the in-use notice); 0x06 asks for both notices at
+/// once, and the G915 X LS of issue #30 dimmed, turned off and lit again with it.
 const CLAIM: [u8; 3] = [0x01, 0x03, 0x06];
 const RELEASE: [u8; 3] = [0x01, 0x00, 0x00];
 /// 0x8071 function 8: lights on, and off.
@@ -50,6 +51,14 @@ const DIMMED: f32 = 0.25;
 const DIMMED_INTENSITY: u8 = 25;
 /// Seconds from dimming to off when the keyboard does not say (0x8071 function 7).
 const DEFAULT_SLEEP_S: u16 = 270;
+/// Wave directions after which a G915 X LS kept the wave and ignored every new effect of the zone
+/// until its lights were given back and taken again (issue #30: "to the centre", 8). PeriHub does
+/// that itself when such a wave changes.
+const STICKY_DIRECTIONS: [u8; 1] = [8];
+/// The pause between giving the lights back and taking them again, for the keyboard to load its own.
+const RESET_PAUSE_MS: u64 = 150;
+/// The key id of the logo in 0x8081 (Solaar, logi-ghub-linux and the G915 X LS's own key list).
+const LOGO_KEY: u8 = 210;
 
 /// What one lighting zone shows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -97,6 +106,10 @@ pub struct HostStatus {
     pub active_events: u32,
     /// Times the keyboard was found back on its own lighting, and taken again.
     pub retaken: u32,
+    /// Looks shown since the lights were taken, and of them those that needed the lights given back
+    /// and taken again (see [`STICKY_DIRECTIONS`]).
+    pub shown: u32,
+    pub resets: u32,
 }
 
 /// The direction a wave can take (1 to 8), by the 0x8071 capability bit that says it is there.
@@ -111,7 +124,29 @@ pub fn can_drive(features: &[u16], lighting: Option<&Lighting>) -> bool {
 
 /// The zone the keys are in (location 1).
 fn keys_zone(lighting: &Lighting) -> Option<u8> {
-    lighting.effects.as_ref()?.zones.iter().find(|z| z.location == 1).map(|z| z.index)
+    zone_at(lighting, 1)
+}
+
+/// The zone at `location` (1 the keys, 2 the logo).
+fn zone_at(lighting: &Lighting, location: u16) -> Option<u8> {
+    lighting.effects.as_ref()?.zones.iter().find(|z| z.location == location).map(|z| z.index)
+}
+
+/// The per-key frame for `look`: its keys, except the logo when the keyboard has a logo zone. That
+/// one gets the logo zone's colour while it is fixed, and is left out otherwise: a per-key colour on
+/// the logo held it on one colour whatever its zone's effect (issue #30: the logo's breathing never
+/// showed, and its colour cycle stayed red).
+fn frame_keys(look: &Look, lighting: &Lighting) -> Vec<(u8, Rgb)> {
+    let Some(logo) = zone_at(lighting, 2) else { return look.keys.clone() };
+    let mut keys: Vec<(u8, Rgb)> = look.keys.iter().filter(|(k, _)| *k != LOGO_KEY).copied().collect();
+    let fixed = look.zones.iter().find(|z| z.zone == logo && z.effect == effect::FIXED);
+    if !keys.is_empty()
+        && lighting.keys.contains(&LOGO_KEY)
+        && let Some(zone) = fixed
+    {
+        keys.push((LOGO_KEY, zone.color.unwrap_or(Rgb::WHITE)));
+    }
+    keys
 }
 
 fn find_effect(lighting: &Lighting, zone: u8, id: u16) -> Result<&ZoneEffect> {
@@ -252,12 +287,30 @@ pub fn give_back(dev: &mut HidppDevice) -> Result<()> {
     lights.and(mode)
 }
 
+/// Lights on (0x8071 function 8 `01 01 00`): the first call after the keyboard woke can fail, so
+/// it is tried three times, 100 ms apart, as Solaar does.
+fn lights_on(dev: &mut HidppDevice) -> Result<()> {
+    let mut last = Ok(());
+    for attempt in 0..3 {
+        if attempt > 0 {
+            std::thread::sleep(Duration::from_millis(100));
+        }
+        last = send(dev, feature::RGB_EFFECTS, 8, &POWER_FULL);
+        if last.is_ok() {
+            break;
+        }
+    }
+    last
+}
+
 /// A keyboard PeriHub drives.
 pub struct Host {
     pub look: Look,
     status: HostStatus,
     idle_since: Option<Instant>,
     sleep_after: Option<Duration>,
+    /// A paint failed half-way (the keyboard did not answer): done again at the next tick.
+    needs_paint: bool,
 }
 
 impl Host {
@@ -267,8 +320,16 @@ impl Host {
         let sleep_s = lighting.effects.as_ref().and_then(|e| e.sleep_s).unwrap_or(DEFAULT_SLEEP_S);
         let mut host = Self {
             look,
-            status: HostStatus { power: Power::Full, idle_events: 0, active_events: 0, retaken: 0 },
+            status: HostStatus {
+                power: Power::Full,
+                idle_events: 0,
+                active_events: 0,
+                retaken: 0,
+                shown: 0,
+                resets: 0,
+            },
             idle_since: None,
+            needs_paint: false,
             // 0xFFFF: never.
             sleep_after: (sleep_s != 0xFFFF).then(|| Duration::from_secs(sleep_s as u64)),
         };
@@ -288,25 +349,39 @@ impl Host {
     fn claim(&mut self, dev: &mut HidppDevice, lighting: &Lighting) -> Result<()> {
         send(dev, feature::PROFILE_MANAGEMENT, 6, &[HOST_MODE])?;
         send(dev, feature::RGB_EFFECTS, 5, &CLAIM)?;
+        // Lights on: with its own lights the keyboard dims them and turns them off by itself when
+        // nobody types (and the user clicks with the mouse meanwhile). Once the power modes are
+        // PeriHub's, it stays dimmed or off until told otherwise: the keys stayed dark at the
+        // first take-over in issue #30.
+        lights_on(dev)?;
         // The first frame after the take-over can come before the keyboard has left its own mode:
         // it is sent twice.
         self.paint(dev, lighting, true)
     }
 
-    /// Shows the look (dimmed while the keyboard is idle). `twice`: the per-key frame is sent again.
+    /// Shows the look (dimmed while the keyboard is idle): the keys' zone, then the per-key frame
+    /// (`twice`: sent again), then the other zones, so that the logo's own effect comes last.
     fn paint(&mut self, dev: &mut HidppDevice, lighting: &Lighting, twice: bool) -> Result<()> {
+        self.needs_paint = true;
         let dimmed = self.status.power == Power::Dimmed;
         let (factor, intensity) = if dimmed { (DIMMED, DIMMED_INTENSITY) } else { (1.0, 0) };
-        for zone in &self.look.zones {
+        let keys_zone = keys_zone(lighting);
+        let (first, rest): (Vec<&ZoneLook>, Vec<&ZoneLook>) =
+            self.look.zones.iter().partition(|z| Some(z.zone) == keys_zone);
+        let set_zone = |dev: &mut HidppDevice, zone: &ZoneLook| -> Result<()> {
             let found = find_effect(lighting, zone.zone, zone.effect)?;
             let mut shown = zone.clone();
             shown.color = zone.color.map(|c| c.scale(factor));
             let params = effect_params(found, &shown, intensity)?;
             let request = [&[zone.zone, found.index][..], &params, &[IN_RAM]].concat();
-            send(dev, feature::RGB_EFFECTS, 1, &request)?;
+            send(dev, feature::RGB_EFFECTS, 1, &request)
+        };
+        for zone in first {
+            set_zone(dev, zone)?;
         }
         if !self.look.keys.is_empty() {
-            let keys: Vec<(u8, Rgb)> = self.look.keys.iter().map(|&(k, c)| (k, c.scale(factor))).collect();
+            let keys: Vec<(u8, Rgb)> =
+                frame_keys(&self.look, lighting).iter().map(|&(k, c)| (k, c.scale(factor))).collect();
             for _ in 0..if twice { 2 } else { 1 } {
                 // A frame that failed half-way is not shown: no end of frame.
                 for params in key_reports(&keys) {
@@ -315,36 +390,58 @@ impl Host {
                 send(dev, feature::PER_KEY_LIGHTING_V2, 7, &[0, 0, 0, 0, 0])?;
             }
         }
+        for zone in rest {
+            set_zone(dev, zone)?;
+        }
+        self.needs_paint = false;
         Ok(())
     }
 
-    /// Shows a new look.
+    /// Shows a new look. Leaving a wave the keyboard sticks to goes through giving the lights back
+    /// and taking them again (see [`STICKY_DIRECTIONS`]).
     pub fn show(&mut self, dev: &mut HidppDevice, lighting: &Lighting, look: Look) -> Result<()> {
         check(&look, lighting)?;
+        let sticky = self.look.zones.iter().any(|old| {
+            old.effect == effect::WAVE
+                && old.direction.is_some_and(|d| STICKY_DIRECTIONS.contains(&d))
+                && look.zones.iter().find(|z| z.zone == old.zone) != Some(old)
+        });
         self.look = look;
+        self.status.shown += 1;
+        if sticky {
+            self.status.resets += 1;
+            give_back(dev)?;
+            std::thread::sleep(Duration::from_millis(RESET_PAUSE_MS));
+            self.status.power = Power::Full;
+            self.idle_since = None;
+            return self.claim(dev, lighting);
+        }
         if self.status.power == Power::Off {
             self.wake(dev)?;
         }
         self.paint(dev, lighting, false)
     }
 
+    /// The last paint failed half-way: the next tick paints again (not while the lights are off).
+    pub fn paint_later(&mut self) {
+        self.needs_paint = true;
+    }
+
+    /// Paints again if the last paint failed half-way.
+    pub fn catch_up(&mut self, dev: &mut HidppDevice, lighting: &Lighting) -> Result<()> {
+        if self.needs_paint && self.status.power != Power::Off {
+            self.paint(dev, lighting, false)?;
+        }
+        Ok(())
+    }
+
     pub fn status(&self) -> HostStatus {
         self.status.clone()
     }
 
-    /// Lights on again after they were turned off: the first call after waking can fail.
+    /// Lights on again after they were turned off.
     fn wake(&mut self, dev: &mut HidppDevice) -> Result<()> {
-        let mut last = Ok(());
-        for attempt in 0..3 {
-            if attempt > 0 {
-                std::thread::sleep(Duration::from_millis(100));
-            }
-            last = send(dev, feature::RGB_EFFECTS, 8, &POWER_FULL);
-            if last.is_ok() {
-                break;
-            }
-        }
-        last?;
+        lights_on(dev)?;
         send(dev, feature::RGB_EFFECTS, 5, &CLAIM)?;
         self.status.power = Power::Full;
         self.idle_since = None;
@@ -433,6 +530,10 @@ pub(crate) mod tests {
         pub(crate) host_mode: bool,
         /// The next calls of 0x8081 function 6 answer "busy".
         pub(crate) busy: u32,
+        /// 0x8071 function 8: the power mode set last (1 full, 3 off; 0 never set).
+        pub(crate) power: u8,
+        /// The receiver says the keyboard is not there (asleep, or out of reach).
+        pub(crate) asleep: bool,
     }
 
     fn error(request: &[u8], code: u8) -> Vec<u8> {
@@ -461,6 +562,9 @@ pub(crate) mod tests {
                 };
             }
             let id = id.unwrap();
+            if k.asleep {
+                return vec![crate::hidpp::tests::receiver_error(request, 0x09)];
+            }
             let used = p.iter().rposition(|&b| b != 0).map_or(0, |i| i + 1);
             k.calls.push((id, function, p[..used].to_vec()));
             let payload: Vec<u8> = match (id, function) {
@@ -471,6 +575,10 @@ pub(crate) mod tests {
                 }
                 // Effects and power modes only once a program has the lights, as the specification says.
                 (feature::RGB_EFFECTS, 1 | 8) if k.control != 3 => return vec![error(request, 5)],
+                (feature::RGB_EFFECTS, 8) => {
+                    k.power = p[1];
+                    p[..2].to_vec()
+                }
                 (feature::PROFILE_MANAGEMENT, 6) => {
                     if p[0] == 5 {
                         k.host_mode = true;
@@ -563,7 +671,7 @@ pub(crate) mod tests {
         std::mem::take(&mut state.lock().unwrap().calls)
     }
 
-    fn idle_event(active: bool) -> Vec<u8> {
+    pub(crate) fn idle_event(active: bool) -> Vec<u8> {
         let mut report = vec![0u8; LONG_LEN];
         report[..5].copy_from_slice(&[0x11, 1, 2, 0x10, active as u8]);
         report
@@ -582,25 +690,125 @@ pub(crate) mod tests {
         let mut expected = vec![
             (feature::PROFILE_MANAGEMENT, 6),
             (feature::RGB_EFFECTS, 5),
-            (feature::RGB_EFFECTS, 1),
+            (feature::RGB_EFFECTS, 8),
             (feature::RGB_EFFECTS, 1),
         ];
-        // 125 red keys in 10 reports and the blue one in 1, then the end of the frame: twice.
+        // 124 red keys (not the logo) in 10 reports and the blue one in 1, then the end of the
+        // frame: twice. Then the logo's own effect.
         for _ in 0..2 {
             expected.extend(frame.clone().take(11).copied());
             expected.push((feature::PER_KEY_LIGHTING_V2, 7));
         }
+        expected.push((feature::RGB_EFFECTS, 1));
         assert_eq!(short, expected);
         assert_eq!(sent[0].2, [5]);
         assert_eq!(sent[1].2, [1, 3, 6]);
+        // Lights on.
+        assert_eq!(sent[2].2, [1, 1]);
         // Zone 0, effect index 1 (fixed), red, at once, in RAM.
-        assert_eq!(sent[2].2, [0, 1, 0xFF, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1]);
+        assert_eq!(sent[3].2, [0, 1, 0xFF, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1]);
         // Zone 1, effect index 2 (breathing), blue, 5 s, default waveform and intensity, in RAM.
-        assert_eq!(sent[3].2, [1, 2, 0, 0, 0xFF, 0x13, 0x88, 0, 0, 0, 0, 0, 1]);
+        assert_eq!(sent[sent.len() - 1].2, [1, 2, 0, 0, 0xFF, 0x13, 0x88, 0, 0, 0, 0, 0, 1]);
         // The end of the frame: in RAM, frame 0.
         assert!(sent.iter().filter(|c| c.1 == 7 && c.0 == feature::PER_KEY_LIGHTING_V2).all(|c| c.2.is_empty()));
         let k = state.lock().unwrap();
         assert!(k.host_mode && k.control == 3);
+    }
+
+    #[test]
+    fn a_keyboard_that_dimmed_or_turned_off_its_lights_on_its_own_is_lit_when_taken() {
+        let (mut dev, state, _) = keyboard();
+        // Its own power save turned the lights off while the user clicked with the mouse.
+        state.lock().unwrap().power = 3;
+        Host::take(&mut dev, &g915x(), look()).unwrap();
+        let sent = calls(&state);
+        let on = sent.iter().position(|c| *c == (feature::RGB_EFFECTS, 8, vec![1, 1])).expect("lights on");
+        let first_effect = sent.iter().position(|c| c.0 == feature::RGB_EFFECTS && c.1 == 1).unwrap();
+        assert!(on < first_effect, "before the look");
+        assert_eq!(state.lock().unwrap().power, 1);
+    }
+
+    /// The per-key reports of `sent`, by colour.
+    fn keys_sent(sent: &[(u16, u8, Vec<u8>)]) -> Vec<(u8, [u8; 3])> {
+        sent.iter()
+            .filter(|c| c.0 == feature::PER_KEY_LIGHTING_V2 && c.1 == 6)
+            .flat_map(|c| c.2[3..].iter().map(|&k| (k, [c.2[0], c.2[1], c.2[2]])).collect::<Vec<_>>())
+            .collect()
+    }
+
+    #[test]
+    fn the_logo_keeps_its_own_effect_next_to_colours_per_key() {
+        let (mut dev, state, _) = keyboard();
+        let lighting = g915x();
+        // Breathing logo: the logo's key is not in the frame, and its effect comes after it.
+        let mut host = Host::take(&mut dev, &lighting, look()).unwrap();
+        let sent = calls(&state);
+        assert!(!keys_sent(&sent).iter().any(|(k, _)| *k == LOGO_KEY));
+        assert_eq!(keys_sent(&sent).len(), 2 * 125);
+        assert_eq!(sent.last().unwrap().2[..2], [1, 2], "the logo's breathing last");
+
+        // A fixed green logo: the logo's key gets green, not the colour of its key group.
+        let green = Rgb::new(0, 0xFF, 0);
+        let mut fixed = look();
+        fixed.zones[1] = zone(1, effect::FIXED, Some(green));
+        host.show(&mut dev, &lighting, fixed).unwrap();
+        let sent = calls(&state);
+        assert!(keys_sent(&sent).contains(&(LOGO_KEY, [0, 0xFF, 0])));
+        assert!(!keys_sent(&sent).contains(&(LOGO_KEY, [0xFF, 0, 0])));
+    }
+
+    #[test]
+    fn leaving_a_wave_to_the_centre_gives_the_lights_back_and_takes_them_again() {
+        let (mut dev, state, _) = keyboard();
+        let lighting = g915x();
+        let wave = |direction| Look {
+            zones: vec![ZoneLook { direction: Some(direction), ..zone(0, effect::WAVE, None) }],
+            keys: Vec::new(),
+        };
+        let cycle = Look { zones: vec![zone(0, effect::CYCLE, None)], keys: Vec::new() };
+        let mut host = Host::take(&mut dev, &lighting, wave(1)).unwrap();
+        host.show(&mut dev, &lighting, wave(8)).unwrap();
+        calls(&state);
+        // From the centre-in wave to a colour cycle: given back, then taken again.
+        host.show(&mut dev, &lighting, cycle.clone()).unwrap();
+        let short: Vec<(u16, u8, u8)> = calls(&state).iter().map(|(f, n, p)| (*f, *n, p[0])).collect();
+        assert_eq!(
+            short,
+            [
+                (feature::RGB_EFFECTS, 5, 1),
+                (feature::PROFILE_MANAGEMENT, 6, 3),
+                (feature::PROFILE_MANAGEMENT, 6, 5),
+                (feature::RGB_EFFECTS, 5, 1),
+                (feature::RGB_EFFECTS, 8, 1),
+                (feature::RGB_EFFECTS, 1, 0),
+            ]
+        );
+        assert_eq!((host.status().shown, host.status().resets), (2, 1));
+        // Any other change only sends the effect.
+        host.show(&mut dev, &lighting, wave(1)).unwrap();
+        host.show(&mut dev, &lighting, cycle).unwrap();
+        assert!(calls(&state).iter().all(|c| c.0 == feature::RGB_EFFECTS && c.1 == 1));
+        assert_eq!(host.status().resets, 1);
+        let k = state.lock().unwrap();
+        assert!(k.host_mode && k.control == 3);
+    }
+
+    #[test]
+    fn a_paint_that_failed_half_way_is_done_again() {
+        let (mut dev, state, _) = keyboard();
+        let lighting = g915x();
+        let mut host = Host::take(&mut dev, &lighting, look()).unwrap();
+        calls(&state);
+        host.catch_up(&mut dev, &lighting).unwrap();
+        assert!(calls(&state).is_empty(), "nothing to catch up");
+        state.lock().unwrap().busy = 4;
+        assert!(host.show(&mut dev, &lighting, look()).is_err());
+        calls(&state);
+        host.catch_up(&mut dev, &lighting).unwrap();
+        let sent = calls(&state);
+        assert_eq!(sent.iter().filter(|c| c.0 == feature::PER_KEY_LIGHTING_V2 && c.1 == 7).count(), 1);
+        host.catch_up(&mut dev, &lighting).unwrap();
+        assert!(calls(&state).is_empty(), "once");
     }
 
     #[test]
@@ -691,7 +899,7 @@ pub(crate) mod tests {
         let sent = calls(&state);
         // Red at a quarter, and the breathing logo with intensity 25.
         assert_eq!(sent[0].2[..6], [0, 1, 0x40, 0, 0, 2]);
-        assert_eq!(sent[1].2[..9], [1, 2, 0, 0, 0x40, 0x13, 0x88, 0, 25]);
+        assert_eq!(sent[sent.len() - 1].2[..9], [1, 2, 0, 0, 0x40, 0x13, 0x88, 0, 25]);
         assert_eq!(sent.iter().filter(|c| c.1 == 7).count(), 1, "one frame");
 
         host.on_timer(&mut dev).unwrap();

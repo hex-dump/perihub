@@ -402,6 +402,26 @@ export interface LogitechLive {
   host: LightsHost | null;
   /** Why PeriHub gave the lights back on its own, if it did. */
   gave_back: string | null;
+  /** The last look shown on the keyboard, kept in PeriHub's settings: the editor starts from it. */
+  saved_look: LightsLook | null;
+  /** How host mode went this session, across give-backs and reconnections, once PeriHub took the lights. */
+  host_log: LightsLog | null;
+}
+
+export interface LightsLog {
+  taken: number;
+  /** Taken again when the keyboard connected again. */
+  on_connect: number;
+  given_back: number;
+  /** Why the last time ("asked" when the user did). */
+  last_reason: string | null;
+  timeouts: number;
+  idle_events: number;
+  active_events: number;
+  retaken: number;
+  shown: number;
+  /** Looks that needed the lights given back and taken again (leaving a wave to the centre). */
+  resets: number;
 }
 
 /** What one lighting zone of a Logitech keyboard shows (0x8071). */
@@ -429,6 +449,8 @@ export interface LightsHost {
   active_events: number;
   /** Times the keyboard was found back on its own lighting, and taken again. */
   retaken: number;
+  shown: number;
+  resets: number;
 }
 
 /** A keyboard with QMK firmware, found by its raw HID channel (usage page 0xFF60). */

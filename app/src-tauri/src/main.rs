@@ -110,6 +110,7 @@ fn main() {
                 // The interface asks whether to keep every save to a mouse whose memory format is untested.
                 true,
                 config.logitech_dpi.clone(),
+                config.logitech_looks.clone(),
                 config.qmk_keyboards.clone(),
                 Box::new(move |status| {
                     if let Some(profiles) = slot.get() {

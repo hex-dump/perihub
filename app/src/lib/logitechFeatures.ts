@@ -135,6 +135,17 @@ const KEY_GROUPS: [string, (id: number) => boolean][] = [
   ["Logo", (id) => id === 210],
 ];
 
+/** The logo's key id (0x8081). */
+export const LOGO_KEY = 210;
+
+/** The keys "Colours per key" sets: all those with a colour of their own, except the logo when the
+ * keyboard has a logo zone. The logo then follows that zone's effect (a per-key colour held it on one
+ * colour, issue #30), and PeriHub gives its key the zone's colour while the zone is fixed. */
+export function perKeyKeys(lighting: { keys: number[]; effects: { zones: { location: number }[] } | null }): number[] {
+  const logoZone = lighting.effects?.zones.some((z) => z.location === 2) ?? false;
+  return logoZone ? lighting.keys.filter((k) => k !== LOGO_KEY) : lighting.keys;
+}
+
 /** The keyboard's keys with their own colour, in groups; the keys of no group go in "Other keys". */
 export function keyGroups(keys: number[]): { name: string; keys: number[] }[] {
   const groups = KEY_GROUPS.map(([name, has]) => ({ name, keys: keys.filter(has) }));
