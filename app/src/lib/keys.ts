@@ -175,6 +175,7 @@ export const LAYOUT_HEIGHT = 6.25;
 
 export const G502_HERO = 0xc08b;
 export const G502_X_WIRELESS = 0xc098;
+export const G502_HERO_WIRELESS = 0xc08d;
 
 export function isG502(productId: number): boolean {
   return productId === G502_HERO || productId === G502_X_WIRELESS;
@@ -246,10 +247,16 @@ export const MODIFIERS: { bit: number; label: string }[] = [
   { bit: 0x40, label: "Alt Gr" },
 ];
 
-/** LED zone names by HID++ location (1 = primary, 2 = logo). */
+/**
+ * LED zone names by HID++ location (1 = primary, 2 = logo). The G502 HERO Wireless reports the same
+ * locations as the wired G502 HERO, but there location 1 lights the G logo and 2 the DPI indicator
+ * (issue #28).
+ */
 export function ledZoneName(productId: number, location: number): string {
   if (productId === G502_HERO && location === 1) return "DPI indicator";
   if (productId === G502_HERO && location === 2) return "G logo";
+  if (productId === G502_HERO_WIRELESS && location === 1) return "G logo";
+  if (productId === G502_HERO_WIRELESS && location === 2) return "DPI indicator";
   if (location === 1) return "Main lighting";
   if (location === 2) return "Logo";
   return `Zone ${location}`;
