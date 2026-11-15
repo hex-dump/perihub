@@ -69,13 +69,10 @@ export function zoneName(location: number, kind: number | null): string {
   return ["Zone", "", "Logo", "Left side", "Right side", "All lights"][location] ?? `Zone at ${location}`;
 }
 
-/** The keyboard layout 0x4540 reports (Solaar's reading of the codes). */
+/** The keyboard layout 0x4540 reports. Only codes seen on a real keyboard get a name: Solaar reads 4
+ * as AZERTY, but a German G915 X LS answers 4 (issue #30). */
 export function layoutName(code: number): string {
-  if (code === 1) return "ANSI";
-  if ([2, 5, 8, 0x0b, 0x0d, 0x0e, 0x0f, 0x16, 0x1d, 0x21, 0x24].includes(code)) return `ISO (code ${code})`;
-  if (code === 3 || code === 7) return `ISO QWERTZ (code ${code})`;
-  if (code === 4) return "ISO AZERTY (code 4)";
-  if (code === 9 || code === 0x3e) return `JIS (code ${code})`;
+  if (code === 4) return "German, ISO (code 4)";
   return `code ${code}`;
 }
 

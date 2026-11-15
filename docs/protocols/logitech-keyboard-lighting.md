@@ -81,7 +81,31 @@ that are no keys (47 and 97 on ANSI, 99–103, 254).
 ## 0x4540 layout
 
 Function 0, no parameters: byte 0 is the layout. Solaar reads 1 as ANSI; 2, 5, 8, 0x0b, 0x0d–0x0f, 0x16, 0x1d,
-0x21, 0x24 as ISO; 3 and 7 as ISO QWERTZ; 4 as ISO AZERTY; 9 and 0x3e as JIS. Read.
+0x21, 0x24 as ISO; 3 and 7 as ISO QWERTZ; 4 as ISO AZERTY; 9 and 0x3e as JIS. Read. **But the German (QWERTZ)
+G915 X LS of issue #30 answers 4**: PeriHub names only the codes seen on a real keyboard.
+
+## What a G915 X LS answered (issue #30, 2026-11-15, Windows, through its c547 receiver)
+
+| Call | Reply (trailing zeros left out) | Reading |
+|---|---|---|
+| 8040 0 | `00 64 05 03` | maximum 100, 5 levels, byte 3 = 0x03: no separate on/off (bit 0x04 clear) |
+| 8040 1 | 50 with G HUB running, 100 after it was closed | follows the brightness key |
+| 8071 0 `ff ff 00` | `ff 00 02 00 63 00 04 08` | 2 zones |
+| 8071 0 `00 ff 00` | `00 00 00 01 06` | zone 0: location 1 (keys), 6 effects |
+| 8071 0 `01 ff 00` | `01 00 00 02 04` | zone 1: location 2 (logo), 4 effects |
+| 8071 0 `00 ee 00` | ids 0x00, 0x01, 0x0a, 0x15, 0x16, 0x17 | off, fixed colour, breathing, cycle, wave, ripple |
+| 8071 0 `01 ee 00` | ids 0x00, 0x01, 0x0a, 0x15 | off, fixed colour, breathing, cycle |
+| 8071 3 `00 00 01` | `00 00 01 02 ff 00 81 80 aa ff` | startup effect off (G HUB: unchecked), colours #ff0081 #80aaff |
+| 8071 3 `00 00 40` | `00 00 40 01 ff 00 81 80 aa ff` | shutdown effect on |
+| 8071 5 `00` | 3 with G HUB running, 0 after it was closed | who drives the lights |
+| 8071 7 `00` | `00 00 00 00 3c 01 0e` | dims after 60 s (G HUB: 1 minute); 270 s for "off", where G HUB shows 5 minutes |
+| 8081 0 pages 0–2 | page 0 all `ff`; page 1 `… 00 00 00 00 00 7a 00 00 f0 1f 00 00 04`; page 2 empty | 126 keys: 1–111, 153, 155–158, 180–188 (G1–G9), 210 (logo) |
+| 4540 0 | `04` | German ISO |
+
+The bytes after the effect id (said to be capabilities and default period) do not look like what Solaar and
+libratbag describe (`c0 01 1e 0b` for breathing, `dc e1 00 1e` for wave): **their meaning is unknown**, and
+PeriHub does not use them. With G HUB closed the keys went back to the keyboard's own effect (a fixed colour)
+at the brightness set before.
 
 ## Not read: 0x8101, 0x4523, 0x8051, 0x1b05, 0x1b10
 

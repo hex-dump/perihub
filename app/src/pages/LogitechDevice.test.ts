@@ -111,7 +111,7 @@ describe("a Logitech keyboard's lighting", () => {
     expect(card.textContent).toContain("Off, Fixed colour, Colour cycle");
     expect(card.textContent).toContain("4 keys");
     expect(card.textContent).toContain("Dims after 1 min, off after 5 min");
-    expect(card.textContent).toContain("ANSI");
+    expect(card.textContent).toContain("code 1");
     expect(card.querySelectorAll("button, input, select").length).toBe(0);
   });
 
