@@ -98,7 +98,7 @@ G915 X LS of issue #30 answers 4**: PeriHub names only the codes seen on a real 
 | 8071 3 `00 00 01` | `00 00 01 02 ff 00 81 80 aa ff` | startup effect off (G HUB: unchecked), colours #ff0081 #80aaff |
 | 8071 3 `00 00 40` | `00 00 40 01 ff 00 81 80 aa ff` | shutdown effect on |
 | 8071 5 `00` | 3 with G HUB running, 0 after it was closed | who drives the lights |
-| 8071 7 `00` | `00 00 00 00 3c 01 0e` | dims after 60 s (G HUB: 1 minute); 270 s for "off", where G HUB shows 5 minutes |
+| 8071 7 `00` | `00 00 00 00 3c 01 0e` | dims after 60 s (G HUB: 1 minute), off after 270 s: G HUB writes `01 00 00 00 3c 01 0e` for its "5 minutes" (a G HUB capture on a G915 X TKL, in logi-ghub-linux's notes) |
 | 8081 0 pages 0–2 | page 0 all `ff`; page 1 `… 00 00 00 00 00 7a 00 00 f0 1f 00 00 04`; page 2 empty | 126 keys: 1–111, 153, 155–158, 180–188 (G1–G9), 210 (logo) |
 | 4540 0 | `04` | German ISO |
 
