@@ -30,8 +30,9 @@ body:
   - type: textarea
     id: features
     attributes:
-      label: Features you use in the official software
-      placeholder: DPI levels, lighting, button remapping, onboard profiles…
+      label: What the device can do in its official software
+      description: Everything the official software can change on it, even what you don't use. PeriHub aims to support all of it.
+      placeholder: DPI levels, polling rate, lighting, button remapping, macros, onboard profiles, battery…
   - type: dropdown
     id: os
     attributes:
