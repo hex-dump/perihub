@@ -17,6 +17,7 @@ use crate::corsair::device::{CorsairInfo, CorsairTask};
 use crate::corsair::{self, BragiDevice};
 use crate::error::{Error, Result};
 use crate::g300::{self, G300Info, G300Task};
+use crate::hidpp::host::Look;
 use crate::hidpp::models::{self, MouseModel};
 use crate::hidpp::receiver::{self, Presence, UnsupportedDevice};
 use crate::hidpp::{HidppDevice, Transport};
@@ -394,6 +395,9 @@ pub struct Manager {
     untested_saves: bool,
     /// The DPI to set on the devices PeriHub knows by their features, by settings key.
     logitech_dpi: Arc<Mutex<HashMap<String, u16>>>,
+    /// What PeriHub shows on the keyboards whose lights it drives, for this session only, by
+    /// settings key: shown again every time such a keyboard connects.
+    logitech_looks: Arc<Mutex<HashMap<String, Look>>>,
     /// Keyboards with a raw HID collection the user turned on as VIA keyboards, by "vvvv:pppp".
     qmk_enabled: Arc<Mutex<HashSet<String>>>,
 }
@@ -417,6 +421,7 @@ impl Manager {
             keyboard_config: Arc::new(Mutex::new(keyboard_config)),
             untested_saves,
             logitech_dpi: Arc::new(Mutex::new(logitech_dpi)),
+            logitech_looks: Arc::new(Mutex::new(HashMap::new())),
             qmk_enabled: Arc::new(Mutex::new(qmk_keyboards.into_iter().collect())),
         };
         let background = manager.clone();
@@ -866,8 +871,9 @@ impl Manager {
         };
         for (paths, slot, device) in to_open {
             let saved = self.logitech_dpi.lock().unwrap().get(&device.settings_key()).copied();
+            let look = self.logitech_looks.lock().unwrap().get(&device.settings_key()).cloned();
             let receiver_id = paths.0.product_id();
-            match open_behind(api, &paths, slot, true).and_then(|dev| LogitechTask::open(dev, device, saved)) {
+            match open_behind(api, &paths, slot, true).and_then(|dev| LogitechTask::open(dev, device, saved, look)) {
                 Ok(task) => {
                     log::info!(
                         "{} connected through the {}, slot {slot} (read by its features)",
@@ -914,6 +920,31 @@ impl Manager {
             Some(dpi) => saved.insert(key, dpi),
             None => saved.remove(&key),
         };
+    }
+
+    /// Keeps the look to show on a keyboard every time it connects, for this session (`None`: PeriHub
+    /// no longer drives its lights).
+    pub fn set_logitech_look(&self, key: String, look: Option<Look>) {
+        let mut looks = self.logitech_looks.lock().unwrap();
+        match look {
+            Some(look) => looks.insert(key, look),
+            None => looks.remove(&key),
+        };
+    }
+
+    /// PeriHub drives the lights of a keyboard this session.
+    pub fn drives_logitech_lights(&self) -> bool {
+        !self.logitech_looks.lock().unwrap().is_empty()
+    }
+
+    /// Gives the lights of every keyboard PeriHub drives back to the keyboard (tray menu, quitting
+    /// PeriHub, installing an update), and forgets the looks.
+    pub fn release_logitech(&self) {
+        self.logitech_looks.lock().unwrap().clear();
+        let workers: Vec<_> = self.slots.lock().unwrap().logitech.values().map(|(w, _)| w.clone()).collect();
+        for worker in workers {
+            let _ = worker.call(|d| d.give_back_lights());
+        }
     }
 
     /// Turns a keyboard with a raw HID collection on or off as a VIA keyboard, by "vvvv:pppp". It is

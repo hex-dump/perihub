@@ -138,6 +138,21 @@ impl Lighting {
         if has(feature::KEYBOARD_LAYOUT_2) {
             out.layout = out.call(dev, feature::KEYBOARD_LAYOUT_2, 0, &[])?.map(|r| r[0]);
         }
+        // Features of the newer keyboards that no public document describes: what function 0 answers,
+        // and the mode 0x8101 function 6 reads (0 asks), kept in `raw` for test reports.
+        let undocumented: [(u16, u8, &[u8]); 6] = [
+            (feature::PROFILE_MANAGEMENT, 0, &[]),
+            (feature::PROFILE_MANAGEMENT, 6, &[0]),
+            (feature::CONTROL_LIST, 0, &[]),
+            (feature::FULL_KEY_CUSTOMIZATION, 0, &[]),
+            (feature::DISABLE_CONTROLS, 0, &[]),
+            (feature::LOGI_MODIFIERS, 0, &[]),
+        ];
+        for (id, function, params) in undocumented {
+            if has(id) {
+                out.call(dev, id, function, params)?;
+            }
+        }
         Ok(out)
     }
 
@@ -217,7 +232,7 @@ mod tests {
     use crate::hidpp::tests::{FakeDevice, reply};
 
     /// A keyboard with the lighting features of a G915 X LS in slot 1 (the replies are made up in the
-    /// layouts of the specification), and 0x8101, which PeriHub must never call.
+    /// layouts of the specification), and 0x8101, of which PeriHub only reads functions 0 and 6.
     const FEATURES: &[u16] = &[
         feature::ROOT,
         feature::FEATURE_SET,
@@ -226,7 +241,7 @@ mod tests {
         feature::RGB_EFFECTS,
         feature::PER_KEY_LIGHTING_V2,
         feature::KEYBOARD_LAYOUT_2,
-        0x8101,
+        feature::PROFILE_MANAGEMENT,
     ];
 
     fn keyboard() -> FakeDevice {
@@ -271,6 +286,8 @@ mod tests {
                     _ => vec![0, 2],
                 },
                 (Some(feature::KEYBOARD_LAYOUT_2), 0) => vec![1],
+                (Some(feature::PROFILE_MANAGEMENT), 0) => vec![1, 1, 0, 0x80],
+                (Some(feature::PROFILE_MANAGEMENT), 6) => vec![1, 0, 1],
                 _ => return vec![error(request, 7)],
             };
             vec![reply(request, &payload)]
@@ -309,17 +326,20 @@ mod tests {
         let now = LightingNow::read(&mut dev, lighting, true).unwrap();
         assert_eq!(now, LightingNow { brightness: Some(50), on: Some(true), control: Some(0) });
 
-        // Nothing but reads reached the keyboard: never 0x8101 (index 7), and of 0x8071 (index 4)
-        // functions 3, 5 and 7 only with a first byte 0, the "get".
+        assert!(lighting.raw.iter().any(|r| r == "8101 6 (00): 01 00 01"), "{:?}", lighting.raw);
+
+        // Nothing but reads reached the keyboard: of 0x8101 (index 7) functions 0 and 6 with 0, and of
+        // 0x8071 (index 4) functions 3, 5 and 7 only with a first byte 0, the "get".
         for request in written.lock().unwrap().iter() {
             let (index, function, first) = (request[2], request[3] >> 4, request[4]);
-            assert_ne!(index, 7, "0x8101 called");
             let allowed = match (index, function) {
                 (0..=2, _) => true,
                 (3, 0 | 1 | 3) => true,
                 (4, 0) => true,
                 (4, 3 | 5 | 7) => first == 0,
                 (5 | 6, 0) => true,
+                (7, 0) => true,
+                (7, 6) => first == 0,
                 _ => false,
             };
             assert!(allowed, "feature index {index}, function {function}, first byte {first:#04x}");

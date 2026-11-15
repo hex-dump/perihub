@@ -5,10 +5,11 @@
   import { onDestroy } from "svelte";
   import { api, errorText, type LogitechLive, type ReceiverReport, type UnsupportedReceiverDevice } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
-  import { capabilities, effectName, kindName, layoutName, zoneName } from "../lib/logitechFeatures";
+  import { capabilities, effectName, kindName, layoutName, lightsDrivable, zoneName } from "../lib/logitechFeatures";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import { receiverTest } from "../lib/testReport";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
+  import LogitechLights from "../components/LogitechLights.svelte";
   import NoWarranty from "../components/NoWarranty.svelte";
   import UnifyingPermission from "../components/UnifyingPermission.svelte";
 
@@ -33,6 +34,8 @@
   /** The DPI can be changed: adjustable DPI and no onboard profiles, whose active profile sets the DPI
    * (as in the core's `dpi_changeable`). */
   const changeable = $derived(!!device?.dpi && !device.onboard);
+  /** PeriHub can drive the keyboard's lights in host mode (experimental). */
+  const drivable = $derived(!!device && lightsDrivable(device));
   /** The "No warranty" box is asked once per model. */
   const warrantyKey = $derived(`dpi:${name}`);
 
@@ -115,7 +118,9 @@
   }
 
   function seconds(s: number): string {
-    return s >= 60 && s % 60 === 0 ? `${s / 60} min` : `${s} s`;
+    if (s < 60) return `${s} s`;
+    const rest = s % 60;
+    return `${Math.floor(s / 60)} min${rest ? ` ${rest} s` : ""}`;
   }
 
   function batteryText(b: NonNullable<LogitechLive["battery"]>): string {
@@ -154,6 +159,10 @@
     {#if changeable}
       <b>Experimental.</b> PeriHub knows the {name} by the features it reports. It can change its DPI, which nobody has
       tried on such a {kind} yet; everything else is only read. Whether it works or not, a test report on PeriHub's
+      GitHub page helps.
+    {:else if drivable}
+      <b>Experimental.</b> PeriHub knows the {name} by the features it reports. It can drive its lights, which nobody
+      has tried on such a {kind} yet; everything else is only read. Whether it works or not, a test report on PeriHub's
       GitHub page helps.
     {:else}
       <b>Not supported yet.</b> PeriHub knows the {name} by the features it reports, and only reads it: nothing on it
@@ -241,10 +250,14 @@
     {@const lighting = device.lighting}
     {@const now = live?.lighting}
     <section class="card">
-      <h2>Lighting <span class="chip">Read only</span></h2>
-      <p class="small muted">
-        PeriHub reads the {kind}'s lighting and does not change it yet. Your test report tells how to change it safely.
-      </p>
+      {#if drivable}
+        <h2>Lighting <span class="chip test">Experimental</span></h2>
+      {:else}
+        <h2>Lighting <span class="chip">Read only</span></h2>
+        <p class="small muted">
+          PeriHub reads the {kind}'s lighting and does not change it yet. Your test report tells how to change it safely.
+        </p>
+      {/if}
       <dl>
         {#if lighting.brightness}
           <dt>Brightness</dt>
@@ -273,7 +286,7 @@
           <dt>When not in use</dt>
           <dd>
             Dims after {seconds(lighting.effects.idle_s)}{lighting.effects.sleep_s != null
-              ? `, off after ${seconds(lighting.effects.sleep_s)}`
+              ? `, off ${seconds(lighting.effects.sleep_s)} later`
               : ""}
           </dd>
         {/if}
@@ -281,6 +294,13 @@
       </dl>
       {#if lighting.errors.length}
         <p class="small muted">Could not read: {lighting.errors.join("; ")}</p>
+      {/if}
+      {#if drivable}
+        {#if !open}
+          <p class="muted">The {name} is asleep: press a key or turn it on to change its lights.</p>
+        {:else}
+          <LogitechLights receiverId={receiver.product_id} {device} {live} changed={refresh} />
+        {/if}
       {/if}
     </section>
   {/if}

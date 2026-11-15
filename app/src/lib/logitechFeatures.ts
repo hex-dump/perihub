@@ -76,6 +76,73 @@ export function layoutName(code: number): string {
   return `code ${code}`;
 }
 
+/** The effects PeriHub sets on a keyboard it drives (0x8071 ids), in the core's `host::effect`. */
+export const EFFECT = { off: 0x00, fixed: 0x01, breathing: 0x0a, cycle: 0x15, wave: 0x16, ripple: 0x17 } as const;
+const SET_EFFECTS: number[] = Object.values(EFFECT);
+
+/** PeriHub can set this effect. */
+export function settableEffect(id: number): boolean {
+  return SET_EFFECTS.includes(id);
+}
+
+/** Effects with a colour of their own, and with a period. */
+export function effectTakesColor(id: number): boolean {
+  return id === EFFECT.fixed || id === EFFECT.breathing || id === EFFECT.ripple;
+}
+export function effectTakesPeriod(id: number): boolean {
+  return id === EFFECT.breathing || id === EFFECT.cycle || id === EFFECT.wave;
+}
+
+/** The directions of a wave, with the 0x8071 capability bit that says the keyboard has each. */
+const DIRECTIONS: [number, string, number][] = [
+  [1, "Left to right", 0x0020],
+  [6, "Right to left", 0x0400],
+  [2, "Top to bottom", 0x0040],
+  [7, "Bottom to top", 0x0800],
+  [3, "From the centre", 0x0080],
+  [8, "To the centre", 0x1000],
+  [4, "Inward", 0x0100],
+  [5, "Outward", 0x0200],
+];
+
+/** The directions a wave with capabilities `caps` can take, the keyboard's default first. */
+export function waveDirections(caps: number): { value: number; label: string }[] {
+  return [
+    { value: 0, label: "The keyboard's default" },
+    ...DIRECTIONS.filter(([, , bit]) => caps & bit).map(([value, label]) => ({ value, label })),
+  ];
+}
+
+/** PeriHub can drive the device's lights in host mode, as in the core's `lights_drivable`: it lists
+ * 0x8071 and 0x8101, PeriHub read its zones, and PeriHub does not change its DPI. */
+export function lightsDrivable(device: UnsupportedReceiverDevice): boolean {
+  const ids = new Set(device.features.map((f) => f.id));
+  const dpiChangeable = !!device.dpi && !device.onboard;
+  return ids.has(0x8071) && ids.has(0x8101) && !!device.lighting?.effects?.zones.length && !dpiChangeable;
+}
+
+/** Groups of keys by their 0x8081 ids (keyboard usage codes minus 3, modifiers minus 0x78, and
+ * Logitech's own ids for media, G and logo keys). */
+const KEY_GROUPS: [string, (id: number) => boolean][] = [
+  ["Letters", (id) => id >= 1 && id <= 26],
+  ["Numbers", (id) => id >= 27 && id <= 36],
+  ["F keys", (id) => id >= 55 && id <= 66],
+  ["Arrows and navigation", (id) => id >= 67 && id <= 79],
+  ["Numpad", (id) => id >= 80 && id <= 96],
+  ["Ctrl, Shift, Alt and Windows", (id) => id >= 104 && id <= 111],
+  ["Media and brightness", (id) => id >= 150 && id <= 160],
+  ["G keys", (id) => id >= 180 && id <= 188],
+  ["Logo", (id) => id === 210],
+];
+
+/** The keyboard's keys with their own colour, in groups; the keys of no group go in "Other keys". */
+export function keyGroups(keys: number[]): { name: string; keys: number[] }[] {
+  const groups = KEY_GROUPS.map(([name, has]) => ({ name, keys: keys.filter(has) }));
+  const others = keys.filter((id) => !KEY_GROUPS.some(([, has]) => has(id)));
+  groups.splice(5, 0, { name: "Other keys", keys: others });
+  return groups.filter((g) => g.keys.length);
+}
+
 /** What the device can do, in words, in a fixed order, and how many other features it lists. */
 export function capabilities(device: UnsupportedReceiverDevice): { named: string[]; others: number } {
   const ids = new Set(device.features.map((f) => f.id));

@@ -60,10 +60,11 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         items.push(MenuItem::with_id(app, "update", format!("Update to {version}…"), true, None::<&str>)?);
     }
     items.push(MenuItem::with_id(app, "stop", "Stop software macros", true, None::<&str>)?);
-    // A way out that does not need the window, in case a Corsair mouse stops clicking.
-    let experimental = app
-        .try_state::<crate::AppState>()
-        .is_some_and(|state| state.manager.status().corsair.iter().any(|d| d.lighting.is_some()));
+    // A way out that does not need the window, in case a Corsair mouse stops clicking, or to give a
+    // Logitech keyboard its own lights back.
+    let experimental = app.try_state::<crate::AppState>().is_some_and(|state| {
+        state.manager.status().corsair.iter().any(|d| d.lighting.is_some()) || state.manager.drives_logitech_lights()
+    });
     if experimental {
         items.push(MenuItem::with_id(app, "experimental-off", "Turn off experimental lighting", true, None::<&str>)?);
     }
@@ -104,11 +105,12 @@ pub fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Quits PeriHub after releasing the keys a running software macro holds, and giving a Corsair
-/// mouse with experimental lighting back to its own settings.
+/// Quits PeriHub after releasing the keys a running software macro holds, giving a Corsair mouse
+/// with experimental lighting back to its own settings, and a Logitech keyboard its own lights.
 pub fn quit(app: &AppHandle) {
     app.state::<crate::AppState>().soft.stop_all_and_wait();
     app.state::<crate::AppState>().manager.release_corsair();
+    app.state::<crate::AppState>().manager.release_logitech();
     app.exit(0);
 }
 

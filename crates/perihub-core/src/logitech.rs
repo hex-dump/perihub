@@ -1,6 +1,10 @@
 //! A Logitech HID++ 2.0 device behind a receiver that PeriHub knows only by the features it reports
-//! (see [`UnsupportedDevice`]), on its own thread: its battery and DPI as they are now, and the DPI
-//! the user chose.
+//! (see [`UnsupportedDevice`]), on its own thread: its battery and DPI as they are now, the DPI the
+//! user chose, and the lights of a keyboard PeriHub drives in host mode (see [`crate::hidpp::host`]).
+//!
+//! Host mode lasts for the session: the manager keeps the look and shows it again every time the
+//! keyboard connects. PeriHub gives the lights back when the user asks, when G HUB or Solaar starts,
+//! when a command fails, when the thread stops and when PeriHub quits.
 //!
 //! The DPI goes to the device's RAM only (0x2201 function 3): nothing is written to its memory. Such
 //! devices forget it when they are turned off or fall asleep, so PeriHub sets it again every time
@@ -13,6 +17,7 @@ use std::time::{Duration, Instant};
 use serde::Serialize;
 
 use crate::error::{Error, Result};
+use crate::hidpp::host::{self, Host, HostStatus, Look};
 use crate::hidpp::lighting::LightingNow;
 use crate::hidpp::receiver::UnsupportedDevice;
 use crate::hidpp::{Access, Battery, DpiCapabilities, HidppDevice, feature};
@@ -20,6 +25,10 @@ use crate::worker::DeviceTask;
 
 /// How often the thread checks that the device still answers.
 const CHECK_EVERY: Duration = Duration::from_secs(10);
+/// While PeriHub drives the lights: how often the keyboard's notices are read, and how often PeriHub
+/// checks that it still has the lights and that no other Logitech program started.
+const EVENTS_EVERY: Duration = Duration::from_millis(200);
+const HOST_CHECK_EVERY: Duration = Duration::from_secs(5);
 
 /// What changes while the device is in use.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -31,6 +40,17 @@ pub struct LogitechLive {
     pub saved_dpi: Option<u16>,
     /// Its lighting as it is now, if it has a lighting feature PeriHub reads.
     pub lighting: Option<LightingNow>,
+    /// While PeriHub drives the lights: the look and how host mode went.
+    pub host: Option<HostLive>,
+    /// Why PeriHub gave the lights back on its own, if it did.
+    pub gave_back: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct HostLive {
+    pub look: Look,
+    #[serde(flatten)]
+    pub status: HostStatus,
 }
 
 pub struct LogitechTask {
@@ -38,6 +58,30 @@ pub struct LogitechTask {
     pub device: UnsupportedDevice,
     saved_dpi: Option<u16>,
     last_check: Instant,
+    /// Set while PeriHub drives the keyboard's lights.
+    host: Option<Host>,
+    last_host_check: Instant,
+    gave_back: Option<String>,
+    /// Finds the Logitech programs running now (see [`other_programs`]); tests replace it.
+    programs: fn() -> Vec<&'static str>,
+}
+
+/// PeriHub can drive the device's lights in host mode (see [`host::can_drive`]).
+/// Not on a device whose DPI PeriHub changes: that one gets RAM access, which has no host mode.
+pub fn lights_drivable(device: &UnsupportedDevice) -> bool {
+    let features: Vec<u16> = device.features.iter().map(|f| f.id).collect();
+    !dpi_changeable(device) && host::can_drive(&features, device.lighting.as_ref())
+}
+
+/// Logitech programs that would fight PeriHub over the lights, running now.
+fn other_programs() -> Vec<&'static str> {
+    let mut found: Vec<&'static str> = crate::conflicts::running()
+        .iter()
+        .filter(|c| **c == crate::conflicts::Conflict::LogitechGHub)
+        .map(|c| c.name())
+        .collect();
+    found.extend(crate::conflicts::logitech_programs_running());
+    found
 }
 
 /// The DPI can be changed: the device has adjustable DPI (0x2201) and no onboard profiles. With
@@ -65,7 +109,15 @@ impl LogitechTask {
     /// `device` was read earlier, maybe from another device in the same receiver slot: the unit id is
     /// checked first, and a different device gives [`Error::OtherDevice`] with nothing sent to it but
     /// reads.
-    pub fn open(mut dev: HidppDevice, device: UnsupportedDevice, saved_dpi: Option<u16>) -> Result<Self> {
+    ///
+    /// `look`: what PeriHub showed on the keyboard earlier in the session, shown again now (see
+    /// [`LogitechTask::drive_lights`]).
+    pub fn open(
+        mut dev: HidppDevice,
+        device: UnsupportedDevice,
+        saved_dpi: Option<u16>,
+        look: Option<Look>,
+    ) -> Result<Self> {
         if let Some(unit) = device.unit_id {
             let info = dev.device_info()?;
             if info[1..5] != unit {
@@ -74,8 +126,19 @@ impl LogitechTask {
         }
         if dpi_changeable(&device) {
             dev.grant(Access::Ram);
+        } else if lights_drivable(&device) {
+            dev.grant(Access::Host);
         }
-        let mut task = Self { dev, device, saved_dpi, last_check: Instant::now() };
+        let mut task = Self {
+            dev,
+            device,
+            saved_dpi,
+            last_check: Instant::now(),
+            host: None,
+            last_host_check: Instant::now(),
+            gave_back: None,
+            programs: other_programs,
+        };
         if let Some(dpi) = saved_dpi {
             match task.apply_dpi(dpi) {
                 Ok(()) => log::info!("{}: DPI set to {dpi} again", task.device.label()),
@@ -83,7 +146,127 @@ impl LogitechTask {
                 Err(e) => log::warn!("{}: setting the DPI again failed: {e}", task.device.label()),
             }
         }
+        if let Some(look) = look {
+            match task.drive_lights(look) {
+                Ok(_) => log::info!("{}: PeriHub drives the lights again", task.device.label()),
+                Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
+                Err(e) => log::warn!("{}: driving the lights again failed: {e}", task.device.label()),
+            }
+        }
         Ok(task)
+    }
+
+    /// Takes the keyboard's lights over (host mode) and shows `look`, or shows it if PeriHub drives
+    /// them already. Refused while G HUB or Solaar runs, or while the keyboard says a program drives
+    /// its lights. Returns the key to keep the look under for the session.
+    pub fn drive_lights(&mut self, look: Look) -> Result<String> {
+        let lighting = self.device.lighting.clone().filter(|_| lights_drivable(&self.device));
+        let lighting =
+            lighting.ok_or_else(|| Error::Invalid("PeriHub cannot drive the lights of this device".into()))?;
+        host::check(&look, &lighting)?;
+        let result = match self.host.as_mut() {
+            Some(host) => host.show(&mut self.dev, &lighting, look),
+            None => {
+                let others = (self.programs)();
+                if !others.is_empty() {
+                    return Err(Error::Invalid(format!(
+                        "quit {} first: it drives the lights of Logitech keyboards too",
+                        others.join(" and ")
+                    )));
+                }
+                let control = host::who_drives(&mut self.dev)?;
+                if control != 0 {
+                    return Err(Error::Invalid(format!(
+                        "another program drives the lights (mode {control}): quit it first, such as G HUB"
+                    )));
+                }
+                Host::take(&mut self.dev, &lighting, look).map(|host| {
+                    log::info!("{}: PeriHub drives the lights (host mode)", self.device.label());
+                    self.host = Some(host);
+                    self.last_host_check = Instant::now();
+                    self.gave_back = None;
+                })
+            }
+        };
+        match result {
+            Ok(()) => Ok(self.device.settings_key()),
+            Err(error) => {
+                self.release(&format!("a command failed: {error}"));
+                Err(Error::Protocol(format!("{error}. The keyboard has its own lights back.")))
+            }
+        }
+    }
+
+    /// Gives the lights back to the keyboard. Returns the settings key, to forget the look.
+    pub fn give_back_lights(&mut self) -> Result<String> {
+        self.release("");
+        self.gave_back = None;
+        Ok(self.device.settings_key())
+    }
+
+    /// Back to the keyboard's own lights, best effort: it may be gone already. `why` is shown on
+    /// the page when PeriHub did it on its own.
+    fn release(&mut self, why: &str) {
+        if self.host.take().is_some() {
+            match host::give_back(&mut self.dev) {
+                Ok(()) => log::info!("{}: lights given back to the keyboard", self.device.label()),
+                Err(e) => log::warn!("{}: giving the lights back failed: {e}", self.device.label()),
+            }
+            if !why.is_empty() {
+                log::info!("{}: lights given back: {why}", self.device.label());
+                self.gave_back = Some(why.to_string());
+            }
+        }
+    }
+
+    /// Sets the brightness of all the lights; the keyboard keeps it, as with its brightness key.
+    pub fn set_brightness(&mut self, value: u16) -> Result<()> {
+        let lighting = self.device.lighting.clone().filter(|_| lights_drivable(&self.device));
+        let lighting = lighting.ok_or_else(|| Error::Invalid("PeriHub cannot change this device's lights".into()))?;
+        host::set_brightness(&mut self.dev, &lighting, value)?;
+        log::info!("{}: brightness set to {value}", self.device.label());
+        Ok(())
+    }
+
+    /// While PeriHub drives the lights: the keyboard's notices, the off timer, and every few seconds
+    /// whether PeriHub still has the lights and no other program started.
+    fn drive_tick(&mut self) -> Result<()> {
+        let Some(lighting) = self.device.lighting.clone() else { return Ok(()) };
+        let events = self.dev.events(0)?;
+        let check = self.last_host_check.elapsed() >= HOST_CHECK_EVERY;
+        let Some(host) = self.host.as_mut() else { return Ok(()) };
+        let mut result = host.on_events(&mut self.dev, &lighting, &events).and_then(|()| host.on_timer(&mut self.dev));
+        if result.is_ok() && check {
+            self.last_host_check = Instant::now();
+            self.last_check = Instant::now();
+            let others = (self.programs)();
+            if !others.is_empty() {
+                self.release(&format!("{} started", others.join(" and ")));
+                return Ok(());
+            }
+            result = match host::who_drives(&mut self.dev) {
+                // The keyboard is on its own lights again: it restarted without PeriHub noticing.
+                Ok(0) => {
+                    log::info!("{}: the keyboard took its lights back: taking them again", self.device.label());
+                    host.retake(&mut self.dev, &lighting)
+                }
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            };
+        }
+        match result {
+            Ok(()) => Ok(()),
+            Err(e @ (Error::Hid(_) | Error::Unreachable)) => {
+                // Asleep or turned off: it has its own lights when it is back, and the manager
+                // shows the look again then.
+                self.host = None;
+                Err(e)
+            }
+            Err(error) => {
+                self.release(&format!("a command failed: {error}"));
+                Ok(())
+            }
+        }
     }
 
     pub fn live(&mut self) -> Result<LogitechLive> {
@@ -110,7 +293,8 @@ impl LogitechTask {
             }
             None => None,
         };
-        Ok(LogitechLive { battery, dpi, saved_dpi: self.saved_dpi, lighting })
+        let host = self.host.as_ref().map(|h| HostLive { look: h.look.clone(), status: h.status() });
+        Ok(LogitechLive { battery, dpi, saved_dpi: self.saved_dpi, lighting, host, gave_back: self.gave_back.clone() })
     }
 
     fn apply_dpi(&mut self, dpi: u16) -> Result<()> {
@@ -141,8 +325,18 @@ impl LogitechTask {
     }
 }
 
+impl Drop for LogitechTask {
+    fn drop(&mut self) {
+        self.release("");
+    }
+}
+
 impl DeviceTask for LogitechTask {
     fn tick(&mut self) -> Result<Duration> {
+        if self.host.is_some() {
+            self.drive_tick()?;
+            return Ok(EVENTS_EVERY);
+        }
         if self.last_check.elapsed() >= CHECK_EVERY {
             self.last_check = Instant::now();
             // A device that fell asleep or was turned off ends the thread: it has forgotten its
@@ -246,7 +440,7 @@ mod tests {
             lighting: None,
             read_errors: Vec::new(),
         };
-        (LogitechTask::open(dev, device, saved), mouse)
+        (LogitechTask::open(dev, device, saved, None), mouse)
     }
 
     #[test]
@@ -318,5 +512,134 @@ mod tests {
         task.last_check = Instant::now() - CHECK_EVERY;
         mouse.lock().unwrap().asleep = true;
         assert!(matches!(task.tick(), Err(Error::Unreachable)));
+    }
+
+    mod keyboard {
+        use super::*;
+        use crate::hidpp::FeatureEntry;
+        use crate::hidpp::host::tests::{RED, calls, g915x, keyboard_read_only, look, zone};
+        use crate::hidpp::host::{Power, effect};
+
+        fn device() -> UnsupportedDevice {
+            let ids = [
+                feature::BRIGHTNESS_CONTROL,
+                feature::RGB_EFFECTS,
+                feature::PER_KEY_LIGHTING_V2,
+                feature::PROFILE_MANAGEMENT,
+            ];
+            UnsupportedDevice {
+                slot: 1,
+                name: Some("G915 X LS".into()),
+                kind: Some(0),
+                protocol: "4.2".into(),
+                wireless_id: None,
+                unit_id: None,
+                device_info: None,
+                firmware: Vec::new(),
+                features: ids.iter().map(|&id| FeatureEntry { id, kind: 0, version: 0 }).collect(),
+                dpi: None,
+                report_rates_ms: Vec::new(),
+                onboard: None,
+                lighting: Some(g915x()),
+                read_errors: Vec::new(),
+            }
+        }
+
+        type Kb = std::sync::Arc<std::sync::Mutex<crate::hidpp::host::tests::Keyboard>>;
+
+        fn open(look: Option<Look>) -> (LogitechTask, Kb) {
+            let (dev, state, _) = keyboard_read_only();
+            let mut task = LogitechTask::open(dev, device(), None, None).unwrap();
+            task.programs = Vec::new;
+            if let Some(look) = look {
+                task.drive_lights(look).unwrap();
+            }
+            (task, state)
+        }
+
+        #[test]
+        fn the_lights_are_not_taken_while_another_program_drives_them() {
+            let (mut task, state) = open(None);
+            state.lock().unwrap().control = 3;
+            assert!(matches!(task.drive_lights(look()), Err(Error::Invalid(_))));
+            assert_eq!(calls(&state), [(feature::RGB_EFFECTS, 5, vec![])], "only asked");
+            task.programs = || vec!["Logitech G HUB"];
+            state.lock().unwrap().control = 0;
+            assert!(matches!(task.drive_lights(look()), Err(Error::Invalid(m)) if m.contains("G HUB")));
+            assert!(calls(&state).is_empty());
+        }
+
+        #[test]
+        fn the_lights_are_given_back_on_request_and_when_the_task_ends() {
+            let (mut task, state) = open(Some(look()));
+            assert_eq!(task.live().unwrap().host.unwrap().status.power, Power::Full);
+            calls(&state);
+            assert_eq!(task.give_back_lights().unwrap(), "name-G915 X LS-0000");
+            assert_eq!(calls(&state), [(feature::RGB_EFFECTS, 5, vec![1]), (feature::PROFILE_MANAGEMENT, 6, vec![3])]);
+            assert!(task.live().unwrap().host.is_none());
+
+            task.drive_lights(look()).unwrap();
+            calls(&state);
+            drop(task);
+            assert_eq!(calls(&state), [(feature::RGB_EFFECTS, 5, vec![1]), (feature::PROFILE_MANAGEMENT, 6, vec![3])]);
+        }
+
+        #[test]
+        fn a_keyboard_back_on_its_own_lights_is_taken_again() {
+            let (mut task, state) = open(Some(look()));
+            {
+                let mut k = state.lock().unwrap();
+                k.control = 0;
+                k.host_mode = false;
+                k.calls.clear();
+            }
+            task.last_host_check = Instant::now() - HOST_CHECK_EVERY;
+            assert_eq!(task.tick().unwrap(), EVENTS_EVERY);
+            let sent = calls(&state);
+            assert_eq!(sent[1], (feature::PROFILE_MANAGEMENT, 6, vec![5]));
+            assert_eq!(sent[2], (feature::RGB_EFFECTS, 5, vec![1, 3, 6]));
+            assert_eq!(task.live().unwrap().host.unwrap().status.retaken, 1);
+            assert!(state.lock().unwrap().host_mode);
+        }
+
+        #[test]
+        fn another_program_starting_gets_the_lights_back() {
+            let (mut task, state) = open(Some(look()));
+            calls(&state);
+            task.programs = || vec!["Solaar"];
+            task.last_host_check = Instant::now() - HOST_CHECK_EVERY;
+            task.tick().unwrap();
+            assert_eq!(calls(&state), [(feature::RGB_EFFECTS, 5, vec![1]), (feature::PROFILE_MANAGEMENT, 6, vec![3])]);
+            let live = task.live().unwrap();
+            assert!(live.host.is_none());
+            assert_eq!(live.gave_back.as_deref(), Some("Solaar started"));
+        }
+
+        #[test]
+        fn a_failed_command_gives_the_lights_back() {
+            let (mut task, state) = open(Some(look()));
+            state.lock().unwrap().busy = 10;
+            let error = task.drive_lights(look()).unwrap_err().to_string();
+            assert!(error.contains("own lights back"), "{error}");
+            assert!(!state.lock().unwrap().host_mode);
+            assert!(task.live().unwrap().gave_back.is_some());
+        }
+
+        #[test]
+        fn a_look_is_checked_before_anything_is_sent() {
+            let (mut task, state) = open(None);
+            let mut wrong = look();
+            wrong.zones[0] = zone(0, effect::CYCLE, Some(RED));
+            assert!(matches!(task.drive_lights(wrong), Err(Error::Invalid(_))));
+            assert!(calls(&state).is_empty());
+        }
+
+        #[test]
+        fn a_mouse_whose_dpi_peri_hub_changes_gets_no_host_mode() {
+            let mut device = device();
+            device.dpi = Some(DpiCapabilities { min: 200, max: 8000, step: 50, list: Vec::new() });
+            assert!(!lights_drivable(&device));
+            assert!(lights_drivable(&super::keyboard::device()));
+        }
     }
 }

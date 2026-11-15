@@ -8,6 +8,7 @@ use perihub_core::corsair::device::CorsairInfo;
 use perihub_core::effects::KeyboardLighting;
 use perihub_core::focus::{self, FocusSupport};
 use perihub_core::g300::{G300Info, G300Settings};
+use perihub_core::hidpp::host::Look;
 use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
 use perihub_core::keyboard::{Keymap, KeymapRestore};
 use perihub_core::logitech::LogitechLive;
@@ -239,6 +240,52 @@ pub async fn logitech_reset_dpi(state: State<'_, AppState>, receiver_id: u16, sl
     save_logitech_dpi(&state, key, None)
 }
 
+/// Takes the lights of a keyboard PeriHub knows by its features over (host mode, experimental) and
+/// shows `look`, or shows it if PeriHub drives them already. The look is kept for the session, and
+/// shown again every time the keyboard connects.
+#[tauri::command]
+pub async fn logitech_drive_lights(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    receiver_id: u16,
+    slot: u8,
+    look: Look,
+) -> CmdResult<()> {
+    let manager = state.manager.clone();
+    let kept = look.clone();
+    let key = blocking(move || manager.logitech(receiver_id, slot)?.call(move |d| d.drive_lights(look))).await?;
+    state.manager.set_logitech_look(key, Some(kept));
+    crate::window::refresh_menu(&app);
+    Ok(())
+}
+
+/// Gives the keyboard its own lights back.
+#[tauri::command]
+pub async fn logitech_give_back_lights(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    receiver_id: u16,
+    slot: u8,
+) -> CmdResult<()> {
+    let manager = state.manager.clone();
+    let key = blocking(move || manager.logitech(receiver_id, slot)?.call(|d| d.give_back_lights())).await?;
+    state.manager.set_logitech_look(key, None);
+    crate::window::refresh_menu(&app);
+    Ok(())
+}
+
+/// Sets the brightness of a keyboard's lights (experimental); the keyboard keeps it, as with its key.
+#[tauri::command]
+pub async fn logitech_set_brightness(
+    state: State<'_, AppState>,
+    receiver_id: u16,
+    slot: u8,
+    value: u16,
+) -> CmdResult<()> {
+    let manager = state.manager.clone();
+    blocking(move || manager.logitech(receiver_id, slot)?.call(move |d| d.set_brightness(value))).await
+}
+
 /// Turns a keyboard with a raw HID collection on or off as a VIA keyboard ("vvvv:pppp"). PeriHub
 /// opens it, or closes it, at its next look at the devices.
 #[tauri::command]
@@ -320,11 +367,13 @@ pub async fn mouse_preview_led(state: State<'_, AppState>, zone: u8, effect: Led
     blocking(move || manager.mouse()?.call(move |m| m.preview_led(zone, &effect))).await
 }
 
-/// "Turn off experimental lighting" in the tray menu: every Corsair device back to its own settings.
+/// "Turn off experimental lighting" in the tray menu: every Corsair device back to its own settings,
+/// and every Logitech keyboard whose lights PeriHub drives back to its own lights.
 pub fn turn_off_experimental(app: &AppHandle) {
     let app = app.clone();
     std::thread::spawn(move || {
         app.state::<AppState>().manager.release_corsair();
+        app.state::<AppState>().manager.release_logitech();
         corsair_changed(&app);
     });
 }

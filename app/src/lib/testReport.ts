@@ -1,7 +1,7 @@
 import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
-import type { HidppFeature, HidppLighting, MouseInfo, ReportDevice } from "./api";
+import type { HidppFeature, HidppLighting, LightsLook, MouseInfo, ReportDevice } from "./api";
 import { effectName, kindName, zoneName } from "./logitechFeatures";
 
 const LOGITECH = "046d";
@@ -34,11 +34,23 @@ function lightingLines(lighting: HidppLighting, kind: number | null): string[] {
     `Brightness: ${b ? `${b.min}-${b.max}, ${b.steps} levels${b.on_off ? ", can be turned off" : ""}` : "no 0x8040"}`,
     `Lighting zones: ${zones?.join("; ") || "no 0x8071"}`,
     `Startup and shutdown: ${e ? `${power("startup", e.startup)}, ${power("shutdown", e.shutdown)}` : "no 0x8071"}`,
-    `Lights dim after: ${e?.idle_s != null ? `${e.idle_s} s, off after ${e.sleep_s} s` : "not read"}`,
+    `Lights dim after: ${e?.idle_s != null ? `${e.idle_s} s, off ${e.sleep_s} s later` : "not read"}`,
     `Per-key lighting: ${lighting.keys.length ? `${lighting.keys.length} keys (${ranges(lighting.keys)})` : "none"}`,
     `Layout (0x4540): ${lighting.layout ?? "not read"}`,
     `Lighting replies: ${lighting.raw.join(" | ") || "none"}`,
   ];
+}
+
+/** What PeriHub shows on a keyboard it drives, in one short line: effect ids, colours and periods by
+ * zone, and how many keys have how many colours. */
+function lookText(look: LightsLook): string {
+  const zones = look.zones.map((z) =>
+    [`zone ${z.zone} effect 0x${z.effect.toString(16).padStart(2, "0")}`, z.color, z.period_ms && `${z.period_ms} ms`, z.direction && `direction ${z.direction}`]
+      .filter(Boolean)
+      .join(" "),
+  );
+  if (look.keys.length) zones.push(`${look.keys.length} keys in ${new Set(look.keys.map(([, c]) => c)).size} colours`);
+  return zones.join("; ");
 }
 
 /** The mouse's profile list when it was connected. */
@@ -195,6 +207,15 @@ export function receiverTest(
         lines.push(
           `Lighting now: brightness ${l.brightness ?? "not read"}${l.on === null ? "" : l.on ? ", on" : ", off"}, driven by ${control}`,
         );
+      }
+      if (live.host) {
+        const h = live.host;
+        lines.push(
+          `Lights driven by PeriHub: ${h.power}, idle notices ${h.idle_events}, in-use notices ${h.active_events}, taken again ${h.retaken}`,
+          `PeriHub shows: ${lookText(h.look)}`,
+        );
+      } else if (live.gave_back) {
+        lines.push(`PeriHub gave the lights back: ${live.gave_back}`);
       }
     }
     const errors = [...device.read_errors, ...(device.lighting?.errors ?? [])];

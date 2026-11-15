@@ -2,6 +2,7 @@
 //!
 //! References: libratbag (MIT) and data read from the real device.
 
+pub mod host;
 pub mod lighting;
 pub mod macros;
 pub mod models;
@@ -43,6 +44,11 @@ pub mod feature {
     pub const BRIGHTNESS_CONTROL: u16 = 0x8040;
     pub const RGB_EFFECTS: u16 = 0x8071;
     pub const PER_KEY_LIGHTING_V2: u16 = 0x8081;
+    pub const PROFILE_MANAGEMENT: u16 = 0x8101;
+    pub const CONTROL_LIST: u16 = 0x1B10;
+    pub const FULL_KEY_CUSTOMIZATION: u16 = 0x1B05;
+    pub const DISABLE_CONTROLS: u16 = 0x4523;
+    pub const LOGI_MODIFIERS: u16 = 0x8051;
 }
 
 /// A HID connection, as [`HidppDevice`] uses it. Tests replace the device with a simulated one.
@@ -81,6 +87,11 @@ const ALLOWED_FEATURES: &[u16] = &[
     feature::BRIGHTNESS_CONTROL,
     feature::RGB_EFFECTS,
     feature::PER_KEY_LIGHTING_V2,
+    feature::PROFILE_MANAGEMENT,
+    feature::CONTROL_LIST,
+    feature::FULL_KEY_CUSTOMIZATION,
+    feature::DISABLE_CONTROLS,
+    feature::LOGI_MODIFIERS,
 ];
 
 /// The only (feature, function) pairs allowed on a read-only device: they read state and
@@ -114,6 +125,19 @@ const READ_ONLY_CALLS: &[(u16, u8)] = &[
     (feature::BRIGHTNESS_CONTROL, 3),
     (feature::RGB_EFFECTS, 0),
     (feature::PER_KEY_LIGHTING_V2, 0),
+    // The newer keyboards' features no public document describes: only function 0, which other
+    // projects asked on a G515 without effect (docs/protocols/logitech-keyboard-lighting.md).
+    (feature::PROFILE_MANAGEMENT, 0),
+    // Profile files: function 8 loads one into the keyboard's read buffer, function 12 reads 16 bytes
+    // of it. Only asked on request, with no other Logitech program running (it shares the buffer).
+    (feature::PROFILE_MANAGEMENT, 8),
+    (feature::PROFILE_MANAGEMENT, 0x0C),
+    (feature::FULL_KEY_CUSTOMIZATION, 0),
+    (feature::DISABLE_CONTROLS, 0),
+    (feature::LOGI_MODIFIERS, 0),
+    // The list of the keyboard's controls: its size, then one entry at a time.
+    (feature::CONTROL_LIST, 0),
+    (feature::CONTROL_LIST, 1),
 ];
 
 /// Functions that read or change, by their first parameter: 0 reads ("get"), anything else changes
@@ -125,7 +149,32 @@ const READ_ONLY_GETS: &[(u16, u8)] = &[
     (feature::RGB_EFFECTS, 5),
     // Idle and sleep timers of the lights (the change is likely kept in the device's memory).
     (feature::RGB_EFFECTS, 7),
+    // Who drives the keyboard: itself, with its saved profiles, or a program (host mode).
+    (feature::PROFILE_MANAGEMENT, 6),
 ];
+
+/// What a program sends while it drives a keyboard's lights in host mode, as Logitech G HUB does
+/// with its on-board memory mode off (docs/protocols/logitech-keyboard-lighting.md): everything
+/// stays in the keyboard's RAM. Nothing else that changes is sent, not even with [`Access::Host`]:
+/// no timers or startup effects (written to the keyboard's memory), no profile files, no power-off.
+fn is_host_call(feature: u16, function: u8, params: &[u8]) -> bool {
+    let first = params.first().copied().unwrap_or(0);
+    match (feature, function) {
+        (feature::BRIGHTNESS_CONTROL, 2) => true,
+        // Host mode on (05) and back to the keyboard's own profiles (03).
+        (feature::PROFILE_MANAGEMENT, 6) => matches!(first, 0x05 | 0x03),
+        // Take the lights with the keyboard telling when it is idle (01 03 06), give them back (01 00 00).
+        (feature::RGB_EFFECTS, 5) => params.starts_with(&[1, 3, 6]) || params.starts_with(&[1, 0, 0]),
+        // An effect, kept in RAM only: the last byte is the persistence, 1 = RAM.
+        (feature::RGB_EFFECTS, 1) => params.len() == 13 && params[12] == 0x01,
+        // Lights off when idle (01 03 00), on again (01 01 00).
+        (feature::RGB_EFFECTS, 8) => params.starts_with(&[1, 3, 0]) || params.starts_with(&[1, 1, 0]),
+        (feature::PER_KEY_LIGHTING_V2, 1 | 5 | 6) => true,
+        // End of a frame, in RAM (persistence 0).
+        (feature::PER_KEY_LIGHTING_V2, 7) => first == 0,
+        _ => false,
+    }
+}
 
 fn is_read_call(feature: u16, function: u8, params: &[u8]) -> bool {
     READ_ONLY_CALLS.contains(&(feature, function))
@@ -320,6 +369,8 @@ pub enum Access {
     Ram,
     /// Everything in [`ALLOWED_FEATURES`], onboard memory writes included.
     Full,
+    /// The reads, and what drives a keyboard's lights in host mode (see [`is_host_call`]).
+    Host,
 }
 
 /// Onboard memory writes (0x8100 functions 6, 7 and 8), and the changes of the 0x8071 startup
@@ -327,9 +378,33 @@ pub enum Access {
 fn is_memory_write(feature: u16, function: u8, params: &[u8]) -> bool {
     (feature == feature::ONBOARD_PROFILES && matches!(function, 6..=8))
         || (feature == feature::RGB_EFFECTS && matches!(function, 3 | 7) && params.first().copied().unwrap_or(0) != 0)
+        // The newer keyboards' profiles and key tables: never with RAM access, only host mode's own calls.
+        || (matches!(
+            feature,
+            feature::PROFILE_MANAGEMENT
+                | feature::FULL_KEY_CUSTOMIZATION
+                | feature::DISABLE_CONTROLS
+                | feature::LOGI_MODIFIERS
+                | feature::CONTROL_LIST
+        ) && !is_read_call(feature, function, params))
 }
 
+/// A report the device sent on its own (software id 0), such as a lighting feature telling that
+/// the keyboard is idle.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Event {
+    pub feature: u16,
+    /// The event number (the high 4 bits of byte 3).
+    pub event: u8,
+    pub data: [u8; 16],
+}
+
+/// At most this many events wait to be read: older ones are dropped.
+const MAX_EVENTS: usize = 64;
+
 pub struct HidppDevice {
+    /// Events that came while PeriHub waited for a reply, by feature index.
+    events: std::collections::VecDeque<(u8, u8, [u8; 16])>,
     dev: Box<dyn Transport>,
     device_index: u8,
     access: Access,
@@ -366,7 +441,15 @@ impl HidppDevice {
         read_only: bool,
     ) -> Result<Self> {
         let access = if read_only { Access::ReadOnly } else { Access::Full };
-        let mut device = Self { dev, device_index, access, features: HashMap::new(), behind_receiver, short };
+        let mut device = Self {
+            events: std::collections::VecDeque::new(),
+            dev,
+            device_index,
+            access,
+            features: HashMap::new(),
+            behind_receiver,
+            short,
+        };
         let (major, _) = device.protocol_version()?;
         if major < 2 {
             return Err(Error::Protocol(format!("HID++ {major}.x is not supported")));
@@ -426,6 +509,9 @@ impl HidppDevice {
             if n < 7 || !(buf[0] == REPORT_SHORT || buf[0] == REPORT_LONG) || buf[1] != self.device_index {
                 continue;
             }
+            if self.keep_event(&buf[..n]) {
+                continue;
+            }
             if buf[2] == index && buf[3] == address {
                 let mut out = [0u8; 16];
                 let len = (n - 4).min(16);
@@ -443,6 +529,62 @@ impl HidppDevice {
                 });
             }
         }
+    }
+
+    /// Keeps `report` if it is an event of this device (software id 0, a feature index, not an
+    /// error): it is no reply to anything PeriHub asked.
+    fn keep_event(&mut self, report: &[u8]) -> bool {
+        let event = report.len() >= 7
+            && (report[0] == REPORT_SHORT || report[0] == REPORT_LONG)
+            && report[1] == self.device_index
+            && report[2] != 0
+            && report[2] != 0xFF
+            && report[2] < 0x80
+            && report[3] & 0x0F == 0;
+        if event {
+            let mut data = [0u8; 16];
+            let len = (report.len() - 4).min(16);
+            data[..len].copy_from_slice(&report[4..4 + len]);
+            if self.events.len() == MAX_EVENTS {
+                self.events.pop_front();
+            }
+            self.events.push_back((report[2], report[3] >> 4, data));
+        }
+        event
+    }
+
+    /// The events the device sent since the last call: those that came while PeriHub waited for a
+    /// reply, and those waiting now, read for up to `wait_ms`. On Windows a receiver has two
+    /// collections, and both are read (issue #4).
+    pub fn events(&mut self, wait_ms: i32) -> Result<Vec<Event>> {
+        let mut buf = [0u8; 64];
+        let deadline = Instant::now() + Duration::from_millis(wait_ms.max(0) as u64);
+        loop {
+            let mut any = false;
+            let n = self.dev.read_timeout(&mut buf, 1)?;
+            if n > 0 {
+                any = true;
+                let report = buf;
+                self.keep_event(&report[..n]);
+            }
+            if let Some(short) = &self.short {
+                let n = short.read_timeout(&mut buf, 1)?;
+                if n > 0 {
+                    any = true;
+                    let report = buf;
+                    self.keep_event(&report[..n]);
+                }
+            }
+            if !any && Instant::now() >= deadline {
+                break;
+            }
+        }
+        let ids: HashMap<u8, u16> = self.features.iter().map(|(&id, &index)| (index, id)).collect();
+        Ok(self
+            .events
+            .drain(..)
+            .filter_map(|(index, event, data)| ids.get(&index).map(|&feature| Event { feature, event, data }))
+            .collect())
     }
 
     fn feature_index(&mut self, id: u16) -> Result<u8> {
@@ -470,6 +612,9 @@ impl HidppDevice {
             }
             Access::Ram if is_memory_write(feature, function, params) => {
                 return Err(Error::Invalid("PeriHub does not save to this mouse's memory".into()));
+            }
+            Access::Host if !is_read_call(feature, function, params) && !is_host_call(feature, function, params) => {
+                return Err(Error::Invalid("PeriHub does not send this to this keyboard".into()));
             }
             _ => {}
         }
@@ -759,7 +904,7 @@ pub(crate) mod tests {
     /// A simulated HID connection: `respond` turns each report written into the reports read back.
     pub(crate) struct FakeDevice {
         respond: Mutex<Responder>,
-        pending: Mutex<VecDeque<Vec<u8>>>,
+        pub(crate) pending: Arc<Mutex<VecDeque<Vec<u8>>>>,
         pub(crate) written: Arc<Mutex<Vec<Vec<u8>>>>,
     }
 
@@ -767,7 +912,7 @@ pub(crate) mod tests {
         pub(crate) fn new(respond: impl FnMut(&[u8]) -> Vec<Vec<u8>> + Send + 'static) -> Self {
             Self {
                 respond: Mutex::new(Box::new(respond)),
-                pending: Mutex::new(VecDeque::new()),
+                pending: Arc::new(Mutex::new(VecDeque::new())),
                 written: Arc::new(Mutex::new(Vec::new())),
             }
         }
@@ -1070,5 +1215,154 @@ pub(crate) mod tests {
         dev.grant(Access::Full);
         dev.write_sector(1, &sector, &info).unwrap();
         assert_eq!(sent_calls(&sent), 1 + 1 + 16 + 1);
+    }
+
+    #[test]
+    fn host_mode_sends_only_what_drives_the_lights_in_ram() {
+        use feature::{BRIGHTNESS_CONTROL, PER_KEY_LIGHTING_V2, PROFILE_MANAGEMENT, RGB_EFFECTS};
+        let mut effect = vec![0u8, 1, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        effect.push(1);
+        let sent = [
+            (BRIGHTNESS_CONTROL, 2, vec![0, 50]),
+            (PROFILE_MANAGEMENT, 6, vec![5]),
+            (PROFILE_MANAGEMENT, 6, vec![3]),
+            (RGB_EFFECTS, 5, vec![1, 3, 6]),
+            (RGB_EFFECTS, 5, vec![1, 0, 0]),
+            (RGB_EFFECTS, 1, effect.clone()),
+            (RGB_EFFECTS, 8, vec![1, 3, 0]),
+            (RGB_EFFECTS, 8, vec![1, 1, 0]),
+            (PER_KEY_LIGHTING_V2, 1, vec![4, 0xFF, 0, 0]),
+            (PER_KEY_LIGHTING_V2, 5, vec![4, 10, 0xFF, 0, 0]),
+            (PER_KEY_LIGHTING_V2, 6, vec![0xFF, 0, 0, 4, 5]),
+            (PER_KEY_LIGHTING_V2, 7, vec![0]),
+        ];
+        for (feature, function, params) in &sent {
+            assert!(is_host_call(*feature, *function, params), "{feature:#06x}/{function} {params:02x?}");
+        }
+        let mut kept = effect.clone();
+        *kept.last_mut().unwrap() = 2;
+        let refused = [
+            // Kept in the keyboard's memory: the effect with another persistence, the startup and
+            // shutdown effects, the timers, the end of a frame that is saved.
+            (RGB_EFFECTS, 1, kept),
+            (RGB_EFFECTS, 1, effect[..12].to_vec()),
+            (RGB_EFFECTS, 3, vec![1, 0, 1, 1]),
+            (RGB_EFFECTS, 7, vec![1, 0, 0, 0, 60, 1, 0x0E]),
+            (PER_KEY_LIGHTING_V2, 7, vec![1]),
+            // Other modes, and the power-off that takes the keyboard offline.
+            (RGB_EFFECTS, 5, vec![1, 1, 0]),
+            (RGB_EFFECTS, 8, vec![1, 2, 0]),
+            (RGB_EFFECTS, 9, vec![1]),
+            (PROFILE_MANAGEMENT, 6, vec![1]),
+            (PROFILE_MANAGEMENT, 6, vec![2]),
+            (PROFILE_MANAGEMENT, 6, vec![4]),
+            // Profile files, key tables, game mode: never.
+            (PROFILE_MANAGEMENT, 1, vec![0]),
+            (PROFILE_MANAGEMENT, 4, vec![0]),
+            (PROFILE_MANAGEMENT, 0x0D, vec![0]),
+            (feature::FULL_KEY_CUSTOMIZATION, 1, vec![1]),
+            (feature::DISABLE_CONTROLS, 1, vec![1]),
+            (feature::LOGI_MODIFIERS, 1, vec![1]),
+            (feature::CONTROL_LIST, 2, vec![1]),
+            (feature::ONBOARD_PROFILES, 6, vec![0]),
+            (feature::ADJUSTABLE_DPI, 3, vec![0, 3, 0x20]),
+        ];
+        for (feature, function, params) in &refused {
+            assert!(
+                !is_host_call(*feature, *function, params) && !is_read_call(*feature, *function, params),
+                "{feature:#06x}/{function} {params:02x?}"
+            );
+        }
+        // And none of the new keyboard features changes anything with RAM access.
+        for (feature, function, params) in &refused[11..18] {
+            assert!(is_memory_write(*feature, *function, params), "{feature:#06x}/{function}");
+        }
+    }
+
+    /// What a simulated device got: feature index, function and the first parameters.
+    type Sent = Arc<Mutex<Vec<(u8, u8, Vec<u8>)>>>;
+
+    /// A keyboard in slot 1 with 0x8071 at index 1 and 0x8101 at index 2; it answers every call.
+    fn host_keyboard(events_with_reply: Vec<Vec<u8>>) -> (FakeDevice, Sent) {
+        let sent = Arc::new(Mutex::new(Vec::new()));
+        let log = sent.clone();
+        let mut extra = Some(events_with_reply);
+        let fake = FakeDevice::new(move |request| {
+            match (request[2], request[3] >> 4) {
+                (0, 1) => return vec![reply(request, &[4, 2, request[6]])],
+                (0, 0) => {
+                    let id = u16::from_be_bytes([request[4], request[5]]);
+                    let index = match id {
+                        feature::RGB_EFFECTS => 1,
+                        feature::PROFILE_MANAGEMENT => 2,
+                        _ => 0,
+                    };
+                    return vec![reply(request, &[index])];
+                }
+                _ => {}
+            }
+            log.lock().unwrap().push((request[2], request[3] >> 4, request[4..8].to_vec()));
+            // The first call gets the events before its reply, as a keyboard sends them.
+            let mut out = extra.take().unwrap_or_default();
+            out.push(reply(request, &[request[4]]));
+            out
+        });
+        (fake, sent)
+    }
+
+    fn event_report(index: u8, event: u8, data: &[u8]) -> Vec<u8> {
+        let mut report = vec![0u8; LONG_LEN];
+        report[0] = REPORT_LONG;
+        report[1] = 1;
+        report[2] = index;
+        report[3] = event << 4;
+        report[4..4 + data.len()].copy_from_slice(data);
+        report
+    }
+
+    #[test]
+    fn host_access_refuses_the_rest_before_anything_is_sent() {
+        let (fake, sent) = host_keyboard(Vec::new());
+        let mut dev = HidppDevice::behind_receiver(fake, None, 1, true).unwrap();
+        assert!(dev.call(feature::RGB_EFFECTS, 5, &[1, 3, 6]).is_err(), "read-only first");
+        dev.grant(Access::Host);
+        dev.call(feature::RGB_EFFECTS, 5, &[1, 3, 6]).unwrap();
+        dev.call(feature::PROFILE_MANAGEMENT, 6, &[5]).unwrap();
+        assert!(dev.call(feature::RGB_EFFECTS, 7, &[1, 0, 0, 0, 60]).is_err());
+        assert!(dev.call(feature::RGB_EFFECTS, 9, &[1]).is_err());
+        assert!(dev.call(feature::PROFILE_MANAGEMENT, 6, &[1]).is_err());
+        dev.call(feature::RGB_EFFECTS, 5, &[0]).unwrap();
+        let calls: Vec<(u8, u8, u8)> = sent.lock().unwrap().iter().map(|(i, f, p)| (*i, *f, p[0])).collect();
+        assert_eq!(calls, [(1, 5, 1), (2, 6, 5), (1, 5, 0)]);
+    }
+
+    #[test]
+    fn events_that_come_during_a_call_are_kept_for_later() {
+        // Idle (0x8071 event 1, byte 0 = 0) before the reply, a receiver notification (0x41) and an
+        // event of a feature PeriHub never asked for (index 5): only the first is given back.
+        let (fake, _) =
+            host_keyboard(vec![event_report(1, 1, &[0]), event_report(0x41, 0, &[0x10]), event_report(5, 0, &[7])]);
+        let mut dev = HidppDevice::behind_receiver(fake, None, 1, true).unwrap();
+        let reply = dev.call(feature::RGB_EFFECTS, 5, &[0]).unwrap();
+        assert_eq!(reply[0], 0, "the reply, not the event");
+        let events = dev.events(0).unwrap();
+        assert_eq!(events.len(), 1, "{events:?}");
+        assert_eq!((events[0].feature, events[0].event, events[0].data[0]), (feature::RGB_EFFECTS, 1, 0));
+        assert!(dev.events(0).unwrap().is_empty(), "given once");
+    }
+
+    #[test]
+    fn events_waiting_on_the_connection_are_read() {
+        let (fake, _) = host_keyboard(Vec::new());
+        let pending = fake.pending.clone();
+        let mut dev = HidppDevice::behind_receiver(fake, None, 1, true).unwrap();
+        dev.call(feature::RGB_EFFECTS, 5, &[0]).unwrap();
+        assert!(dev.events(0).unwrap().is_empty());
+        // In use again (byte 0 = 1), sent on its own after the call; then a short report.
+        pending.lock().unwrap().push_back(event_report(1, 1, &[1]));
+        pending.lock().unwrap().push_back(vec![REPORT_SHORT, 1, 1, 0x10, 0, 0, 0]);
+        let events = dev.events(0).unwrap();
+        let read: Vec<(u16, u8, u8)> = events.iter().map(|e| (e.feature, e.event, e.data[0])).collect();
+        assert_eq!(read, [(feature::RGB_EFFECTS, 1, 1), (feature::RGB_EFFECTS, 1, 0)]);
     }
 }

@@ -90,10 +90,15 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   - 👁 **Lighting**, on a device with the HID++ lighting features of the newer keyboards (0x8040
     brightness, 0x8071 effects by zone, 0x8081 per-key colours, 0x4540 layout): the brightness now, who
     drives the lights (the device or a program such as G HUB), the effects each zone offers, how many
-    keys have their own colour, the startup and shutdown effects and when the lights dim. Only read; the
-    test report carries every reply. The first one is a G915 X LS through a `c547` receiver on Windows
+    keys have their own colour, the startup and shutdown effects and when the lights dim. The test report
+    carries every reply. The first one is a G915 X LS through a `c547` receiver on Windows
     ([issue #30](https://github.com/hex-dump/perihub/issues/30)), see
     [protocols/logitech-keyboard-lighting.md](protocols/logitech-keyboard-lighting.md).
+  - 🧪 **Lights driven by PeriHub (experimental)**, on a keyboard that also has 0x8101 profile management:
+    an effect per zone, colours per group of keys and the brightness, in host mode as G HUB does with its
+    on-board memory mode off. Everything but the brightness stays in the keyboard's RAM; PeriHub dims and
+    turns the lights off when the keyboard is idle, and gives them back on request, from the tray, when
+    G HUB or Solaar starts and when it quits. Not tried on a keyboard yet; **No warranty** box first.
   - **Solaar and logiops** set their own DPI and may undo PeriHub's: the device page says so when
     one of them runs.
   - Logitech devices PeriHub does not know behind a **LIGHTSPEED** receiver get the same page,

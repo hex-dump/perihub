@@ -398,6 +398,37 @@ export interface LogitechLive {
   saved_dpi: number | null;
   /** Its lighting as it is now: brightness, lights on, and who drives them (0 the device, 3 a program). */
   lighting: { brightness: number | null; on: boolean | null; control: number | null } | null;
+  /** While PeriHub drives a keyboard's lights (host mode): what it shows, and how it went. */
+  host: LightsHost | null;
+  /** Why PeriHub gave the lights back on its own, if it did. */
+  gave_back: string | null;
+}
+
+/** What one lighting zone of a Logitech keyboard shows (0x8071). */
+export interface ZoneLook {
+  zone: number;
+  /** The effect's id, such as 1 for a fixed colour. */
+  effect: number;
+  color: string | null;
+  period_ms: number | null;
+  /** For a wave: 1 horizontal, 2 vertical, 3 centre out, 6 reverse horizontal, 7 reverse vertical, 8 centre in. */
+  direction: number | null;
+}
+
+/** What PeriHub shows on a Logitech keyboard whose lights it drives: effects by zone, and a colour per key. */
+export interface LightsLook {
+  zones: ZoneLook[];
+  keys: [number, string][];
+}
+
+export interface LightsHost {
+  look: LightsLook;
+  /** Full lights, dimmed because nobody uses the keyboard, or off. */
+  power: "full" | "dimmed" | "off";
+  idle_events: number;
+  active_events: number;
+  /** Times the keyboard was found back on its own lighting, and taken again. */
+  retaken: number;
 }
 
 /** A keyboard with QMK firmware, found by its raw HID channel (usage page 0xFF60). */
@@ -735,6 +766,12 @@ export const api = {
     invoke<void>("logitech_set_dpi", { receiverId, slot, dpi }),
   logitechResetDpi: (receiverId: number, slot: number) =>
     invoke<void>("logitech_reset_dpi", { receiverId, slot }),
+  logitechDriveLights: (receiverId: number, slot: number, look: LightsLook) =>
+    invoke<void>("logitech_drive_lights", { receiverId, slot, look }),
+  logitechGiveBackLights: (receiverId: number, slot: number) =>
+    invoke<void>("logitech_give_back_lights", { receiverId, slot }),
+  logitechSetBrightness: (receiverId: number, slot: number, value: number) =>
+    invoke<void>("logitech_set_brightness", { receiverId, slot, value }),
   presets: () => invoke<LightingPreset[]>("kb_get_presets"),
   savePreset: (name: string, lighting: KeyboardLighting) =>
     invoke<LightingPreset[]>("kb_save_preset", { name, lighting }),
