@@ -27,6 +27,12 @@ server (`localhost:1420`).
 
 ## Tests and checks
 
+Quick checks before every commit (formatting, generated files, CHANGELOG sections, workflow YAML):
+
+```sh
+git config core.hooksPath .githooks   # once per clone; git commit --no-verify skips them
+```
+
 Run them before opening a pull request (CI runs them too, on Linux and Windows):
 
 ```sh

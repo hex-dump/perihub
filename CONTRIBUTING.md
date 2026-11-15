@@ -31,6 +31,8 @@ contributions are the ones that need a real device, which the maintainer does no
 
 ## Before opening a pull request
 
+`git config core.hooksPath .githooks` turns on quick checks before every commit. Then:
+
 ```sh
 cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings

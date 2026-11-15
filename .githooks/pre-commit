@@ -1,0 +1,31 @@
+#!/bin/sh
+# PeriHub's pre-commit checks, the quick ones CI would fail on. Turn them on once with:
+#   git config core.hooksPath .githooks
+# Skip them for one commit with: git commit --no-verify
+set -e
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+fail() {
+    echo "pre-commit: $1" >&2
+    exit 1
+}
+
+if echo "$staged" | grep -q '\.rs$'; then
+    cargo fmt --all --check > /dev/null 2>&1 || fail "Rust code is not formatted: run cargo fmt --all"
+fi
+
+# Device tables, or the files generated from them.
+if echo "$staged" | grep -qE '^(crates/|docs/devices\.md|README\.md|site/index\.html|site/devices\.json|packaging/linux/)'; then
+    cargo xtask check || fail "generated files are out of date: run cargo xtask gen"
+fi
+
+if echo "$staged" | grep -qx 'CHANGELOG.md'; then
+    python3 tools/release.py lint > /dev/null || fail "CHANGELOG.md: see the message above"
+fi
+
+if echo "$staged" | grep -q '^\.github/.*\.yml$' && command -v python3 > /dev/null && python3 -c 'import yaml' 2> /dev/null; then
+    for f in $(echo "$staged" | grep '^\.github/.*\.yml$'); do
+        python3 -c 'import sys, yaml; yaml.safe_load(open(sys.argv[1]))' "$f" || fail "$f is not valid YAML"
+    done
+fi
