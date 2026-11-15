@@ -65,7 +65,7 @@ jobs:
 
       # Besides the installers, tauri.updater.conf.json makes signed update files and latest.json,
       # which PeriHub on Windows downloads from the latest release (see app/src-tauri/src/updates.rs).
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
