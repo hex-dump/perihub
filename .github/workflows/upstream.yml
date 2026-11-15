@@ -1,0 +1,58 @@
+name: Upstream device ids
+
+# Every Monday: the USB ids libratbag, OpenRazer, rivalcfg and OpenRGB know that PeriHub has not looked
+# at yet (tools/upstream_ids.py; only ids and names are read). They go in one open issue labelled
+# "upstream", which is closed when there are none. Once they are looked at, record them with
+# python3 tools/upstream_ids.py SRC_DIR --update and commit tools/upstream-seen.json.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  ids:
+    name: New ids
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Clone the sources
+        run: |
+          src="$RUNNER_TEMP/src"
+          mkdir -p "$src" && cd "$src"
+          git clone -q --depth 1 https://github.com/libratbag/libratbag
+          git clone -q --depth 1 https://github.com/openrazer/openrazer
+          git clone -q --depth 1 https://github.com/flozz/rivalcfg
+          git clone -q --depth 1 --filter=blob:none --sparse https://gitlab.com/CalcProgrammer1/OpenRGB.git
+          git -C OpenRGB sparse-checkout set Controllers
+
+      - name: Open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/upstream_ids.py "$RUNNER_TEMP/src" > "$RUNNER_TEMP/new.md"
+          issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --label upstream --state open --json number --jq '.[0].number')
+          if [ ! -s "$RUNNER_TEMP/new.md" ]; then
+            if [ -n "$issue" ]; then
+              gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "Nothing new upstream any more."
+            fi
+            exit 0
+          fi
+          {
+            echo "Device ids that other projects know and PeriHub has not looked at yet, found by the weekly"
+            echo "[Upstream device ids](../actions/workflows/upstream.yml) workflow. Only facts are taken from them:"
+            echo "a device is added from its protocol, described in docs/protocols, with code written from scratch."
+            echo "Once looked at, record them with \`python3 tools/upstream_ids.py SRC_DIR --update\`."
+            echo
+            cat "$RUNNER_TEMP/new.md"
+          } > "$RUNNER_TEMP/body.md"
+          if [ -n "$issue" ]; then
+            gh issue edit "$issue" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh label create upstream --repo "$GITHUB_REPOSITORY" --color c2e0c6 --description "Device ids found in other projects" 2>/dev/null || true
+            gh issue create --repo "$GITHUB_REPOSITORY" --label upstream --title "New device ids in other projects" --body-file "$RUNNER_TEMP/body.md"
+          fi

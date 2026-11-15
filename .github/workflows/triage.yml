@@ -1,0 +1,42 @@
+name: Triage
+
+# A new device request for a device PeriHub already recognizes gets an answer with its level, and a
+# test report from an older version is asked to try the latest one (tools/triage.py). The issue text
+# is only read by the script, never put in a command.
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  triage:
+    if: >-
+      contains(github.event.issue.labels.*.name, 'device request') ||
+      contains(github.event.issue.labels.*.name, 'device test') ||
+      contains(github.event.issue.labels.*.name, 'mouse test')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            tools/triage.py
+            site/devices.json
+          sparse-checkout-cone-mode: false
+
+      - name: Answer and labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          latest=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          python3 tools/triage.py "$GITHUB_EVENT_PATH" "${latest#v}" > "$RUNNER_TEMP/triage.json"
+          jq -r '.comment // empty' "$RUNNER_TEMP/triage.json" > "$RUNNER_TEMP/comment.md"
+          if [ -s "$RUNNER_TEMP/comment.md" ]; then
+            gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"
+          fi
+          for label in $(jq -r '.labels[]' "$RUNNER_TEMP/triage.json"); do
+            gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label "$label"
+          done
