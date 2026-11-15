@@ -1,0 +1,35 @@
+name: Security advisories
+
+# Every Monday, and by hand: known vulnerabilities in the Rust crates (RustSec, deny.toml) and in the npm
+# packages that end up in the app. CI checks them at each push too; this catches the ones published
+# between pushes. A failed run is e-mailed to the repository's owner by GitHub.
+on:
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: Rust crates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check advisories
+          arguments: --all-features
+
+  npm:
+    name: npm packages in the app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - name: npm audit
+        working-directory: app
+        run: npm audit --omit=dev

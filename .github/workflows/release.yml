@@ -147,4 +147,6 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/release/SHA256SUMS.txt" --clobber --repo "$GITHUB_REPOSITORY"
           python3 tools/release.py notes "$version" > "$RUNNER_TEMP/notes.md"
-          gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md" --title "PeriHub $version" --repo "$GITHUB_REPOSITORY"
+          # Publishing the release also opens a discussion with its notes in Announcements, for questions.
+          gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md" --title "PeriHub $version" \
+            --discussion-category Announcements --repo "$GITHUB_REPOSITORY"

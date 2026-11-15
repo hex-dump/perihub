@@ -51,10 +51,25 @@ def version(text: str) -> tuple | None:
     return tuple(int(n) for n in m.groups()) if m else None
 
 
+def brand_labels(usb: str | None, devices: list[dict]) -> list[str]:
+    """"brand: X" for a vendor PeriHub knows, and "mouse" or "keyboard" for a device it knows."""
+    if not usb:
+        return []
+    labels = []
+    vendor = usb.split(":")[0]
+    brands = sorted({d["brand"] for d in devices if any(i.startswith(vendor + ":") for i in d["usb_ids"])})
+    if len(brands) == 1:
+        labels.append(f"brand: {brands[0]}")
+    known = [d for d in devices if usb in d["usb_ids"]]
+    if known and known[0]["kind"] in ("mouse", "keyboard"):
+        labels.append(known[0]["kind"])
+    return labels
+
+
 def triage(issue: dict, latest: str, devices: list[dict]) -> dict:
     labels = {label["name"] for label in issue.get("labels", [])}
     answers = fields(issue.get("body", ""))
-    result = {"comment": None, "labels": []}
+    result = {"comment": None, "labels": brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), devices)}
 
     if "device request" in labels:
         given = answers.get("USB ID (vendor:product)", "")
@@ -69,7 +84,6 @@ def triage(issue: dict, latest: str, devices: list[dict]) -> dict:
         known = [d for d in devices if found in d["usb_ids"]]
         if known:
             d = known[0]
-            result["labels"] = [d["kind"]] if d["kind"] in ("mouse", "keyboard") else []
             result["comment"] = (
                 f"Thanks! PeriHub {latest} already recognizes this device: **{d['brand']} {d['name']}** "
                 f"(`{found}`), {LEVELS[d['level']]}. The [device list]({DEVICES_MD}) has the details.\n\n"

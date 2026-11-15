@@ -1,0 +1,32 @@
+title: "[Idea] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing an idea! Others can vote for it with 👍 and add to it. For a device PeriHub does not know yet, a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) is better: it asks for what is needed to support it.
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What PeriHub could do, or do differently.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it would help
+      description: What you do today without it, for example in the maker's app.
+  - type: input
+    id: devices
+    attributes:
+      label: Devices it is about
+      placeholder: e.g. G502 HERO, Apex 3 TKL, every mouse
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      multiple: true
+      options:
+        - Windows
+        - Linux

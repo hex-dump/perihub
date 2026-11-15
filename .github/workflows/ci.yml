@@ -9,6 +9,19 @@ on:
     paths-ignore: ["site/**", ".github/workflows/pages.yml"]
 
 jobs:
+  # Every dependency's license (no GPL in an MIT app), known vulnerabilities and crate sources:
+  # deny.toml for Rust, tools/check_npm_licenses.py for what npm puts in the app.
+  licenses:
+    name: Licenses and advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          arguments: --all-features
+      - name: npm licenses
+        run: python3 tools/check_npm_licenses.py
+
   test:
     name: Test (${{ matrix.os }})
     strategy:

@@ -1,0 +1,24 @@
+name: Reminders
+
+# Once a day: a device request or test report whose author has not answered the maintainer for 14 days
+# gets one gentle reminder (tools/remind.py). Never more than one per answer, and nothing is closed.
+on:
+  schedule:
+    - cron: "23 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: tools/remind.py
+          sparse-checkout-cone-mode: false
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/remind.py --apply

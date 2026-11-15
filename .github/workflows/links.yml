@@ -1,0 +1,58 @@
+name: Links
+
+# Every Monday, and by hand: the links of the README, the docs and the website (built as it is
+# published). Broken ones go in one open issue labelled "broken links", closed when they are fixed.
+on:
+  schedule:
+    - cron: "53 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the website
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view --repo "$GITHUB_REPOSITORY" --json tagName,assets > "$RUNNER_TEMP/release.json"
+          python3 site/build.py "$RUNNER_TEMP/release.json" _site
+
+      - id: lychee
+        uses: lycheeverse/lychee-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          fail: false
+          output: lychee/out.md
+          # The new-issue and new-discussion pages need a login; buymeacoffee.com refuses robots.
+          args: >-
+            --no-progress --max-concurrency 8 --accept 200..=299,403,429
+            --exclude '/issues/new' --exclude '/discussions/new' --exclude '/security/advisories/new'
+            --exclude 'buymeacoffee\.com' --exclude 'localhost'
+            README.md CONTRIBUTING.md SUPPORT.md SECURITY.md 'docs/**/*.md' '_site/*.html'
+
+      - name: Open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILED: ${{ steps.lychee.outputs.exit_code != '0' }}
+        run: |
+          issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --label "broken links" --state open --json number --jq '.[0].number')
+          if [ "$FAILED" != true ]; then
+            if [ -n "$issue" ]; then
+              gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "Every link works again."
+            fi
+            exit 0
+          fi
+          if [ -n "$issue" ]; then
+            gh issue edit "$issue" --repo "$GITHUB_REPOSITORY" --body-file lychee/out.md
+          else
+            gh label create "broken links" --repo "$GITHUB_REPOSITORY" --color e99695 --description "Links that no longer work" 2>/dev/null || true
+            gh issue create --repo "$GITHUB_REPOSITORY" --label "broken links" --title "Broken links in the docs or the website" --body-file lychee/out.md
+          fi

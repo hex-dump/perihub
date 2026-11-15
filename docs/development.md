@@ -127,6 +127,24 @@ you; once it is published the website shows the new downloads, and the AUR workf
 `CHANGELOG.md` sections, in this order: New devices, Added, Performance, Changed, Fixed, Security,
 Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI runs it.
 
+## Automations
+
+| Workflow | When | What it does |
+|---|---|---|
+| CI | every push and pull request | tests, formatting, clippy, generated files, CHANGELOG sections; dependency licenses and advisories (`deny.toml`, `tools/check_npm_licenses.py`) |
+| Changelog | pull requests | a change to what PeriHub does needs a CHANGELOG line, or the `no changelog` label |
+| Test build | every push to `test/…`, or by hand | Windows installer, AppImage, .deb and Flatpak as run artifacts |
+| Tag a release | by hand, on main | tags the version once CI is green, starts Release |
+| Release | the tag | draft release, signature and `latest.json` checks, `SHA256SUMS.txt`, notes from CHANGELOG.md; publishing opens an Announcements discussion |
+| AUR package | a release is published | `packaging/aur/perihub-bin` for it, committed to main |
+| Website | main, a published release | builds and publishes `site/` |
+| Triage | a new issue | answers requests for devices PeriHub knows, asks old test reports to retry, labels brand and kind |
+| Reminders | every day | one reminder when an author has not answered for 14 days |
+| Upstream device ids | Mondays | ids other projects know and PeriHub has not looked at, in one issue |
+| Links | Mondays | broken links in the README, docs and website, in one issue |
+| Security advisories | Mondays | known vulnerabilities in the Rust crates and npm packages |
+| Dependabot | weekly | one pull request per ecosystem (Cargo, npm, Actions) |
+
 ## Performance measurements
 
 The [Measure on Windows](../.github/workflows/measure-windows.yml) workflow installs a release (or

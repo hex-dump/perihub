@@ -1,0 +1,39 @@
+# cargo deny check: the licenses of every Rust dependency, known vulnerabilities (RustSec) and where
+# crates come from. PeriHub is MIT: no GPL or LGPL dependency, only these licenses (an "A OR B"
+# dependency is fine when one of them is here).
+
+[licenses]
+allow = [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "0BSD",
+    "Unlicense",
+    "CC0-1.0",
+    "Unicode-3.0",
+    "CDLA-Permissive-2.0",
+    # File-level copyleft, kept to the files of the crate itself (Tauri's and dirs' dependencies).
+    "MPL-2.0",
+]
+confidence-threshold = 0.9
+
+# PeriHub's own crates are not published to crates.io.
+[licenses.private]
+ignore = true
+
+[advisories]
+# Vulnerabilities always fail. Unmaintained crates fail only when PeriHub uses them directly: the ones
+# under Tauri's GTK stack (proc-macro-error, zvariant…) are Tauri's to replace.
+unmaintained = "workspace"
+ignore = []
+
+[bans]
+multiple-versions = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

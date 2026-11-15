@@ -1,0 +1,36 @@
+name: Changelog
+
+# A pull request that changes what PeriHub does needs a line in CHANGELOG.md, under "## Unreleased".
+# A change that users do not see (tests, refactoring, CI) can carry the "no changelog" label instead.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  entry:
+    name: CHANGELOG entry
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no changelog') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: CHANGELOG.md changed with the code
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed=$(git diff --name-only "$BASE...$HEAD")
+          if ! echo "$changed" | grep -qE '^(crates/perihub-(core|cli)/src/|app/src/|app/src-tauri/src/|packaging/linux/.*\.rules$)'; then
+            echo "No change to what PeriHub does."
+            exit 0
+          fi
+          if echo "$changed" | grep -qx CHANGELOG.md; then
+            echo "CHANGELOG.md has an entry."
+            exit 0
+          fi
+          echo "::error::This changes PeriHub: add a line to CHANGELOG.md under '## Unreleased' (sections: tools/release.py), or ask for the 'no changelog' label."
+          exit 1
