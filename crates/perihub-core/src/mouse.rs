@@ -12,10 +12,10 @@ use crate::conflicts;
 use crate::error::{Error, HidppErrorCode, Result};
 use crate::hidpp::macros::{self, Macro, Packer};
 use crate::hidpp::models::MouseModel;
-use crate::hidpp::profile::{self, ButtonAction, LedEffect, ProfileSettings};
+use crate::hidpp::profile::{self, ButtonAction, ExtendedProfile, LedEffect, ProfileSettings};
 use crate::hidpp::{
-    Access, Battery, BatteryState, DpiCapabilities, FeatureEntry, FirmwareEntity, HidppDevice, LedZone, OnboardInfo,
-    ROM_SECTOR_BASE,
+    Access, Battery, BatteryState, DpiCapabilities, ExtendedDpiNow, FeatureEntry, FirmwareEntity, HidppDevice, LedZone,
+    OnboardInfo, ROM_SECTOR_BASE, feature,
 };
 use crate::worker::DeviceTask;
 
@@ -71,6 +71,9 @@ pub struct MouseInfo {
     pub firmware: Vec<FirmwareEntity>,
     pub dpi: DpiCapabilities,
     pub report_rates_ms: Vec<u8>,
+    /// What the PRO X 2 family's extended features (0x2202, 0x8061) and format 7 profiles report,
+    /// which PeriHub only reads for now.
+    pub extended: Option<ExtendedReads>,
     pub led_zones: Vec<LedZone>,
     /// The HID++ features the mouse lists, for test reports: they show what a mouse has that
     /// PeriHub does not read yet (such as lighting through another feature than 0x8070).
@@ -83,6 +86,76 @@ pub struct MouseInfo {
     /// The mouse's profile list when it was connected (for test reports;
     /// [`MouseState::profile_list`] is the state now).
     pub profile_list: ProfileList,
+}
+
+/// What mice with the extended DPI and polling features (0x2202, 0x8061) and format 7 profiles
+/// tell, read-only, for the mouse page and the test report. A read that failed is in `errors`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+pub struct ExtendedReads {
+    /// The Y axis, when it has a range of its own (the X axis is [`MouseInfo::dpi`]).
+    pub dpi_y: Option<DpiCapabilities>,
+    pub dpi_now: Option<ExtendedDpiNow>,
+    /// Polling rates in Hz on each connection.
+    pub rates_wired_hz: Vec<u16>,
+    pub rates_wireless_hz: Vec<u16>,
+    /// The rate in use on the connection the mouse is on.
+    pub rate_now_hz: Option<u16>,
+    /// What the mouse sent, as received, so that a wrong reading shows in the report.
+    pub raw: Vec<String>,
+    /// One line for each format 7 profile.
+    pub profiles: Vec<String>,
+    pub errors: Vec<String>,
+}
+
+impl ExtendedReads {
+    /// Reads what the mouse has, with read commands only. Errors other than the mouse going
+    /// away are kept in the result.
+    fn read(dev: &mut HidppDevice) -> Result<Self> {
+        let wireless = dev.is_behind_receiver();
+        let mut out = Self::default();
+        let noted = |errors: &mut Vec<String>, what: &str, error: Error| match error {
+            Error::Unreachable => Err(Error::Unreachable),
+            error => {
+                errors.push(format!("{what}: {error}"));
+                Ok(())
+            }
+        };
+        if dev.has_feature(feature::EXTENDED_DPI) {
+            match dev.extended_dpi(0) {
+                Ok(dpi) => {
+                    match dev.extended_sensor_dpi(0, &dpi) {
+                        Ok(now) => out.dpi_now = Some(now),
+                        Err(error) => noted(&mut out.errors, "DPI now", error)?,
+                    }
+                    out.dpi_y = dpi.y;
+                }
+                Err(error) => noted(&mut out.errors, "DPI (0x2202)", error)?,
+            }
+        }
+        if dev.has_feature(feature::EXTENDED_REPORT_RATE) {
+            for (name, on_receiver) in [("cable", false), ("receiver", true)] {
+                match dev.extended_report_rates(on_receiver) {
+                    Ok((rates, raw)) => {
+                        out.raw.push(format!("rates {name}: {:02x} {:02x}", raw[0], raw[1]));
+                        if on_receiver { out.rates_wireless_hz = rates } else { out.rates_wired_hz = rates }
+                    }
+                    Err(error) => noted(&mut out.errors, &format!("polling rates ({name})"), error)?,
+                }
+            }
+            match dev.extended_report_rate(wireless) {
+                Ok((hz, index)) => {
+                    out.raw.push(format!("rate in use: index {index}"));
+                    out.rate_now_hz = hz;
+                }
+                Err(error) => noted(&mut out.errors, "polling rate in use", error)?,
+            }
+        }
+        Ok(out)
+    }
+
+    fn is_empty(&self) -> bool {
+        *self == Self::default()
+    }
 }
 
 /// The list in the mouse's memory (sector 0) that says which profiles it uses.
@@ -301,8 +374,9 @@ impl MouseTask {
             host_mode: false,
             switches_back: model.verified,
             firmware: dev.firmware()?,
-            dpi: dev.dpi_capabilities(0)?,
+            dpi: dev.any_dpi_capabilities()?,
             report_rates_ms: missing_as_empty(dev.report_rates())?,
+            extended: None,
             led_zones: missing_as_empty(dev.led_zones())?,
             // Only for the test report: a list that cannot be read leaves it empty.
             features: match dev.feature_table() {
@@ -329,6 +403,7 @@ impl MouseTask {
         };
         task.read_directory()?;
         task.info.profile_list = task.list;
+        task.read_extended()?;
         task.check_mode()?;
         task.info.host_mode = task.host_mode.load(Ordering::SeqCst);
         task.finish_pending_undo();
@@ -337,6 +412,46 @@ impl MouseTask {
             task.last_profile = active;
         }
         Ok(task)
+    }
+
+    /// The reads of mice with the extended features, and the profiles of memory format 7 as lines
+    /// for the test report. Nothing is written.
+    fn read_extended(&mut self) -> Result<()> {
+        let mut reads = ExtendedReads::read(&mut self.dev)?;
+        if ExtendedProfile::is_format(self.info.onboard.profile_format) {
+            for number in 1..=self.profile_count() {
+                let line = self
+                    .read_profile_sector(number)
+                    .and_then(|sector| ExtendedProfile::parse(&sector, self.info.onboard.button_count as usize))
+                    .map(|profile| profile.summary(number));
+                match line {
+                    Ok(line) => reads.profiles.push(line),
+                    Err(Error::Unreachable) => return Err(Error::Unreachable),
+                    Err(error) => reads.errors.push(format!("profile {number}: {error}")),
+                }
+            }
+        }
+        self.info.extended = (!reads.is_empty()).then_some(reads);
+        Ok(())
+    }
+
+    /// One profile sector as the page shows it: the layout depends on the memory format.
+    fn parse_profile(&self, sector: &[u8]) -> Result<ProfileSettings> {
+        let buttons = self.info.onboard.button_count as usize;
+        if ExtendedProfile::is_format(self.info.onboard.profile_format) {
+            Ok(ExtendedProfile::parse(sector, buttons)?.settings(self.info.receiver))
+        } else {
+            ProfileSettings::parse(sector, buttons)
+        }
+    }
+
+    /// The DPI level in use. A mouse PeriHub only reads can answer this with an error (the
+    /// onboard profiles of a PRO X 2 are not in use while another program controls it).
+    fn active_dpi_index(&mut self) -> Result<u8> {
+        match self.dev.active_dpi_index() {
+            Err(Error::Hidpp(_)) if !self.info.verified => Ok(0),
+            other => other,
+        }
     }
 
     /// Set while another program controls the mouse; read by the manager for the status.
@@ -562,7 +677,7 @@ impl MouseTask {
         let mut used = self.reserved_sectors(directory.as_deref());
         for number in 1..=self.profile_count() {
             let sector = self.read_profile_sector(number)?;
-            let mut settings = ProfileSettings::parse(&sector, self.info.onboard.button_count as usize)?;
+            let mut settings = self.parse_profile(&sector)?;
             self.read_macros(&mut settings, &mut macro_sectors)?;
             for (s, o) in settings.macro_addresses() {
                 used.extend(self.macro_sectors(&mut macro_sectors, s, o)?);
@@ -572,8 +687,8 @@ impl MouseTask {
         let free = (self.profile_count() + 1..self.info.onboard.sector_count).filter(|s| !used.contains(s)).count();
         Ok(MouseState {
             active_profile: self.read_active_profile()?,
-            active_dpi_index: self.dev.active_dpi_index()?,
-            current_dpi: self.dev.sensor_dpi(0)?.0,
+            active_dpi_index: self.active_dpi_index()?,
+            current_dpi: self.dev.current_dpi()?,
             profiles,
             macro_space: free as u32 * (self.sector_size() as u32 - 2),
             profile_list: self.list,
@@ -1074,8 +1189,8 @@ impl MouseTask {
         };
         Ok(MouseLive {
             active_profile: self.read_active_profile()?,
-            active_dpi_index: self.dev.active_dpi_index()?,
-            current_dpi: self.dev.sensor_dpi(0)?.0,
+            active_dpi_index: self.active_dpi_index()?,
+            current_dpi: self.dev.current_dpi()?,
             battery,
         })
     }
@@ -1416,8 +1531,20 @@ mod tests {
         feature::FEATURE_SET,
     ];
 
+    /// The features of a PRO X 2 style mouse: extended DPI and polling rate instead of 0x2201 and 0x8060.
+    const PRO_FEATURES: &[u16] = &[
+        feature::ROOT,
+        feature::DEVICE_INFO,
+        feature::DEVICE_NAME,
+        feature::EXTENDED_DPI,
+        feature::EXTENDED_REPORT_RATE,
+        feature::ONBOARD_PROFILES,
+        feature::FEATURE_SET,
+    ];
+
     /// The memory and state of a HID++ mouse with onboard profiles, as far as PeriHub talks to one.
     struct Sim {
+        features: &'static [u16],
         onboard: OnboardInfo,
         /// The mouse's own sectors, from the profile list (0) on.
         user: Vec<Vec<u8>>,
@@ -1457,6 +1584,7 @@ mod tests {
             list[end..end + 4].copy_from_slice(&[0xFF, 0xFF, 0x00, 0x00]);
             rom.insert(ROM_SECTOR_BASE, list);
             Self {
+                features: SIM_FEATURES,
                 onboard,
                 user,
                 rom,
@@ -1488,6 +1616,21 @@ mod tests {
             self
         }
 
+        /// A PRO X 2 style mouse: profile format 7 in 255-byte sectors, 16 buttons, the extended
+        /// DPI and polling features, and no profile saved to it yet (it uses its factory profiles).
+        fn pro() -> Self {
+            let (memory, onboard) = g502_memory();
+            let mut sim = Self::new(memory, OnboardInfo { button_count: 16, ..onboard }).resized(255, 7);
+            for n in 1..=5u8 {
+                let sector =
+                    format7_sector(&format!("P{n}"), &[(400 * n as u16, 800 * n as u16, 2), (1600, 1600, 2)], 6, 3);
+                sim.user[n as usize] = sector.clone();
+                sim.rom.insert(ROM_SECTOR_BASE + n as u16, sector);
+            }
+            sim.features = PRO_FEATURES;
+            sim
+        }
+
         fn factory(&self, number: u8) -> Vec<u8> {
             let mut sector = self.rom[&(ROM_SECTOR_BASE + number as u16)].clone();
             profile::write_crc(&mut sector);
@@ -1501,11 +1644,23 @@ mod tests {
                 (feature::DEVICE_INFO, 0) => vec![1],
                 (feature::DEVICE_INFO, 1) => vec![0, b'U', b'1', b' ', 0x27, 0x03, 0x00, 0x00],
                 // The count leaves out the root, at index 0.
-                (feature::FEATURE_SET, 0) => vec![SIM_FEATURES.len() as u8 - 1],
+                (feature::FEATURE_SET, 0) => vec![self.features.len() as u8 - 1],
                 (feature::FEATURE_SET, 1) => {
-                    let id = *SIM_FEATURES.get(p[0] as usize).ok_or(INVALID_ARGUMENT)?;
+                    let id = *self.features.get(p[0] as usize).ok_or(INVALID_ARGUMENT)?;
                     vec![(id >> 8) as u8, id as u8, 0, 0]
                 }
+                // Sensor 0 has an X and a Y axis and a lift-off distance.
+                (feature::EXTENDED_DPI, 1) => vec![0, 0, 3],
+                // 100 to 25600 DPI in steps of 50, on both axes, all in the first page.
+                (feature::EXTENDED_DPI, 2) => {
+                    let mut page = vec![p[0], p[1], p[2], 0x00, 0x64, 0xE0, 0x32, 0x64, 0x00];
+                    page.resize(16, 0);
+                    page
+                }
+                (feature::EXTENDED_DPI, 5) => vec![0, 0x04, 0xB0, 0x03, 0x20, 0x04, 0xB0, 0x03, 0x20, 2],
+                // On the cable up to 1000 Hz (bits 0 to 3), through the receiver up to 8000 Hz.
+                (feature::EXTENDED_REPORT_RATE, 0) => vec![0, if p[0] == 0 { 0x0F } else { 0x7F }],
+                (feature::EXTENDED_REPORT_RATE, 2) => vec![if p[0] == 0 { 3 } else { 4 }],
                 (feature::DEVICE_NAME, 0) => vec![4],
                 (feature::DEVICE_NAME, 1) => b"Test".to_vec(),
                 // 100 to 25600 DPI in steps of 50.
@@ -1600,6 +1755,7 @@ mod tests {
         untested_saves: bool,
         receiver: bool,
     ) -> (MouseTask, Arc<Mutex<Sim>>) {
+        let features = sim.features;
         let sim = Arc::new(Mutex::new(sim));
         let mouse = sim.clone();
         let fake = FakeDevice::new(move |request| {
@@ -1609,10 +1765,10 @@ mod tests {
             }
             if index == 0 && function == 0 {
                 let id = u16::from_be_bytes([request[4], request[5]]);
-                let found = SIM_FEATURES.iter().position(|&f| f == id).map_or(0, |i| i as u8);
+                let found = features.iter().position(|&f| f == id).map_or(0, |i| i as u8);
                 return vec![reply(request, &[found])];
             }
-            match mouse.lock().unwrap().answer(SIM_FEATURES[index], function, &request[4..]) {
+            match mouse.lock().unwrap().answer(features[index], function, &request[4..]) {
                 Ok(payload) => vec![reply(request, &payload)],
                 Err(code) => {
                     let mut error = reply(request, &[]);
@@ -1628,6 +1784,34 @@ mod tests {
         };
         let task = MouseTask::open(dev, model_of(product_id), untested_saves).unwrap();
         (task, sim)
+    }
+
+    /// A format 7 profile sector as the PRO X 2 family stores it, with `rate_wireless` and
+    /// `rate_wired` as indexes of the polling rate list.
+    fn format7_sector(name: &str, dpi: &[(u16, u16, u8)], rate_wireless: u8, rate_wired: u8) -> Vec<u8> {
+        let mut s = vec![0xFF; 255];
+        s[0] = rate_wireless;
+        s[1] = rate_wired;
+        s[2] = 1; // default level: the second
+        s[3] = 0;
+        for i in 0..5 {
+            let (x, y, lod) = dpi.get(i).copied().unwrap_or((0, 0, 0));
+            let at = 4 + 5 * i;
+            s[at..at + 2].copy_from_slice(&x.to_le_bytes());
+            s[at + 2..at + 4].copy_from_slice(&y.to_le_bytes());
+            s[at + 4] = lod;
+        }
+        s[37] = 0;
+        s[44..46].copy_from_slice(&120u16.to_le_bytes());
+        s[46..48].copy_from_slice(&900u16.to_le_bytes());
+        s[48..52].copy_from_slice(&[0x80, 0x01, 0x00, 0x01]); // button 1: left click
+        s[160..208].fill(0);
+        for (i, unit) in name.encode_utf16().enumerate() {
+            s[160 + 2 * i..162 + 2 * i].copy_from_slice(&unit.to_le_bytes());
+        }
+        s[208..252].fill(0);
+        profile::write_crc(&mut s);
+        s
     }
 
     fn parsed(sector: &[u8]) -> ProfileSettings {
@@ -1873,6 +2057,81 @@ mod tests {
         assert!(!task.info.writable && !task.info.writable_format && !task.info.experimental);
         let ids: Vec<u16> = task.info.features.iter().map(|f| f.id).collect();
         assert_eq!(ids, SIM_FEATURES[1..]);
+    }
+
+    const PRO_2: u16 = 0xC09A;
+    const G303_SHROUD: u16 = 0xC097;
+
+    #[test]
+    fn a_pro_x_2_is_read_through_its_extended_features_and_nothing_is_changed() {
+        let (mut task, sim) = open_sim_through(Sim::pro(), PRO_2, true, true);
+        assert_eq!(task.info.model, "PRO 2 LIGHTSPEED");
+        // Format 7 is not one PeriHub writes: nothing is tested, nothing is writable, even asked to.
+        assert!(!task.info.verified && !task.info.writable && !task.info.writable_format && !task.info.experimental);
+
+        // 0x2202 stands in for 0x2201, and 0x8061 for 0x8060.
+        assert_eq!(task.info.dpi, DpiCapabilities { min: 100, max: 25600, step: 50, list: Vec::new() });
+        assert!(task.info.report_rates_ms.is_empty());
+        let extended = task.info.extended.clone().unwrap();
+        assert_eq!(extended.dpi_y, Some(task.info.dpi.clone()));
+        let now = extended.dpi_now.unwrap();
+        assert_eq!((now.x, now.default_x, now.y, now.lod), (1200, 800, Some(1200), Some(2)));
+        assert_eq!(extended.rates_wired_hz, [125, 250, 500, 1000]);
+        assert_eq!(extended.rates_wireless_hz, [125, 250, 500, 1000, 2000, 4000, 8000]);
+        assert_eq!(extended.rate_now_hz, Some(2000), "through the receiver");
+        assert!(extended.errors.is_empty(), "{:?}", extended.errors);
+        assert_eq!(extended.profiles.len(), 5);
+        assert_eq!(
+            extended.profiles[1],
+            "Profile 2 \"P2\": DPI 800x1600 1600 (level 2 default, 1 shift; lift-off 2 2), \
+             polling 8000 Hz wireless / 1000 Hz cable, BHOP 0, timeouts 120 / 900"
+        );
+
+        // The page shows the profiles, with the rate of the connection in use.
+        let state = task.state().unwrap();
+        assert_eq!(state.current_dpi, 1200);
+        let settings = &state.profiles[0].settings;
+        assert_eq!(settings.dpi_levels, [400, 1600]);
+        assert_eq!((settings.report_rate_hz, settings.report_rate_ms), (Some(8000), 0));
+        assert_eq!(settings.buttons[0], ButtonAction::Mouse { button: 1 });
+        assert_eq!((settings.buttons.len(), settings.gshift_buttons.len()), (16, 16));
+        assert!(task.live().unwrap().current_dpi == 1200);
+
+        // Reads only: no change reaches the mouse, not even a profile switch or a DPI preview.
+        assert!(task.save_profile(1, settings).is_err());
+        assert!(task.set_active_profile(2).is_err());
+        assert!(task.preview_dpi(800).is_err());
+        assert!(task.dev.set_onboard_mode(ONBOARD_MODE).is_err(), "buttons stay as they are");
+        let mouse = sim.lock().unwrap();
+        assert!(mouse.written.is_empty() && mouse.selected.is_empty());
+    }
+
+    #[test]
+    fn with_its_cable_a_pro_x_2_shows_the_rate_of_the_cable() {
+        let (mut task, _) = open_sim(Sim::pro(), PRO_2, true);
+        assert_eq!(task.info.extended.as_ref().unwrap().rate_now_hz, Some(1000));
+        let state = task.state().unwrap();
+        assert_eq!(state.profiles[0].settings.report_rate_hz, Some(1000));
+        assert_eq!(state.profiles[0].settings.report_rate_ms, 1);
+    }
+
+    #[test]
+    fn a_g303_shroud_edition_follows_its_memory_format_like_any_other_model() {
+        // Issue #34: format 3 in 255-byte sectors, through a receiver.
+        let model = models::find_wireless(0x409E).unwrap();
+        assert_eq!((model.product_id, model.name), (G303_SHROUD, "G303 Shroud Edition"));
+        let onboard = g502_x().onboard;
+        assert_eq!(
+            support(model, &onboard, true, true),
+            Support { tested: true, experimental: true, writable: true, writable_format: true },
+            "saves over the radio are experimental, with the 15-second undo"
+        );
+        let from_cli = support(model, &onboard, true, false);
+        assert!(from_cli.tested && !from_cli.writable);
+
+        let (task, _) = open_sim_through(g502_x(), G303_SHROUD, true, true);
+        assert!(task.info.verified && task.info.writable && task.info.experimental);
+        assert!(task.info.extended.is_none(), "no extended features to read");
     }
 
     #[test]

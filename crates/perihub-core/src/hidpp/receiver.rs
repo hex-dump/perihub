@@ -159,8 +159,12 @@ pub struct UnsupportedDevice {
     pub features: Vec<FeatureEntry>,
     /// The DPI it accepts (0x2201), if it has that feature.
     pub dpi: Option<DpiCapabilities>,
+    /// The DPI it accepts on the X axis (0x2202), if it has that feature instead of 0x2201.
+    pub dpi_extended: Option<DpiCapabilities>,
     /// The polling rates it offers, in milliseconds (0x8060), if it has that feature.
     pub report_rates_ms: Vec<u8>,
+    /// The polling rates it offers through the receiver, in Hz (0x8061), if it has that feature.
+    pub report_rates_hz: Vec<u16>,
     /// Its onboard profile memory (0x8100), if it has one.
     pub onboard: Option<OnboardInfo>,
     /// What could not be read.
@@ -183,7 +187,9 @@ impl UnsupportedDevice {
             firmware: Vec::new(),
             features: Vec::new(),
             dpi: None,
+            dpi_extended: None,
             report_rates_ms: Vec::new(),
+            report_rates_hz: Vec::new(),
             onboard: None,
             read_errors: Vec::new(),
         };
@@ -224,6 +230,7 @@ impl UnsupportedDevice {
             has(feature::REPORT_RATE),
             has(feature::ONBOARD_PROFILES),
         );
+        let (dpi_extended, rates_extended) = (has(feature::EXTENDED_DPI), has(feature::EXTENDED_REPORT_RATE));
         if kind {
             match dev.device_type() {
                 Ok(kind) => device.kind = Some(kind),
@@ -234,6 +241,18 @@ impl UnsupportedDevice {
             match dev.dpi_capabilities(0) {
                 Ok(dpi) => device.dpi = Some(dpi),
                 Err(error) => failed("DPI", error)?,
+            }
+        }
+        if dpi_extended {
+            match dev.extended_dpi(0) {
+                Ok(dpi) => device.dpi_extended = Some(dpi.x),
+                Err(error) => failed("DPI (0x2202)", error)?,
+            }
+        }
+        if rates_extended {
+            match dev.extended_report_rates(true) {
+                Ok((rates, _)) => device.report_rates_hz = rates,
+                Err(error) => failed("polling rates (0x8061)", error)?,
             }
         }
         if rates {

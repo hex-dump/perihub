@@ -27,7 +27,11 @@ goes with every PeriHub package.
 - the HID++ 1.0 registers, memory pages and profile layouts of the Logitech G9, G9x, G500, G500s, G700 and
   G700s (`src/hidpp10.c`, `src/hidpp10.h`, `src/driver-hidpp10.c`, `src/hidpp-generic.c` and their
   `data/devices/logitech-g*.device` files, Copyright © 2015-2017 Red Hat, Inc.), rewritten in Rust in
-  `crates/perihub-core/src/peripheral/logitech_hidpp10.rs` (see `docs/protocols/logitech-hidpp10.md`).
+  `crates/perihub-core/src/peripheral/logitech_hidpp10.rs` (see `docs/protocols/logitech-hidpp10.md`);
+- the extended DPI (`0x2202`) and polling rate (`0x8061`) features and the layout of Logitech profile
+  format 7, read in `crates/perihub-core/src/hidpp/mod.rs` and `profile.rs` (see
+  `docs/protocols/logitech-onboard-profiles.md`), from libratbag's open pull requests #1676 (Nathan
+  Rossi) and #1806 (nt-slug), which are contributed under the project's MIT license.
 
 ```
 Copyright © 2015-2017 Red Hat, Inc.

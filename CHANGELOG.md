@@ -6,6 +6,9 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
+### New devices
+- **Logitech PRO 2 LIGHTSPEED and PRO X 2 DEX**, with a cable or a LIGHTSPEED receiver (from the test reports of issues #33 and #32), and the **G303 Shroud Edition through its receiver** (issue #34, which only lacked its wireless id): read only. These PRO mice have no `0x2201` DPI and no `0x8060` polling feature, so PeriHub now reads their extended ones (`0x2202` DPI ranges, DPI in use and lift-off distance; `0x8061` polling rates up to 8000 Hz and the one in use) and their profile format 7, shows the profiles on the mouse page, and puts all of it in the test report to compare with G HUB. Nothing is written and the onboard mode is never switched (libratbag found that it disables a PRO X 2's buttons). The 0x2202, 0x8061 and format 7 layouts come from libratbag's open pull requests #1676 and #1806 (MIT). The lights of the PRO 2 LIGHTSPEED are not read yet. The G303 Shroud Edition's memory is format 3 in 255-byte sectors, which is already tested, so it is supported like the other mice with that format (experimental saves through a receiver).
+
 ### Added
 - **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.
 

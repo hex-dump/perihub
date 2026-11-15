@@ -471,7 +471,7 @@
             {#if active}<span class="chip ok">Active</span>{/if}
           </span>
           <span class="small muted">{profile.settings.dpi_levels.join(" / ")} DPI</span>
-          <span class="small muted">{reportRateLabel(profile.settings.report_rate_ms)}</span>
+          <span class="small muted">{profile.settings.report_rate_hz ? `${profile.settings.report_rate_hz} Hz` : reportRateLabel(profile.settings.report_rate_ms)}</span>
         </button>
         <div class="actions">
           {#if !active}

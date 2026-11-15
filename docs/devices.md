@@ -74,6 +74,17 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   ([issue #22](https://github.com/hex-dump/perihub/issues/22)), and a G502 HERO Wireless through a
   POWERPLAY mat (`c53a`) on Windows was read and saved to ([issues #4](https://github.com/hex-dump/perihub/issues/4)
   and [#28](https://github.com/hex-dump/perihub/issues/28)): the only mouse saved to over the radio so far.
+- **PRO 2 LIGHTSPEED and PRO X 2 DEX** (profile format 7) are recognized, with a cable and through
+  their LIGHTSPEED receiver (`c543`, `c54d`), and only read. Format 7 is a layout PeriHub cannot
+  write yet, and these mice have neither the usual adjustable DPI (`0x2201`) nor the usual polling
+  rate (`0x8060`) feature: they use the extended ones (`0x2202`, `0x8061`), which PeriHub reads (DPI
+  ranges of both axes and lift-off distance, DPI in use, polling rates up to 8000 Hz and the one in
+  use) and shows in the test report, together with each profile as stored. PeriHub never switches
+  their onboard mode: another project found that a PRO X 2 loses its button assignments when it
+  does. Nothing is changed and nothing is saved until testers confirm the readings against G HUB
+  ([issues #32](https://github.com/hex-dump/perihub/issues/32) and
+  [#33](https://github.com/hex-dump/perihub/issues/33)). The lights of the PRO 2 LIGHTSPEED
+  (`0x8071`) are not read yet.
 - **The Logi Bolt receiver** (`046d:c548`) and **the Unifying receivers** (`046d:c52b`, `c532`)
   are recognized. Every device paired with them that answers, mouse or keyboard, gets a page of
   its own in the sidebar, built from the HID++ features it reports: what kind of device it is, what
@@ -114,7 +125,7 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
 | G102/G103/G203 | `046d:c084`, `046d:c092`, `046d:c09d` | whole mouse | depends on its memory format |  |
 | G302 | `046d:c07f` | whole mouse | depends on its memory format |  |
 | G303 | `046d:c080` | whole mouse | depends on its memory format |  |
-| G303 Shroud Edition | `046d:c097` | whole mouse | depends on its memory format |  |
+| G303 Shroud Edition | `046d:c097` | whole mouse | depends on its memory format | `409e` |
 | G402 | `046d:c07e` | whole mouse | depends on its memory format |  |
 | G403 | `046d:c083` | whole mouse | depends on its memory format |  |
 | G403 HERO | `046d:c08f` | whole mouse | depends on its memory format |  |
@@ -126,6 +137,8 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
 | G903 | `046d:c086` | whole mouse | depends on its memory format | `4067` |
 | G903 HERO | `046d:c091` | whole mouse | depends on its memory format | `4087` |
 | MX518 | `046d:c08e` | whole mouse | depends on its memory format |  |
+| PRO 2 LIGHTSPEED | `046d:c09a` | whole mouse | depends on its memory format | `40a8` |
+| PRO X 2 DEX | `046d:c0a0` | whole mouse | depends on its memory format | `40b8` |
 | G305 | wireless only | through a receiver | depends on its memory format | `4074` |
 | G603 | wireless only | through a receiver | depends on its memory format | `406c` |
 | G604 | wireless only | through a receiver | depends on its memory format | `4085` |
@@ -140,8 +153,11 @@ the format a mouse reports in PeriHub's test report is what counts.
 | G502 X Wireless | 3 | 255 bytes | PeriHub ([issue #15](https://github.com/hex-dump/perihub/issues/15)) |
 | G900 | 3 | | libratbag ([PR #1676](https://github.com/libratbag/libratbag/pull/1676)) |
 | G203 | 4 | | libratbag ([PR #1676](https://github.com/libratbag/libratbag/pull/1676)) |
+| G303 Shroud Edition | 3 | 255 bytes | PeriHub ([issue #34](https://github.com/hex-dump/perihub/issues/34)) |
 | G903 HERO | 4 | 255 bytes | PeriHub ([issue #22](https://github.com/hex-dump/perihub/issues/22)) |
 | G502 X PLUS | 5 | | libratbag ([issue #1344](https://github.com/libratbag/libratbag/issues/1344)) |
+| PRO 2 LIGHTSPEED | 7 | 255 bytes | PeriHub ([issue #33](https://github.com/hex-dump/perihub/issues/33)) |
+| PRO X 2 DEX | 7 | 255 bytes | PeriHub ([issue #32](https://github.com/hex-dump/perihub/issues/32)) |
 | G Pro X Superlight 2 (not recognized yet) | 6, then 7 after a firmware update | | libratbag ([issue #1572](https://github.com/libratbag/libratbag/issues/1572)) |
 
 Own one? Send a [mouse test report](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml)

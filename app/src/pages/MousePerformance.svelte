@@ -114,7 +114,10 @@
         {/each}
       </div>
     {:else}
-      <div class="notice info">PeriHub cannot change the polling rate of this mouse yet.</div>
+      <div class="notice info">
+        PeriHub cannot change the polling rate of this mouse yet.
+        {#if settings.report_rate_hz}This profile uses {settings.report_rate_hz} Hz.{/if}
+      </div>
     {/if}
   </div>
 </div>

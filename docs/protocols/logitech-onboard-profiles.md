@@ -15,6 +15,10 @@ Sources studied (read only, for the protocol facts):
   two-byte address, `0x01nn` for a factory profile.
 - A real G502 HERO (`046d:c08b`, firmware U1 27.03), which has a profile list of its own:
   everything marked **(G502)**.
+- libratbag pull requests [#1676](https://github.com/libratbag/libratbag/pull/1676) (support for the
+  PRO X Superlight 2, by Nathan Rossi) and [#1806](https://github.com/libratbag/libratbag/pull/1806)
+  (a probe failure on the same mouse, by nt-slug), both still open and both MIT like the project:
+  the extended DPI and polling rate features and profile format 7, tried on a real PRO X 2.
 - Issues [#15](https://github.com/hex-dump/perihub/issues/15) and
   [#20](https://github.com/hex-dump/perihub/issues/20): the memory formats of a G502 X Wireless and
   of a G502 HERO with newer firmware.
@@ -87,3 +91,77 @@ and the name of the firmware in ASCII (`U127.03_B0010`): the same entries with a
   explanation; a profile saved once with Logitech G HUB or Onboard Memory Manager creates it.
 - A backup taken while the mouse had no list cannot be restored: there is nothing in it the mouse
   would use. **Factory settings** on a profile gives the same result.
+
+## Format 7 and the extended DPI and polling rate features
+
+The PRO 2 LIGHTSPEED (`046d:c09a`, through a receiver `40a8`) and the PRO X 2 DEX (`c0a0`, `40b8`)
+of issues [#33](https://github.com/hex-dump/perihub/issues/33) and
+[#32](https://github.com/hex-dump/perihub/issues/32) report memory model 1, profile format 7, macro
+format 1 and 16 sectors of 255 bytes, and have no `0x2201` and no `0x8060`: they use `0x2202` and
+`0x8061` instead. Their firmware (MPM 31.04.0012 and 37.03.0007) is among those libratbag's pull
+request lists for format 7; the older firmware of the PRO X Superlight 2 reports format 6, which has
+the same layout without the bunny-hop byte. What follows is what the pull requests describe, in our
+words, and what the test reports confirm: **nothing here has been written by PeriHub, only read.**
+
+### 0x2202, extended adjustable DPI (functions as the number of the call)
+
+All answers start with the sensor number, as 0x2201's do.
+
+- **0** sensor count.
+- **1** (sensor) axes: the third byte of the answer has bit 0 when the sensor has its own Y axis and
+  bit 1 when it has an adjustable lift-off distance.
+- **2** (sensor, axis, page) one page of the DPI list of that axis (0 = X, 1 = Y): the answer repeats
+  the three bytes and then carries 13 bytes of the list. The list is a row of big-endian 16-bit
+  values that goes on from page to page (a value may be cut between two pages) and ends with a 0.
+  A value whose top three bits are set (`0xE000 | step`) is followed by an end value: it stands for
+  every DPI after the previous one, `step` apart, up to the end value. A list of 100, `E032`, 25600 is
+  100 to 25600 DPI in steps of 50.
+- **5** (sensor) the DPI now: X, the default X, Y, the default Y (big-endian 16-bit, in this order,
+  after the sensor byte) and the lift-off distance (1 low, 2 medium, 3 high).
+- **6** sets the DPI and lift-off distance. PeriHub does not send it.
+
+### 0x8061, extended adjustable polling rate
+
+The connection is a parameter: 0 with the cable, 1 through the LIGHTSPEED receiver. Rates are
+numbered 0 to 6: 125, 250, 500, 1000, 2000, 4000 and 8000 Hz.
+
+- **0** (connection) the rates the mouse offers on it, a big-endian 16-bit mask with bit *n* for rate
+  *n*. libratbag reads it from the first two bytes of the answer; PeriHub shows those two bytes in
+  its test report, to check.
+- **2** (connection) the rate in use: its number, first byte of the answer.
+- **3** sets it. PeriHub does not send it.
+
+### Format 7 profile (255-byte sector, little-endian numbers)
+
+| Offset | Length | What |
+|---|---|---|
+| 0 | 1 | polling rate number through the receiver |
+| 1 | 1 | polling rate number with the cable |
+| 2 | 1 | default DPI level (0-based) |
+| 3 | 1 | DPI shift level |
+| 4 | 5 × 5 | five DPI levels: X (2), Y (2), lift-off distance (1); an X of 0 or 0xFFFF ends the list |
+| 29 | 8 | not known |
+| 37 | 1 | bunny-hop ("BHOP"): 0 off; libratbag reads 10 to 100 as 100 ms to 1000 ms. Only in format 7 |
+| 38 | 6 | not known |
+| 44 | 2 | power-save timeout (unit not known) |
+| 46 | 2 | power-off timeout (unit not known) |
+| 48 | 16 × 4 | button bindings, in the usual 4-byte form |
+| 112 | 12 × 4 | the bindings of the second layer |
+| 160 | 48 | profile name, UTF-16LE, ending at a 0 or 0xFFFF |
+| 208 | 2 × 11 | lights: two zones of 11 bytes, in the usual form |
+| 230 | 2 × 11 | the lights of the second layer |
+| 253 | 2 | CRC-CCITT of the sector, as in the other formats |
+
+### What PeriHub does with it
+
+- It reads all of this when the mouse connects and puts it in the test report: the DPI ranges, the
+  DPI in use, the rates on both connections and the one in use, the two raw answers behind them, and
+  one line for each profile, so that a tester can compare them with G HUB. The mouse page shows the
+  profiles too (X levels, the polling rate of the connection in use, buttons).
+- **Nothing is written and the onboard mode is never switched**: libratbag's second pull request
+  found that putting a PRO X 2 into onboard mode left its buttons without assignments until it was
+  unplugged. The same pull request found that the profile list (sector 0) of such a mouse can
+  answer "invalid argument", which PeriHub already reads as "never saved to" (the G305 does the
+  same): the factory profiles are then shown.
+- Saves wait until a tester confirms the readings, and then follow the memory format, not the
+  model, like the others.

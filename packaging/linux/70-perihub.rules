@@ -66,6 +66,10 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c086", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c091", TAG+="uaccess"
 # Logitech MX518
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c08e", TAG+="uaccess"
+# Logitech PRO 2 LIGHTSPEED
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c09a", TAG+="uaccess"
+# Logitech PRO X 2 DEX
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c0a0", TAG+="uaccess"
 
 # LIGHTSPEED receivers, for wireless Logitech mice (read-only until they are tested): only the
 # receiver's own HID++ interface (02). Movements and typing arrive on its other interfaces, which

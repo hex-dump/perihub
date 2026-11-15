@@ -145,7 +145,7 @@
     <h2>Credits</h2>
     <p class="small">PeriHub {version}</p>
     <p class="muted small">
-      Protocols reconstructed thanks to the work of OpenRGB (Apex lighting), libratbag (Logitech HID++, G600, the older
+      Protocols reconstructed thanks to the work of OpenRGB (Apex lighting), libratbag (Logitech HID++, the PRO X 2 features and format 7, G600, the older
       Logitech G mice, ASUS, Glorious and Roccat mice), gorkemgun/apex-3-tkl (Apex key mapping), ckb-next and OpenLinkHub (Corsair, no code
       copied), OpenRazer (Razer mice, no code copied), rivalcfg (SteelSeries mice), QMK and Vial (QMK keyboards, no
       code copied), pulsar-mouse-linux and Pulsar-X3-Web-Config (Pulsar mice), lamzu-cfg (Lamzu), the captures of

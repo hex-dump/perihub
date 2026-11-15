@@ -176,6 +176,8 @@ export type LedEffect =
 
 export interface ProfileSettings {
   report_rate_ms: number;
+  /** Polling rate in Hz, for memory formats that go above 1000 Hz (format 7); then `report_rate_ms` is 0 above 1000 Hz. */
+  report_rate_hz?: number;
   dpi_levels: number[];
   default_dpi_index: number;
   shift_dpi_index: number;
@@ -243,6 +245,23 @@ export interface HidppFeature {
   version: number;
 }
 
+/** What a PRO X 2 style mouse reports through its extended DPI and polling rate features and
+ * format 7 profiles. PeriHub only reads it. */
+export interface ExtendedReads {
+  /** The Y axis, when it has a range of its own (the X axis is `MouseInfo.dpi`). */
+  dpi_y: { min: number; max: number; step: number; list: number[] } | null;
+  dpi_now: { x: number; default_x: number; y: number | null; default_y: number | null; lod: number | null } | null;
+  rates_wired_hz: number[];
+  rates_wireless_hz: number[];
+  /** The rate on the connection the mouse is on. */
+  rate_now_hz: number | null;
+  /** What the mouse sent, as received. */
+  raw: string[];
+  /** One line for each profile of memory format 7. */
+  profiles: string[];
+  errors: string[];
+}
+
 export interface MouseInfo {
   product_id: number;
   /** Model name from PeriHub's list, e.g. "G502 HERO". */
@@ -266,6 +285,8 @@ export interface MouseInfo {
   firmware: { kind: number; name: string; version: string }[];
   dpi: { min: number; max: number; step: number; list: number[] };
   report_rates_ms: number[];
+  /** Extended features (0x2202, 0x8061) and format 7 profiles, if the mouse has them. */
+  extended?: ExtendedReads | null;
   led_zones: LedZone[];
   /** The HID++ features the mouse lists, for test reports. */
   features: HidppFeature[];
@@ -355,8 +376,12 @@ export interface UnsupportedReceiverDevice {
   features: HidppFeature[];
   /** The DPI it accepts (0x2201), if it has that feature. */
   dpi: { min: number; max: number; step: number; list: number[] } | null;
+  /** The DPI of its X axis (0x2202), if it has that instead of 0x2201. */
+  dpi_extended?: { min: number; max: number; step: number; list: number[] } | null;
   /** The polling rates it offers, in milliseconds (0x8060). */
   report_rates_ms: number[];
+  /** The polling rates it offers through the receiver, in Hz (0x8061). */
+  report_rates_hz?: number[];
   /** Its onboard profile memory (0x8100), if it has one. */
   onboard: MouseInfo["onboard"] | null;
   read_errors: string[];
