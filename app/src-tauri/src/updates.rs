@@ -239,7 +239,7 @@ pub async fn update_install(app: AppHandle) -> Result<(), String> {
     let manager = app.state::<crate::AppState>().manager.clone();
     let _ = tauri::async_runtime::spawn_blocking(move || {
         manager.release_corsair();
-        manager.release_logitech();
+        manager.release_logitech(false);
     })
     .await;
     // The signature is checked again before the installer runs.

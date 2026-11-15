@@ -63,7 +63,7 @@
   let loaded = false;
 
   // The editors start from what PeriHub shows, or the last look it showed (kept in its settings, also
-  // after a restart), or a white fixed colour.
+  // after a restart, when PeriHub may be waiting for G HUB to quit), or a white fixed colour.
   $effect(() => {
     if (loaded || !live) return;
     loaded = true;
@@ -163,7 +163,7 @@
     run(
       "Giving the lights back…",
       () => api.logitechGiveBackLights(receiverId, device.slot),
-      `The ${name} has its own lights back.`,
+      `The ${name} has its own lights back, also at the next start.`,
     );
   }
 
@@ -191,12 +191,20 @@
       <b>PeriHub drives the lights</b> · {powerText(host.power)}
       {#if host.retaken}<span class="muted">· taken again {host.retaken} {host.retaken === 1 ? "time" : "times"}</span>{/if}
     </p>
-  {:else}
+  {:else if !live?.drive_at_start}
     <p class="small muted">
       PeriHub can drive the lights as G HUB does with its on-board memory mode off. Everything stays in the keyboard's
-      RAM. PeriHub dims the lights and then turns them off when you stop typing, as the keyboard's own timers say. It
-      gives them back when you press "Give the lights back", when you quit PeriHub, and when G HUB or Solaar starts.
-      Turning the keyboard off and on also brings its own lights back.
+      RAM. PeriHub dims the lights and then turns them off when you stop typing, as the keyboard's own timers say. Once
+      you press "Drive the lights", PeriHub takes them every time the keyboard connects and at every start, until you
+      press "Give the lights back". It lets G HUB and Solaar have them while they run, and takes them again when they
+      quit.
+    </p>
+  {/if}
+  {#if live?.drive_at_start}
+    <p class="small at-start" role="status">
+      <b>PeriHub drives these lights at every start</b>, and whenever the {name} connects.
+      {#if !host && live.waiting}Not now: {live.waiting}.{/if}
+      Press "{host ? "Give the lights back" : "Stop driving them"}" to stop.
     </p>
   {/if}
 
@@ -266,7 +274,11 @@
 
   <div class="row actions">
     <button class="primary" disabled={!!busy} onclick={show}>{host ? "Show on the keyboard" : "Drive the lights"}</button>
-    {#if host}<button disabled={!!busy} onclick={giveBack}>Give the lights back</button>{/if}
+    {#if host}
+      <button disabled={!!busy} onclick={giveBack}>Give the lights back</button>
+    {:else if live?.drive_at_start}
+      <button disabled={!!busy} onclick={giveBack}>Stop driving them</button>
+    {/if}
     <span class="grow"></span>
     {#if busy}
       <span class="muted small" role="status">{busy}</span>
@@ -375,6 +387,10 @@
 
   .ask {
     gap: 10px;
+  }
+
+  .at-start {
+    color: var(--muted);
   }
 
   .end {

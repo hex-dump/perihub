@@ -406,6 +406,10 @@ export interface LogitechLive {
   saved_look: LightsLook | null;
   /** How host mode went this session, across give-backs and reconnections, once PeriHub took the lights. */
   host_log: LightsLog | null;
+  /** PeriHub takes the lights with the saved look every time the keyboard connects, at every start too. */
+  drive_at_start: boolean;
+  /** Why PeriHub does not drive them now although it should, such as G HUB running. */
+  waiting: string | null;
 }
 
 export interface LightsLog {

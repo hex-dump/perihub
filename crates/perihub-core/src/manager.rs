@@ -411,13 +411,14 @@ impl Manager {
     /// `logitech_dpi`: the DPI to set on the devices PeriHub knows by their features every time they
     /// connect, by settings key (see [`Manager::set_logitech_dpi`]). `qmk_keyboards`: the keyboards
     /// the user turned on as VIA keyboards (see [`Manager::set_qmk_enabled`]). `logitech_looks`: the
-    /// last look shown on each keyboard whose lights PeriHub drove, for the editor; the lights are
-    /// only taken again when the user asks.
+    /// last look shown on each keyboard whose lights PeriHub drove; `logitech_drive`: the keyboards
+    /// whose lights the user wants PeriHub to drive, taken with that look whenever they connect.
     pub fn start(
         keyboard_config: KeyboardConfig,
         untested_saves: bool,
         logitech_dpi: HashMap<String, u16>,
         logitech_looks: HashMap<String, Look>,
+        logitech_drive: Vec<String>,
         qmk_keyboards: Vec<String>,
         listener: Listener,
     ) -> Self {
@@ -429,7 +430,12 @@ impl Manager {
             logitech_lights: Arc::new(Mutex::new(
                 logitech_looks
                     .into_iter()
-                    .map(|(key, look)| (key, LightsMemory { saved: Some(look), ..LightsMemory::default() }))
+                    .map(|(key, look)| {
+                        let wanted = logitech_drive.contains(&key);
+                        let memory = LightsMemory { saved: Some(look), ..LightsMemory::default() };
+                        memory.wanted.store(wanted, std::sync::atomic::Ordering::SeqCst);
+                        (key, memory)
+                    })
                     .collect(),
             )),
             qmk_enabled: Arc::new(Mutex::new(qmk_keyboards.into_iter().collect())),
@@ -932,31 +938,40 @@ impl Manager {
         };
     }
 
-    /// Keeps the look to show on a keyboard every time it connects, for this session, and as the
-    /// last look shown (`None`: PeriHub no longer drives its lights; the last look stays).
+    /// The user drove a keyboard's lights with `look` (`Some`): PeriHub takes them with it every
+    /// time the keyboard connects, at every start too. `None`: the user gave them back; PeriHub no
+    /// longer takes them (the look stays, for the editor).
     pub fn set_logitech_look(&self, key: String, look: Option<Look>) {
         let mut lights = self.logitech_lights.lock().unwrap();
         let memory = lights.entry(key).or_default();
+        memory.wanted.store(look.is_some(), std::sync::atomic::Ordering::SeqCst);
         if look.is_some() {
-            memory.saved.clone_from(&look);
+            memory.saved = look;
         }
-        memory.driving = look;
     }
 
-    /// PeriHub drives the lights of a keyboard this session.
+    /// The user wants PeriHub to drive the lights of a keyboard.
     pub fn drives_logitech_lights(&self) -> bool {
-        self.logitech_lights.lock().unwrap().values().any(|m| m.driving.is_some())
+        self.logitech_lights.lock().unwrap().values().any(|m| m.wanted.load(std::sync::atomic::Ordering::SeqCst))
     }
 
-    /// Gives the lights of every keyboard PeriHub drives back to the keyboard (tray menu, quitting
-    /// PeriHub, installing an update): they are no longer taken when the keyboard connects.
-    pub fn release_logitech(&self) {
-        for memory in self.logitech_lights.lock().unwrap().values_mut() {
-            memory.driving = None;
-        }
+    /// Gives the lights of every keyboard PeriHub drives back to the keyboard. `forget` (the tray's
+    /// "Turn off experimental lighting"): PeriHub no longer takes them, as with "Give the lights
+    /// back". Otherwise (quitting PeriHub, installing an update) they are taken again at the next
+    /// start.
+    pub fn release_logitech(&self, forget: bool) {
         let workers: Vec<_> = self.slots.lock().unwrap().logitech.values().map(|(w, _)| w.clone()).collect();
+        if forget {
+            for memory in self.logitech_lights.lock().unwrap().values() {
+                memory.wanted.store(false, std::sync::atomic::Ordering::SeqCst);
+            }
+        }
         for worker in workers {
-            let _ = worker.call(|d| d.give_back_lights());
+            let _ = if forget {
+                worker.call(|d| d.give_back_lights().map(|_| ()))
+            } else {
+                worker.call(|d| d.give_back_for_now())
+            };
         }
     }
 

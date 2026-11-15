@@ -58,7 +58,7 @@ async function open(props: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
-  live = { battery: { percent: 80, estimated: false, state: "discharging" }, dpi: 1000, saved_dpi: null, lighting: null, host: null, gave_back: null, saved_look: null, host_log: null };
+  live = { battery: { percent: 80, estimated: false, state: "discharging" }, dpi: 1000, saved_dpi: null, lighting: null, host: null, gave_back: null, saved_look: null, host_log: null, drive_at_start: false, waiting: null };
   api.logitechLive.mockImplementation(async () => live);
   api.logitechSetDpi.mockImplementation(async (_r: number, _s: number, dpi: number) => {
     live = { ...live, dpi, saved_dpi: dpi };
@@ -105,7 +105,7 @@ describe("a Logitech keyboard's lighting", () => {
   const keyboard = { ...device, name: "G915 X LS", kind: 0, dpi: null, features: [], lighting };
 
   it("is shown as read, with nothing to change", async () => {
-    live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: true, control: 0 }, host: null, gave_back: null, saved_look: null, host_log: null };
+    live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: true, control: 0 }, host: null, gave_back: null, saved_look: null, host_log: null, drive_at_start: false, waiting: null };
     await open({ device: keyboard, receiver: { ...receiver, unsupported: [keyboard] } });
     const card = screen.getByRole("heading", { name: /Lighting/ }).closest("section")!;
     expect(card.textContent).toContain("Read only");
@@ -119,7 +119,7 @@ describe("a Logitech keyboard's lighting", () => {
   });
 
   it("says when a program drives the lights", async () => {
-    live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: false, control: 3 }, host: null, gave_back: null, saved_look: null, host_log: null };
+    live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: false, control: 3 }, host: null, gave_back: null, saved_look: null, host_log: null, drive_at_start: false, waiting: null };
     await open({ device: keyboard, receiver: { ...receiver, unsupported: [keyboard] } });
     const card = screen.getByRole("heading", { name: /Lighting/ }).closest("section")!;
     expect(card.textContent).toContain("A program, such as G HUB");
@@ -181,6 +181,8 @@ describe("a Logitech keyboard whose lights PeriHub can drive", () => {
       gave_back: null,
     saved_look: null,
     host_log: null,
+    drive_at_start: false,
+    waiting: null,
     };
     api.logitechDriveLights.mockImplementation(async (_r: number, _s: number, look) => {
       live = { ...live, host: host(look), lighting: { brightness: 100, on: null, control: 3 } };
@@ -291,6 +293,17 @@ describe("a Logitech keyboard whose lights PeriHub can drive", () => {
     expect(select("Effect, Logo").value).toBe("10");
     expect(screen.getByRole("button", { name: "Drive the lights" })).toBeTruthy();
     expect(api.logitechDriveLights).not.toHaveBeenCalled();
+  });
+
+  it("says that PeriHub drives the lights at every start, why not now, and how to stop it", async () => {
+    const look = { zones: [{ zone: 0, effect: 1, color: "#00ff00", period_ms: null, direction: null }], keys: [] };
+    live = { ...live, saved_look: look, drive_at_start: true, waiting: "quit Logitech G HUB first" };
+    await open(props);
+    expect(screen.getByText(/PeriHub drives these lights at every start/)).toBeTruthy();
+    expect(screen.getByText(/Not now: quit Logitech G HUB first/)).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Stop driving them" }));
+    await wait(0);
+    expect(api.logitechGiveBackLights).toHaveBeenCalledWith(0xc547, 1);
   });
 
   it("sets the brightness", async () => {

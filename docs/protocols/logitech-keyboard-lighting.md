@@ -83,9 +83,9 @@ G515.
 ### Host mode: what PeriHub does when it drives the lights
 
 To set effects and per-key colours a program takes the lights over, as G HUB does with its "on-board memory
-mode" off. `crates/perihub-core/src/hidpp/host.rs` does it on a keyboard that lists 0x8071 and 0x8101, only
-when the user asks, never while G HUB or Solaar runs, and only when function 5 says the keyboard drives its
-own lights (0):
+mode" off. `crates/perihub-core/src/hidpp/host.rs` does it on a keyboard that lists 0x8071 and 0x8101, once the
+user asked for it (see below for when it does it again by itself), never while G HUB or Solaar runs, and only
+when function 5 says the keyboard drives its own lights (0):
 
 1. 0x8101 function 6 `05`: host mode (G HUB, Solaar and logi-ghub-linux send it; it ends at a power cycle).
 2. 0x8071 function 5 `01 03 06`. Byte 1 hands over the zones (0x01) and the power modes (0x02); byte 2 asks for
@@ -144,8 +144,16 @@ answers again, PeriHub takes the lights again and shows the same look even if fu
 Solaar runs; when the user asks, 3 is still refused. A keyboard that was turned off or slept deeply has its own
 lights when it comes back, and PeriHub shows its look again too, for the rest of the session.
 
-The last look shown is saved in PeriHub's settings, and the editor starts from it after a restart, but PeriHub
-takes the lights only when the user asks. The test report counts, over the whole session, the take-overs (and
+The last look shown is saved in PeriHub's settings, with the user's wish that PeriHub drives the lights: set by
+"Drive the lights", cleared only by "Give the lights back" (on the page: "Stop driving them" while PeriHub waits)
+and by the tray's "Turn off experimental lighting". Giving the lights back on its own (G HUB or Solaar started, a
+failed take-over) or when quitting or updating leaves the wish as it is. While it is set, PeriHub takes the lights
+with the saved look every time the keyboard connects, at every start too, with the checks of a manual take-over:
+G HUB and Solaar not running, and function 5 reading 0 (or 3 when PeriHub itself had them before the keyboard went
+away, this session). The "No warranty" box needs no new answer: the wish only exists once it was accepted. When a
+check fails the page says why ("Not now: …") and PeriHub checks again every 5 seconds, so it takes the lights
+again once G HUB or Solaar quit; after a take-over that failed it waits until the keyboard connects again. The
+test report counts, over the whole session, the take-overs (and
 those on a reconnection), the give-backs and the last reason, the calls not answered in time, the notices, the
 looks shown and the wave resets: the counts of one take-over alone started again from 0 at each one.
 

@@ -214,6 +214,7 @@ export function receiverTest(
         if (live.gave_back) lines.push(`PeriHub gave the lights back: ${live.gave_back}`);
         if (live.saved_look) lines.push(`Last look PeriHub showed: ${lookText(live.saved_look)}`);
       }
+      if (live.drive_at_start) lines.push(`PeriHub drives the lights at every start${live.waiting ? `; not now: ${live.waiting}` : ""}`);
       // Counted over the whole session: every take-over, give-back and reconnection.
       const s = live.host_log;
       if (s) {

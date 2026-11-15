@@ -110,7 +110,7 @@ pub fn build_tray(app: &AppHandle) -> tauri::Result<()> {
 pub fn quit(app: &AppHandle) {
     app.state::<crate::AppState>().soft.stop_all_and_wait();
     app.state::<crate::AppState>().manager.release_corsair();
-    app.state::<crate::AppState>().manager.release_logitech();
+    app.state::<crate::AppState>().manager.release_logitech(false);
     app.exit(0);
 }
 

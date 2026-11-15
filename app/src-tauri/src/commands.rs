@@ -241,9 +241,9 @@ pub async fn logitech_reset_dpi(state: State<'_, AppState>, receiver_id: u16, sl
 }
 
 /// Takes the lights of a keyboard PeriHub knows by its features over (host mode, experimental) and
-/// shows `look`, or shows it if PeriHub drives them already. The look is shown again every time the
-/// keyboard connects this session, and saved in the settings for the editor (the lights are not
-/// taken at startup: only when the user asks).
+/// shows `look`, or shows it if PeriHub drives them already. The look and the wish are saved in the
+/// settings: PeriHub takes the lights with it every time the keyboard connects, at every start too,
+/// until the user gives them back.
 #[tauri::command]
 pub async fn logitech_drive_lights(
     app: AppHandle,
@@ -258,11 +258,14 @@ pub async fn logitech_drive_lights(
     state.manager.set_logitech_look(key.clone(), Some(kept.clone()));
     crate::window::refresh_menu(&app);
     let mut config = state.config.lock().unwrap();
+    if !config.logitech_drive.contains(&key) {
+        config.logitech_drive.push(key.clone());
+    }
     config.logitech_looks.insert(key, kept);
     config.save().map_err(|e| e.to_string())
 }
 
-/// Gives the keyboard its own lights back.
+/// Gives the keyboard its own lights back, and stops taking them when it connects.
 #[tauri::command]
 pub async fn logitech_give_back_lights(
     app: AppHandle,
@@ -272,9 +275,11 @@ pub async fn logitech_give_back_lights(
 ) -> CmdResult<()> {
     let manager = state.manager.clone();
     let key = blocking(move || manager.logitech(receiver_id, slot)?.call(|d| d.give_back_lights())).await?;
-    state.manager.set_logitech_look(key, None);
+    state.manager.set_logitech_look(key.clone(), None);
     crate::window::refresh_menu(&app);
-    Ok(())
+    let mut config = state.config.lock().unwrap();
+    config.logitech_drive.retain(|k| *k != key);
+    config.save().map_err(|e| e.to_string())
 }
 
 /// Sets the brightness of a keyboard's lights (experimental); the keyboard keeps it, as with its key.
@@ -371,12 +376,22 @@ pub async fn mouse_preview_led(state: State<'_, AppState>, zone: u8, effect: Led
 }
 
 /// "Turn off experimental lighting" in the tray menu: every Corsair device back to its own settings,
-/// and every Logitech keyboard whose lights PeriHub drives back to its own lights.
+/// and every Logitech keyboard whose lights PeriHub drives back to its own lights, no longer taken
+/// when it connects.
 pub fn turn_off_experimental(app: &AppHandle) {
     let app = app.clone();
     std::thread::spawn(move || {
         app.state::<AppState>().manager.release_corsair();
-        app.state::<AppState>().manager.release_logitech();
+        app.state::<AppState>().manager.release_logitech(true);
+        {
+            let state = app.state::<AppState>();
+            let mut config = state.config.lock().unwrap();
+            config.logitech_drive.clear();
+            if let Err(e) = config.save() {
+                log::warn!("saving the settings failed: {e}");
+            }
+        }
+        crate::window::refresh_menu(&app);
         corsair_changed(&app);
     });
 }

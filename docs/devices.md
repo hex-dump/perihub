@@ -98,7 +98,9 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
     an effect per zone, colours per group of keys and the brightness, in host mode as G HUB does with its
     on-board memory mode off. Everything but the brightness stays in the keyboard's RAM; PeriHub dims and
     turns the lights off when the keyboard is idle, and gives them back on request, from the tray, when
-    G HUB or Solaar starts and when it quits. Not tried on a keyboard yet; **No warranty** box first.
+    G HUB or Solaar starts and when it quits. Once asked, it takes them again at every start and when
+    G HUB or Solaar quit, until you give them back. Tried on a G915 X LS ([issue #30](https://github.com/hex-dump/perihub/issues/30));
+    **No warranty** box first.
   - **Solaar and logiops** set their own DPI and may undo PeriHub's: the device page says so when
     one of them runs.
   - Logitech devices PeriHub does not know behind a **LIGHTSPEED** receiver get the same page,

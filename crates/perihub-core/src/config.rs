@@ -64,8 +64,12 @@ pub struct AppConfig {
     /// device's settings key (see `UnsupportedDevice::settings_key`).
     pub logitech_dpi: std::collections::HashMap<String, u16>,
     /// The last look PeriHub showed on a Logitech keyboard whose lights it drove, by the keyboard's
-    /// settings key: shown in the editor again. The lights are only taken when the user asks.
+    /// settings key: shown in the editor again.
     pub logitech_looks: std::collections::HashMap<String, crate::hidpp::host::Look>,
+    /// The keyboards whose lights the user wants PeriHub to drive, by settings key: taken with
+    /// their look in `logitech_looks` every time they connect, at every start too, until the user
+    /// gives them back.
+    pub logitech_drive: Vec<String>,
     /// Keyboards with a raw HID collection the user turned on as VIA keyboards, by "vvvv:pppp".
     pub qmk_keyboards: Vec<String>,
 }
@@ -81,6 +85,7 @@ impl Default for AppConfig {
             software_macros: Vec::new(),
             logitech_dpi: std::collections::HashMap::new(),
             logitech_looks: std::collections::HashMap::new(),
+            logitech_drive: Vec::new(),
             qmk_keyboards: Vec::new(),
         }
     }

@@ -111,6 +111,7 @@ fn main() {
                 true,
                 config.logitech_dpi.clone(),
                 config.logitech_looks.clone(),
+                config.logitech_drive.clone(),
                 config.qmk_keyboards.clone(),
                 Box::new(move |status| {
                     if let Some(profiles) = slot.get() {
