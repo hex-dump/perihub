@@ -6,12 +6,12 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
-Three devices from device requests, read only for now: the Razer BlackWidow V4 Mini HyperSpeed, mice on the YJX receiver such as the MAMBASNAKE M4, and the Wraith W60. Nobody has tried them with PeriHub yet.
+Three devices from device requests, read only for now: the Razer BlackWidow V4 Mini HyperSpeed, mice on the YJX receiver such as the MAMBASNAKE M4, and the Wraith W60. The W60 has been read on a real keyboard; nobody has tried the other two yet.
 
 ### New devices
 - **Razer BlackWidow V4 Mini HyperSpeed** ([issue #24](https://github.com/hex-dump/perihub/issues/24)), on its cable and through its HyperSpeed receiver: firmware, battery, charging, backlight brightness and game mode, from facts found in OpenRazer (GPL-2.0; no code copied). The first Razer keyboard, and the first Razer receiver PeriHub opens: this one belongs to the keyboard alone.
 - **Mice on the YJX receiver** (`a8a5:2255`, [issue #25](https://github.com/hex-dump/perihub/issues/25)), such as the MAMBASNAKE M4: the model, the DPI levels and the one in use, the polling rate, the lighting mode, the lift-off distance and the battery, from claws-mouse-linux and EWEADN-GS02-Pro-Control (MIT) and facts from OpenMouse (AGPL-3.0; no code copied). The same id stands for mice of many brands that wrap their reports differently, so PeriHub reads the collection's report descriptor first and sends nothing unless it shows the format two of the sources tried on real mice.
-- **Wraith W60** ([issue #26](https://github.com/hex-dump/perihub/issues/26)), on Windows: the model and the key and side lighting, from AulaControl (Apache-2.0), which documents the AULA WIN60 HE it shares its platform with. On Linux it is not opened yet: its configuration collection can carry how far each key is pressed, so it will take a rule the user turns on.
+- **Wraith W60** ([issue #26](https://github.com/hex-dump/perihub/issues/26), first test report in [issue #35](https://github.com/hex-dump/perihub/issues/35)), on Windows: the model, the firmware version and date and the key and side lighting (mode number, speed, brightness, both colours, direction, full colour), from AulaControl (Apache-2.0), which documents the AULA WIN60 HE it shares its platform with. A real W60 answered the reads; changing anything waits for captures. On Linux it is not opened yet: its configuration collection can carry how far each key is pressed, so it will take a rule the user turns on.
 
 ### Added
 - **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.

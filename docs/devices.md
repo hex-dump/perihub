@@ -669,10 +669,11 @@ from [claws-mouse-linux](https://github.com/naevui/claws-mouse-linux) and
 
 ## Wraith W60
 
-👁 Read-only, on Windows only for now: nobody has tried PeriHub on it yet. It is a magnetic (Hall effect) keyboard on
-the platform of the AULA WIN60 HE, described in [protocols/wraith-he.md](protocols/wraith-he.md) from
-[AulaControl](https://github.com/sgtflixy/AulaControl) (Apache-2.0): no code was copied. PeriHub reads the model, the
-firmware date and the key and side lighting.
+👁 Read-only, on Windows only for now: read on a real W60 (firmware V3.22.19, issue #35). It is a magnetic (Hall
+effect) keyboard on the platform of the AULA WIN60 HE, described in [protocols/wraith-he.md](protocols/wraith-he.md)
+from [AulaControl](https://github.com/sgtflixy/AulaControl) (Apache-2.0): no code was copied. PeriHub reads the model,
+the firmware version, the firmware date and the key and side lighting (mode as a number, speed, brightness, both
+colours, direction, full colour).
 
 - Left out: changing the lighting, per-key colours, actuation and rapid trigger, SOCD, key remapping and the polling rate.
 - Its configuration collection can also send how far each key is pressed (while the vendor's travel test runs). PeriHub
