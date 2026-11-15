@@ -63,6 +63,19 @@ the Logitech mice above. The 2.4 GHz receivers listed are the mice's own, not sh
 on some newer mice). Interface 0 also carries the mouse's movements and clicks, as on the Logitech mice
 above. Receivers and docks are left out: some can be shared with a keyboard."#
         }
+        "razer-keyboard" => {
+            r#"Razer keyboards (read only, untested; facts from OpenRazer): only interface 3, the one OpenRazer sends
+to. Through the receiver it holds only the media keys. PeriHub also reads each keyboard node's report
+descriptor and does not open one that carries typed keys. The receiver (02ba) belongs to this keyboard alone."#
+        }
+        "yjx" => {
+            r#"Mice on the YJX platform (MAMBASNAKE, Rajin, K-Snake, EWEADN…; read only, untested): only interface 2,
+which holds the vendor configuration collection and nothing else."#
+        }
+        "wraith" => {
+            r#"Wraith W60 (read only, untested): not opened on Linux. Its configuration collection can carry how far
+each key is pressed, so it will need a rule the user turns on. Windows only for now."#
+        }
         "glorious" => {
             r#"Glorious mice (experimental, untested; protocol from libratbag): only the ids that belong to
 Glorious, not the generic SinoWealth ones, which other brands' devices share. No source names the

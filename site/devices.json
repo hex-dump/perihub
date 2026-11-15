@@ -3442,6 +3442,34 @@
       }
     },
     {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 Mini HyperSpeed",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02b9"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 Mini HyperSpeed (wireless)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02ba"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
       "family": "glorious",
       "brand": "Glorious",
       "name": "Model O/O-",
@@ -3857,6 +3885,47 @@
       "linux": {
         "kind": "interface",
         "interface": 2
+      }
+    },
+    {
+      "family": "yjx",
+      "brand": "YJX",
+      "name": "mouse (YJX receiver)",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "a8a5:2255"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
+      "family": "yjx",
+      "brand": "YJX",
+      "name": "mouse (YJX, on its cable)",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "a8a4:2255"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
+      "family": "wraith",
+      "brand": "Wraith",
+      "name": "W60",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "2e3c:c368"
+      ],
+      "linux": {
+        "kind": "closed"
       }
     }
   ]
