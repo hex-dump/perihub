@@ -359,7 +359,33 @@ export interface UnsupportedReceiverDevice {
   report_rates_ms: number[];
   /** Its onboard profile memory (0x8100), if it has one. */
   onboard: MouseInfo["onboard"] | null;
+  /** Its lighting (0x8040, 0x8071, 0x8081, 0x4540), if it has one of those features. */
+  lighting: HidppLighting | null;
   read_errors: string[];
+}
+
+/** What PeriHub read of a Logitech device's lighting, by its features. Read only. */
+export interface HidppLighting {
+  brightness: { min: number; max: number; steps: number; on_off: boolean } | null;
+  effects: {
+    zones: {
+      index: number;
+      /** 1 primary, 2 logo, 3 left side, 4 right side, 5 combined, 6 to 11 primary 1 to 6. */
+      location: number;
+      effects: { index: number; id: number; caps: number; period_ms: number }[];
+    }[];
+    startup: { enabled: boolean; colors: [string, string] } | null;
+    shutdown: { enabled: boolean; colors: [string, string] } | null;
+    idle_s: number | null;
+    sleep_s: number | null;
+  } | null;
+  /** The ids of the keys whose colour can be set one by one (0x8081). */
+  keys: number[];
+  /** The layout the keyboard reports (0x4540): 1 ANSI, 2 ISO and others. */
+  layout: number | null;
+  /** Every reply as it came, for test reports. */
+  raw: string[];
+  errors: string[];
 }
 
 /** A connected Logitech receiver, for the test report that helps support what is paired with it. */
@@ -370,6 +396,8 @@ export interface LogitechLive {
   dpi: number | null;
   /** The DPI PeriHub sets every time the device connects, if one was chosen. */
   saved_dpi: number | null;
+  /** Its lighting as it is now: brightness, lights on, and who drives them (0 the device, 3 a program). */
+  lighting: { brightness: number | null; on: boolean | null; control: number | null } | null;
 }
 
 /** A keyboard with QMK firmware, found by its raw HID channel (usage page 0xFF60). */

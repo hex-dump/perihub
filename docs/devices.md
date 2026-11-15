@@ -87,6 +87,13 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
     the **No warranty** box. Nobody has tried it on a real device yet: the MX Master 3S of
     [issue #17](https://github.com/hex-dump/perihub/issues/17) is the first candidate.
   - 👁 Everything else is only read.
+  - 👁 **Lighting**, on a device with the HID++ lighting features of the newer keyboards (0x8040
+    brightness, 0x8071 effects by zone, 0x8081 per-key colours, 0x4540 layout): the brightness now, who
+    drives the lights (the device or a program such as G HUB), the effects each zone offers, how many
+    keys have their own colour, the startup and shutdown effects and when the lights dim. Only read; the
+    test report carries every reply. The first one is a G915 X LS through a `c547` receiver on Windows
+    ([issue #30](https://github.com/hex-dump/perihub/issues/30)), see
+    [protocols/logitech-keyboard-lighting.md](protocols/logitech-keyboard-lighting.md).
   - **Solaar and logiops** set their own DPI and may undo PeriHub's: the device page says so when
     one of them runs.
   - Logitech devices PeriHub does not know behind a **LIGHTSPEED** receiver get the same page,

@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
+use super::lighting::Lighting;
 use super::{
     DpiCapabilities, FeatureEntry, HIDPP10_ERROR, HidppDevice, OnboardInfo, REPORT_LONG, REPORT_SHORT, SHORT_LEN,
     SOFTWARE_ID, Transport, feature, unreachable_code,
@@ -163,6 +164,8 @@ pub struct UnsupportedDevice {
     pub report_rates_ms: Vec<u8>,
     /// Its onboard profile memory (0x8100), if it has one.
     pub onboard: Option<OnboardInfo>,
+    /// Its lighting (0x8040, 0x8071, 0x8081, 0x4540), if it has one of those features.
+    pub lighting: Option<Lighting>,
     /// What could not be read.
     pub read_errors: Vec<String>,
 }
@@ -185,6 +188,7 @@ impl UnsupportedDevice {
             dpi: None,
             report_rates_ms: Vec::new(),
             onboard: None,
+            lighting: None,
             read_errors: Vec::new(),
         };
         let mut failed = |what: &str, error: Error| match error {
@@ -247,6 +251,16 @@ impl UnsupportedDevice {
                 Ok(info) => device.onboard = Some(info),
                 Err(error) => failed("onboard memory", error)?,
             }
+        }
+        let lighting = [
+            feature::BRIGHTNESS_CONTROL,
+            feature::RGB_EFFECTS,
+            feature::PER_KEY_LIGHTING_V2,
+            feature::KEYBOARD_LAYOUT_2,
+        ];
+        if lighting.iter().any(|&id| has(id)) {
+            let ids: Vec<u16> = device.features.iter().map(|f| f.id).collect();
+            device.lighting = Some(Lighting::read(dev, |id| ids.contains(&id))?);
         }
         Ok(device)
     }

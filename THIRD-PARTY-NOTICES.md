@@ -27,7 +27,10 @@ goes with every PeriHub package.
 - the HID++ 1.0 registers, memory pages and profile layouts of the Logitech G9, G9x, G500, G500s, G700 and
   G700s (`src/hidpp10.c`, `src/hidpp10.h`, `src/driver-hidpp10.c`, `src/hidpp-generic.c` and their
   `data/devices/logitech-g*.device` files, Copyright © 2015-2017 Red Hat, Inc.), rewritten in Rust in
-  `crates/perihub-core/src/peripheral/logitech_hidpp10.rs` (see `docs/protocols/logitech-hidpp10.md`).
+  `crates/perihub-core/src/peripheral/logitech_hidpp10.rs` (see `docs/protocols/logitech-hidpp10.md`);
+- the functions of the HID++ 2.0 RGB effects feature 0x8071 and the layout of its device, zone and effect
+  information (`src/hidpp20.c`, `src/hidpp20.h`, Copyright © 2015-2017 Red Hat, Inc.), read in
+  `crates/perihub-core/src/hidpp/lighting.rs` (see `docs/protocols/logitech-keyboard-lighting.md`).
 
 ```
 Copyright © 2015-2017 Red Hat, Inc.
@@ -190,7 +193,9 @@ was copied.
 - [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0): the Logitech receiver ids, and how it reads and writes
   onboard profile lists and button entries, compared with libratbag's (see
   `docs/protocols/logitech-onboard-profiles.md`); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak
-  HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (see `docs/protocols/logitech-hidpp10.md`).
+  HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (see `docs/protocols/logitech-hidpp10.md`);
+  the functions and replies of the HID++ 2.0 lighting features 0x8040, 0x8071, 0x8081 and 0x4540, the names of
+  the 0x8071 effects, and which of their calls only read (see `docs/protocols/logitech-keyboard-lighting.md`).
 - The `lsusb -v` dumps of [linuxhw/LsUSB](https://github.com/linuxhw/LsUSB): which interfaces the Logitech G600
   and the Roccat Kone mice have.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse

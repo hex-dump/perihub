@@ -25,13 +25,59 @@ const CAPABILITIES: [string, number[]][] = [
   ["SmartShift wheel", [0x2110, 0x2111]],
   ["High-resolution wheel", [0x2121]],
   ["Thumb wheel", [0x2150]],
-  ["Programmable buttons and keys", [0x1b04]],
+  ["Programmable buttons and keys", [0x1b04, 0x1b05]],
   ["Lighting", [0x8070, 0x8071]],
+  ["Per-key lighting", [0x8080, 0x8081]],
+  ["Lighting brightness", [0x8040]],
+  ["Game mode (keys turned off)", [0x4521, 0x4522, 0x4523]],
   ["Keyboard backlight", [0x1981, 0x1982]],
   ["Fn key swap", [0x40a0, 0x40a2, 0x40a3]],
   ["Easy-Switch between computers", [0x1814]],
-  ["Onboard profiles", [0x8100]],
+  ["Onboard profiles", [0x8100, 0x8101]],
 ];
+
+/** Effects of 0x8071, by the id the device reports for each (the names are Solaar's, from the
+ * devices it supports). */
+const EFFECTS: Record<number, string> = {
+  0x00: "Off",
+  0x01: "Fixed colour",
+  0x02: "Pulse",
+  0x03: "Colour cycle",
+  0x04: "Colour wave",
+  0x08: "Startup effect",
+  0x09: "Demo",
+  0x0a: "Breathing",
+  0x0b: "Ripple",
+  0x0e: "Decomposition",
+  0x0f: "Signature 1",
+  0x10: "Signature 2",
+  0x15: "Colour cycle",
+  0x16: "Colour wave",
+  0x17: "Ripple",
+};
+
+/** The name of a 0x8071 effect, or "Effect 0x0012" for one PeriHub does not know. */
+export function effectName(id: number): string {
+  return EFFECTS[id] ?? `Effect 0x${id.toString(16).padStart(4, "0")}`;
+}
+
+/** Where a 0x8071 lighting zone is, from the location the device reports. */
+export function zoneName(location: number, kind: number | null): string {
+  const main = kind === 0 || kind === 2 ? "Keys" : "Main lighting";
+  if (location === 1) return main;
+  if (location >= 6 && location <= 11) return `${main} ${location - 5}`;
+  return ["Zone", "", "Logo", "Left side", "Right side", "All lights"][location] ?? `Zone at ${location}`;
+}
+
+/** The keyboard layout 0x4540 reports (Solaar's reading of the codes). */
+export function layoutName(code: number): string {
+  if (code === 1) return "ANSI";
+  if ([2, 5, 8, 0x0b, 0x0d, 0x0e, 0x0f, 0x16, 0x1d, 0x21, 0x24].includes(code)) return `ISO (code ${code})`;
+  if (code === 3 || code === 7) return `ISO QWERTZ (code ${code})`;
+  if (code === 4) return "ISO AZERTY (code 4)";
+  if (code === 9 || code === 0x3e) return `JIS (code ${code})`;
+  return `code ${code}`;
+}
 
 /** What the device can do, in words, in a fixed order, and how many other features it lists. */
 export function capabilities(device: UnsupportedReceiverDevice): { named: string[]; others: number } {

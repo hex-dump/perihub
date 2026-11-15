@@ -2,6 +2,7 @@
 //!
 //! References: libratbag (MIT) and data read from the real device.
 
+pub mod lighting;
 pub mod macros;
 pub mod models;
 pub mod profile;
@@ -38,6 +39,10 @@ pub mod feature {
     pub const REPORT_RATE: u16 = 0x8060;
     pub const COLOR_LED_EFFECTS: u16 = 0x8070;
     pub const ONBOARD_PROFILES: u16 = 0x8100;
+    pub const KEYBOARD_LAYOUT_2: u16 = 0x4540;
+    pub const BRIGHTNESS_CONTROL: u16 = 0x8040;
+    pub const RGB_EFFECTS: u16 = 0x8071;
+    pub const PER_KEY_LIGHTING_V2: u16 = 0x8081;
 }
 
 /// A HID connection, as [`HidppDevice`] uses it. Tests replace the device with a simulated one.
@@ -72,6 +77,10 @@ const ALLOWED_FEATURES: &[u16] = &[
     feature::REPORT_RATE,
     feature::COLOR_LED_EFFECTS,
     feature::ONBOARD_PROFILES,
+    feature::KEYBOARD_LAYOUT_2,
+    feature::BRIGHTNESS_CONTROL,
+    feature::RGB_EFFECTS,
+    feature::PER_KEY_LIGHTING_V2,
 ];
 
 /// The only (feature, function) pairs allowed on a read-only device: they read state and
@@ -99,10 +108,28 @@ const READ_ONLY_CALLS: &[(u16, u8)] = &[
     (feature::ONBOARD_PROFILES, 4),
     (feature::ONBOARD_PROFILES, 5),
     (feature::ONBOARD_PROFILES, 0x0B),
+    (feature::KEYBOARD_LAYOUT_2, 0),
+    (feature::BRIGHTNESS_CONTROL, 0),
+    (feature::BRIGHTNESS_CONTROL, 1),
+    (feature::BRIGHTNESS_CONTROL, 3),
+    (feature::RGB_EFFECTS, 0),
+    (feature::PER_KEY_LIGHTING_V2, 0),
 ];
 
-fn is_read_call(feature: u16, function: u8) -> bool {
+/// Functions that read or change, by their first parameter: 0 reads ("get"), anything else changes
+/// (see docs/protocols/logitech-keyboard-lighting.md). A read-only device gets them only with 0.
+const READ_ONLY_GETS: &[(u16, u8)] = &[
+    // Startup and shutdown effects (the change is written to the device's memory).
+    (feature::RGB_EFFECTS, 3),
+    // Who drives the lights: the device or a program.
+    (feature::RGB_EFFECTS, 5),
+    // Idle and sleep timers of the lights (the change is likely kept in the device's memory).
+    (feature::RGB_EFFECTS, 7),
+];
+
+fn is_read_call(feature: u16, function: u8, params: &[u8]) -> bool {
     READ_ONLY_CALLS.contains(&(feature, function))
+        || (READ_ONLY_GETS.contains(&(feature, function)) && params.first().copied().unwrap_or(0) == 0)
 }
 
 /// Mouse memory sectors reserved for the factory profiles (read-only).
@@ -295,9 +322,11 @@ pub enum Access {
     Full,
 }
 
-/// Onboard memory writes (0x8100 functions 6, 7 and 8): the calls that outlast a power cycle.
-fn is_memory_write(feature: u16, function: u8) -> bool {
-    feature == feature::ONBOARD_PROFILES && matches!(function, 6..=8)
+/// Onboard memory writes (0x8100 functions 6, 7 and 8), and the changes of the 0x8071 startup
+/// and shutdown effects and light timers: the calls that outlast a power cycle.
+fn is_memory_write(feature: u16, function: u8, params: &[u8]) -> bool {
+    (feature == feature::ONBOARD_PROFILES && matches!(function, 6..=8))
+        || (feature == feature::RGB_EFFECTS && matches!(function, 3 | 7) && params.first().copied().unwrap_or(0) != 0)
 }
 
 pub struct HidppDevice {
@@ -436,10 +465,10 @@ impl HidppDevice {
 
     fn call(&mut self, feature: u16, function: u8, params: &[u8]) -> Result<[u8; 16]> {
         match self.access {
-            Access::ReadOnly if !is_read_call(feature, function) => {
+            Access::ReadOnly if !is_read_call(feature, function, params) => {
                 return Err(Error::Invalid("PeriHub only reads this mouse".into()));
             }
-            Access::Ram if is_memory_write(feature, function) => {
+            Access::Ram if is_memory_write(feature, function, params) => {
                 return Err(Error::Invalid("PeriHub does not save to this mouse's memory".into()));
             }
             _ => {}
@@ -965,9 +994,36 @@ pub(crate) mod tests {
             (feature::ONBOARD_PROFILES, 0x0C),
         ];
         for (feature, function) in writes {
-            assert!(!is_read_call(feature, function), "{feature:#06x}/{function}");
+            assert!(!is_read_call(feature, function, &[]), "{feature:#06x}/{function}");
         }
         assert!(READ_ONLY_CALLS.iter().all(|(feature, _)| ALLOWED_FEATURES.contains(feature)));
+        assert!(READ_ONLY_GETS.iter().all(|(feature, _)| ALLOWED_FEATURES.contains(feature)));
+    }
+
+    #[test]
+    fn of_the_lighting_features_a_read_only_device_gets_only_the_reads() {
+        use feature::{BRIGHTNESS_CONTROL, PER_KEY_LIGHTING_V2, RGB_EFFECTS};
+        // 0x8040: brightness and on/off are set by functions 2 and 4.
+        assert!(!is_read_call(BRIGHTNESS_CONTROL, 2, &[0, 50]));
+        assert!(!is_read_call(BRIGHTNESS_CONTROL, 4, &[1]));
+        // 0x8071: the effect (1, 2), sync (6), power mode (8, 9) and anything past them.
+        for function in [1, 2, 4, 6, 8, 9, 0x0E] {
+            assert!(!is_read_call(RGB_EFFECTS, function, &[0]), "0x8071/{function}");
+        }
+        // Functions 3, 5 and 7 read with a first byte 0, and change with anything else.
+        for function in [3, 5, 7] {
+            assert!(is_read_call(RGB_EFFECTS, function, &[0, 0, 1]), "0x8071/{function} get");
+            assert!(is_read_call(RGB_EFFECTS, function, &[]), "0x8071/{function} get, no params");
+            assert!(!is_read_call(RGB_EFFECTS, function, &[1, 3, 4]), "0x8071/{function} set");
+        }
+        // 0x8081: only the list of keys; every function after 0 sets colours.
+        for function in 1..=7 {
+            assert!(!is_read_call(PER_KEY_LIGHTING_V2, function, &[0]), "0x8081/{function}");
+        }
+        // With RAM changes allowed, what stays after a power cycle is still refused.
+        assert!(is_memory_write(RGB_EFFECTS, 3, &[1, 0, 1]));
+        assert!(is_memory_write(RGB_EFFECTS, 7, &[1, 0, 0]));
+        assert!(!is_memory_write(RGB_EFFECTS, 3, &[0, 0, 1]));
     }
 
     #[test]

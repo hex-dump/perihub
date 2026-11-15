@@ -169,6 +169,7 @@ describe("Sidebar", () => {
       dpi: null,
       report_rates_ms: [],
       onboard: null,
+      lighting: null,
       read_errors: [],
     };
     const bolt = { ...receiver, product_id: 0xc548, name: "Logi Bolt receiver", bolt: true, unsupported: [device] };

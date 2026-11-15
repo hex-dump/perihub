@@ -1,11 +1,32 @@
 import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
-import type { HidppFeature, MouseInfo, ReportDevice } from "./api";
-import { kindName } from "./logitechFeatures";
+import type { HidppFeature, HidppLighting, MouseInfo, ReportDevice } from "./api";
+import { effectName, kindName, zoneName } from "./logitechFeatures";
 
 const LOGITECH = "046d";
 const TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml";
+
+/** What a device's lighting features told, in a few lines, with every reply as it came: the
+ * replies tell the meaning of the bytes that is not documented yet (issue #30). */
+function lightingLines(lighting: HidppLighting, kind: number | null): string[] {
+  const b = lighting.brightness;
+  const e = lighting.effects;
+  const power = (name: string, p: NonNullable<HidppLighting["effects"]>["startup"]) =>
+    p ? `${name} ${p.enabled ? "on" : "off"} (${p.colors.join(" ")})` : `${name} not read`;
+  const zones = e?.zones.map(
+    (z) => `${zoneName(z.location, kind)} (zone ${z.index}, location ${z.location}): ${z.effects.map((f) => `${effectName(f.id)} [${f.id}, caps ${hex(f.caps)}, ${f.period_ms} ms]`).join(", ") || "no effects"}`,
+  );
+  return [
+    `Brightness: ${b ? `${b.min}-${b.max}, ${b.steps} levels${b.on_off ? ", can be turned off" : ""}` : "no 0x8040"}`,
+    `Lighting zones: ${zones?.join("; ") || "no 0x8071"}`,
+    `Startup and shutdown: ${e ? `${power("startup", e.startup)}, ${power("shutdown", e.shutdown)}` : "no 0x8071"}`,
+    `Lights dim after: ${e?.idle_s != null ? `${e.idle_s} s, off after ${e.sleep_s} s` : "not read"}`,
+    `Per-key lighting: ${lighting.keys.length ? `${lighting.keys.length} keys (${lighting.keys.join(" ")})` : "none"}`,
+    `Layout (0x4540): ${lighting.layout ?? "not read"}`,
+    `Lighting replies: ${lighting.raw.join(" | ") || "none"}`,
+  ];
+}
 
 /** The mouse's profile list when it was connected. */
 const PROFILE_LIST = {
@@ -149,13 +170,22 @@ export function receiverTest(
       `Polling (ms): ${device.report_rates_ms.join(", ") || "none reported"}`,
       `Onboard memory: ${onboard}`,
     );
+    if (device.lighting) lines.push(...lightingLines(device.lighting, device.kind));
     if (live) {
       lines.push(
         `DPI now: ${live.dpi ?? "not read"}`,
         `DPI set by PeriHub at every connection: ${live.saved_dpi ?? "none"}`,
       );
+      if (live.lighting) {
+        const l = live.lighting;
+        const control = l.control === null ? "not read" : l.control === 0 ? "the device (0)" : `a program (${l.control})`;
+        lines.push(
+          `Lighting now: brightness ${l.brightness ?? "not read"}${l.on === null ? "" : l.on ? ", on" : ", off"}, driven by ${control}`,
+        );
+      }
     }
-    lines.push(`Could not read: ${device.read_errors.join("; ") || "nothing"}`);
+    const errors = [...device.read_errors, ...(device.lighting?.errors ?? [])];
+    lines.push(`Could not read: ${errors.join("; ") || "nothing"}`);
   } else {
     lines.push("Paired device: none answered");
   }

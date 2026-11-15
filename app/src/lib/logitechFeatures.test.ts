@@ -23,6 +23,7 @@ const device = (ids: number[], hidden: number[] = []): UnsupportedReceiverDevice
   dpi: null,
   report_rates_ms: [],
   onboard: null,
+  lighting: null,
   read_errors: [],
 });
 

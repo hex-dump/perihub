@@ -8,9 +8,13 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ### Added
 - **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.
+- **The lighting of a Logitech keyboard behind a receiver is read** ([issue #30](https://github.com/hex-dump/perihub/issues/30)): on the page of a device PeriHub knows by its features, such as the G915 X LS, a **Lighting** card shows the brightness now, whether the lights are driven by the keyboard itself or by a program such as G HUB, the effects each lighting zone offers, how many keys have a colour of their own, the startup and shutdown effects with their colours, and after how long the lights dim and turn off. Nothing is changed: changing the lighting means taking it over from the keyboard, which then leaves turning the lights down when idle to the program, so it waits for the test reports. The test report has the same lines, and every reply the keyboard sent, to check what the bytes mean ([docs/protocols/logitech-keyboard-lighting.md](docs/protocols/logitech-keyboard-lighting.md)). The page also names per-key lighting, lighting brightness, game mode and the newer profile management among what a device can do.
 
 ### Changed
 - The udev rule, the device list, the website's catalogue and the AppStream metadata are now generated from PeriHub's own driver tables, so they can no longer disagree. The rule opens exactly the same interfaces as before. Razer mice are counted by name: 74, not 75, since the DeathAdder V3 Pro (Wired) has two USB ids.
+
+### Fixed
+- **No "Logitech mouse" entry for a keyboard behind a receiver** ([issue #30](https://github.com/hex-dump/perihub/issues/30)): with a keyboard such as the G915 X LS paired with a LIGHTSPEED receiver, the sidebar listed a "Logitech mouse — Not opened" next to the keyboard's own entry, appearing and disappearing as the keyboard woke up and fell asleep. The note that the device "is not supported yet" was shown as the mouse's error; a device with a page of its own no longer adds it, and a keyboard asleep is no longer shown as a mouse asleep.
 
 ## 0.8.4 — 2026-11-15
 

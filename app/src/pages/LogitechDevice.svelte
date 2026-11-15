@@ -5,7 +5,7 @@
   import { onDestroy } from "svelte";
   import { api, errorText, type LogitechLive, type ReceiverReport, type UnsupportedReceiverDevice } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
-  import { capabilities, kindName } from "../lib/logitechFeatures";
+  import { capabilities, effectName, kindName, layoutName, zoneName } from "../lib/logitechFeatures";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import { receiverTest } from "../lib/testReport";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
@@ -105,6 +105,17 @@
   function dpiText(caps: NonNullable<UnsupportedReceiverDevice["dpi"]>): string {
     if (caps.list.length) return caps.list.join(", ");
     return `${caps.min} to ${caps.max}${caps.step ? `, in steps of ${caps.step}` : ""}`;
+  }
+
+  /** Who drives the lights, from 0x8071 function 5. */
+  function controlText(control: number): string {
+    if (control === 0) return `The ${kind} itself, with its own effects`;
+    if (control === 3) return "A program, such as G HUB";
+    return `Mode ${control}`;
+  }
+
+  function seconds(s: number): string {
+    return s >= 60 && s % 60 === 0 ? `${s / 60} min` : `${s} s`;
   }
 
   function batteryText(b: NonNullable<LogitechLive["battery"]>): string {
@@ -222,6 +233,54 @@
           </div>
         {/if}
         {#if error}<div class="notice error">{error}</div>{/if}
+      {/if}
+    </section>
+  {/if}
+
+  {#if device.lighting}
+    {@const lighting = device.lighting}
+    {@const now = live?.lighting}
+    <section class="card">
+      <h2>Lighting <span class="chip">Read only</span></h2>
+      <p class="small muted">
+        PeriHub reads the {kind}'s lighting and does not change it yet. Your test report tells how to change it safely.
+      </p>
+      <dl>
+        {#if lighting.brightness}
+          <dt>Brightness</dt>
+          <dd>
+            {#if now?.brightness != null}{now.brightness} of {lighting.brightness.max}{now.on === false ? ", lights off" : ""}
+            {:else}{lighting.brightness.min} to {lighting.brightness.max}{/if}
+            {#if lighting.brightness.steps}<span class="muted">· {lighting.brightness.steps} levels on the key</span>{/if}
+          </dd>
+        {/if}
+        {#if now?.control != null}<dt>Lights driven by</dt><dd>{controlText(now.control)}</dd>{/if}
+        {#each lighting.effects?.zones ?? [] as zone (zone.index)}
+          <dt>{zoneName(zone.location, device.kind)}</dt>
+          <dd>{[...new Set(zone.effects.map((e) => effectName(e.id)))].join(", ") || "no effects listed"}</dd>
+        {/each}
+        {#if lighting.keys.length}<dt>Per-key colours</dt><dd>{lighting.keys.length} keys</dd>{/if}
+        {#each [["Startup effect", lighting.effects?.startup], ["Shutdown effect", lighting.effects?.shutdown]] as const as [label, effect] (label)}
+          {#if effect}
+            <dt>{label}</dt>
+            <dd class="row colors">
+              {effect.enabled ? "On" : "Off"}
+              {#each effect.colors as color, i (i)}<span class="swatch" style:background={color} title={color}></span>{/each}
+            </dd>
+          {/if}
+        {/each}
+        {#if lighting.effects?.idle_s != null}
+          <dt>When not in use</dt>
+          <dd>
+            Dims after {seconds(lighting.effects.idle_s)}{lighting.effects.sleep_s != null
+              ? `, off after ${seconds(lighting.effects.sleep_s)}`
+              : ""}
+          </dd>
+        {/if}
+        {#if lighting.layout != null}<dt>Layout</dt><dd>{layoutName(lighting.layout)}</dd>{/if}
+      </dl>
+      {#if lighting.errors.length}
+        <p class="small muted">Could not read: {lighting.errors.join("; ")}</p>
       {/if}
     </section>
   {/if}
@@ -362,5 +421,17 @@
 
   .report {
     margin-top: 10px;
+  }
+
+  .colors {
+    gap: 6px;
+    align-items: center;
+  }
+
+  .swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
   }
 </style>

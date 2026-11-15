@@ -27,6 +27,7 @@ const device: UnsupportedReceiverDevice = {
   dpi: { min: 200, max: 8000, step: 50, list: [] },
   report_rates_ms: [],
   onboard: null,
+  lighting: null,
   read_errors: [],
 };
 
@@ -54,13 +55,13 @@ async function open(props: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
-  live = { battery: { percent: 80, estimated: false, state: "discharging" }, dpi: 1000, saved_dpi: null };
+  live = { battery: { percent: 80, estimated: false, state: "discharging" }, dpi: 1000, saved_dpi: null, lighting: null };
   api.logitechLive.mockImplementation(async () => live);
   api.logitechSetDpi.mockImplementation(async (_r: number, _s: number, dpi: number) => {
     live = { ...live, dpi, saved_dpi: dpi };
   });
   api.logitechResetDpi.mockImplementation(async () => {
-    live = { ...live, dpi: 1000, saved_dpi: null };
+    live = { ...live, dpi: 1000, saved_dpi: null, lighting: null };
   });
 });
 
@@ -72,6 +73,56 @@ afterEach(() => {
 function dpiBox() {
   return screen.getByRole("spinbutton", { name: "DPI" }) as HTMLInputElement;
 }
+
+describe("a Logitech keyboard's lighting", () => {
+  const lighting = {
+    brightness: { min: 0, max: 100, steps: 5, on_off: true },
+    effects: {
+      zones: [
+        {
+          index: 0,
+          location: 1,
+          effects: [
+            { index: 0, id: 0, caps: 0, period_ms: 0 },
+            { index: 1, id: 1, caps: 1, period_ms: 0 },
+            { index: 2, id: 0x15, caps: 4, period_ms: 10000 },
+          ],
+        },
+      ],
+      startup: { enabled: true, colors: ["#ff0081", "#80aaff"] as [string, string] },
+      shutdown: null,
+      idle_s: 60,
+      sleep_s: 300,
+    },
+    keys: [4, 5, 6, 7],
+    layout: 1,
+    raw: ["8071 0 (ff ff 00): ff ff 01 00 00 00 01", "8040 0: 00 64 05 04"],
+    errors: ["8071 function 3 (00 00 40): HID++ error 0x02"],
+  };
+  const keyboard = { ...device, name: "G915 X LS", kind: 0, dpi: null, features: [], lighting };
+
+  it("is shown as read, with nothing to change", async () => {
+    live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: true, control: 0 } };
+    await open({ device: keyboard, receiver: { ...receiver, unsupported: [keyboard] } });
+    const card = screen.getByRole("heading", { name: /Lighting/ }).closest("section")!;
+    expect(card.textContent).toContain("Read only");
+    expect(card.textContent).toContain("50 of 100");
+    expect(card.textContent).toContain("The keyboard itself, with its own effects");
+    expect(card.textContent).toContain("Off, Fixed colour, Colour cycle");
+    expect(card.textContent).toContain("4 keys");
+    expect(card.textContent).toContain("Dims after 1 min, off after 5 min");
+    expect(card.textContent).toContain("ANSI");
+    expect(card.querySelectorAll("button, input, select").length).toBe(0);
+  });
+
+  it("says when a program drives the lights", async () => {
+    live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: false, control: 3 } };
+    await open({ device: keyboard, receiver: { ...receiver, unsupported: [keyboard] } });
+    const card = screen.getByRole("heading", { name: /Lighting/ }).closest("section")!;
+    expect(card.textContent).toContain("A program, such as G HUB");
+    expect(card.textContent).toContain("lights off");
+  });
+});
 
 describe("a Logitech device PeriHub knows by its features", () => {
   it("shows what it is, what it can do, its battery and DPI now, and offers a test report", async () => {

@@ -175,6 +175,7 @@ describe("receiverTest", () => {
         dpi: { min: 200, max: 8000, step: 50, list: [] },
         report_rates_ms: [],
         onboard: null,
+        lighting: null,
         read_errors: [],
       },
     ],
@@ -220,11 +221,64 @@ describe("receiverTest", () => {
   });
 
   it("adds the DPI now and the DPI PeriHub sets, for a device that is open", () => {
-    const live = { battery: null, dpi: 1600, saved_dpi: 1600 };
+    const live = { battery: null, dpi: 1600, saved_dpi: 1600, lighting: null };
     const report = receiverTest(bolt, bolt.unsupported[0], "0.6.7", "linux x86_64", live).report;
     expect(report).toContain("DPI now: 1600");
     expect(report).toContain("DPI set by PeriHub at every connection: 1600");
     expect(receiverTest(bolt, bolt.unsupported[0], "0.6.7", "linux x86_64").report).not.toContain("DPI now");
+  });
+
+  it("adds a keyboard's lighting, with every reply as it came, and stays short enough for the form", () => {
+    const lighting = {
+      brightness: { min: 0, max: 100, steps: 5, on_off: true },
+      effects: {
+        zones: [
+          {
+            index: 0,
+            location: 1,
+            effects: [
+              { index: 0, id: 0, caps: 0, period_ms: 0 },
+              { index: 1, id: 1, caps: 1, period_ms: 0 },
+              { index: 2, id: 0x15, caps: 4, period_ms: 10000 },
+            ],
+          },
+        ],
+        startup: { enabled: true, colors: ["#ff0081", "#80aaff"] as [string, string] },
+        shutdown: null,
+        idle_s: 60,
+        sleep_s: 300,
+      },
+      keys: [4, 5, 6, 7],
+      layout: 1,
+      raw: ["8071 0 (ff ff 00): ff ff 01 00 00 00 01", "8040 0: 00 64 05 04"],
+      errors: ["8071 function 3 (00 00 40): HID++ error 0x02"],
+    };
+    const keyboard = { ...bolt.unsupported[0], name: "G915 X LS", kind: 0, dpi: null, lighting };
+    const live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: true, control: 0 } };
+    const report = receiverTest(bolt, keyboard, "0.8.5", "windows x86_64", live).report.split("\n");
+    expect(report).toContain("Brightness: 0-100, 5 levels, can be turned off");
+    expect(report).toContain(
+      "Lighting zones: Keys (zone 0, location 1): Off [0, caps 0000, 0 ms], Fixed colour [1, caps 0001, 0 ms], Colour cycle [21, caps 0004, 10000 ms]",
+    );
+    expect(report).toContain("Startup and shutdown: startup on (#ff0081 #80aaff), shutdown not read");
+    expect(report).toContain("Lights dim after: 60 s, off after 300 s");
+    expect(report).toContain("Per-key lighting: 4 keys (4 5 6 7)");
+    expect(report).toContain("Layout (0x4540): 1");
+    expect(report).toContain("Lighting replies: 8071 0 (ff ff 00): ff ff 01 00 00 00 01 | 8040 0: 00 64 05 04");
+    expect(report).toContain("Lighting now: brightness 50, on, driven by the device (0)");
+    expect(report).toContain("Could not read: 8071 function 3 (00 00 40): HID++ error 0x02");
+
+    // A full-size keyboard: 2 zones of 16 effects, 110 keys and every reply. The form's address stays
+    // under the 8000 characters browsers and GitHub take.
+    const zone = (index: number) => ({
+      index,
+      location: index + 1,
+      effects: Array.from({ length: 16 }, (_, i) => ({ index: i, id: i, caps: 0x8005, period_ms: 5000 })),
+    });
+    const raw = Array.from({ length: 40 }, (_, i) => `8071 0 (00 ${i.toString(16).padStart(2, "0")} 00): 00 01 00 0a 80 05 13 88`);
+    const big = { ...lighting, effects: { ...lighting.effects, zones: [zone(0), zone(1)] }, keys: Array.from({ length: 110 }, (_, i) => i + 1), raw };
+    const fields = receiverTest(bolt, { ...keyboard, lighting: big }, "0.8.5", "windows x86_64", live);
+    expect(deviceTestFormUrl(fields, "0.8.5", "windows x86_64").length).toBeLessThan(8000);
   });
 
   it("says when the system refused to open a Unifying receiver", () => {

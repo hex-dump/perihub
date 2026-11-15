@@ -252,6 +252,7 @@ describe("a device on a receiver that PeriHub does not support", () => {
         dpi: null,
         report_rates_ms: [],
         onboard: null,
+        lighting: null,
         read_errors: [],
       },
     ],

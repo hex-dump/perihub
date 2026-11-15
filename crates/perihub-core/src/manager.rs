@@ -152,8 +152,8 @@ type ReceiverPaths = (DeviceInfo, Option<DeviceInfo>);
 struct Probe {
     /// Slots whose device answers.
     online: Vec<u8>,
-    /// A paired device is turned off or asleep.
-    asleep: bool,
+    /// Slots whose paired device is turned off or asleep.
+    asleep: Vec<u8>,
     /// What each slot answered, for test reports.
     answers: Vec<String>,
 }
@@ -177,7 +177,7 @@ fn probe(api: &HidApi, (long, short): &ReceiverPaths) -> Result<Probe> {
         found.answers.push(format!("slot {slot}: {answer}"));
         match presence {
             Some(Presence::Online) => found.online.push(slot),
-            Some(Presence::Asleep) => found.asleep = true,
+            Some(Presence::Asleep) => found.asleep.push(slot),
             Some(Presence::Empty) => {}
             None => {
                 // A receiver that does not answer twice: nothing more to ask it in this pass.
@@ -729,7 +729,7 @@ impl Manager {
             {
                 let mut slots = self.slots.lock().unwrap();
                 let online = found.as_ref().map(|f| f.online.clone()).unwrap_or_default();
-                let sleeping = found.as_ref().is_ok_and(|f| f.asleep);
+                let sleeping = found.as_ref().is_ok_and(|f| !f.asleep.is_empty());
                 // Once per change: what the slots of a receiver with nothing to open answered.
                 let previous = slots.receiver_answers.insert(path.clone(), answers.clone());
                 if online.is_empty() && !sleeping && previous.as_ref() != Some(&answers) {
@@ -754,7 +754,12 @@ impl Manager {
                 }
             };
             let receiver = format!("{} {:04x}", receiver::name(paths.0.product_id()), paths.0.product_id());
-            if found.asleep {
+            // A device with a page of its own (a keyboard, say) asleep is not a mouse asleep (issue #30).
+            let mouse_asleep = {
+                let slots = self.slots.lock().unwrap();
+                found.asleep.iter().any(|&slot| !slots.receiver_unsupported.contains_key(&(path.clone(), slot)))
+            };
+            if mouse_asleep {
                 let seen = self.slots.lock().unwrap().receiver_models.get(&path).copied();
                 if asleep.is_none() {
                     asleep = Some((seen.unwrap_or(WIRELESS_MOUSE).to_string(), receiver.clone()));
@@ -768,8 +773,9 @@ impl Manager {
                 };
                 let model = match identity {
                     Ok(Ok(model)) => model,
+                    // It gets a page of its own (see `poll_logitech`): no note on the mouse entry, which
+                    // would list a mouse that is not there (issue #30).
                     Ok(Err(device)) => {
-                        note = Some(format!("{receiver}, slot {slot}: {} is not supported yet", device.label()));
                         self.slots.lock().unwrap().receiver_unsupported.insert((path.clone(), slot), device);
                         continue;
                     }

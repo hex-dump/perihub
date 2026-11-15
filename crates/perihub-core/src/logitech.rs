@@ -13,6 +13,7 @@ use std::time::{Duration, Instant};
 use serde::Serialize;
 
 use crate::error::{Error, Result};
+use crate::hidpp::lighting::LightingNow;
 use crate::hidpp::receiver::UnsupportedDevice;
 use crate::hidpp::{Access, Battery, DpiCapabilities, HidppDevice, feature};
 use crate::worker::DeviceTask;
@@ -28,6 +29,8 @@ pub struct LogitechLive {
     pub dpi: Option<u16>,
     /// The DPI PeriHub sets every time the device connects, if the user chose one.
     pub saved_dpi: Option<u16>,
+    /// Its lighting as it is now, if it has a lighting feature PeriHub reads.
+    pub lighting: Option<LightingNow>,
 }
 
 pub struct LogitechTask {
@@ -93,7 +96,21 @@ impl LogitechTask {
             }
         };
         let dpi = if self.device.dpi.is_some() { Some(self.dev.sensor_dpi(0)?.0) } else { None };
-        Ok(LogitechLive { battery, dpi, saved_dpi: self.saved_dpi })
+        let lighting = match &self.device.lighting {
+            Some(lighting) => {
+                let effects = lighting.effects.is_some();
+                match LightingNow::read(&mut self.dev, lighting, effects) {
+                    Ok(now) => Some(now),
+                    Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
+                    Err(e) => {
+                        log::debug!("{} lighting: {e}", self.device.label());
+                        None
+                    }
+                }
+            }
+            None => None,
+        };
+        Ok(LogitechLive { battery, dpi, saved_dpi: self.saved_dpi, lighting })
     }
 
     fn apply_dpi(&mut self, dpi: u16) -> Result<()> {
@@ -226,6 +243,7 @@ mod tests {
             dpi: dpi_feature.then(|| DpiCapabilities { min: 200, max: 8000, step: 50, list: Vec::new() }),
             report_rates_ms: Vec::new(),
             onboard,
+            lighting: None,
             read_errors: Vec::new(),
         };
         (LogitechTask::open(dev, device, saved), mouse)
