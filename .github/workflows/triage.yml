@@ -13,11 +13,9 @@ permissions:
   contents: read
 
 jobs:
+  # Every new issue: one made with a form has its label, and a report pasted as plain text (Copy test
+  # report instead of Open test form) is recognized by its first line and gets the label it lacks.
   triage:
-    if: >-
-      contains(github.event.issue.labels.*.name, 'device request') ||
-      contains(github.event.issue.labels.*.name, 'device test') ||
-      contains(github.event.issue.labels.*.name, 'mouse test')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

@@ -66,10 +66,51 @@ def brand_labels(usb: str | None, devices: list[dict]) -> list[str]:
     return labels
 
 
+TYPES = ("device request", "device test", "mouse test")
+
+
+def pasted(body: str) -> tuple[str, dict[str, str]] | None:
+    """A report from PeriHub pasted as plain text (Copy test report) instead of sent with its form:
+    the kind of issue it is, and the form fields it holds."""
+    lines = [line.strip() for line in (body or "").splitlines()]
+    start = next((i for i, line in enumerate(lines) if re.match(r"PeriHub \d+\.\d+\.\d+ on \S+", line)), None)
+    if start is None:
+        return None
+    rest = [line for line in lines[start + 1 :] if line]
+    second = rest[0] if rest else ""
+    text = "\n".join(lines[start:])
+    found = {"PeriHub version": lines[start], "USB ID (vendor:product)": usb_id(text) or ""}
+    if second.startswith("Mouse: ") and "reports itself as" in second:
+        kind = "mouse test"
+    elif second.startswith(("Receiver: ", "Mouse: ")) or (second.startswith("Device: ") and ", USB ID " in second):
+        kind = "device test"
+    elif second.startswith("Device: "):
+        kind = "device request"
+    else:
+        return None
+    return kind, found
+
+
+def kind_label(body: str) -> list[str]:
+    """"mouse" or "keyboard", when the report says what the device is."""
+    m = re.search(r"^Kind: (Mouse|Keyboard)\b|^Device: .*\((mouse|keyboard)\)|^(Mouse): ", body or "", re.M | re.I)
+    return [next(g for g in m.groups() if g).lower()] if m else []
+
+
 def triage(issue: dict, latest: str, devices: list[dict]) -> dict:
     labels = {label["name"] for label in issue.get("labels", [])}
     answers = fields(issue.get("body", ""))
-    result = {"comment": None, "labels": brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), devices)}
+    added = []
+    if not labels & set(TYPES):
+        found = pasted(issue.get("body", ""))
+        if not found:
+            return {"comment": None, "labels": []}
+        kind, answers = found
+        labels.add(kind)
+        added = [kind]
+    result = {"comment": None, "labels": added + brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), devices)}
+    if added:
+        result["labels"] += [k for k in kind_label(issue.get("body", "")) if k not in result["labels"]]
 
     if "device request" in labels:
         given = answers.get("USB ID (vendor:product)", "")
