@@ -1,0 +1,53 @@
+name: Tag a release
+
+# Actions → Tag a release → Run workflow, on main, once the "Version X.Y.Z" commit is pushed
+# (python3 tools/release.py bump X.Y.Z) and CI is green on it. Tags main with that version and starts
+# the release workflow, which builds the draft release. Publishing the draft stays a manual step.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  tag:
+    name: Tag main
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Version, changelog and CI
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')
+          if git rev-parse -q --verify "refs/tags/v$version" > /dev/null; then
+            echo "::error::v$version is already tagged: run python3 tools/release.py bump first"
+            exit 1
+          fi
+          grep -q "^## $version — " CHANGELOG.md || { echo "::error::CHANGELOG.md has no section for $version"; exit 1; }
+          python3 tools/release.py lint
+          python3 tools/release.py notes "$version" > /dev/null
+          ci=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$GITHUB_SHA" --json conclusion --jq '.[0].conclusion')
+          if [ "$ci" != success ]; then
+            echo "::error::CI on $GITHUB_SHA is '${ci:-not run}', not success"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Tag and start the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "PeriHub $VERSION"
+          git push origin "v$VERSION"
+          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref "v$VERSION"
+          echo "Tagged v$VERSION: the release workflow builds the draft." >> "$GITHUB_STEP_SUMMARY"

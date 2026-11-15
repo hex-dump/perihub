@@ -1,5 +1,9 @@
 # Changelog
 
+<!-- Each version: a summary paragraph, then these sections, in this order, as needed: New devices,
+Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
+GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
+
 ## Unreleased
 
 ### Added

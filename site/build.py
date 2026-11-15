@@ -25,7 +25,8 @@ ASSETS = {
     "DEB": "_amd64.deb",
     "RPM": ".x86_64.rpm",
     "FLATPAK": "_x86_64.flatpak",
-    "SUMS": "SHA256SUMS.txt",
+    # 0.8.4 has it without the extension.
+    "SUMS": ("SHA256SUMS.txt", "SHA256SUMS"),
 }
 # Releases before 0.6.8 have no Flatpak. When the latest release lacks one of these, the page drops
 # what is written between <!--if KEY--> and <!--end KEY-->.
@@ -42,8 +43,12 @@ def main() -> None:
 
     values = {"VERSION": release["tagName"].removeprefix("v")}
     missing = set()
-    for key, suffix in ASSETS.items():
-        found = [a for a in release["assets"] if a["name"].endswith(suffix)]
+    for key, suffixes in ASSETS.items():
+        suffixes = suffixes if isinstance(suffixes, tuple) else (suffixes,)
+        found = next(
+            (f for f in ([a for a in release["assets"] if a["name"].endswith(s)] for s in suffixes) if f), []
+        )
+        suffix = suffixes[0]
         if not found and key in OPTIONAL:
             missing.add(key)
             continue

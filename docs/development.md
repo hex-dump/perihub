@@ -109,6 +109,24 @@ family needs a header in `crates/xtask/src/udev.rs`, which says what the rule op
 generator stops until it is there. The level is worked out from the driver: read-only when it may
 send only read commands, experimental otherwise.
 
+## Releasing
+
+```sh
+python3 tools/release.py bump 0.8.5     # needs a summary paragraph under "## Unreleased" in CHANGELOG.md
+git commit -am "Version 0.8.5" && git push
+```
+
+Then, once CI is green on that commit, **Actions → Tag a release → Run workflow** on main. It tags the
+version and starts the release workflow, which builds the installers and the Flatpak into a draft
+release, checks every updater signature against the key in `tauri.conf.json` and `latest.json`
+against the files, attaches `SHA256SUMS.txt`, and writes the notes from the version's section of
+`CHANGELOG.md` (`python3 tools/release.py notes 0.8.5` shows them). Publishing the draft is up to
+you; once it is published the website shows the new downloads, and the AUR workflow commits
+`packaging/aur/perihub-bin` for it to main.
+
+`CHANGELOG.md` sections, in this order: New devices, Added, Performance, Changed, Fixed, Security,
+Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI runs it.
+
 ## Performance measurements
 
 The [Measure on Windows](../.github/workflows/measure-windows.yml) workflow installs a release (or

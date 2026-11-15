@@ -1,9 +1,14 @@
 name: Release
 
-# A vX.Y.Z tag creates a draft release with the Windows and Linux installers and the Flatpak bundle.
+# A vX.Y.Z tag creates a draft release with the Windows and Linux installers and the Flatpak bundle,
+# then checks the signatures and latest.json, attaches SHA256SUMS.txt and writes the notes from
+# CHANGELOG.md (tools/release.py). Publishing the draft stays a manual step.
 on:
   push:
     tags: ["v*"]
+  # Started by the "Tag a release" workflow on the tag it pushes: a tag pushed with GITHUB_TOKEN
+  # starts no workflow by itself.
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,6 +16,7 @@ permissions:
 jobs:
   build:
     name: Bundles (${{ matrix.os }})
+    if: startsWith(github.ref, 'refs/tags/v')
     strategy:
       fail-fast: false
       matrix:
@@ -79,6 +85,7 @@ jobs:
   # runtime. PeriHub is not on Flathub: the bundle is attached to the release like the other packages.
   flatpak:
     name: Flatpak bundle
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
@@ -112,3 +119,32 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$GITHUB_REF_NAME" PeriHub_*_x86_64.flatpak --clobber --repo "$GITHUB_REPOSITORY"
+
+  # Everything is on the draft: check it, add the checksums and the notes.
+  finish:
+    name: Checks, checksums and notes
+    needs: [build, flatpak-release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The tags, for the notes' comparison with the previous release.
+          fetch-depth: 0
+
+      - name: Download the draft's files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/release"
+
+      # Each signature against the updater key in tauri.conf.json, latest.json against the files.
+      - name: Signatures, latest.json and SHA256SUMS.txt
+        run: python3 tools/release.py check "$RUNNER_TEMP/release" "${GITHUB_REF_NAME#v}"
+
+      - name: Checksums, notes and title on the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/release/SHA256SUMS.txt" --clobber --repo "$GITHUB_REPOSITORY"
+          python3 tools/release.py notes "$version" > "$RUNNER_TEMP/notes.md"
+          gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md" --title "PeriHub $version" --repo "$GITHUB_REPOSITORY"

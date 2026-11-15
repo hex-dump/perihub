@@ -1,0 +1,45 @@
+name: AUR package
+
+# Once a release is published: packaging/aur/perihub-bin's PKGBUILD and .SRCINFO for it, with the
+# checksum of its .deb, committed to main. Publishing to aur.archlinux.org stays a manual step.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, such as v0.8.5
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aur
+  cancel-in-progress: false
+
+jobs:
+  pkgbuild:
+    name: PKGBUILD and .SRCINFO
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Update and commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*_amd64.deb' --dir "$RUNNER_TEMP/deb"
+          python3 tools/release.py aur "${TAG#v}" "$RUNNER_TEMP"/deb/*_amd64.deb
+          if git diff --quiet; then
+            echo "perihub-bin is already at ${TAG#v}."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "AUR: perihub-bin ${TAG#v}"
+          git push origin main

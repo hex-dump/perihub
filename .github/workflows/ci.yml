@@ -58,6 +58,11 @@ jobs:
           npm test
           npm run build
 
+      # Each version's section uses the sections the release notes know (tools/release.py).
+      - name: Changelog
+        if: runner.os == 'Linux'
+        run: python3 tools/release.py lint
+
       - name: Format
         run: cargo fmt --all --check
 
