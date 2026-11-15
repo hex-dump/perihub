@@ -1,6 +1,6 @@
 pkgbase = perihub-bin
 	pkgdesc = One app for gaming mice and keyboards across brands, instead of G HUB, GG, iCUE and Synapse
-	pkgver = 0.8.3
+	pkgver = 0.8.4
 	pkgrel = 1
 	url = https://github.com/hex-dump/perihub
 	arch = x86_64
@@ -22,9 +22,9 @@ pkgbase = perihub-bin
 	conflicts = perihub
 	options = !strip
 	options = !debug
-	source = https://github.com/hex-dump/perihub/releases/download/v0.8.3/PeriHub_0.8.3_amd64.deb
-	source = LICENSE-0.8.3::https://raw.githubusercontent.com/hex-dump/perihub/v0.8.3/LICENSE
-	sha256sums = 3d019b2be9dae653620baa40f799a2b8d66998203b95e14030022f9fc45e1b20
+	source = https://github.com/hex-dump/perihub/releases/download/v0.8.4/PeriHub_0.8.4_amd64.deb
+	source = LICENSE-0.8.4::https://raw.githubusercontent.com/hex-dump/perihub/v0.8.4/LICENSE
+	sha256sums = 77a6d20bd72b031cc2557b3412f658df26f987d613232d08d8d52183d29ecb39
 	sha256sums = 440e353d7bb443f50c947eacbc5a437d4707c6f0595b7fa509d530bab1aef67f
 
 pkgname = perihub-bin
