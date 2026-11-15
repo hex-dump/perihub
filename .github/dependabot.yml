@@ -28,3 +28,8 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+    ignore:
+      # v1 renames includeUpdaterJson and changes the download addresses in latest.json, which the
+      # installed copies use to update: release.yml stays on v0 until that is moved over and tested.
+      - dependency-name: tauri-apps/tauri-action
+        update-types: ["version-update:semver-major"]

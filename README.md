@@ -11,62 +11,88 @@
 
 <p align="center">
   <a href="https://github.com/hex-dump/perihub/releases/latest"><img src="https://img.shields.io/github/v/release/hex-dump/perihub?label=release" alt="Release"></a>
+  <a href="https://github.com/hex-dump/perihub/releases"><img src="https://img.shields.io/github/downloads/hex-dump/perihub/total?label=downloads" alt="Downloads"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-informational" alt="Windows and Linux">
   <a href="https://github.com/hex-dump/perihub/actions/workflows/ci.yml"><img src="https://github.com/hex-dump/perihub/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/hex-dump/perihub" alt="MIT license"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/hex-dump/perihub/releases/latest"><b>Download</b></a> ·
-  <a href="https://hex-dump.github.io/perihub/">Website</a> ·
-  <a href="docs/devices.md">Devices</a> ·
-  <a href="https://github.com/hex-dump/perihub/discussions">Discussions</a>
+  <a href="https://github.com/hex-dump/perihub/releases/latest"><b>⬇️ Download</b></a> ·
+  <a href="https://hex-dump.github.io/perihub/">🌐 Website</a> ·
+  <a href="docs/devices.md">🖱️ Devices</a> ·
+  <a href="https://github.com/hex-dump/perihub/discussions/categories/ideas">💡 Ideas</a> ·
+  <a href="https://github.com/hex-dump/perihub/discussions">💬 Discussions</a>
 </p>
 
 ![Keyboard lighting](docs/screenshots/keyboard-lighting.png)
 
-- **Free and open source**, no account, no ads, no telemetry.
-- **Small**: an installer under 5 MB, about 4 MB of memory while it waits in the tray.
-- **Settings stay in your devices**: key mapping, mouse profiles, DPI and macros keep working with PeriHub closed, on any PC.
+## Highlights
+
+- 🆓 **Free and open source**: no account, no ads, no telemetry.
+- 🪶 **Small**: an installer under 5 MB, about 4 MB of memory while it waits in the tray.
+- 💾 **Settings stay in your devices**: key mapping, mouse profiles, DPI and macros keep working with PeriHub closed, on any PC.
+- 🛡️ **Careful with your devices**: only known commands, a backup before every write, and every write read back ([how](#safety)).
+- 🧩 **Many brands in one app**: Logitech, SteelSeries, Corsair, Razer, ASUS and more ([devices](#devices)).
+- 🎮 **App profiles**: the lighting and the mouse profile follow the game or app in focus.
 
 ## Contents
 
-- [Devices](#devices)
-- [What PeriHub can do](#what-perihub-can-do)
-- [Experimental features](#experimental-features)
-- [Download and install](#download-and-install)
-- [Using PeriHub](#using-perihub)
-- [Safety](#safety)
-- [Performance](#performance)
-- [FAQ](#faq)
-- [Known limitations](#known-limitations)
-- [Help and contributing](#help-and-contributing)
-- [Credits and license](#credits-and-license)
+- 🚀 [Quick start](#quick-start)
+- 🖱️ [Devices](#devices)
+- ✨ [What PeriHub can do](#what-perihub-can-do)
+- 🧪 [Experimental features](#experimental-features)
+- ⬇️ [Download and install](#download-and-install)
+- 🕹️ [Using PeriHub](#using-perihub)
+- 🛡️ [Safety](#safety)
+- ⚡ [Performance](#performance)
+- ❓ [FAQ](#faq)
+- ⚠️ [Known limitations](#known-limitations)
+- 🤝 [Help and contributing](#help-and-contributing)
+- 📜 [Credits and license](#credits-and-license)
+
+## Quick start
+
+1. **Download** the file for your system from the [latest release](https://github.com/hex-dump/perihub/releases/latest): the `setup.exe` on Windows; the `.deb`, `.rpm`, Flatpak or AppImage on Linux ([which one](#download-and-install)).
+2. **Quit the maker's app** (G HUB, GG, iCUE, Synapse…) and turn off its autostart: two programs talking to the same device get in each other's way.
+3. **Open PeriHub**: your devices appear in the sidebar. Not there? Its **Send a report** page helps you ask for them.
 
 ## Devices
 
-| Device | Support |
+✅ **Supported**: tested on real hardware · 🧪 **Experimental**: recognized, changes at your own risk · 👁 **Read-only**: recognized and read
+
+### Tested on real hardware
+
+| Device | What works |
 |---|---|
-| **SteelSeries Apex 3 TKL** keyboard | ✅ Fully supported, tested on real hardware |
-| **Logitech G502 HERO** mouse | ✅ Fully supported, tested on real hardware |
-| **Logitech G502 X Wireless** mouse | ✅ Supported: profiles, DPI, buttons and macros, confirmed by a user on a real mouse |
-| **Logitech G300** mouse | ✅ Supported: its three profiles can be read and edited, confirmed by a user on a real G300 |
-| 26 more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
-| Logitech devices on a **Logi Bolt** or **Unifying** receiver (MX Master, MX Anywhere, MX Keys…) | 🧪 Experimental: recognized by the features they report; the DPI of those without onboard memory can be changed, everything else is read |
-| 26 **Corsair mice** and 23 **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Experimental: read, and one colour of lighting for the session, at your own risk |
-| 33 **SteelSeries mice** (Rival, Sensei, Aerox, Prime, Kana, Kinzu) | 🧪 Experimental: these mice cannot report their settings; DPI, polling rate, colours and effects can be sent one at a time, never saved to the mouse ([how](#mice-and-keyboards-of-other-brands)) |
-| 75 **Razer mice** (DeathAdder, Viper, Basilisk, Naga, Orochi…) on their USB cable | 🧪 Experimental: read; DPI, polling rate and the brightness of the lights can be saved at your own risk, and on 27 of them one colour can be sent without saving it ([how](#mice-and-keyboards-of-other-brands)) |
-| 21 **ASUS ROG and TUF mice** (Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3…) | 🧪 Experimental: read; DPI, polling rate, button response, angle snapping and lighting can be changed at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
-| 3 **Glorious mice** (Model O/O-, Model D, Model O Eternal) with a cable | 🧪 Experimental: read; on Linux DPI and polling rate can be saved at your own risk, on Windows read-only for now ([how](#mice-and-keyboards-of-other-brands)) |
-| 7 **Pulsar mice** (Xlite, X2, X2H, X2A, Xlite v4, X3, X3 LHD) on their USB cable | 🧪 Experimental: read; DPI, polling rate, debounce time, angle snapping, ripple control and motion sync can be saved at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
-| **Pulsar X2 CrazyLight, X3 LHD CrazyLight** on their USB cable | 🧪 Experimental: read; DPI, polling rate, lift-off, debounce, motion sync, angle snapping and ripple control can be saved at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
-| **Lamzu Atlantis** on its USB cable | 👁 Read-only ([how](#mice-and-keyboards-of-other-brands)) |
-| 4 **Cooler Master mice** (MM530, MM711, MM720, MM730) | 🧪 Experimental: lighting only; colour, brightness and mode can be saved at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
-| **EVGA X12, X20** with a cable | 🧪 Experimental: lighting only; on the X12 colour, brightness and off can be saved at your own risk, the X20 is read-only ([how](#mice-and-keyboards-of-other-brands)) |
-| **Roccat Kone Pure, Kone XTD, Kone EMP** | 👁 Read-only: profile in use, DPI levels and polling rate ([how](#mice-and-keyboards-of-other-brands)) |
-| **Logitech G600** | 🧪 Experimental: read; DPI, polling rate and lighting of the profile in use can be saved at your own risk ([how](#mice-and-keyboards-of-other-brands)) |
-| **Logitech G500s, G700s** with a cable, whose software Logitech no longer offers | 🧪 Experimental: read the profile in use; the DPI in use can be changed, not saved, at your own risk; their memory is never written ([how](#mice-and-keyboards-of-other-brands)) |
-| **Logitech G9, G9x, G500, G700** with a cable | 👁 Read-only: profile in use, DPI, polling rate and buttons ([how](#mice-and-keyboards-of-other-brands)) |
-| **Keyboards with QMK firmware**: every Vial keyboard, and VIA keyboards you turn on | 🧪 Experimental: read; lighting can be changed at your own risk, keymaps are left to VIA and Vial ([how](#mice-and-keyboards-of-other-brands)) |
+| **SteelSeries Apex 3 TKL** keyboard | ✅ Everything: lighting, brightness, key remapping on both layers, software macros |
+| **Logitech G502 HERO** mouse | ✅ Everything: profiles, DPI, polling rate, buttons, G-Shift, macros, lighting |
+| **Logitech G502 X Wireless** mouse | ✅ Profiles, DPI, buttons and macros, confirmed by a user on a real mouse |
+| **Logitech G300** mouse | ✅ Its three profiles, read and edited, confirmed by a user on a real G300 |
+
+### Recognized, waiting for a test report
+
+| Devices | Level and what PeriHub can do |
+|---|---|
+| <!-- generated: count logitech-onboard:by-memory-format -->26<!-- end generated --> more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
+| Logitech devices on a **Logi Bolt** or **Unifying** receiver (MX Master, MX Anywhere, MX Keys…) | 🧪 Recognized by the features they report; the DPI of those without onboard memory can be changed, everything else is read |
+| **Logitech G600** | 🧪 Read; DPI, polling rate and lighting of the profile in use can be saved at your own risk |
+| **Logitech G500s, G700s** with a cable, whose software Logitech no longer offers | 🧪 Read the profile in use; the DPI in use can be changed, not saved; their memory is never written |
+| **Logitech G9, G9x, G500, G700** with a cable | 👁 Profile in use, DPI, polling rate and buttons |
+| <!-- generated: count Corsair:mouse -->26<!-- end generated --> **Corsair mice** and <!-- generated: count Corsair:keyboard -->23<!-- end generated --> **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Read, and one colour of lighting for the session, at your own risk |
+| <!-- generated: count razer -->74<!-- end generated --> **Razer mice** (DeathAdder, Viper, Basilisk, Naga, Orochi…) on their USB cable | 🧪 Read; DPI, polling rate and the brightness of the lights can be saved at your own risk, and on <!-- generated: count colour -->27<!-- end generated --> of them one colour can be sent without saving it |
+| <!-- generated: count steelseries-mice -->33<!-- end generated --> **SteelSeries mice** (Rival, Sensei, Aerox, Prime, Kana, Kinzu) | 🧪 They cannot report their settings: DPI, polling rate, colours and effects are sent one at a time, never saved to the mouse |
+| <!-- generated: count asus -->21<!-- end generated --> **ASUS ROG and TUF mice** (Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3…) | 🧪 Read; DPI, polling rate, button response, angle snapping and lighting can be changed at your own risk |
+| <!-- generated: count glorious -->3<!-- end generated --> **Glorious mice** (Model O/O-, Model D, Model O Eternal) with a cable | 🧪 Read; on Linux DPI and polling rate can be saved at your own risk, on Windows read-only for now |
+| <!-- generated: count pulsar -->7<!-- end generated --> **Pulsar mice** (Xlite, X2, X2H, X2A, Xlite v4, X3, X3 LHD) on their USB cable | 🧪 Read; DPI, polling rate, debounce time, angle snapping, ripple control and motion sync can be saved at your own risk |
+| **Pulsar X2 CrazyLight, X3 LHD CrazyLight** on their USB cable | 🧪 Read; DPI, polling rate, lift-off, debounce, motion sync, angle snapping and ripple control can be saved at your own risk |
+| **Lamzu Atlantis** on its USB cable | 👁 Read-only |
+| <!-- generated: count coolermaster -->4<!-- end generated --> **Cooler Master mice** (MM530, MM711, MM720, MM730) | 🧪 Lighting only: colour, brightness and mode can be saved at your own risk |
+| **EVGA X12, X20** with a cable | 🧪 Lighting only: on the X12 colour, brightness and off can be saved at your own risk; the X20 is read-only |
+| **Roccat Kone Pure, Kone XTD, Kone EMP** | 👁 Profile in use, DPI levels and polling rate |
+| **Keyboards with QMK firmware**: every Vial keyboard, and VIA keyboards you turn on | 🧪 Read; lighting can be changed at your own risk, keymaps are left to VIA and Vial |
+
+How PeriHub changes the devices of each brand: [Mice and keyboards of other brands](#mice-and-keyboards-of-other-brands).
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
 
@@ -111,12 +137,12 @@ Not on the list? Open a [device request](https://github.com/hex-dump/perihub/iss
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/keyboard-keys.png" alt="Key remapping"></td>
-    <td><img src="docs/screenshots/mouse-dpi.png" alt="Mouse DPI and polling rate"></td>
+    <td width="50%"><img src="docs/screenshots/keyboard-keys.png" alt="Key remapping"><br><sub><b>Key remapping</b> on both layers of the Apex 3 TKL</sub></td>
+    <td width="50%"><img src="docs/screenshots/mouse-dpi.png" alt="Mouse DPI and polling rate"><br><sub><b>DPI and polling rate</b>, previewed live on the mouse</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/mouse-buttons.png" alt="Mouse buttons"></td>
-    <td><img src="docs/screenshots/mouse-lighting.png" alt="Mouse lighting"></td>
+    <td><img src="docs/screenshots/mouse-buttons.png" alt="Mouse buttons"><br><sub><b>Buttons and G-Shift</b>, saved in the mouse</sub></td>
+    <td><img src="docs/screenshots/mouse-lighting.png" alt="Mouse lighting"><br><sub><b>Lighting</b> of each zone</sub></td>
   </tr>
 </table>
 
@@ -149,34 +175,91 @@ One test report is enough to make a format tested for every mouse that uses it: 
 
 ### Mice and keyboards of other brands
 
-ASUS mice are supported from the published documentation of their protocol ([libratbag](https://github.com/libratbag/libratbag)), not from a test on a real device. PeriHub reads them; their page can change the active profile's settings:
+The other brands are supported from the published documentation of their protocols, not from a test on a real device. ASUS mice ([libratbag](https://github.com/libratbag/libratbag)) show how a change works; the others follow the same rules where they apply, and each one's differences are below. PeriHub reads them; their page can change the active profile's settings:
 
 - **Apply** sends a change without saving it to the device's memory. It should last until the device is turned off, but that is not confirmed, so the page always shows a warning next to it.
 - **Save to memory** also stores it in the device, after the **No warranty** box the first time.
 - Either way PeriHub sends only the commands in its list for that device (never anything that touches firmware) and only values the device accepts. It saves a backup of the settings first and reads them back after, and the change is undone after 15 seconds unless you keep it, also after PeriHub closed or the device was unplugged. The undo of a **Save to memory** saves back the settings the device had when PeriHub connected.
 - If anything the device answers does not look as documented, PeriHub changes nothing on it and the test report shows exactly what it answered.
 
+What PeriHub reads and changes on each brand, and where its protocol comes from:
+
+<details>
+<summary><b>Razer mice</b></summary>
+
 Razer mice are supported from facts found in [OpenRazer](https://github.com/openrazer/openrazer), with no code copied. They store every change by themselves, so their page offers only **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo: DPI, polling rate and the brightness of each light. Their lighting effect cannot be read back, so PeriHub never stores one: on <!-- generated: count colour -->27<!-- end generated --> mice **Send** shows one colour, sent the way OpenRazer sends its custom frames, without saving it, with a warning that it cannot be checked or undone. Their receivers and docks are left out, since some can be shared with a keyboard: use the USB cable.
+
+</details>
+
+<details>
+<summary><b>Glorious mice</b></summary>
 
 Glorious mice are supported from the published documentation of their SinoWealth protocol ([libratbag](https://github.com/libratbag/libratbag)). Every change rewrites their settings in memory, so their page too offers only **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo; PeriHub changes only the DPI of each slot and the polling rate, and writes everything else back as it read it, never on top of a reading that differs from the one taken when the mouse was connected. On Windows they are read-only for now: there the mouse does not say how long its settings are, and a write must. Only the ids that belong to Glorious are recognized: the generic SinoWealth ids are shared by other brands' mice, some with a different protocol.
 
+</details>
+
+<details>
+<summary><b>Logitech G600</b></summary>
+
 The **Logitech G600** is supported from the documentation of its protocol in [libratbag](https://github.com/libratbag/libratbag). It keeps three profiles in vendor reports of its own, not HID++, and writing a profile stores it, so its page too offers only **Save to memory** on the profile in use, after the **No warranty** box, with the same backup, read-back and 15-second undo. PeriHub changes the DPI of the slots that are on, the polling rate and the lighting, writes the buttons and everything else back as it read it, and never writes on top of a profile that changed since the mouse was connected.
+
+</details>
+
+<details>
+<summary><b>Older Logitech mice: G9, G9x, G500, G500s, G700, G700s</b></summary>
 
 The **older Logitech G mice**, G9, G9x, G500, G500s, G700 and G700s, lost their software when Logitech removed Logitech Gaming Software from its site on 31 October 2026. PeriHub reads them from the documentation of their HID++ 1.0 protocol in [libratbag](https://github.com/libratbag/libratbag): the DPI in use, the polling rate, and what the profile in use stores (DPI levels, polling rate, buttons, its name). On the **G500s and G700s** it can change the DPI in use, with the same read-back and 15-second undo; according to libratbag the mouse forgets it when unplugged, which nobody has confirmed yet; the others are read-only, since the sources disagree on how their DPI is coded. PeriHub never writes their memory: their stored profiles and macros stay as they are. Only with the cable. The **G400s** is not supported: the only known way to configure it is a raw USB request PeriHub cannot send, and it reads nothing back.
 
+</details>
+
+<details>
+<summary><b>Roccat Kone mice</b></summary>
+
 The **Roccat Kone Pure, Kone XTD and Kone EMP** are read only, from [libratbag](https://github.com/libratbag/libratbag): PeriHub shows the profile in use, its DPI levels and polling rate, and changes nothing, since the sources disagree on what a write needs.
+
+</details>
+
+<details>
+<summary><b>Pulsar mice</b></summary>
 
 **Pulsar mice** on their USB cable (Xlite, X2, X2H, X2A, Xlite v4, X3 and X3 LHD) are supported from [pulsar-mouse-linux](https://github.com/packerlschupfer/pulsar-mouse-linux), a recent project built from USB captures. They store every change by themselves, so their page offers only **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo. PeriHub changes the polling rate, debounce time, angle snapping, ripple control, motion sync and the DPI of each stage of the profile in use; it never switches or resets a profile, and leaves buttons, lighting and lift-off alone. Their wireless dongles are left out.
 
+</details>
+
+<details>
+<summary><b>Pulsar CrazyLight and Lamzu Atlantis</b></summary>
+
 The **Pulsar X2 CrazyLight and X3 LHD CrazyLight** on their cable speak another protocol, also from pulsar-mouse-linux, whose author confirmed reads and writes on both: the same **Save to memory** with backup, read-back and undo, and every value checked against the check byte the mouse stores beside it. The **Lamzu Atlantis** shares that protocol ([lamzu-cfg](https://github.com/LeadSun/lamzu-cfg)) and is read only for now.
+
+</details>
+
+<details>
+<summary><b>Cooler Master mice</b></summary>
 
 The lighting of four **Cooler Master mice** (MM530, MM711, MM720, MM730) is supported from the USB captures of Cooler Master's own app that users attached to [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s device requests, with no code copied. Every change goes through the app's save sequence, so their page offers only **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo: colour and brightness of the mode in use, and steady, breathing, colour cycle or off.
 
+</details>
+
+<details>
+<summary><b>EVGA mice</b></summary>
+
 The lighting of two **EVGA mice** is supported from facts in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVGA drivers, with no code copied. On the **X12** PeriHub turns each zone off or steady and changes its colour and brightness with **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo; the **X20** on its cable is read only. The Z15 and Z20 keyboards are left out.
+
+</details>
+
+<details>
+<summary><b>Keyboards with QMK firmware (Vial, VIA)</b></summary>
 
 Keyboards with **QMK firmware** are supported from facts found in the [QMK](https://github.com/qmk/qmk_firmware) and [Vial](https://github.com/vial-kb/vial-qmk) sources, with no code copied. They have no USB ids of their own, so PeriHub finds them by the raw HID channel that VIA and Vial use, and lists them on the **QMK keyboards** page. **Vial** keyboards say so in their serial number and are read by themselves. Any other keyboard with that channel is read only after you turn it on as a VIA keyboard, since its firmware might give VIA's bytes another meaning. PeriHub shows the protocol versions, layers and macros, and the lighting: effect, speed, colour and brightness, with **Apply** and **Save to memory** as above. It changes the lighting only on Vial keyboards with VialRGB and on VIA firmware from 2023 on (protocol 12 or 13), where the protocol says exactly how; VIA effects have no names, so their page offers off and the effect in use. Keymaps, macros, the bootloader and the memory resets are never touched: use VIA or Vial for them, and close them while PeriHub reads the keyboard.
 
+</details>
+
+<details>
+<summary><b>SteelSeries mice</b></summary>
+
 SteelSeries mice are supported from [rivalcfg](https://github.com/flozz/rivalcfg), and PeriHub sends exactly the bytes rivalcfg's own tests expect. These mice **cannot report their settings**, so PeriHub cannot show, check or undo them: **Send** changes one setting until the mouse is unplugged or turned off, under a warning that is always on screen, and PeriHub never saves to their memory until someone has tested one. Unplugging the mouse brings back what it has saved.
+
+</details>
 
 ### Help test your device
 
@@ -325,23 +408,47 @@ We do not publish numbers for G HUB or GG: we have not measured them on the same
 
 ## FAQ
 
-**Can I keep GG, G HUB or iCUE running?**
+<details>
+<summary><b>Can I keep GG, G HUB or iCUE running?</b></summary>
+
 No: quit them and turn off their autostart. G HUB, for example, takes control of the mouse when it starts and after every wake-up, so the mouse stops using its onboard profiles. PeriHub shows a warning while G HUB runs, and gives the mouse its profiles back when G HUB is closed.
 
-**Does this void my warranty?**
+</details>
+
+<details>
+<summary><b>Does this void my warranty?</b></summary>
+
 PeriHub does not touch the firmware. It writes only settings (profiles, key mapping) that the official apps write too. Experimental features come with [no warranty](#experimental-features).
 
-**Why does the keyboard go back to the rainbow when PeriHub is closed?**
+</details>
+
+<details>
+<summary><b>Why does the keyboard go back to the rainbow when PeriHub is closed?</b></summary>
+
 The Apex 3 TKL does not store colors, with GG too. PeriHub reapplies them as soon as it sees the keyboard.
 
-**How do I undo a change?**
+</details>
+
+<details>
+<summary><b>How do I undo a change?</b></summary>
+
 **Backups…** on the mouse page or the keyboard's Keys page, then **Restore** on the newest backup. For factory settings: **Keys → Reset all to factory** on the keyboard, **Factory settings** on each mouse profile.
 
-**Something does not work: what should I attach to a bug report?**
+</details>
+
+<details>
+<summary><b>Something does not work: what should I attach to a bug report?</b></summary>
+
 The log file: **Settings → Problems → Open log folder**. It records devices connecting, errors and updates, never your key presses or the apps you use.
 
-**Is PeriHub available in other languages?**
+</details>
+
+<details>
+<summary><b>Is PeriHub available in other languages?</b></summary>
+
 The interface is in English. More languages are planned.
+
+</details>
 
 ## Known limitations
 
@@ -369,7 +476,8 @@ PeriHub is free. If it spared you an official app and you'd like to say thanks, 
 
 ## Credits and license
 
-The protocols were worked out thanks to:
+<details>
+<summary><b>Where the protocols come from</b></summary>
 
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB): the Apex 8-zone lighting protocol. No code was copied.
 - [libratbag](https://github.com/libratbag/libratbag) (MIT): Logitech HID++ 2.0, onboard profiles, the list of Logitech mice and the G300's format.
@@ -383,6 +491,8 @@ The protocols were worked out thanks to:
 - The USB captures of Cooler Master's app attached to [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s device requests: the Cooler Master mice's lighting, described in our own words in [docs/protocols/coolermaster-mm.md](docs/protocols/coolermaster-mm.md). No code was copied.
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVGA drivers: the EVGA X12 and X20 lighting, described in our own words in [docs/protocols/evga-mice.md](docs/protocols/evga-mice.md). No code was copied.
 - [QMK](https://github.com/qmk/qmk_firmware) and [Vial](https://github.com/vial-kb/vial-qmk): the VIA and Vial protocols and how QMK keyboards present their raw HID channel, described in our own words in [docs/protocols/qmk-via-vial.md](docs/protocols/qmk-via-vial.md). No code was copied.
+
+</details>
 
 The notices of the projects PeriHub takes code or data from are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which comes with every package.
 
