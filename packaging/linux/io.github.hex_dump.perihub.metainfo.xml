@@ -94,6 +94,11 @@
   </requires>
 
   <releases>
+    <release version="0.8.4" date="2026-11-15">
+      <description>
+        <p>On Windows a mouse behind a LIGHTSPEED, Bolt or Unifying receiver is found, and a mouse with a tested memory format can be saved to through its receiver, as an experimental feature. Also: the G502 HERO Wireless's lights have the right names.</p>
+      </description>
+    </release>
     <release version="0.8.3" date="2026-11-14">
       <description>
         <p>A LIGHTSPEED receiver whose mouse does not answer, such as a POWERPLAY mat's, is shown with a test report instead of "No device found", and the mouse test report lists the mouse's HID++ features.</p>

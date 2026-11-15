@@ -357,8 +357,8 @@
 {/if}
 {#if info?.experimental && info.receiver}
   <div class="notice error">
-    <b>Experimental: saving through the receiver.</b> PeriHub has saved to this memory format with the USB cable, but
-    never over the radio, as Logitech G HUB does. You can change and save the {info.model}'s profiles at your own risk:
+    <b>Experimental: saving through the receiver.</b> PeriHub has saved to this memory format with the USB cable, and
+    over the radio, as Logitech G HUB does, on one mouse so far (a G502 HERO Wireless on a POWERPLAY mat). You can change and save the {info.model}'s profiles at your own risk:
     every save is backed up, and undone after 15 seconds unless you keep it. Keep the mouse charged and close to its
     receiver while saving. Whether it works or not, please send your feedback with a mouse test report.
     <div class="row report">

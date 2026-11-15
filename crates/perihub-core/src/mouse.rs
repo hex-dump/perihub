@@ -192,7 +192,7 @@ impl Support {
 /// - any other memory: read-only.
 ///
 /// Through a LIGHTSPEED receiver, as G HUB does, but experimental and only on a tested
-/// memory: PeriHub has never saved over the radio on a real mouse, so each save is undone unless
+/// memory: only one mouse has been saved to over the radio (issue #28), so each save is undone unless
 /// the user keeps it, and a memory nobody has tested is not tried over the radio on top of that.
 pub fn support(model: &MouseModel, onboard: &OnboardInfo, receiver: bool, untested_saves: bool) -> Support {
     let known = WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)

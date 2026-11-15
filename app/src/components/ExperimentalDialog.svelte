@@ -31,9 +31,9 @@
     <h2 id="experimental-title">Save to the {model}?</h2>
     {#if receiver}
       <p>
-        PeriHub has saved to the {model}'s memory format with the USB cable, but never through a LIGHTSPEED receiver.
-        Logitech G HUB saves this way too, and the commands are the same as with the cable, so saving should work, but
-        PeriHub has not proven it yet.
+        PeriHub has saved to the {model}'s memory format with the USB cable, but through a LIGHTSPEED receiver only on
+        one mouse so far (a G502 HERO Wireless on a POWERPLAY mat). Logitech G HUB saves this way too, and the commands
+        are the same as with the cable, so saving should work, but it has not been proven on many mice yet.
       </p>
     {:else}
       <p>

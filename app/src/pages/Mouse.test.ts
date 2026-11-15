@@ -616,7 +616,7 @@ describe("a tested mouse", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Save to mouse" }));
     await wait(0);
     const dialog = screen.getByRole("dialog");
-    expect(dialog.textContent).toContain("never through a LIGHTSPEED receiver");
+    expect(dialog.textContent).toContain("through a LIGHTSPEED receiver only on");
     expect(dialog.textContent).not.toContain("saving through a LIGHTSPEED receiver");
     expect(api.saveProfile).not.toHaveBeenCalled();
     await fireEvent.click(screen.getByRole("checkbox", { name: /I have read this/ }));

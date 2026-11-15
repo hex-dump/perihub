@@ -72,7 +72,8 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   feature (No warranty box, 15-second undo, not below 15% battery); otherwise it only reads. A G903 HERO
   was reached and read through a `c539` receiver on Linux
   ([issue #22](https://github.com/hex-dump/perihub/issues/22)), and a G502 HERO Wireless through a
-  POWERPLAY mat (`c53a`) on Windows ([issue #4](https://github.com/hex-dump/perihub/issues/4)).
+  POWERPLAY mat (`c53a`) on Windows was read and saved to ([issues #4](https://github.com/hex-dump/perihub/issues/4)
+  and [#28](https://github.com/hex-dump/perihub/issues/28)): the only mouse saved to over the radio so far.
 - **The Logi Bolt receiver** (`046d:c548`) and **the Unifying receivers** (`046d:c52b`, `c532`)
   are recognized. Every device paired with them that answers, mouse or keyboard, gets a page of
   its own in the sidebar, built from the HID++ features it reports: what kind of device it is, what
