@@ -5,6 +5,7 @@ mod catalog;
 mod docs;
 mod json;
 mod metainfo;
+mod preview;
 mod select;
 mod site;
 mod udev;
@@ -12,7 +13,7 @@ mod udev;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-fn root() -> PathBuf {
+pub fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
@@ -29,6 +30,7 @@ fn generated() -> Vec<(&'static str, String)> {
         (site::PATH, site::render(&read(site::PATH), &devices)),
         (metainfo::PATH, metainfo::render(&read(metainfo::PATH), &devices)),
         (json::PATH, json::render(&devices)),
+        (preview::PATH, preview::render()),
     ]
 }
 

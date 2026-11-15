@@ -3,3 +3,4 @@ app/node_modules/
 app/dist/
 app/src-tauri/gen/
 __pycache__/
+app/preview-dist/

@@ -150,6 +150,7 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 | Links | Mondays | broken links in the README, docs and website, in one issue |
 | Security advisories | Mondays | known vulnerabilities in the Rust crates and npm packages |
 | Dependabot | weekly | one pull request per ecosystem (Cargo, npm, Actions) |
+| Screenshots | by hand, a published release | `docs/screenshots` and the social preview from the interface with simulated devices (`npm run screenshots`, `app/preview`), committed when they change |
 
 ## Performance measurements
 
