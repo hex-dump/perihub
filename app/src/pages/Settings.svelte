@@ -4,6 +4,7 @@
   import { api, errorText, type AppSettings, type DeviceStatus } from "../lib/api";
   import { INSTALL_NOTE, checkForUpdate, installUpdate, installingText, updates } from "../lib/updates.svelte";
   import TestReport from "../components/TestReport.svelte";
+  import CreditsDialog from "../components/CreditsDialog.svelte";
 
   interface Props {
     status: DeviceStatus;
@@ -13,6 +14,7 @@
   let settings = $state<AppSettings | null>(null);
   let error = $state<string | null>(null);
   let version = $state("");
+  let showCredits = $state(false);
 
   // Autostart can also change outside PeriHub, for example in Task Manager.
   async function refresh() {
@@ -142,23 +144,19 @@
   </div>
 
   <div class="card col">
-    <h2>Credits</h2>
-    <p class="small">PeriHub {version}</p>
-    <p class="muted small">
-      Protocols reconstructed thanks to the work of OpenRGB (Apex lighting), libratbag (Logitech HID++, G600, the older
-      Logitech G mice, ASUS, Glorious and Roccat mice), gorkemgun/apex-3-tkl (Apex key mapping), ckb-next and OpenLinkHub (Corsair, no code
-      copied), OpenRazer (Razer mice, no code copied), rivalcfg (SteelSeries mice), QMK and Vial (QMK keyboards, no
-      code copied), pulsar-mouse-linux and Pulsar-X3-Web-Config (Pulsar mice), lamzu-cfg (Lamzu), the captures of
-      Cooler Master's app shared on OpenRGB (Cooler Master mice, no code copied) and OpenRGB's EVGA drivers (EVGA mice,
-      no code copied). PeriHub is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat,
-      Pulsar, Lamzu, Cooler Master or EVGA.
-    </p>
+    <h2>About</h2>
+    <div class="row wrap">
+      <span class="small">PeriHub {version}</span>
+      <button class="ghost small" onclick={() => (showCredits = true)}>Credits</button>
+    </div>
   </div>
 
   <div>
     <button class="danger" onclick={() => api.quit()}>Quit PeriHub</button>
   </div>
 </div>
+
+{#if showCredits}<CreditsDialog onclose={() => (showCredits = false)} />{/if}
 
 <style>
   h1 {

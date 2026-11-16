@@ -10,6 +10,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 - **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.
 
 ### Changed
+- **Credits are in a dialog**: Settings → About has a **Credits** button that opens a scrollable list of every project PeriHub takes code, data or facts from, grouped, each with its link, license, copyright and what was taken. It now also lists the Linux kernel, Solaar, linuxhw/LsUSB, Vial's GUI and the other projects of THIRD-PARTY-NOTICES.md that the old text left out.
 - The udev rule, the device list, the website's catalogue and the AppStream metadata are now generated from PeriHub's own driver tables, so they can no longer disagree. The rule opens exactly the same interfaces as before. Razer mice are counted by name: 74, not 75, since the DeathAdder V3 Pro (Wired) has two USB ids.
 
 ## 0.8.4 — 2026-11-15
