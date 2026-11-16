@@ -94,8 +94,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Flathub's runtime download sometimes fails with "Failed to update org.gnome.Sdk: Invalid cross-device
+      # link": one more try is enough.
       - name: Build the bundle
-        run: packaging/flatpak/build-local.sh --system
+        run: |
+          packaging/flatpak/build-local.sh --system || {
+            echo "::warning::The Flatpak build failed, trying once more"
+            packaging/flatpak/build-local.sh --system
+          }
 
       - uses: actions/upload-artifact@v7
         with:

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Reads a new device request or test report and says what the triage workflow should do.
 
-  triage.py EVENT.json LATEST_VERSION   → {"comment": "..." or null, "labels": [...]}
+  triage.py EVENT.json LATEST_VERSION [RELEASED_DEVICES.json]   → {"comment": "..." or null, "labels": [...]}
 
-A request for a device PeriHub already recognizes gets an answer with its level, and a test
+A request for a device the latest release recognizes gets an answer with its level, and a test
 report from an older version gets asked to try the latest one. Everything else is left to a person.
+RELEASED_DEVICES.json is site/devices.json as of the latest release's tag: a device that is only on
+main is not in it, and is left to the maintainer, since no published version has it. Without it,
+site/devices.json is used for both.
 The issue text comes from anyone: it is only parsed, never run.
 """
 
@@ -97,7 +100,9 @@ def kind_label(body: str) -> list[str]:
     return [next(g for g in m.groups() if g).lower()] if m else []
 
 
-def triage(issue: dict, latest: str, devices: list[dict]) -> dict:
+def triage(issue: dict, latest: str, devices: list[dict], current: list[dict] | None = None) -> dict:
+    """devices: those the latest release knows. current: those on main, for the labels."""
+    current = devices if current is None else current
     labels = {label["name"] for label in issue.get("labels", [])}
     answers = fields(issue.get("body", ""))
     added = []
@@ -108,7 +113,7 @@ def triage(issue: dict, latest: str, devices: list[dict]) -> dict:
         kind, answers = found
         labels.add(kind)
         added = [kind]
-    result = {"comment": None, "labels": added + brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), devices)}
+    result = {"comment": None, "labels": added + brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), current)}
     if added:
         result["labels"] += [k for k in kind_label(issue.get("body", "")) if k not in result["labels"]]
 
@@ -150,11 +155,12 @@ def triage(issue: dict, latest: str, devices: list[dict]) -> dict:
 
 
 def main() -> None:
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         sys.exit(__doc__)
     event = json.loads(Path(sys.argv[1]).read_text())
-    devices = json.loads((ROOT / "site/devices.json").read_text())["devices"]
-    result = triage(event["issue"], sys.argv[2], devices)
+    current = json.loads((ROOT / "site/devices.json").read_text())["devices"]
+    released = json.loads(Path(sys.argv[3]).read_text())["devices"] if len(sys.argv) == 4 else current
+    result = triage(event["issue"], sys.argv[2], released, current)
     if result["comment"]:
         result["comment"] += f"\n\n<sub>Automatic answer from the repository's triage workflow.</sub>\n{MARK}"
     print(json.dumps(result))

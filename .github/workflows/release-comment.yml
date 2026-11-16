@@ -1,0 +1,37 @@
+name: Release comment
+
+# Once a release is published (not a draft, not a pre-release): the open issues its notes or its commits
+# name ("#30") get one comment with the link (tools/notify.py). Nothing is closed.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, such as v0.8.5
+        required: true
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  comment:
+    name: Tell the issues
+    if: github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease && !github.event.release.draft)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The tags, for the commits since the previous release.
+          fetch-depth: 0
+
+      - name: Comment on the issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          version="${TAG#v}"
+          python3 tools/release.py notes "$version" > "$RUNNER_TEMP/notes.md"
+          url=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url)
+          python3 tools/notify.py release "$version" "$url" --notes "$RUNNER_TEMP/notes.md" --apply

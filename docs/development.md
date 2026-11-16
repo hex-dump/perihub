@@ -139,13 +139,15 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 |---|---|---|
 | CI | every push and pull request | tests, formatting, clippy, generated files, CHANGELOG sections; dependency licenses and advisories (`deny.toml`, `tools/check_npm_licenses.py`) |
 | Changelog | pull requests | a change to what PeriHub does needs a CHANGELOG line, or the `no changelog` label |
-| Test build | every push to `test/…`, or by hand | Windows installer, AppImage, .deb and Flatpak as run artifacts |
+| Test build | every push to `test/…`, or by hand | Windows installer, AppImage, .deb and Flatpak as run artifacts (the Flatpak build tries twice); then one comment with the run link on each open issue the branch's commits name (`#30`), unless one already has it |
 | Tag a release | by hand, on main | tags the version once CI is green, starts Release |
 | Release | the tag | draft release, signature and `latest.json` checks, `SHA256SUMS.txt`, notes from CHANGELOG.md; publishing opens an Announcements discussion |
+| Release comment | a release is published | one comment on each open issue the notes or commits name, saying the version is out; nothing is closed |
 | AUR package | a release is published | `packaging/aur/perihub-bin` for it, committed to main |
 | Website | main, a published release | builds and publishes `site/` |
 | Triage | a new issue | answers requests for devices PeriHub knows, asks old test reports to retry, labels brand and kind |
-| Reminders | every day | one reminder when an author has not answered for 14 days |
+| Reminders | every day | one reminder when an author has not answered a question for 14 days (device requests, test reports and unlabeled issues) |
+| Waiting for reporter | a new comment on an issue | the label `waiting for reporter` when the maintainer asks something, removed when the reporter answers |
 | Upstream device ids | Mondays | ids other projects know and PeriHub has not looked at, in one issue |
 | Links | Mondays | broken links in the README, docs and website, in one issue |
 | Security advisories | Mondays | known vulnerabilities in the Rust crates and npm packages |

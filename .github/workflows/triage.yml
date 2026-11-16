@@ -1,6 +1,6 @@
 name: Triage
 
-# A new device request for a device PeriHub already recognizes gets an answer with its level, a test
+# A new device request for a device the latest release already recognizes gets an answer with its level, a test
 # report from an older version is asked to try the latest one, and both get the label of the brand
 # ("brand: Razer") and of the kind of device, from the catalogue (tools/triage.py). The issue text
 # is only read by the script, never put in a command.
@@ -31,7 +31,10 @@ jobs:
           ISSUE: ${{ github.event.issue.number }}
         run: |
           latest=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
-          python3 tools/triage.py "$GITHUB_EVENT_PATH" "${latest#v}" > "$RUNNER_TEMP/triage.json"
+          # The devices the latest release knows, not the ones only on main: the answer says "PeriHub
+          # {latest} recognizes this device".
+          gh api "repos/$GITHUB_REPOSITORY/contents/site/devices.json?ref=$latest" -H "Accept: application/vnd.github.raw" > "$RUNNER_TEMP/released.json"
+          python3 tools/triage.py "$GITHUB_EVENT_PATH" "${latest#v}" "$RUNNER_TEMP/released.json" > "$RUNNER_TEMP/triage.json"
           jq -r '.comment // empty' "$RUNNER_TEMP/triage.json" > "$RUNNER_TEMP/comment.md"
           if [ -s "$RUNNER_TEMP/comment.md" ]; then
             gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"
