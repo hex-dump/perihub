@@ -16,6 +16,7 @@
   import Settings from "./pages/Settings.svelte";
   import DeviceReport from "./pages/DeviceReport.svelte";
   import TestWizard from "./pages/TestWizard.svelte";
+  import MouseTester from "./pages/MouseTester.svelte";
   import Icon from "./components/Icon.svelte";
   import Support from "./components/Support.svelte";
   import logo from "../icon.svg";
@@ -30,6 +31,7 @@
     | "qmk"
     | "report"
     | "wizard"
+    | "tester"
     | "profiles"
     | "settings";
   const PAGES: Page[] = [
@@ -42,6 +44,7 @@
     "qmk",
     "report",
     "wizard",
+    "tester",
     "profiles",
     "settings",
   ];
@@ -309,6 +312,10 @@
       <Icon name="report" />
       <span class="name">Test my device</span>
     </button>
+    <button class:active={page === "tester"} onclick={() => go("tester")}>
+      <Icon name="mouse" />
+      <span class="name">Mouse tester</span>
+    </button>
     <button class:active={page === "profiles"} onclick={() => go("profiles")}>
       <Icon name="profiles" />
       <span class="name">App profiles</span>
@@ -386,6 +393,8 @@
         <DeviceReport alone={!anyDevice} shown={status.qmk.map((k) => k.key)} />
       {:else if page === "wizard"}
         <TestWizard {status} />
+      {:else if page === "tester"}
+        <MouseTester />
       {:else if page === "profiles"}
         <AppProfiles {status} />
       {:else if page === "settings"}
