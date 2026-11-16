@@ -78,4 +78,34 @@ describe("App profiles", () => {
     await flush();
     expect(screen.getByText("GNOME Shell could not be reached.")).toBeTruthy();
   });
+
+  it("in the Flatpak, shows the command to run on the host instead of the button", async () => {
+    const command =
+      "gnome-extensions install --force ~/.var/app/io.github.hex_dump.perihub/perihub-focus@hex-dump.github.io.shell-extension.zip && gnome-extensions enable perihub-focus@hex-dump.github.io";
+    const reason = "The Flatpak cannot install it by itself: run this command in a terminal, then log out and back in.";
+    api.profiles.mockResolvedValue(info({ kind: "host_command", desktop: "GNOME", reason, command }));
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(AppProfiles, { status });
+    await flush();
+    expect(screen.getByText(reason)).toBeTruthy();
+    expect(screen.getByText(command)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Enable GNOME integration" })).toBeNull();
+    expect(screen.queryByText("Rules")).toBeNull();
+    await fireEvent.click(screen.getByRole("button", { name: "Copy command" }));
+    await flush();
+    expect(writeText).toHaveBeenCalledWith(command);
+    expect(screen.getByRole("button", { name: "Copied" })).toBeTruthy();
+    expect(api.setupFocus).not.toHaveBeenCalled();
+  });
+
+  it("says how to copy by hand when the clipboard refuses", async () => {
+    api.profiles.mockResolvedValue(info({ kind: "host_command", desktop: "GNOME", reason: "Run this.", command: "gnome-extensions install x" }));
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) }, configurable: true });
+    render(AppProfiles, { status });
+    await flush();
+    await fireEvent.click(screen.getByRole("button", { name: "Copy command" }));
+    await flush();
+    expect(screen.getByText("The command could not be copied: select it and copy it by hand.")).toBeTruthy();
+  });
 });

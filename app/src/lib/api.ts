@@ -54,7 +54,9 @@ export type FocusSupport =
   | { kind: "supported"; desktop: string }
   | { kind: "unsupported"; reason: string }
   /** Possible after a one-time step started with a button labelled `action` (`api.setupFocus`). */
-  | { kind: "setup"; desktop: string; reason: string; action: string };
+  | { kind: "setup"; desktop: string; reason: string; action: string }
+  /** Possible after the user runs `command` in a terminal outside the sandbox (GNOME in the Flatpak). */
+  | { kind: "host_command"; desktop: string; reason: string; command: string };
 
 export interface ProfilesInfo {
   support: FocusSupport;

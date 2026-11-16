@@ -8,6 +8,11 @@
 //! GNOME loads a new extension only at sign-in, so the first time PeriHub leaves a mark and enables
 //! it after the next sign-in, when the user opens PeriHub's App profiles or PeriHub starts with
 //! them on.
+//!
+//! In the Flatpak the sandbox is not widened for this (no access to the extensions folder or to
+//! `org.gnome.Shell.Extensions`): PeriHub may only talk to the extension's own bus name. Without
+//! the extension it writes the extension as a zip the host can read and shows the one command
+//! that installs it from the host, see [`host_command`].
 
 use std::collections::HashMap;
 use std::fs;
@@ -42,6 +47,9 @@ const FILES: [(&str, &str); 2] = [
 const RETRY: Duration = Duration::from_secs(10);
 const DESKTOP: &str = "GNOME";
 const ACTION: &str = "Enable GNOME integration";
+const SANDBOXED: &str = "On GNOME, PeriHub needs its small GNOME Shell extension to see which app is in focus. \
+     It tells PeriHub only the app's window class, never window titles. The Flatpak cannot install it by \
+     itself: run this command in a terminal, then log out and back in.";
 
 /// Running on GNOME (`XDG_CURRENT_DESKTOP` is e.g. `GNOME` or `ubuntu:GNOME`).
 pub fn detected() -> bool {
@@ -139,15 +147,92 @@ fn to_support(status: Status) -> FocusSupport {
 
 // ---- Files ----
 
-/// Where GNOME Shell looks for the user's extensions. In a Flatpak `XDG_DATA_HOME` points into the
-/// sandbox, so the host's default is used.
+/// Where GNOME Shell looks for the user's extensions (outside a Flatpak only).
 fn extension_dir() -> Option<PathBuf> {
-    let data = if Path::new("/.flatpak-info").exists() {
-        dirs::home_dir().map(|h| h.join(".local/share"))
-    } else {
-        dirs::data_dir()
-    };
-    Some(data?.join("gnome-shell/extensions").join(UUID))
+    Some(dirs::data_dir()?.join("gnome-shell/extensions").join(UUID))
+}
+
+fn sandboxed() -> bool {
+    Path::new("/.flatpak-info").exists()
+}
+
+fn crc32(data: &[u8]) -> u32 {
+    !data.iter().fold(!0u32, |crc, &byte| {
+        (0..8).fold(crc ^ u32::from(byte), |c, _| if c & 1 == 1 { (c >> 1) ^ 0xEDB8_8320 } else { c >> 1 })
+    })
+}
+
+/// The extension as the zip `gnome-extensions install` takes: stored (not compressed), with a
+/// fixed date, so the same files always give the same bytes.
+fn bundle() -> Vec<u8> {
+    const DATE: u16 = (1 << 5) | 1; // 1980-01-01, the earliest a zip can say
+    let (mut zip, mut central) = (Vec::new(), Vec::new());
+    for (name, content) in FILES {
+        let (name, content) = (name.as_bytes(), content.as_bytes());
+        let offset = zip.len() as u32;
+        let (crc, size) = (crc32(content), content.len() as u32);
+        // Version needed, flags, method (stored), time, date, crc, sizes, name length, extra length.
+        let mut common = Vec::new();
+        for half in [20u16, 0, 0, 0, DATE] {
+            common.extend(half.to_le_bytes());
+        }
+        for word in [crc, size, size] {
+            common.extend(word.to_le_bytes());
+        }
+        common.extend((name.len() as u16).to_le_bytes());
+        common.extend(0u16.to_le_bytes());
+        zip.extend(0x0403_4b50u32.to_le_bytes());
+        zip.extend(&common);
+        zip.extend(name);
+        zip.extend(content);
+        central.extend(0x0201_4b50u32.to_le_bytes());
+        central.extend(20u16.to_le_bytes()); // made by
+        central.extend(&common);
+        central.extend([0; 10]); // comment length, disk, internal and external attributes
+        central.extend(offset.to_le_bytes());
+        central.extend(name);
+    }
+    let (start, count) = (zip.len() as u32, FILES.len() as u16);
+    zip.extend(&central);
+    zip.extend(0x0605_4b50u32.to_le_bytes());
+    zip.extend([0; 4]); // this disk, disk of the directory
+    for half in [count, count] {
+        zip.extend(half.to_le_bytes());
+    }
+    zip.extend((central.len() as u32).to_le_bytes());
+    zip.extend(start.to_le_bytes());
+    zip.extend([0; 2]); // comment length
+    zip
+}
+
+/// In a Flatpak: writes the extension's zip where the host can read it and returns the command that
+/// installs and turns it on from the host.
+///
+/// The zip goes to `~/.var/app/<app id>/`: the app's own folder, which Flatpak mounts at the same
+/// path inside the sandbox, so it is writable from inside and readable from the host without any
+/// extra permission, and it lasts (unlike `$XDG_RUNTIME_DIR/app/<app id>`, also shared but emptied
+/// at log out, while the user may run the command later). `gnome-extensions enable` only adds the
+/// extension to GNOME's list of enabled ones, so it works before GNOME Shell has loaded it, and the
+/// extension starts at the next sign-in.
+fn host_command() -> Result<String, String> {
+    let id = std::env::var("FLATPAK_ID")
+        .ok()
+        .filter(|id| !id.is_empty() && id.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-')));
+    let id = id.ok_or("The Flatpak's app id is unknown.")?;
+    let home = dirs::home_dir().ok_or("Your home folder could not be found.")?;
+    let name = format!("{UUID}.shell-extension.zip");
+    let relative = format!(".var/app/{id}/{name}");
+    let path = home.join(&relative);
+    let zip = bundle();
+    if fs::read(&path).ok().as_deref() != Some(zip.as_slice()) {
+        fs::write(&path, zip).map_err(|e| format!("The extension could not be saved to {}: {e}", path.display()))?;
+    }
+    Ok(install_command(&relative))
+}
+
+/// `relative`: the zip's path from the home folder.
+fn install_command(relative: &str) -> String {
+    format!("gnome-extensions install --force ~/{relative} && gnome-extensions enable {UUID}")
 }
 
 fn files_in(dir: &Path) -> Files {
@@ -246,7 +331,21 @@ fn status(conn: &Connection) -> Status {
 }
 
 pub fn support() -> FocusSupport {
-    to_support(Connection::session().map_or(Status::NoShell, |conn| status(&conn)))
+    let Ok(conn) = Connection::session() else { return to_support(Status::NoShell) };
+    if !sandboxed() {
+        return to_support(status(&conn));
+    }
+    // The sandbox sees only the extension's own bus name: running or not is all it can tell.
+    if owned(&conn) {
+        return FocusSupport::Supported { desktop: DESKTOP };
+    }
+    match host_command() {
+        Ok(command) => FocusSupport::HostCommand { desktop: DESKTOP, reason: SANDBOXED, command },
+        Err(error) => {
+            log::warn!("GNOME extension for the host: {error}");
+            FocusSupport::Unsupported { reason: "PeriHub could not prepare its GNOME Shell extension for installing." }
+        }
+    }
 }
 
 fn unreachable(error: zbus::Error) -> String {
@@ -256,6 +355,9 @@ fn unreachable(error: zbus::Error) -> String {
 
 /// Installs and enables the extension; returns what to tell the user.
 pub fn setup() -> Result<String, String> {
+    if sandboxed() {
+        return Err("In the Flatpak, install the extension with the command on the App profiles page.".into());
+    }
     let conn = Connection::session().map_err(unreachable)?;
     let shell = shell_extensions(&conn).map_err(unreachable)?;
     if !shell.get_property::<bool>("UserExtensionsEnabled").unwrap_or(true) {
@@ -380,6 +482,41 @@ mod tests {
         assert!(install(&dir).unwrap());
         assert_eq!(files_in(&dir), Files::Current);
         let _ = fs::remove_dir_all(dir.parent().unwrap());
+    }
+
+    #[test]
+    fn bundles_the_files_as_a_zip() {
+        let zip = bundle();
+        assert_eq!(zip, bundle(), "the same bytes every time");
+        let u16_at = |i: usize| u16::from_le_bytes([zip[i], zip[i + 1]]) as usize;
+        let u32_at = |i: usize| u32::from_le_bytes(zip[i..i + 4].try_into().unwrap()) as usize;
+        let end = zip.len() - 22;
+        assert_eq!(u32_at(end), 0x0605_4b50);
+        assert_eq!(u16_at(end + 10), FILES.len());
+        let mut at = u32_at(end + 16);
+        for (name, content) in FILES {
+            assert_eq!(u32_at(at), 0x0201_4b50);
+            let name_len = u16_at(at + 28);
+            assert_eq!(&zip[at + 46..at + 46 + name_len], name.as_bytes());
+            let local = u32_at(at + 42);
+            assert_eq!(u32_at(local), 0x0403_4b50);
+            assert_eq!(u32_at(local + 18), content.len());
+            let data = local + 30 + u16_at(local + 26);
+            assert_eq!(&zip[data..data + content.len()], content.as_bytes());
+            at += 46 + name_len;
+        }
+        assert_eq!(crc32(b"123456789"), 0xCBF4_3926, "the usual check value");
+        assert_eq!(u32_at(u32_at(end + 16) + 16), crc32(FILES[0].1.as_bytes()) as usize);
+    }
+
+    #[test]
+    fn the_host_command_installs_and_enables() {
+        let command = install_command(".var/app/io.github.hex_dump.perihub/x.zip");
+        assert_eq!(
+            command,
+            "gnome-extensions install --force ~/.var/app/io.github.hex_dump.perihub/x.zip \
+             && gnome-extensions enable perihub-focus@hex-dump.github.io"
+        );
     }
 
     #[test]

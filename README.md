@@ -314,7 +314,7 @@ makepkg -si
 flatpak install --user PeriHub_X.Y.Z_x86_64.flatpak
 ```
 
-PeriHub is not on Flathub, so the Flatpak does not update by itself: install the next release's file the same way. Like the AppImage, it needs the udev rule below. On desktops without the Background portal, such as Hyprland, add `flatpak run io.github.hex_dump.perihub --hidden` to the desktop's own autostart (an `exec-once` line on Hyprland): PeriHub says so when you tick **Start PeriHub when I log in** in **Settings**.
+PeriHub is not on Flathub, so the Flatpak does not update by itself: install the next release's file the same way. Like the AppImage, it needs the udev rule below. On desktops without the Background portal, such as Hyprland, add `flatpak run io.github.hex_dump.perihub --hidden` to the desktop's own autostart (an `exec-once` line on Hyprland): PeriHub says so when you tick **Start PeriHub when I log in** in **Settings**. On GNOME, the Flatpak may not install the small extension app profiles need: the App profiles page shows the one command to run in a terminal instead, then log out and back in.
 
 #### USB permissions
 

@@ -13,6 +13,7 @@
   let error = $state<string | null>(null);
   let settingUp = $state(false);
   let setupMessage = $state<string | null>(null);
+  let copied = $state(false);
 
   /** PeriHub's own window: never a useful rule. */
   const SELF = ["perihub", "perihub.exe"];
@@ -44,6 +45,18 @@
       error = errorText(e);
     } finally {
       settingUp = false;
+    }
+  }
+
+  // Browsers allow writing to the clipboard only straight after the click: no waiting before it.
+  async function copyCommand(command: string) {
+    try {
+      await navigator.clipboard.writeText(command);
+      error = null;
+      copied = true;
+      setTimeout(() => (copied = false), 2000);
+    } catch {
+      error = "The command could not be copied: select it and copy it by hand.";
     }
   }
 
@@ -97,6 +110,15 @@
         <p>{info.support.reason}</p>
         <div class="row">
           <button onclick={setUp} disabled={settingUp}>{info.support.action}</button>
+        </div>
+      </div>
+    {:else if info.support.kind === "host_command"}
+      {@const command = info.support.command}
+      <div class="card col">
+        <p>{info.support.reason}</p>
+        <code class="command">{command}</code>
+        <div class="row">
+          <button onclick={() => copyCommand(command)}>{copied ? "Copied" : "Copy command"}</button>
         </div>
       </div>
     {:else}
@@ -180,5 +202,10 @@
 
   code {
     color: var(--text);
+  }
+
+  .command {
+    user-select: all;
+    overflow-wrap: anywhere;
   }
 </style>

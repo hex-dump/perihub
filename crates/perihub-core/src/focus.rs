@@ -30,6 +30,13 @@ pub enum FocusSupport {
         reason: &'static str,
         action: &'static str,
     },
+    /// Possible after the user runs `command` outside the sandbox (GNOME in the Flatpak, which may
+    /// not install the extension itself) and logs in again.
+    HostCommand {
+        desktop: &'static str,
+        reason: &'static str,
+        command: String,
+    },
 }
 
 pub fn support() -> FocusSupport {
