@@ -4,6 +4,11 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+### Security
+- The CI and test-build workflows now give their GitHub token read-only access by default, and only the job that comments on issues can write to them.
+
 ## 0.9.1 — 2026-11-16
 
 Logitech PRO 2 and PRO X 2 DEX wireless ids and a safer save (issue #34), plus three devices from device requests, read only for now: the Razer BlackWidow V4 Mini HyperSpeed, mice on the YJX receiver such as the MAMBASNAKE M4, and the Wraith W60. A mouse without lights no longer shows a Lighting tab, and the G-Shift layer of a read-only mouse can be looked at. The W60 has been read on a real keyboard; nobody has tried the other two yet. Also new: a read-only mode with a log of every write, battery notifications, quick actions from the tray and the command line, a guided "Test my device" page, a mouse tester, and installed games for app profiles.
