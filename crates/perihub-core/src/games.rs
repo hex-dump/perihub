@@ -554,6 +554,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(unix)]
     fn steam_on_linux_marks_proton_games_certain() {
         let home = temp("steam-linux");
         let steam = home.join(".local/share/Steam");
