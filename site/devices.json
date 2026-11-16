@@ -454,6 +454,20 @@
       }
     },
     {
+      "family": "logitech-direct",
+      "brand": "Logitech",
+      "name": "G733",
+      "kind": "headset",
+      "level": "read_only",
+      "usb_ids": [
+        "046d:0ab5"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
       "family": "lightspeed",
       "brand": "Logitech",
       "name": "LIGHTSPEED receiver",

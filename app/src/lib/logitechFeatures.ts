@@ -19,7 +19,7 @@ export function kindIcon(kind: number | null): "keyboard" | "mouse" {
 
 /** Features grouped by what they let the user do. One device often has two ids for the same thing. */
 const CAPABILITIES: [string, number[]][] = [
-  ["Battery level", [0x1000, 0x1001, 0x1004]],
+  ["Battery level", [0x1000, 0x1001, 0x1004, 0x1f20]],
   ["Adjustable DPI", [0x2201, 0x2202]],
   ["Polling rate", [0x8060, 0x8061]],
   ["SmartShift wheel", [0x2110, 0x2111]],
@@ -34,6 +34,9 @@ const CAPABILITIES: [string, number[]][] = [
   ["Fn key swap", [0x40a0, 0x40a2, 0x40a3]],
   ["Easy-Switch between computers", [0x1814]],
   ["Onboard profiles", [0x8100, 0x8101]],
+  // Headsets (feature ids from Solaar's list).
+  ["Sidetone", [0x8300]],
+  ["Equalizer", [0x8310]],
 ];
 
 /** Effects of 0x8071, by the id the device reports for each (the names are Solaar's, from the

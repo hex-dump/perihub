@@ -53,6 +53,8 @@ describe("capabilities", () => {
 
   it("names a capability once, whichever of its ids the device has", () => {
     expect(capabilities(device([0x1000, 0x1004, 0x8060, 0x8061])).named).toEqual(["Battery level", "Polling rate"]);
+    // A headset (issue #41): its battery voltage, sidetone and equalizer.
+    expect(capabilities(device([0x1f20, 0x8300, 0x8310])).named).toEqual(["Battery level", "Sidetone", "Equalizer"]);
   });
 });
 

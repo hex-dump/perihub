@@ -12,6 +12,7 @@ use serde::Serialize;
 pub enum Kind {
     Mouse,
     Keyboard,
+    Headset,
     Receiver,
 }
 
@@ -179,6 +180,7 @@ pub fn devices() -> Vec<Device> {
     for m in direct::DIRECT {
         let kind = match m.kind {
             direct::DirectKind::Keyboard => Kind::Keyboard,
+            direct::DirectKind::Headset => Kind::Headset,
         };
         // A HID++ interface that also carries typing stays closed on Linux (see `DirectModel::typing`).
         let access = if m.typing { Access::Closed } else { Access::Interface(m.interface) };
