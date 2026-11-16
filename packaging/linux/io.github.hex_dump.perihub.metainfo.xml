@@ -419,6 +419,11 @@
   </provides>
 
   <releases>
+    <release version="0.9.0" date="2026-11-16">
+      <description>
+        <p>A light theme and accent colors, with System following the desktop (KDE Plasma and GNOME included), and app profiles on KDE Plasma and GNOME. Settings is tidier: the credits are in their own dialog, the supported brands are listed, and where everything is stored is complete. The program is also smaller and wakes up less. Nothing changes in how PeriHub talks to devices.</p>
+      </description>
+    </release>
     <release version="0.8.4" date="2026-11-15">
       <description>
         <p>On Windows a mouse behind a LIGHTSPEED, Bolt or Unifying receiver is found, and a mouse with a tested memory format can be saved to through its receiver, as an experimental feature. Also: the G502 HERO Wireless's lights have the right names.</p>

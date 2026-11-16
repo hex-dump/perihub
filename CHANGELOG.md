@@ -4,7 +4,9 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
-## Unreleased
+## 0.9.0 — 2026-11-16
+
+A light theme and accent colors, with System following the desktop (KDE Plasma and GNOME included), and app profiles on KDE Plasma and GNOME. Settings is tidier: the credits are in their own dialog, the supported brands are listed, and where everything is stored is complete. The program is also smaller and wakes up less. Nothing changes in how PeriHub talks to devices.
 
 ### Added
 - **Light theme and accent colors**: Settings → Appearance has a **Theme** (System, the default, which follows the computer's light or dark setting and changes with it (on Linux it asks the desktop through the XDG portal, so a dark KDE Plasma or GNOME gives the dark theme); Dark, as before; or Light) and an **Accent color** (orange as before, blue, green, purple, pink or teal). The light palette keeps text at 4.5:1 or better and the borders of controls at 3:1, and a test checks every pair of both themes and every accent. The choice is kept in the interface preferences and applied before the first paint, so the window does not flash dark; the window's own title bar follows it where the system allows.
