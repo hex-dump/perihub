@@ -79,4 +79,7 @@ python3 tools/release.py lint
 - Commit on a local branch. With the user's OK: push it as `test/<name>`, run
   `gh workflow run test-build.yml --ref test/<name>`, and once it is green answer the issue with the
   link to the run (artifacts need a GitHub account; the build still says the previous version).
+- To have the build announced on the device request, put a line `Test: #N` (or `Tests: #N, #M`) in the
+  body of a commit. A plain `#N` does nothing. The first build comments on the open issue, later
+  pushes edit that comment.
 - No release until the tester confirms, or the user asks for one.

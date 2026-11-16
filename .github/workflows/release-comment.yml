@@ -1,7 +1,8 @@
 name: Release comment
 
-# Once a release is published (not a draft, not a pre-release): the open issues its notes or its commits
-# name ("#30") get one comment with the link (tools/notify.py). Nothing is closed.
+# Once a release is published (not a draft, not a pre-release): the open issues its CHANGELOG notes name
+# ("#30") get one comment with the link and the line, unless the maintainer already said it (tools/notify.py).
+# Nothing is closed.
 on:
   release:
     types: [published]

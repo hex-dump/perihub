@@ -6,6 +6,9 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
+### Changed
+- Automatic issue comments are quieter. A test build comments only on issues named by a `Test: #N` line in a commit message, and later builds edit that comment instead of adding one. The release comment goes to open issues the CHANGELOG names, quotes the line, and is skipped when the maintainer already said the fix ships.
+
 ### Security
 - The CI and test-build workflows now give their GitHub token read-only access by default, and only the job that comments on issues can write to them.
 
