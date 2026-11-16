@@ -6,7 +6,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
-Logitech PRO 2 and PRO X 2 DEX wireless ids and a safer save (issue #34), plus three devices from device requests, read only for now: the Razer BlackWidow V4 Mini HyperSpeed, mice on the YJX receiver such as the MAMBASNAKE M4, and the Wraith W60. A mouse without lights no longer shows a Lighting tab, and the G-Shift layer of a read-only mouse can be looked at. The W60 has been read on a real keyboard; nobody has tried the other two yet.
+Logitech PRO 2 and PRO X 2 DEX wireless ids and a safer save (issue #34), plus three devices from device requests, read only for now: the Razer BlackWidow V4 Mini HyperSpeed, mice on the YJX receiver such as the MAMBASNAKE M4, and the Wraith W60. A mouse without lights no longer shows a Lighting tab, and the G-Shift layer of a read-only mouse can be looked at. The W60 has been read on a real keyboard; nobody has tried the other two yet. Also new: a read-only mode with a log of every write, battery notifications, quick actions from the tray and the command line, a guided "Test my device" page, a mouse tester, and installed games for app profiles.
 
 ### New devices
 - **Logitech PRO 2 LIGHTSPEED and PRO X 2 DEX**, with a cable or a LIGHTSPEED receiver (from the test reports of issues #33 and #32), and the **G303 Shroud Edition through its receiver** (issue #34, which only lacked its wireless id): read only. These PRO mice have no `0x2201` DPI and no `0x8060` polling feature, so PeriHub now reads their extended ones (`0x2202` DPI ranges, DPI in use and lift-off distance; `0x8061` polling rates up to 8000 Hz and the one in use) and their profile format 7, shows the profiles on the mouse page, and puts all of it in the test report to compare with G HUB. Nothing is written and the onboard mode is never switched (libratbag found that it disables a PRO X 2's buttons). The 0x2202, 0x8061 and format 7 layouts come from libratbag's open pull requests #1676 and #1806 (MIT). The lights of the PRO 2 LIGHTSPEED are not read yet. The G303 Shroud Edition's memory is format 3 in 255-byte sectors, which is already tested, so it is supported like the other mice with that format (experimental saves through a receiver).
@@ -17,6 +17,15 @@ Logitech PRO 2 and PRO X 2 DEX wireless ids and a safer save (issue #34), plus t
 
 ### Added
 - On Linux, a keyboard of another brand is opened only if its node's report descriptor declares no typed keys, whatever rule gave access to it.
+- **Read-only mode**, in Settings or the tray menu, stops PeriHub and perihub-cli from sending any change to a device. Settings lists every write of this session, and the ones read-only mode refused; test reports carry the same list, without the bytes.
+- **Battery notifications**: a notification when a wireless device drops below a limit (15% by default), and the battery of each wireless device in the tray. Logitech batteries are read every 5 minutes, so the warnings work with only the tray open.
+- **Quick actions**: switch the mouse profile, the DPI level or the keyboard lighting preset from the tray menu, or with `perihub-cli app ...` while PeriHub is open. They are hidden from the tray, and refused, in read-only mode; a failed one shows a notification.
+- **Test my device**: a guided page that only reads the device, previews the report with private details hidden, has a checklist of what you tried, and opens the GitHub form.
+- **Mouse tester**: a page to check the polling rate, the DPI against a ruler, and double-click chatter.
+- **App profiles: Add from installed games**, for Steam, Lutris and Heroic.
+
+### Changed
+- **One "Test report" form** with device type and brand, for mice, keyboards and receivers; the mouse/keyboard and brand labels are set automatically. Release files carry a GitHub build attestation.
 
 ### Fixed
 - **Saving no longer fails with "invalid argument" on a mouse whose other profiles are disabled** ([issue #34](https://github.com/hex-dump/perihub/issues/34)): to load a saved profile PeriHub switched to another profile and back, even a disabled one, which the G303 Shroud Edition most likely refused; the save was undone and the undo failed at the same switch, though the old profile was back in the mouse. PeriHub now switches only through an enabled profile, and a refused switch no longer undoes a save that was written and read back.

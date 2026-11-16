@@ -45,8 +45,32 @@ fn mouse_verified(app: &AppHandle) -> bool {
     app.state::<AppState>().manager.status().mouse.is_some_and(|m| m.verified)
 }
 
+/// How a quick action shows in the write log.
+pub const LOG_DEVICE: &str = "Quick action";
+
+fn log_kind(action: &QuickAction) -> String {
+    match action {
+        QuickAction::Profile { number } => format!("mouse profile {number}"),
+        QuickAction::DpiLevel { number } => format!("DPI level {number}"),
+        QuickAction::Preset { name } => format!("lighting preset {name}"),
+    }
+}
+
+/// Every quick action sends a change to a device: none in read-only mode, whether it comes from
+/// the tray or from `perihub-cli app`. The refusal is kept in the write log, with the same message
+/// as the window's. The device layers refuse too, this stops the action before it saves anything
+/// in PeriHub's own settings.
+fn refuse_in_read_only(read_only: bool, action: &QuickAction) -> Result<(), String> {
+    if read_only {
+        perihub_core::writes::note(LOG_DEVICE, &log_kind(action), &[], perihub_core::writes::REFUSED);
+        return Err(perihub_core::Error::ReadOnly.to_string());
+    }
+    Ok(())
+}
+
 /// Does the action now. Blocks while the device answers.
 pub fn run(app: &AppHandle, action: QuickAction) -> Result<(), String> {
+    refuse_in_read_only(perihub_core::writes::read_only(), &action)?;
     let state = app.state::<AppState>();
     let result = match action {
         QuickAction::Profile { number } => {
@@ -136,13 +160,78 @@ pub fn run_from_menu(app: &AppHandle, action: QuickAction) {
     std::thread::spawn(move || {
         if let Err(error) = run(&app, action.clone()) {
             log::warn!("quick action {action:?} from the tray: {error}");
+            notify_failure(&app, &action, &error);
         }
     });
+}
+
+/// A request from `perihub-cli app`: the command line prints the error too, but a desktop
+/// hotkey has nowhere to show it, so it also comes as a notification.
+pub fn run_from_cli(app: &AppHandle, action: QuickAction) -> Result<(), String> {
+    let result = run(app, action.clone());
+    if let Err(error) = &result {
+        log::warn!("quick action {action:?} from perihub-cli: {error}");
+        notify_failure(app, &action, error);
+    }
+    result
+}
+
+fn failure_message(action: &QuickAction, error: &str) -> (String, String) {
+    let what = match action {
+        QuickAction::Profile { number } => format!("Mouse profile {number}"),
+        QuickAction::DpiLevel { number } => format!("DPI level {number}"),
+        QuickAction::Preset { name } => format!("Lighting preset \"{name}\""),
+    };
+    let mut error = error.to_string();
+    if let Some(first) = error.get(..1) {
+        error.replace_range(..1, &first.to_uppercase());
+    }
+    if !error.ends_with('.') {
+        error.push('.');
+    }
+    (format!("{what} was not applied"), error)
+}
+
+fn notify_failure(app: &AppHandle, action: &QuickAction, error: &str) {
+    use tauri_plugin_notification::NotificationExt;
+    let (title, body) = failure_message(action, error);
+    if let Err(error) = app.notification().builder().title(title).body(body).show() {
+        log::warn!("cannot show a notification: {error}");
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn quick_actions_are_refused_and_logged_in_read_only_mode() {
+        let action = QuickAction::Preset { name: "Quick test preset".into() };
+        assert_eq!(refuse_in_read_only(true, &action), Err("Read-only mode is on".to_string()));
+        assert_eq!(refuse_in_read_only(false, &action), Ok(()));
+        let logged: Vec<_> = perihub_core::writes::entries()
+            .into_iter()
+            .filter(|e| e.device == LOG_DEVICE && e.kind == "lighting preset Quick test preset")
+            .collect();
+        assert_eq!(logged.len(), 1, "only the refusal is logged");
+        assert_eq!(logged[0].result, perihub_core::writes::REFUSED);
+        assert_eq!(logged[0].bytes, 0);
+        for action in [QuickAction::Profile { number: 2 }, QuickAction::DpiLevel { number: 1 }] {
+            assert!(refuse_in_read_only(true, &action).is_err());
+        }
+    }
+
+    #[test]
+    fn a_failure_reads_well_as_a_notification() {
+        assert_eq!(
+            failure_message(&QuickAction::Profile { number: 2 }, "Read-only mode is on"),
+            ("Mouse profile 2 was not applied".to_string(), "Read-only mode is on.".to_string())
+        );
+        assert_eq!(
+            failure_message(&QuickAction::Preset { name: "Night".into() }, "no keyboard is connected").1,
+            "No keyboard is connected."
+        );
+    }
 
     #[test]
     fn menu_ids_round_trip() {

@@ -237,6 +237,21 @@ describe("the form", () => {
     expect(new URL(formUrl(form)).searchParams.get("report")).toBe(text);
   });
 
+  it("adds the write log lines after the report and before the checklist, hidden like the rest", () => {
+    const [c] = candidates(status({ peripherals: [peripheral] }), []);
+    const writes = ["Writes this session: 1 sent, 0 refused:", "  10:00:00 ROG Keris: save, 4 bytes, failed in /home/ann/x"];
+    const form = prepareForm(formAddress(c, null, "0.9.0", "linux x86_64"), "What I tried:", ["ann"], writes);
+    const text = reportText(form);
+    expect(text).toContain("\nWrites this session: 1 sent, 0 refused:\n  10:00:00 ROG Keris: save, 4 bytes, failed in /home/[user]/x\n\nWhat I tried:");
+    expect(text).not.toContain("ann");
+  });
+
+  it("leaves the write log out of a device request", () => {
+    const [u] = candidates(status({}), [unknown]);
+    const form = prepareForm(formAddress(u, null, "0.9.0", "linux x86_64"), "", [], ["Writes this session: 0 sent, 0 refused"]);
+    expect(reportText(form)).not.toContain("Writes this session");
+  });
+
   it("falls back to pasting when the report does not fit in an address", () => {
     const raw = Array.from({ length: 400 }, (_, i) => `12 04 00 ${i % 100} → 12 04 00 00 03 00 8f 91 aa bb cc dd ee ff`);
     const [c] = candidates(status({ peripherals: [{ ...peripheral, raw }] }), []);

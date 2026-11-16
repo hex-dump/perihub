@@ -10,6 +10,7 @@ const readings = vi.hoisted(() => ({
   g300Info: vi.fn(),
   peripheralInfo: vi.fn(),
   logitechLive: vi.fn(),
+  writeLog: vi.fn(),
   openTestForm: vi.fn(),
 }));
 const writes = vi.hoisted(() => ({
@@ -57,6 +58,7 @@ beforeEach(() => {
     system: "linux x86_64", config_dir: "/home/ann/.config/perihub", log_dir: "/home/ann/.local/state/perihub",
   });
   readings.status.mockResolvedValue(status());
+  readings.writeLog.mockResolvedValue([]);
   readings.peripheralInfo.mockResolvedValue(peripheral);
   readings.openTestForm.mockResolvedValue(undefined);
 });
@@ -175,6 +177,21 @@ describe("the test wizard", () => {
     for (const [name, fn] of Object.entries(writes)) expect(fn, name).not.toHaveBeenCalled();
     // And only the readings of the list were used.
     const used = Object.entries(readings).filter(([, fn]) => fn.mock.calls.length > 0).map(([name]) => name);
-    expect(used.sort()).toEqual(["appSettings", "devicesForReport", "openTestForm", "peripheralInfo", "status"]);
+    expect(used.sort()).toEqual(["appSettings", "devicesForReport", "openTestForm", "peripheralInfo", "status", "writeLog"]);
+  });
+
+  it("adds the writes of this session to the report, private details hidden", async () => {
+    readings.writeLog.mockResolvedValue([
+      { time: 0, device: "ROG Keris", kind: "dpi", data: "01", bytes: 1, result: "ok" },
+      { time: 0, device: "ROG Keris", kind: "save", data: "02", bytes: 1, result: "refused (read-only mode)" },
+      { time: 0, device: "ROG Keris", kind: "backup", data: "03", bytes: 1, result: "cannot write /home/ann/x" },
+    ]);
+    await toPreview();
+    await settle();
+    const text = document.querySelector("pre.report")?.textContent ?? "";
+    expect(text).toContain("Writes this session: 2 sent, 1 refused:");
+    expect(text).toContain("ROG Keris: save, 1 bytes, refused (read-only mode)");
+    expect(text).toContain("cannot write /home/[user]/x");
+    expect(text).not.toContain("/home/ann");
   });
 });

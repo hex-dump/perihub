@@ -27,6 +27,13 @@ Bind them to a keyboard shortcut in your desktop's settings (on Windows, a short
 `perihub-cli.exe app profile 2` with a shortcut key). If PeriHub is not running, or the device is
 not connected, the command prints why and exits with an error.
 
+## Read-only mode
+
+Quick actions send a change to a device, so read-only mode stops them: the submenus leave the tray
+menu while it is on, and `perihub-cli app ...` gets "Read-only mode is on". Each refusal is in the
+list of writes of the session (Settings, and test reports). When a quick action fails, for this
+or any other reason, PeriHub also says so in a notification.
+
 ## How the command reaches the app
 
 PeriHub listens on 127.0.0.1 only, on a port it picks at every start. It writes the port and a

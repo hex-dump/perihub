@@ -243,6 +243,9 @@ export const MAX_URL_LENGTH = 7000;
 /** In the long field when the report is too long for the address: the user pastes it. */
 export const PASTE_NOTE = "Paste the report here (PeriHub copied it to the clipboard).";
 
+/** The form for a device PeriHub does not know: a request, not a test report, so no write log. */
+const DEVICE_REQUEST = "template=device_request.yml";
+
 /** The fields that hold the report text, by form. */
 const TEXT_FIELDS = ["report", "details"];
 
@@ -277,9 +280,10 @@ export interface Form {
   hidden: Hidden[];
 }
 
-/** Splits the address of a form from the builders, adds the checklist to the report and hides the
- * private details in every field. `names`: user names to hide (see `userNames`). */
-export function prepareForm(address: string, checklist: string, names: string[]): Form {
+/** Splits the address of a form from the builders, adds the writes of this session (lines from
+ * `writeLogLines`, a test report only) and the checklist to the report and hides the private
+ * details in every field. `names`: user names to hide (see `userNames`). */
+export function prepareForm(address: string, checklist: string, names: string[], writes: string[] = []): Form {
   const base = address.slice(0, address.indexOf("&") + 1);
   const hidden: Hidden[][] = [];
   const fields: [string, string][] = [];
@@ -287,7 +291,9 @@ export function prepareForm(address: string, checklist: string, names: string[])
   for (const [name, value] of new URLSearchParams(address.slice(base.length))) {
     const isText = TEXT_FIELDS.includes(name);
     if (isText) textField = name;
-    const r = redact(isText && checklist ? `${value}\n\n${checklist}` : value, names);
+    // Like the other test reports: the writes right after the report, before the checklist.
+    const report = isText && writes.length && !address.includes(DEVICE_REQUEST) ? [value, ...writes].join("\n") : value;
+    const r = redact(isText && checklist ? `${report}\n\n${checklist}` : report, names);
     hidden.push(r.hidden);
     fields.push([name, r.text]);
   }

@@ -805,6 +805,7 @@ mod tests {
         "app_open_test_form",
         "app_open_support_link",
         "app_quit",
+        "games_installed",
     ];
 
     /// The commands of this file, with their bodies.

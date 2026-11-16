@@ -1237,6 +1237,19 @@ pub(crate) mod tests {
         assert!(log.iter().all(|e| e.result == crate::writes::REFUSED));
     }
 
+    #[test]
+    fn the_battery_is_read_in_read_only_mode() {
+        // The slow battery read of the warnings (logitech.rs, mouse.rs) only reads: it goes on.
+        const FEATURES: &[u16] = &[feature::ROOT, feature::UNIFIED_BATTERY];
+        let fake = fake_mouse(FEATURES, |_, _| vec![55, 0x04, 0x00, 0x00]);
+        let mut dev = HidppDevice::new(fake, models::WIRED_INDEX, false).unwrap();
+        dev.set_label("hidpp battery read-only test".into());
+        let _read_only = crate::writes::test::read_only_mode();
+        let battery = dev.battery().unwrap().expect("a battery");
+        assert_eq!(battery.percent, 55);
+        assert!(crate::writes::test::entries_of("hidpp battery read-only test").is_empty(), "no write, none refused");
+    }
+
     /// The reports `write_sector` sends for a sector of `size` bytes, after the feature lookup.
     fn sector_write_reports(size: usize) -> Vec<Vec<u8>> {
         const FEATURES: &[u16] = &[feature::ROOT, feature::ONBOARD_PROFILES];

@@ -39,7 +39,7 @@ to a device's memory:
   perihub-cli app preset <name>         keyboard lighting preset saved in PeriHub
 
 Read-only mode, turned on in PeriHub's settings, applies here too: the commands that change a
-device are refused while it is on.";
+device are refused while it is on, perihub-cli app ... included.";
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -203,6 +203,8 @@ fn changes_a_device(args: &[&str]) -> bool {
             | ["mouse", "save-profile", ..]
             | ["mouse", "factory", _]
             | ["mouse", "restore", _]
+            // Quick actions: sent to the running app, which refuses them in read-only mode.
+            | ["app", ..]
     )
 }
 
@@ -233,6 +235,9 @@ mod tests {
             &["mouse", "save-profile", "1", "{}"],
             &["mouse", "factory", "1"],
             &["mouse", "restore", "id"],
+            &["app", "profile", "2"],
+            &["app", "dpi-level", "1"],
+            &["app", "preset", "Night"],
         ];
         for args in changes {
             assert!(changes_a_device(args), "{args:?}");

@@ -155,7 +155,7 @@ fn main() {
             updates::watch(app.handle().clone());
             // `perihub-cli app ...` talks to the app here, since the CLI cannot open devices the app holds.
             let quick_app = app.handle().clone();
-            if let Err(error) = perihub_core::quick::serve(move |action| quick::run(&quick_app, action)) {
+            if let Err(error) = perihub_core::quick::serve(move |action| quick::run_from_cli(&quick_app, action)) {
                 log::warn!("quick actions from perihub-cli are not available: {error}");
             }
             quick::refresh_mouse_choices(app.handle());

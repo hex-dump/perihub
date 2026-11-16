@@ -3,8 +3,9 @@
   // tick what was tried, and send it through PeriHub's form on GitHub.
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
-  import { api, errorText, type DeviceStatus, type ReportDevice } from "../lib/api";
+  import { api, errorText, type DeviceStatus, type ReportDevice, type WriteEntry } from "../lib/api";
   import { userNames } from "../lib/redact";
+  import { readOnly, writeLogLines } from "../lib/readOnly.svelte";
   import {
     candidates, checklist, checklistText, formAddress, formUrl, needsPaste, prepareForm, readDevice, reportText,
     type Answer, type Probed, type Reading,
@@ -51,6 +52,8 @@
   let readings = $state<Reading[]>([]);
   let reading = $state(false);
   let answers = $state<Record<string, Answer>>({});
+  /** The writes of this session, for the end of the report like the other test reports. */
+  let writes = $state<WriteEntry[] | null>(null);
   let copied = $state(false);
   let opened = $state(false);
   let error = $state<string | null>(null);
@@ -70,6 +73,7 @@
           formAddress(probed.candidate, probed.live, version, system),
           checklistText(items, answers),
           names,
+          writes ? writeLogLines(writes, readOnly.on) : [],
         )
       : null,
   );
@@ -113,10 +117,20 @@
     reading = false;
   }
 
+  /** Read again when the report is shown, so the preview holds what is sent. */
+  async function loadWrites() {
+    try {
+      writes = await api.writeLog();
+    } catch {
+      // The report goes without them.
+    }
+  }
+
   function go(next: Step) {
     error = null;
     step = next;
     if (next === "read") read();
+    if (next === "preview") loadWrites();
     if (next === "pick") readId++;
   }
 
