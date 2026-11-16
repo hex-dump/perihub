@@ -41,6 +41,13 @@ label "brand: Razer" d4c5f9 "Razer devices"
 label "brand: ASUS" d4c5f9 "ASUS devices"
 label "brand: Other" d4c5f9 "Devices of other brands"
 
+# Pinned calls for testers are not test reports: they get "help wanted" and their brand (like #2).
+helpwanted() { # number brand [old-label]
+  run gh issue edit "$1" --repo "$REPO" --add-label "help wanted" --add-label "brand: $2" ${3:+--remove-label "$3"}
+}
+helpwanted 18 Corsair "device test"
+helpwanted 2 Logitech
+
 for old in "mouse test" "device test"; do
   # Open and closed. Pull requests are not listed by "gh issue list".
   numbers=$(gh issue list --repo "$REPO" --label "$old" --state all --limit 1000 --json number --jq '.[].number')
