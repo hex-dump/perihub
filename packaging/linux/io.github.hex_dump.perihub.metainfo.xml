@@ -426,6 +426,11 @@
   </provides>
 
   <releases>
+    <release version="0.9.1" date="2026-11-16">
+      <description>
+        <p>Logitech PRO 2 and PRO X 2 DEX wireless ids and a safer save (issue #34), plus three devices from device requests, read only for now: the Razer BlackWidow V4 Mini HyperSpeed, mice on the YJX receiver such as the MAMBASNAKE M4, and the Wraith W60. A mouse without lights no longer shows a Lighting tab, and the G-Shift layer of a read-only mouse can be looked at. The W60 has been read on a real keyboard; nobody has tried the other two yet. Also new: a read-only mode with a log of every write, battery notifications, quick actions from the tray and the command line, a guided "Test my device" page, a mouse tester, and installed games for app profiles.</p>
+      </description>
+    </release>
     <release version="0.9.0" date="2026-11-16">
       <description>
         <p>A light theme and accent colors, with System following the desktop (KDE Plasma and GNOME included), and app profiles on KDE Plasma and GNOME. Settings is tidier: the credits are in their own dialog, the supported brands are listed, and where everything is stored is complete. The program is also smaller and wakes up less. Nothing changes in how PeriHub talks to devices.</p>
