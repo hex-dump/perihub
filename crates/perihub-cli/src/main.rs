@@ -6,6 +6,7 @@ use perihub_core::apex::KeyBinding;
 use perihub_core::config::AppConfig;
 use perihub_core::effects::KeyboardLighting;
 use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
+use perihub_core::quick::{self, QuickAction};
 use perihub_core::{Manager, Result};
 
 const USAGE: &str = "usage:
@@ -28,7 +29,14 @@ const USAGE: &str = "usage:
   perihub-cli keyboard remap <layer> <hex usage> '<json KeyBinding>'
   perihub-cli keyboard reset-keymap
   perihub-cli keyboard backups
-  perihub-cli keyboard restore <backup id>";
+  perihub-cli keyboard restore <backup id>
+
+With PeriHub open (the commands above need it closed), these ask the running app to switch
+what is saved on the devices, so they can be bound to a keyboard shortcut. They never write
+to a device's memory:
+  perihub-cli app profile <number>      mouse onboard profile, 1 is the first
+  perihub-cli app dpi-level <number>    DPI level of the active profile, 1 is the first
+  perihub-cli app preset <name>         keyboard lighting preset saved in PeriHub";
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -71,10 +79,13 @@ fn run(args: &[&str]) -> Result<()> {
     match args {
         ["focus"] => return watch_focus(30),
         ["focus", seconds] => return watch_focus(seconds.parse().map_err(|_| invalid("seconds"))?),
+        ["app", rest @ ..] => return quick::send(QuickAction::from_args(rest).map_err(|_| usage())?),
         _ => {}
     }
     let Some(_devices) = perihub_core::config::try_lock_devices()? else {
-        return Err(invalid("PeriHub is open: quit it from the tray first, since both would talk to the same devices"));
+        return Err(invalid(
+            "PeriHub is open: quit it from the tray first, since both would talk to the same devices (perihub-cli app ... works while it is open)",
+        ));
     };
     let config = AppConfig::load();
     let manager = Manager::start(config.keyboard, false, Default::default(), Vec::new(), Box::new(|_| {}));
@@ -165,6 +176,10 @@ fn run(args: &[&str]) -> Result<()> {
             std::process::exit(2);
         }
     }
+}
+
+fn usage() -> perihub_core::Error {
+    perihub_core::Error::Invalid(format!("unknown app command\n\n{USAGE}"))
 }
 
 fn invalid(what: &str) -> perihub_core::Error {

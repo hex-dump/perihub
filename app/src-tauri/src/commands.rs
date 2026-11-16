@@ -55,7 +55,7 @@ pub fn kb_get_config(state: State<'_, AppState>) -> KeyboardConfig {
 }
 
 /// Saves the keyboard settings (also while it is unplugged: they are applied when it is connected).
-fn update_keyboard_config(state: &AppState, change: impl FnOnce(&mut KeyboardConfig)) -> CmdResult<()> {
+pub(crate) fn update_keyboard_config(state: &AppState, change: impl FnOnce(&mut KeyboardConfig)) -> CmdResult<()> {
     let mut config = state.config.lock().unwrap();
     change(&mut config.keyboard);
     state.manager.set_keyboard_config(config.keyboard.clone());
