@@ -15,6 +15,7 @@
   import Settings from "./pages/Settings.svelte";
   import DeviceReport from "./pages/DeviceReport.svelte";
   import Icon from "./components/Icon.svelte";
+  import Support from "./components/Support.svelte";
   import logo from "../icon.svg";
 
   type Page =
@@ -307,6 +308,7 @@
       <span class="name">Settings</span>
       {#if updates.available}<span class="chip accent update">Update</span>{/if}
     </button>
+    <Support />
   </nav>
 
   <main>

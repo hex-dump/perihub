@@ -104,7 +104,8 @@ const settings: AppSettings = {
   check_updates: true,
   updates_supported: false,
   package_manager: null,
-  log_dir: "~/.local/share/perihub/logs",
+  log_dir: "~/.local/state/perihub",
+  config_dir: "~/.config/perihub",
   system: "linux x86_64",
 };
 
