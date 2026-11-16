@@ -10,6 +10,7 @@ mod key_access;
 mod logfile;
 mod macro_files;
 mod qmk_access;
+mod quick;
 mod soft_macros;
 #[cfg(target_os = "linux")]
 mod system_theme;
@@ -126,6 +127,9 @@ fn main() {
                         soft.watch_keyboard(manager.keyboard_triggers());
                     }
                     let _ = handle.emit("devices-changed", status);
+                    // The tray's quick actions follow the connected devices.
+                    quick::refresh_mouse_choices(&handle);
+                    window::refresh_menu(&handle);
                 }),
             );
             let soft = SoftMacroEngine::new(config.software_macros.clone());
@@ -149,6 +153,12 @@ fn main() {
             window::build_tray(app.handle())?;
             battery::start(app.handle().clone());
             updates::watch(app.handle().clone());
+            // `perihub-cli app ...` talks to the app here, since the CLI cannot open devices the app holds.
+            let quick_app = app.handle().clone();
+            if let Err(error) = perihub_core::quick::serve(move |action| quick::run(&quick_app, action)) {
+                log::warn!("quick actions from perihub-cli are not available: {error}");
+            }
+            quick::refresh_mouse_choices(app.handle());
 
             // The window opens with the system's theme, and the interface follows it as it changes.
             #[cfg(target_os = "linux")]
@@ -257,7 +267,10 @@ fn main() {
         .run(|_app, event| match event {
             // Without windows PeriHub keeps running in the tray; Quit sets an exit code.
             RunEvent::ExitRequested { code: None, api, .. } => api.prevent_exit(),
-            RunEvent::Exit => perihub_core::focus::stop(),
+            RunEvent::Exit => {
+                perihub_core::focus::stop();
+                perihub_core::quick::stop();
+            }
             _ => {}
         });
 }

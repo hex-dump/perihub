@@ -6,6 +6,7 @@ use perihub_core::apex::KeyBinding;
 use perihub_core::config::AppConfig;
 use perihub_core::effects::KeyboardLighting;
 use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
+use perihub_core::quick::{self, QuickAction};
 use perihub_core::{Manager, Result};
 
 const USAGE: &str = "usage:
@@ -29,6 +30,13 @@ const USAGE: &str = "usage:
   perihub-cli keyboard reset-keymap
   perihub-cli keyboard backups
   perihub-cli keyboard restore <backup id>
+
+With PeriHub open (the commands above need it closed), these ask the running app to switch
+what is saved on the devices, so they can be bound to a keyboard shortcut. They never write
+to a device's memory:
+  perihub-cli app profile <number>      mouse onboard profile, 1 is the first
+  perihub-cli app dpi-level <number>    DPI level of the active profile, 1 is the first
+  perihub-cli app preset <name>         keyboard lighting preset saved in PeriHub
 
 Read-only mode, turned on in PeriHub's settings, applies here too: the commands that change a
 device are refused while it is on.";
@@ -74,10 +82,13 @@ fn run(args: &[&str]) -> Result<()> {
     match args {
         ["focus"] => return watch_focus(30),
         ["focus", seconds] => return watch_focus(seconds.parse().map_err(|_| invalid("seconds"))?),
+        ["app", rest @ ..] => return quick::send(QuickAction::from_args(rest).map_err(|_| usage())?),
         _ => {}
     }
     let Some(_devices) = perihub_core::config::try_lock_devices()? else {
-        return Err(invalid("PeriHub is open: quit it from the tray first, since both would talk to the same devices"));
+        return Err(invalid(
+            "PeriHub is open: quit it from the tray first, since both would talk to the same devices (perihub-cli app ... works while it is open)",
+        ));
     };
     let config = AppConfig::load();
     // The core refuses every change in read-only mode; a command that only changes things is
@@ -193,6 +204,10 @@ fn changes_a_device(args: &[&str]) -> bool {
             | ["mouse", "factory", _]
             | ["mouse", "restore", _]
     )
+}
+
+fn usage() -> perihub_core::Error {
+    perihub_core::Error::Invalid(format!("unknown app command\n\n{USAGE}"))
 }
 
 fn invalid(what: &str) -> perihub_core::Error {

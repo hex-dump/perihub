@@ -5,7 +5,8 @@
 
 use std::sync::Mutex;
 
-use tauri::menu::{CheckMenuItem, IsMenuItem, Menu, MenuItem};
+use perihub_core::quick::QuickAction;
+use tauri::menu::{CheckMenuItem, IsMenuItem, Menu, MenuItem, Submenu};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, WebviewWindow, WebviewWindowBuilder, Wry};
 
@@ -65,15 +66,16 @@ fn open_page(window: &WebviewWindow, page: &str) {
 }
 
 fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
-    let mut items = vec![MenuItem::with_id(app, "open", "Open PeriHub", true, None::<&str>)?];
+    let mut head = vec![MenuItem::with_id(app, "open", "Open PeriHub", true, None::<&str>)?];
     if let Some(version) = UPDATE.lock().unwrap().as_deref() {
-        items.push(MenuItem::with_id(app, "update", format!("Update to {version}…"), true, None::<&str>)?);
+        head.push(MenuItem::with_id(app, "update", format!("Update to {version}…"), true, None::<&str>)?);
     }
     // Information only: nothing to click.
     for (i, line) in BATTERIES.lock().unwrap().iter().enumerate() {
-        items.push(MenuItem::with_id(app, format!("battery-{i}"), line, false, None::<&str>)?);
+        head.push(MenuItem::with_id(app, format!("battery-{i}"), line, false, None::<&str>)?);
     }
-    items.push(MenuItem::with_id(app, "stop", "Stop software macros", true, None::<&str>)?);
+    let submenus = device_submenus(app)?;
+    let mut items = vec![MenuItem::with_id(app, "stop", "Stop software macros", true, None::<&str>)?];
     // A way out that does not need the window, in case a Corsair mouse stops clicking.
     let experimental = app
         .try_state::<crate::AppState>()
@@ -90,9 +92,51 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         None::<&str>,
     )?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let refs: Vec<&dyn IsMenuItem<Wry>> =
-        items.iter().map(|i| i as &dyn IsMenuItem<Wry>).chain([&read_only as &dyn IsMenuItem<Wry>, &quit]).collect();
+    let refs: Vec<&dyn IsMenuItem<Wry>> = head
+        .iter()
+        .map(|i| i as &dyn IsMenuItem<Wry>)
+        .chain(submenus.iter().map(|i| i as &dyn IsMenuItem<Wry>))
+        .chain(items.iter().map(|i| i as &dyn IsMenuItem<Wry>))
+        .chain([&read_only as &dyn IsMenuItem<Wry>, &quit])
+        .collect();
     Menu::with_items(app, &refs)
+}
+
+/// One submenu for each connected device with quick actions: they only switch what is saved.
+fn device_submenus(app: &AppHandle) -> tauri::Result<Vec<Submenu<Wry>>> {
+    let Some(state) = app.try_state::<crate::AppState>() else { return Ok(Vec::new()) };
+    let status = state.manager.status();
+    let item = |action: QuickAction, text: String| {
+        MenuItem::with_id(app, crate::quick::menu_id(&action), text, true, None::<&str>)
+    };
+    let mut submenus = Vec::new();
+    if let (Some(mouse), Some(choices)) = (&status.mouse, crate::quick::mouse_choices()) {
+        let mut items = Vec::new();
+        for number in choices.profiles.iter().copied().filter(|_| choices.profiles.len() > 1) {
+            items.push(item(QuickAction::Profile { number }, format!("Profile {number}"))?);
+        }
+        let dpi = choices.dpi_levels.iter().enumerate().filter(|_| choices.dpi_levels.len() > 1);
+        for (i, dpi) in dpi {
+            let number = i as u8 + 1;
+            items.push(item(QuickAction::DpiLevel { number }, format!("DPI level {number}: {dpi}"))?);
+        }
+        let refs: Vec<&dyn IsMenuItem<Wry>> = items.iter().map(|i| i as &dyn IsMenuItem<Wry>).collect();
+        if !refs.is_empty() {
+            submenus.push(Submenu::with_items(app, &mouse.model, true, &refs)?);
+        }
+    }
+    if let Some(keyboard) = &status.keyboard {
+        let presets = state.config.lock().unwrap().lighting_presets.iter().map(|p| p.name.clone()).collect::<Vec<_>>();
+        let mut items = Vec::new();
+        for name in presets {
+            items.push(item(QuickAction::Preset { name: name.clone() }, name)?);
+        }
+        let refs: Vec<&dyn IsMenuItem<Wry>> = items.iter().map(|i| i as &dyn IsMenuItem<Wry>).collect();
+        if !refs.is_empty() {
+            submenus.push(Submenu::with_items(app, keyboard.name, true, &refs)?);
+        }
+    }
+    Ok(submenus)
 }
 
 /// Builds the tray menu again after something it shows changed.
@@ -111,6 +155,9 @@ pub fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             "open" => show(app, None),
             "update" => show(app, Some("settings")),
             "stop" => app.state::<crate::AppState>().soft.stop_all(),
+            id if crate::quick::from_menu_id(id).is_some() => {
+                crate::quick::run_from_menu(app, crate::quick::from_menu_id(id).unwrap());
+            }
             "experimental-off" => crate::commands::turn_off_experimental(app),
             "read-only" => {
                 let app = app.clone();

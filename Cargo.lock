@@ -2862,6 +2862,7 @@ version = "0.9.0"
 dependencies = [
  "dirs 7.0.0",
  "evdev",
+ "getrandom 0.3.4",
  "hidapi",
  "log",
  "serde",

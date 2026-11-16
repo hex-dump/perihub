@@ -17,6 +17,7 @@ pub mod logitech;
 pub mod manager;
 pub mod mouse;
 pub mod peripheral;
+pub mod quick;
 #[cfg(windows)]
 pub mod rawinput;
 pub mod report_devices;
