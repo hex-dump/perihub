@@ -14,6 +14,7 @@
   import QmkKeyboards from "./pages/QmkKeyboards.svelte";
   import Settings from "./pages/Settings.svelte";
   import DeviceReport from "./pages/DeviceReport.svelte";
+  import TestWizard from "./pages/TestWizard.svelte";
   import Icon from "./components/Icon.svelte";
   import Support from "./components/Support.svelte";
   import logo from "../icon.svg";
@@ -27,6 +28,7 @@
     | "peripheral"
     | "qmk"
     | "report"
+    | "wizard"
     | "profiles"
     | "settings";
   const PAGES: Page[] = [
@@ -38,6 +40,7 @@
     "peripheral",
     "qmk",
     "report",
+    "wizard",
     "profiles",
     "settings",
   ];
@@ -299,6 +302,10 @@
     {/if}
 
     <div class="grow"></div>
+    <button class:active={page === "wizard"} onclick={() => go("wizard")}>
+      <Icon name="report" />
+      <span class="name">Test my device</span>
+    </button>
     <button class:active={page === "profiles"} onclick={() => go("profiles")}>
       <Icon name="profiles" />
       <span class="name">App profiles</span>
@@ -368,6 +375,8 @@
         <QmkKeyboards keyboards={status.qmk} onopen={(key) => go("peripheral", peripheralTab(key))} />
       {:else if page === "report"}
         <DeviceReport alone={!anyDevice} shown={status.qmk.map((k) => k.key)} />
+      {:else if page === "wizard"}
+        <TestWizard {status} />
       {:else if page === "profiles"}
         <AppProfiles {status} />
       {:else if page === "settings"}
