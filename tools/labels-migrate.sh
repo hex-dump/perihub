@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-time label migration for the repository's issues (run by the maintainer, after the change that
-# adds .github/ISSUE_TEMPLATE/test_report.yml is merged):
+# adds .github/ISSUE_TEMPLATE/01_test_report.yml is merged):
 #
 #   tools/labels-migrate.sh --dry-run   shows what it would do, changes nothing
 #   tools/labels-migrate.sh             does it

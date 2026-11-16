@@ -24,7 +24,7 @@ type CmdResult<T> = Result<T, String>;
 /// The forms on GitHub (the test report and the device request); the interface adds the fields it
 /// fills in.
 const TEST_FORM_URLS: &[&str] = &[
-    "https://github.com/hex-dump/perihub/issues/new?template=test_report.yml&",
+    "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml&",
     "https://github.com/hex-dump/perihub/issues/new?template=device_request.yml&",
 ];
 

@@ -5,7 +5,7 @@ import type { HidppFeature, MouseInfo, ReportDevice } from "./api";
 import { kindName } from "./logitechFeatures";
 
 const LOGITECH = "046d";
-const TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=test_report.yml";
+const TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml";
 
 /** The mouse's profile list when it was connected. */
 const PROFILE_LIST = {
@@ -126,7 +126,7 @@ export function testFormUrl(mouse: MouseInfo, version: string, system: string): 
   return `${TEST_FORM}&${query.join("&")}`;
 }
 
-const DEVICE_TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=test_report.yml";
+const DEVICE_TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml";
 
 /** The fields of the device test form (Corsair devices and the G300). */
 export interface DeviceTestFields {

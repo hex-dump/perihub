@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MARK = "<!-- perihub-triage -->"
 DEVICES_MD = "https://github.com/hex-dump/perihub/blob/main/docs/devices.md"
-TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=test_report.yml"
+TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml"
 LEVELS = {
     "supported": "✅ **supported**: tested on real hardware",
     "experimental": "🧪 **experimental**: recognized, not tested yet, changes at your own risk",

@@ -21,7 +21,7 @@ describe("the device test form", () => {
     const fields = corsairTest(info, "0.6.1", "windows x86_64");
     const url = new URL(deviceTestFormUrl(fields, "0.6.1", "windows x86_64"));
     expect(url.origin + url.pathname).toBe("https://github.com/hex-dump/perihub/issues/new");
-    expect(url.searchParams.get("template")).toBe("test_report.yml");
+    expect(url.searchParams.get("template")).toBe("01_test_report.yml");
     expect(url.searchParams.get("model")).toBe("Corsair IRONCLAW RGB WIRELESS");
     expect(url.searchParams.get("usb-id")).toBe("1b1c:1b4c");
     expect(url.searchParams.get("connection")).toBe("wireless receiver");

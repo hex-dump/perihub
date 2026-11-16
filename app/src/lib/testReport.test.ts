@@ -189,7 +189,7 @@ describe("testFormUrl", () => {
 
   it("opens the test report form with the fields filled in", () => {
     const url = testFormUrl(wireless, "0.5.2", "windows x86_64");
-    expect(url.startsWith("https://github.com/hex-dump/perihub/issues/new?template=test_report.yml&")).toBe(true);
+    expect(url.startsWith("https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml&")).toBe(true);
     const query = fields(url);
     // GitHub wants a title before the report can be sent.
     expect(query.get("title")).toBe("G502 X Lightspeed test report");
