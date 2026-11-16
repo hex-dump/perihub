@@ -8,7 +8,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ### Added
 - **Settings lists the supported brands**: under Devices, each brand shows how many models are supported, experimental or read-only, and opens to its models. The list is generated from the driver tables, so it cannot go stale.
-- **A Support entry in the sidebar**: a small **Support** button at the bottom opens two optional links, Buy me a coffee and Star on GitHub. Nothing pops up on its own.
+- **Support me, in the sidebar**: a small **Support me** button at the bottom opens two optional links, Buy me a coffee and Star on GitHub. Nothing pops up on its own.
 - **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.
 
 ### Changed

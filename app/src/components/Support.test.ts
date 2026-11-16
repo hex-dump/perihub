@@ -16,12 +16,12 @@ describe("Support", () => {
   it("shows nothing but the entry until it is clicked", () => {
     render(Support);
     expect(screen.queryByRole("link")).toBeNull();
-    expect(screen.getByRole("button", { name: "Support" }).getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByRole("button", { name: "Support me" }).getAttribute("aria-expanded")).toBe("false");
   });
 
   it("offers both links and opens them through the app", async () => {
     render(Support);
-    await fireEvent.click(screen.getByRole("button", { name: "Support" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Support me" }));
     const coffee = screen.getByRole("link", { name: /Buy me a coffee/ });
     const star = screen.getByRole("link", { name: /Star on GitHub/ });
     expect(coffee.getAttribute("href")).toBe("https://buymeacoffee.com/hexdump1");
@@ -34,7 +34,7 @@ describe("Support", () => {
 
   it("closes with Escape", async () => {
     render(Support);
-    await fireEvent.click(screen.getByRole("button", { name: "Support" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Support me" }));
     await fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("link")).toBeNull();
   });

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // A quiet "Support" entry at the bottom of the sidebar: two links, opened only on a click.
+  // A quiet "Support me" entry at the bottom of the sidebar: two links, opened only on a click.
   import { api, errorText } from "../lib/api";
   import Icon from "./Icon.svelte";
 
@@ -31,11 +31,11 @@
 <div class="support" bind:this={root}>
   <button class="ghost toggle" aria-expanded={open} aria-controls="support-links" onclick={() => (open = !open)}>
     <Icon name="heart" />
-    <span>Support</span>
+    <span>Support me</span>
   </button>
   {#if open}
     <div class="pop" id="support-links" role="group" aria-label="Support PeriHub">
-      <p class="small muted">PeriHub is free. These are optional.</p>
+      <p class="small muted">PeriHub is free and open source. If you'd like to support the developer and the project, here's how:</p>
       <a href={COFFEE_URL} onclick={(e) => openLink(e, COFFEE_URL)}><Icon name="coffee" /> Buy me a coffee</a>
       <a href={GITHUB_URL} onclick={(e) => openLink(e, GITHUB_URL)}><Icon name="star" /> Star on GitHub</a>
       {#if error}<p class="small" role="alert">{error}</p>{/if}
