@@ -12,8 +12,8 @@ use serde::Serialize;
 
 use super::lighting::Lighting;
 use super::{
-    DpiCapabilities, FeatureEntry, HIDPP10_ERROR, HidppDevice, OnboardInfo, REPORT_LONG, REPORT_SHORT, SHORT_LEN,
-    SOFTWARE_ID, Transport, feature, unreachable_code,
+    Battery, DpiCapabilities, FeatureEntry, HIDPP10_ERROR, HidppDevice, LedZone, OnboardInfo, REPORT_LONG,
+    REPORT_SHORT, SHORT_LEN, SOFTWARE_ID, Transport, feature, unreachable_code,
 };
 use crate::error::{Error, Result};
 
@@ -166,6 +166,15 @@ pub struct UnsupportedDevice {
     pub onboard: Option<OnboardInfo>,
     /// Its lighting (0x8040, 0x8071, 0x8081, 0x4540), if it has one of those features.
     pub lighting: Option<Lighting>,
+    /// The zones of the older lighting feature (0x8070) and the effects each offers, if it has it.
+    pub led_zones: Vec<LedZone>,
+    /// Its battery when it was read, if it has a battery feature.
+    pub battery: Option<Battery>,
+    /// The battery feature's reply as it came, such as "1004: 50 04 00 00", to check what it means.
+    pub battery_reply: Option<String>,
+    /// PeriHub only reads it, whatever features it has: a device on its own USB connection that
+    /// nobody has tested yet (see [`super::direct`]). No DPI change and no driving of its lights.
+    pub read_only: bool,
     /// What could not be read.
     pub read_errors: Vec<String>,
 }
@@ -189,6 +198,10 @@ impl UnsupportedDevice {
             report_rates_ms: Vec::new(),
             onboard: None,
             lighting: None,
+            led_zones: Vec::new(),
+            battery: None,
+            battery_reply: None,
+            read_only: false,
             read_errors: Vec::new(),
         };
         let mut failed = |what: &str, error: Error| match error {
@@ -222,11 +235,12 @@ impl UnsupportedDevice {
             Err(error) => failed("features", error)?,
         }
         let has = |id: u16| device.features.iter().any(|f| f.id == id);
-        let (kind, dpi, rates, onboard) = (
+        let (kind, dpi, rates, onboard, led_zones) = (
             has(feature::DEVICE_NAME),
             has(feature::ADJUSTABLE_DPI),
             has(feature::REPORT_RATE),
             has(feature::ONBOARD_PROFILES),
+            has(feature::COLOR_LED_EFFECTS),
         );
         if kind {
             match dev.device_type() {
@@ -251,6 +265,20 @@ impl UnsupportedDevice {
                 Ok(info) => device.onboard = Some(info),
                 Err(error) => failed("onboard memory", error)?,
             }
+        }
+        if led_zones {
+            match dev.led_zones() {
+                Ok(zones) => device.led_zones = zones,
+                Err(error) => failed("LED zones", error)?,
+            }
+        }
+        match dev.battery_reading() {
+            Ok(Some((id, reply, battery))) => {
+                device.battery = battery;
+                device.battery_reply = Some(format!("{id:04x}: {}", crate::peripheral::hex(&reply[..4])));
+            }
+            Ok(None) => {}
+            Err(error) => failed("battery", error)?,
         }
         let lighting = [
             feature::BRIGHTNESS_CONTROL,

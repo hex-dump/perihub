@@ -155,6 +155,7 @@ describe("receiverTest", () => {
     collections: ["interface 2, usage page ff00, usage 0001", "interface 2, usage page ff00, usage 0002"],
     bolt: true,
     unifying: false,
+    direct: false,
     reachable: true,
     denied: false,
     open_slots: [1],
@@ -176,6 +177,10 @@ describe("receiverTest", () => {
         report_rates_ms: [],
         onboard: null,
         lighting: null,
+        led_zones: [],
+        battery: null,
+        battery_reply: null,
+        read_only: false,
         read_errors: [],
       },
     ],
@@ -200,10 +205,79 @@ describe("receiverTest", () => {
       "DPI: 200-8000, step 50",
       "Polling (ms): none reported",
       "Onboard memory: none",
+      "Battery: not read",
+      "LED zones (0x8070): none",
       "Could not read: nothing",
     ]);
     const query = new URL(deviceTestFormUrl(fields, "0.6.6", "windows x86_64")).searchParams;
     expect(query.get("title")).toBe("Logitech MX Master 3S test report");
+  });
+
+  // Issue #40: a keyboard on its own cable, with HID++ in usage page ff43, read-only.
+  const proKda: ReceiverReport = {
+    ...bolt,
+    product_id: 0xc339,
+    name: "USB cable",
+    collections: [
+      "interface 0, usage page 0001, usage 0006",
+      "interface 1, usage page 0001, usage 0006",
+      "interface 1, usage page 000c, usage 0001",
+      "interface 1, usage page ff43, usage 0602",
+      "interface 1, usage page ff43, usage 0604",
+    ],
+    bolt: false,
+    slots: ["usage page ff43, usage 0604, index ff: HID++ 4.2"],
+    open_slots: [0xff],
+    direct: true,
+    unsupported: [
+      {
+        ...bolt.unsupported[0],
+        slot: 0xff,
+        name: "PRO K/DA",
+        kind: 0,
+        protocol: "4.2",
+        device_info: "02 xx xx xx xx 00 08 c3 39 00 00 00 00 00 00 00",
+        firmware: ["KBD 01.02.0015"],
+        features: [
+          { id: 0x0001, kind: 0, version: 1 },
+          { id: 0x8070, kind: 0, version: 4 },
+        ],
+        dpi: null,
+        led_zones: [{ index: 0, location: 1, effects: [0, 1, 3] }],
+        read_only: true,
+      },
+    ],
+  };
+
+  it("describes a device on its own USB connection, with what its HID++ collections answered", () => {
+    const fields = receiverTest(proKda, proKda.unsupported[0], "0.9.0", "windows x86_64");
+    expect(fields.model).toBe("Logitech PRO K/DA");
+    expect(fields.usbId).toBe("046d:c339");
+    expect(fields.connection).toBe("USB cable");
+    const report = fields.report.split("\n");
+    expect(report.slice(0, 7)).toEqual([
+      "PeriHub 0.9.0 on windows x86_64",
+      "Device: USB ID 046d:c339, on its USB cable (no receiver), read-only",
+      "HID collections: interface 0, usage page 0001, usage 0006; interface 1, usage page 0001, usage 0006; interface 1, usage page 000c, usage 0001; interface 1, usage page ff43, usage 0602; interface 1, usage page ff43, usage 0604",
+      "PeriHub opens its HID++ collection: yes",
+      "HID++ answers: usage page ff43, usage 0604, index ff: HID++ 4.2",
+      "Open now: yes",
+      "Device index ff: PRO K/DA, HID++ 4.2",
+    ]);
+    expect(report).toContain("Kind: Keyboard (0)");
+    expect(report).toContain("Features: 0001 v1, 8070 v4");
+    expect(report).toContain("LED zones (0x8070): zone 0 at 1, effects 0 1 3");
+    expect(report).not.toContain("Receiver: USB cable, USB ID 046d:c339");
+  });
+
+  it("says what a device on its own USB connection answered when it could not be read", () => {
+    const why = "no HID++ answer yet";
+    const placeholder = { ...proKda.unsupported[0], protocol: "not read", features: [], led_zones: [], read_errors: [why] };
+    const silent = { ...proKda, open_slots: [], slots: ["usage page ff43, usage 0604, index ff: the device did not respond in time"] };
+    const report = receiverTest(silent, placeholder, "0.9.0", "windows x86_64").report;
+    expect(report).toContain("HID++ answers: usage page ff43, usage 0604, index ff: the device did not respond in time");
+    expect(report).toContain("Open now: no");
+    expect(report).toContain(`Could not read: ${why}`);
   });
 
   it("still describes a receiver PeriHub cannot reach", () => {
@@ -223,6 +297,7 @@ describe("receiverTest", () => {
   it("adds the DPI now and the DPI PeriHub sets, for a device that is open", () => {
     const live = { battery: null, dpi: 1600, saved_dpi: 1600, lighting: null, host: null, gave_back: null, saved_look: null, host_log: null, drive_at_start: false, waiting: null };
     const report = receiverTest(bolt, bolt.unsupported[0], "0.6.7", "linux x86_64", live).report;
+    expect(report).toContain("Battery now: not read");
     expect(report).toContain("DPI now: 1600");
     expect(report).toContain("DPI set by PeriHub at every connection: 1600");
     expect(receiverTest(bolt, bolt.unsupported[0], "0.6.7", "linux x86_64").report).not.toContain("DPI now");

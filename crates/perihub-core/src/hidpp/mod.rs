@@ -2,6 +2,7 @@
 //!
 //! References: libratbag (MIT) and data read from the real device.
 
+pub mod direct;
 pub mod host;
 pub mod lighting;
 pub mod macros;
@@ -193,7 +194,7 @@ pub struct DpiCapabilities {
     pub list: Vec<u16>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LedZone {
     pub index: u8,
     /// 1 = primary, 2 = logo (per the HID++ 0x8070 specification).
@@ -246,6 +247,9 @@ pub struct Battery {
     pub estimated: bool,
     pub state: BatteryState,
 }
+
+/// A battery feature's id, its reply as it came, and what PeriHub reads in it.
+pub type BatteryReading = (u16, [u8; 16], Option<Battery>);
 
 /// Charge of a single-cell lithium battery by voltage (mV), on its usual discharge curve.
 const VOLTAGE_CURVE: &[(u16, u8)] = &[
@@ -676,6 +680,12 @@ impl HidppDevice {
 
     /// The battery, from whichever battery feature the mouse has, or `None` without one.
     pub fn battery(&mut self) -> Result<Option<Battery>> {
+        Ok(self.battery_reading()?.and_then(|(_, _, battery)| battery))
+    }
+
+    /// The battery feature the device has, its reply as it came, and what PeriHub reads in it, or
+    /// `None` without a battery feature.
+    pub fn battery_reading(&mut self) -> Result<Option<BatteryReading>> {
         type Parse = fn(&[u8; 16]) -> Option<Battery>;
         let features: [(u16, u8, Parse); 3] = [
             (feature::UNIFIED_BATTERY, 1, parse_unified_battery),
@@ -684,7 +694,7 @@ impl HidppDevice {
         ];
         for (feature, function, parse) in features {
             match self.call(feature, function, &[]) {
-                Ok(reply) => return Ok(parse(&reply)),
+                Ok(reply) => return Ok(Some((feature, reply, parse(&reply)))),
                 Err(Error::FeatureMissing(_)) => {}
                 Err(error) => return Err(error),
             }

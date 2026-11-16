@@ -6,7 +6,7 @@
 use hidapi::{BusType, DeviceInfo};
 use serde::Serialize;
 
-use crate::hidpp::{models, receiver};
+use crate::hidpp::{direct, models, receiver};
 use crate::{corsair, g300, peripheral};
 
 const STEELSERIES: u16 = 0x1038;
@@ -70,6 +70,7 @@ pub fn known(vendor_id: u16, product_id: u16) -> bool {
     match vendor_id {
         STEELSERIES if STEELSERIES_KEYBOARDS.contains(&product_id) => true,
         LOGITECH if models::find(product_id).is_some() || receiver::is_receiver(product_id) => true,
+        LOGITECH if direct::find(product_id).is_some() => true,
         LOGITECH if product_id == g300::PRODUCT_ID => true,
         corsair::CORSAIR if corsair::models::find(product_id).is_some() || corsair::models::is_receiver(product_id) => {
             true
@@ -156,6 +157,7 @@ mod tests {
             entry(0x1B1C, 0x1B93, Some("KATAR PRO"), 1, 0xFF42, 1),
             entry(0x3710, 0x3414, Some("X2 CrazyLight"), 1, 1, 2),
             entry(0x046D, 0xC52B, Some("Unifying receiver"), 2, 0xFF00, 2),
+            entry(0x046D, 0xC339, Some("PRO K/DA"), 1, 0xFF43, 0x0604),
             entry(0x046D, 0x0A87, Some("A Logitech headset"), 3, 0x0C, 1),
         ]);
         let names: Vec<_> = devices.iter().map(|d| d.product.as_deref().unwrap()).collect();

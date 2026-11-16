@@ -24,6 +24,10 @@ const device = (ids: number[], hidden: number[] = []): UnsupportedReceiverDevice
   report_rates_ms: [],
   onboard: null,
   lighting: null,
+  led_zones: [],
+  battery: null,
+  battery_reply: null,
+  read_only: false,
   read_errors: [],
 });
 
@@ -114,6 +118,10 @@ describe("driving a keyboard's lights", () => {
       onboard: null,
       read_errors: [],
       lighting,
+      led_zones: [],
+      battery: null,
+      battery_reply: null,
+      read_only: false,
     };
     const features = (ids: number[]) => ids.map((id) => ({ id, kind: 0, version: 0 }));
     expect(lightsDrivable({ ...base, features: features([0x8071, 0x8101]) })).toBe(true);
@@ -121,5 +129,7 @@ describe("driving a keyboard's lights", () => {
     expect(lightsDrivable({ ...base, features: features([0x8071, 0x8101]), lighting: { ...lighting, effects: null } })).toBe(false);
     const dpi = { min: 200, max: 8000, step: 50, list: [] };
     expect(lightsDrivable({ ...base, features: features([0x8071, 0x8101]), dpi })).toBe(false);
+    // A device PeriHub only reads (on its own USB connection, issue #40).
+    expect(lightsDrivable({ ...base, features: features([0x8071, 0x8101]), read_only: true })).toBe(false);
   });
 });

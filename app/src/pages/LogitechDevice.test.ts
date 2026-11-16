@@ -31,6 +31,10 @@ const device: UnsupportedReceiverDevice = {
   report_rates_ms: [],
   onboard: null,
   lighting: null,
+  led_zones: [],
+  battery: null,
+  battery_reply: null,
+  read_only: false,
   read_errors: [],
 };
 
@@ -40,6 +44,7 @@ const receiver: ReceiverReport = {
   collections: [],
   bolt: true,
   unifying: false,
+  direct: false,
   reachable: true,
   denied: false,
   open_slots: [1],
@@ -116,6 +121,20 @@ describe("a Logitech keyboard's lighting", () => {
     expect(card.textContent).toContain("Dims after 1 min, off 5 min later");
     expect(card.textContent).toContain("code 1");
     expect(card.querySelectorAll("button, input, select").length).toBe(0);
+  });
+
+  // Issue #40: features that would let PeriHub drive the lights and change the DPI, on a device it only reads.
+  it("offers nothing to change on a keyboard on its own USB connection", async () => {
+    const ids = [0x8071, 0x8101, 0x2201];
+    const usb = { ...keyboard, slot: 0xff, name: "PRO K/DA", dpi: device.dpi, read_only: true, features: ids.map((id) => ({ id, kind: 0, version: 0 })) };
+    const cable = { ...receiver, product_id: 0xc339, name: "USB cable", bolt: false, direct: true, open_slots: [0xff], unsupported: [usb] };
+    live = { battery: null, dpi: 1000, saved_dpi: null, lighting: { brightness: 50, on: true, control: 0 }, host: null, gave_back: null, saved_look: null, host_log: null, drive_at_start: false, waiting: null };
+    await open({ device: usb, receiver: cable });
+    expect(screen.getByText(/Keyboard · on its USB cable/)).toBeTruthy();
+    expect(screen.getByText("Read-only.")).toBeTruthy();
+    expect(screen.queryByRole("spinbutton", { name: "DPI" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Drive the lights/ })).toBeNull();
+    expect(api.logitechLive).toHaveBeenCalledWith(0xc339, 0xff);
   });
 
   it("says when a program drives the lights", async () => {

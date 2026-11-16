@@ -361,6 +361,14 @@ export interface UnsupportedReceiverDevice {
   onboard: MouseInfo["onboard"] | null;
   /** Its lighting (0x8040, 0x8071, 0x8081, 0x4540), if it has one of those features. */
   lighting: HidppLighting | null;
+  /** The zones of the older lighting feature (0x8070), with the effects each offers. */
+  led_zones: LedZone[];
+  /** Its battery when it was read, if it has a battery feature. */
+  battery: Battery | null;
+  /** The battery feature's reply as it came, such as "1004: 50 04 00 00". */
+  battery_reply: string | null;
+  /** PeriHub only reads it: a device on its own USB connection nobody has tested yet. */
+  read_only: boolean;
   read_errors: string[];
 }
 
@@ -517,6 +525,10 @@ export interface ReceiverReport {
   slots: string[];
   /** Paired devices that answer and that PeriHub does not support yet. */
   unsupported: UnsupportedReceiverDevice[];
+  /** Not a receiver: a device on its own USB connection. `name` says how it connects ("USB cable"),
+   * `slots` what its HID++ collections answered, and `unsupported` holds the device itself (its "slot"
+   * is the HID++ device index). */
+  direct: boolean;
 }
 
 export type G300Button =

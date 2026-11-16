@@ -23,6 +23,10 @@ fn udev_rule_matches_mouse_list() {
         .filter(|m| m.has_cable())
         .map(|m| format!("{:04x}", m.product_id))
         .chain([format!("{:04x}", perihub_core::g300::PRODUCT_ID)])
+        // Devices with HID++ on their own USB connection, except where that interface carries typing.
+        .chain(
+            perihub_core::hidpp::direct::DIRECT.iter().filter(|m| !m.typing).map(|m| format!("{:04x}", m.product_id)),
+        )
         // The G600 and the HID++ 1.0 mice, from the other brands' tables (checked there).
         .chain(perihub_core::peripheral::logitech_g600::MODELS.iter().map(|m| format!("{:04x}", m.product_ids[0])))
         // The HID++ 1.0 mice, from the other brands' tables too.
@@ -128,6 +132,24 @@ fn udev_rule_matches_the_other_brands_tables() {
         in_rule.sort();
         in_tables.sort();
         assert_eq!(in_rule, in_tables, "vendor {vendor:04x}");
+    }
+}
+
+#[test]
+fn udev_rule_opens_only_the_hidpp_interface_of_the_logitech_usb_devices() {
+    for m in perihub_core::hidpp::direct::DIRECT {
+        let tag = format!(r#"ATTRS{{idProduct}}=="{:04x}""#, m.product_id);
+        let lines: Vec<&str> = RULE.lines().filter(|l| !l.trim_start().starts_with('#') && l.contains(&tag)).collect();
+        if m.typing {
+            assert!(lines.is_empty(), "{lines:?}");
+        } else {
+            assert_eq!(lines.len(), 1);
+            assert!(
+                lines[0].contains(&format!(r#"ENV{{ID_USB_INTERFACE_NUM}}=="{:02}""#, m.interface)),
+                "{}",
+                lines[0]
+            );
+        }
     }
 }
 

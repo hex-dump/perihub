@@ -67,6 +67,10 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c091", TAG+="uacc
 # Logitech MX518
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c08e", TAG+="uaccess"
 
+# Logitech keyboards and headsets with HID++ on their own USB connection, without a receiver (read only,
+# untested): only the interface with their HID++ collections (usage page ff43). A keyboard whose HID++
+# collections share an interface with what is typed on it is left out: one hidraw node holds both.
+
 # LIGHTSPEED receivers, for wireless Logitech mice (read-only until they are tested): only the
 # receiver's own HID++ interface (02). Movements and typing arrive on its other interfaces, which
 # stay closed, and so do the devices that Linux creates for the mice paired with it.

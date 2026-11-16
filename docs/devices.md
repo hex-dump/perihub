@@ -20,6 +20,7 @@ the same format.
 - [SteelSeries](#steelseries)
 - [Logitech mice with onboard profiles](#logitech-mice-with-onboard-profiles)
 - [Logitech G300](#logitech-g300)
+- [Logitech keyboards and headsets on their own USB connection](#logitech-keyboards-and-headsets-on-their-own-usb-connection)
 - [Corsair](#corsair)
 - [ASUS](#asus)
 - [SteelSeries mice](#steelseries-mice)
@@ -183,6 +184,26 @@ experimental feature. It was confirmed on a real G300 in
 they were still there after the mouse was unplugged and plugged back in, and a save that was not
 kept was undone. No G300 has been tried on Linux yet. Something does not work on yours? Send a
 [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
+
+## Logitech keyboards and headsets on their own USB connection
+
+👁 Read-only: Logitech devices with HID++ 2.0 on a USB connection of their own, without a receiver,
+whose HID++ collections use the newer vendor usage page `ff43`
+([how PeriHub finds them](protocols/logitech-usb-hidpp.md)). Nobody has tried PeriHub on one yet.
+Each gets the page of a device PeriHub knows by its features: its name, firmware, the features it
+lists, its battery if it has one, and the lighting it reports (zones and effects, brightness, who
+drives the lights). Nothing is changed, not even in RAM: the DPI and **Drive the lights** are not
+offered, and the connection refuses anything but reads. The test report has every answer as it came.
+
+- **PRO K/DA** keyboard ([issue #40](https://github.com/hex-dump/perihub/issues/40)): on Windows
+  only. Its HID++ collections share USB interface 1 with what is typed on it, so on Linux, where
+  one device node holds both, PeriHub neither opens it nor asks for a udev rule.
+
+<!-- generated: table logitech-direct -->
+| Keyboard | USB ID | Opened on Linux |
+|---|---|---|
+| PRO K/DA | `046d:c339` | — |
+<!-- end generated -->
 
 ## Corsair
 

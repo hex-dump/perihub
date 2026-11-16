@@ -118,6 +118,7 @@ export function waveDirections(caps: number): { value: number; label: string }[]
 export function lightsDrivable(device: UnsupportedReceiverDevice): boolean {
   const ids = new Set(device.features.map((f) => f.id));
   const dpiChangeable = !!device.dpi && !device.onboard;
+  if (device.read_only) return false;
   return ids.has(0x8071) && ids.has(0x8101) && !!device.lighting?.effects?.zones.length && !dpiChangeable;
 }
 

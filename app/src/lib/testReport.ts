@@ -1,7 +1,7 @@
 import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
-import type { HidppFeature, HidppLighting, LightsLook, MouseInfo, ReportDevice } from "./api";
+import type { Battery, HidppFeature, HidppLighting, LightsLook, MouseInfo, ReportDevice } from "./api";
 import { effectName, kindName, zoneName } from "./logitechFeatures";
 
 const LOGITECH = "046d";
@@ -159,8 +159,14 @@ export function deviceTestFormUrl(fields: DeviceTestFields, version: string, sys
   return `${DEVICE_TEST_FORM}&${query.join("&")}`;
 }
 
+function batteryText(battery: Battery | null): string {
+  if (!battery) return "not read";
+  return `${battery.estimated ? "about " : ""}${battery.percent}%, ${battery.state}`;
+}
+
 /** What a tester sends about a Logitech receiver and a device paired with it that PeriHub does not
- * support yet (`null`: none answered). */
+ * support yet (`null`: none answered), or about a device on its own USB connection (`receiver.direct`),
+ * which has no receiver: `receiver` then says how it connects and what its HID++ collections answered. */
 export function receiverTest(
   receiver: ReceiverReport,
   device: UnsupportedReceiverDevice | null,
@@ -169,13 +175,23 @@ export function receiverTest(
   live: LogitechLive | null = null,
 ): DeviceTestFields {
   const id = `${LOGITECH}:${hex(receiver.product_id)}`;
-  const lines = [
-    `PeriHub ${version} on ${system}`,
-    `Receiver: ${receiver.name}, USB ID ${id}`,
-    `HID collections: ${receiver.collections.join("; ") || "none"}`,
-    `PeriHub reaches its paired devices: ${receiver.denied ? "no (the system refused to open it)" : receiver.reachable ? "yes" : "no"}`,
-    `Slots: ${receiver.slots.join("; ") || "not asked"}`,
-  ];
+  const reached = receiver.denied ? "no (the system refused to open it)" : receiver.reachable ? "yes" : "no";
+  const lines = receiver.direct
+    ? [
+        `PeriHub ${version} on ${system}`,
+        `Device: USB ID ${id}, on its ${receiver.name} (no receiver), read-only`,
+        `HID collections: ${receiver.collections.join("; ") || "none"}`,
+        `PeriHub opens its HID++ collection: ${reached}`,
+        `HID++ answers: ${receiver.slots.join("; ") || "not asked yet"}`,
+        `Open now: ${device && receiver.open_slots.includes(device.slot) ? "yes" : "no"}`,
+      ]
+    : [
+        `PeriHub ${version} on ${system}`,
+        `Receiver: ${receiver.name}, USB ID ${id}`,
+        `HID collections: ${receiver.collections.join("; ") || "none"}`,
+        `PeriHub reaches its paired devices: ${reached}`,
+        `Slots: ${receiver.slots.join("; ") || "not asked"}`,
+      ];
   if (device) {
     const dpi = device.dpi
       ? device.dpi.list.length
@@ -185,8 +201,9 @@ export function receiverTest(
     const onboard = device.onboard
       ? `profile format ${device.onboard.profile_format}, ${device.onboard.sector_count} sectors of ${device.onboard.sector_size} bytes`
       : "none";
+    const zones = device.led_zones.map((z) => `zone ${z.index} at ${z.location}, effects ${z.effects.join(" ")}`);
     lines.push(
-      `Slot ${device.slot}: ${device.name ?? "name not read"}, HID++ ${device.protocol}`,
+      `${receiver.direct ? `Device index ${device.slot.toString(16).padStart(2, "0")}` : `Slot ${device.slot}`}: ${device.name ?? "name not read"}, HID++ ${device.protocol}`,
       `Kind: ${kindName(device.kind)}${device.kind === null ? "" : ` (${device.kind})`}`,
       `Device info (0x0003): ${device.device_info ?? "not read"}`,
       `Firmware: ${device.firmware.join(", ") || "not read"}`,
@@ -194,10 +211,13 @@ export function receiverTest(
       `DPI: ${dpi}`,
       `Polling (ms): ${device.report_rates_ms.join(", ") || "none reported"}`,
       `Onboard memory: ${onboard}`,
+      `Battery: ${batteryText(device.battery)}${device.battery_reply ? ` (${device.battery_reply})` : ""}`,
+      `LED zones (0x8070): ${zones.join("; ") || "none"}`,
     );
     if (device.lighting) lines.push(...lightingLines(device.lighting, device.kind));
     if (live) {
       lines.push(
+        `Battery now: ${batteryText(live.battery)}`,
         `DPI now: ${live.dpi ?? "not read"}`,
         `DPI set by PeriHub at every connection: ${live.saved_dpi ?? "none"}`,
       );

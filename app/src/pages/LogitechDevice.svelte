@@ -33,7 +33,7 @@
   const open = $derived(!!device && !!receiver && receiver.open_slots.includes(device.slot));
   /** The DPI can be changed: adjustable DPI and no onboard profiles, whose active profile sets the DPI
    * (as in the core's `dpi_changeable`). */
-  const changeable = $derived(!!device?.dpi && !device.onboard);
+  const changeable = $derived(!!device?.dpi && !device.onboard && !device.read_only);
   /** PeriHub can drive the keyboard's lights in host mode (experimental). */
   const drivable = $derived(!!device && lightsDrivable(device));
   /** The "No warranty" box is asked once per model. */
@@ -133,7 +133,9 @@
   <div class="col tight grow">
     <h1>Logitech {name}</h1>
     <span class="muted small">
-      {#if device && receiver}
+      {#if device && receiver?.direct}
+        {kindName(device.kind)} · on its {receiver.name}{open ? "" : " · not answering"}
+      {:else if device && receiver}
         {kindName(device.kind)} · through its {receiver.name}, slot {device.slot}{open ? "" : " · asleep"}
       {:else}
         Not connected
@@ -164,6 +166,11 @@
       <b>Experimental.</b> PeriHub knows the {name} by the features it reports. It can drive its lights, which nobody
       has tried on such a {kind} yet; everything else is only read. Whether it works or not, a test report on PeriHub's
       GitHub page helps.
+    {:else if receiver.direct}
+      <b>Read-only.</b> PeriHub reads the {name} on its {receiver.name} by the features it reports, and changes nothing
+      on it, not even its lights. Nobody has tried it yet: a test report on PeriHub's GitHub page tells what it has and
+      what it answered.
+      {#if !open && device.read_errors.length}It has not answered yet: {device.read_errors[0]}.{/if}
     {:else}
       <b>Not supported yet.</b> PeriHub knows the {name} by the features it reports, and only reads it: nothing on it
       is changed. A test report on PeriHub's GitHub page helps: it tells what this {kind} has.

@@ -146,10 +146,11 @@ pub struct LogitechTask {
 }
 
 /// PeriHub can drive the device's lights in host mode (see [`host::can_drive`]).
-/// Not on a device whose DPI PeriHub changes: that one gets RAM access, which has no host mode.
+/// Not on a device whose DPI PeriHub changes: that one gets RAM access, which has no host mode. Never
+/// on a device PeriHub only reads (see [`UnsupportedDevice::read_only`]).
 pub fn lights_drivable(device: &UnsupportedDevice) -> bool {
     let features: Vec<u16> = device.features.iter().map(|f| f.id).collect();
-    !dpi_changeable(device) && host::can_drive(&features, device.lighting.as_ref())
+    !device.read_only && !dpi_changeable(device) && host::can_drive(&features, device.lighting.as_ref())
 }
 
 /// Logitech programs that would fight PeriHub over the lights, running now.
@@ -165,9 +166,9 @@ fn other_programs() -> Vec<&'static str> {
 
 /// The DPI can be changed: the device has adjustable DPI (0x2201) and no onboard profiles. With
 /// onboard profiles the DPI comes from the active profile, and a 0x2201 change is only a preview that
-/// the next profile or DPI level change overrides.
+/// the next profile or DPI level change overrides. Never on a device PeriHub only reads.
 pub fn dpi_changeable(device: &UnsupportedDevice) -> bool {
-    device.dpi.is_some() && device.onboard.is_none()
+    !device.read_only && device.dpi.is_some() && device.onboard.is_none()
 }
 
 /// Whether `dpi` is one the device accepts, from what it reports.
@@ -692,6 +693,10 @@ mod tests {
             report_rates_ms: Vec::new(),
             onboard,
             lighting: None,
+            led_zones: Vec::new(),
+            battery: None,
+            battery_reply: None,
+            read_only: false,
             read_errors: Vec::new(),
         };
         (LogitechTask::open(dev, device, saved, LightsMemory::default()), mouse)
@@ -795,6 +800,10 @@ mod tests {
                 report_rates_ms: Vec::new(),
                 onboard: None,
                 lighting: Some(g915x()),
+                led_zones: Vec::new(),
+                battery: None,
+                battery_reply: None,
+                read_only: false,
                 read_errors: Vec::new(),
             }
         }
@@ -859,6 +868,24 @@ mod tests {
 
         fn took(state: &Kb) -> bool {
             calls(state).iter().any(|c| *c == (feature::PROFILE_MANAGEMENT, 6, vec![5]))
+        }
+
+        #[test]
+        fn a_read_only_keyboard_s_lights_and_dpi_are_never_changed() {
+            let (dev, state, _) = keyboard_read_only();
+            let dpi = Some(crate::hidpp::DpiCapabilities { min: 200, max: 8000, step: 50, list: Vec::new() });
+            assert!(dpi_changeable(&UnsupportedDevice { dpi: dpi.clone(), ..device() }));
+            let device = UnsupportedDevice { read_only: true, ..device() };
+            assert!(!lights_drivable(&device) && !dpi_changeable(&UnsupportedDevice { dpi, ..device.clone() }));
+            // Even with the user's wish to drive the lights kept from another keyboard of the same name.
+            let mut task = LogitechTask::open(dev, device, None, wanted()).unwrap();
+            task.programs = Vec::new;
+            assert!(matches!(task.drive_lights(look()), Err(Error::Invalid(_))));
+            assert!(task.set_brightness(10).is_err());
+            assert!(task.set_dpi(800).is_err());
+            assert!(task.live().unwrap().host.is_none());
+            assert!(!took(&state));
+            assert!(!calls(&state).iter().any(|c| c.0 == feature::BRIGHTNESS_CONTROL && c.1 == 2));
         }
 
         #[test]
