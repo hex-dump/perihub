@@ -103,11 +103,22 @@ when function 5 says the keyboard drives its own lights (0):
    reach the off timer.
 4. The effect of the keys' zone (function 1, persistence 0x01), the per-key colours (0x8081), then the effects of
    the other zones, the logo last. The first per-key frame after the take-over is sent twice, as Solaar does: it
-   can come before the keyboard has left its own mode. The logo's key (210) is left out of the per-key frame
-   unless the logo zone has a fixed colour, and then it gets that colour: with the logo in the frame, the logo's
-   breathing never showed and its colour cycle stayed on the keys' red in issue #30. (G HUB never sets the logo
-   zone on its own in the captures: it sends one effect on all zones, `ff 06 …`, the keyboard's multi-zone effect
-   0x18 with two colours, a 3000 ms period and intensity 100, or 50 while idle.)
+   can come before the keyboard has left its own mode. (G HUB never sets the logo zone on its own in the
+   captures: it sends one effect on all zones, `ff 06 …`, the keyboard's multi-zone effect 0x18 with two colours,
+   a 3000 ms period and intensity 100, or 50 while idle.)
+
+**The logo under colours per key.** While a per-key frame is shown (the keys' zone on a fixed colour, then 0x8081
+functions 6 and 7), the G915 X LS shows the logo with the frame's colour for the logo's key (210), whatever the
+logo zone's effect, and a key left out of the frame keeps the colour it had. In issue #30 the logo's breathing
+never showed and its colour cycle stayed red, first with the logo's key in the frame, then with it left out and
+the logo's effect sent after the frame; with the keys on a wave (no frame) both showed at once. That the frame
+hides the logo zone, rather than the order of the calls, is PeriHub's reading of these three tests
+(**unconfirmed** by another source). So with colours per key PeriHub gives the logo's key the logo zone's look
+itself: its colour when fixed, black when off, and for breathing and colour cycle the colour of the moment,
+sent every 100 ms when it changed (0x8081 function 6 with the one key, then function 7 `00…`, in RAM; a quarter of
+the colour while idle, nothing while the lights are off). Breathing goes from the colour to dark and back as a
+cosine over the period; the colour cycle goes once round the hue wheel per period, rounded to the keyboard's unit
+as for the zone's own effect. The logo zone's own effect is still sent, last.
 
 A new look is sent the same way, without the take-over. Leaving a wave "to the centre" (direction 8) is the
 exception: the G915 X LS of issue #30 kept that wave, its period too, through every later effect of the zone
@@ -173,7 +184,7 @@ notes. PeriHub never calls 0x0020.
 | 1 set colours | up to 4 `key r g b`; a key id 0x00 or 0xff ends the list | – | change (RAM, shown at function 7) |
 | 2, 3, 4 | 5 colours from a key on; the same with 5-bit and 4-bit differences | – | never sent |
 | 5 set ranges | up to 3 `first last r g b` | – | change (RAM) |
-| 6 one colour | `r g b`, then up to 13 key ids | – | change (RAM); what PeriHub sends |
+| 6 one colour | `r g b`, then up to 13 key ids | – | change (RAM); what PeriHub sends; a key not listed keeps its colour (issue #30, below) |
 | 7 end of frame | byte 0 persistence (0 RAM), 1–2 frame, 3–4 frames until the next change: everyone sends zeros | – | change; PeriHub sends only `00…` |
 
 There is **no function that reads the colours back**. Key ids (not in the specification; Solaar, logi-ghub-linux and
@@ -219,5 +230,50 @@ function 6 with `00` reads the mode (reply byte 0: 1 the keyboard's own profiles
 file in use), `05` sets host mode, `03` gives the keyboard its profiles back (G HUB also sends `0b` and `0f`).
 Function 8 opens a profile file and function 12 reads 16 bytes of it (logi-ghub-linux, logirgb); PeriHub allows
 them as reads but does not call them yet. 0x4523 is named "disable controls" (game mode), 0x1b05 "full key
-customization", 0x1b10 "control list", 0x8051 "Logitech modifiers". PeriHub reads function 0 of each, and 0x8101
-function 6 with `00`, for the test report; it changes none of them.
+customization", 0x1b10 "control list", 0x8051 "Logitech modifiers". PeriHub reads function 0 of 0x8101, 0x1b05,
+0x1b10 and 0x8051, and 0x8101 function 6 with `00`, for the test report; it changes none of them. It no longer
+calls 0x4523 function 0: that is the call G HUB writes the game mode's disabled keys with (below), so asking it
+with no parameters may have sent "no key disabled" (the G915 X LS answered `00` to it in the reports of issue #30).
+
+## Key assignments and game mode: what G HUB sends (issue #30 captures)
+
+USB captures by the tester of issue #30 (2026-11-16, Windows, USBPcap, G HUB) on the G915 X LS behind its c547
+receiver, one change each: F5 assigned to B, Insert assigned to B, and the A key disabled in game mode. Facts read
+from the bytes only; **PeriHub sends none of this**. The requests go to device 1 on the receiver's interface 2
+with software id 0x0b. The feature indexes are this keyboard's, from the order of its feature table in the test
+report: 0x0c is 0x4523, 0x0f is 0x8101, 0x10 is 0x1b05.
+
+**Key assignment: a 13-byte file written through 0x8101.** Each assignment is three calls, answered within
+1 s, identical in both captures but for the key byte and the checksum:
+
+| # | Call | Parameters | Reply |
+|---|---|---|---|
+| 1 | 0x8101 function 2 (short report) | `00 0d 00`: 0x000d, the length of what follows | zeros |
+| 2 | 0x8101 function 3 | the 13 bytes `00 01 KK 01 00 80 00 00 00 80 02 00 05` | `00 01`, then zeros |
+| 3 | 0x8101 function 9 | `1b 05 01 02 00 00 0d`, then a CRC-32 of the 13 bytes, big-endian | zeros |
+
+- `KK` is the key being assigned: 0x0b for F5, 0x23 for Insert. It is neither the HID usage (0x3e, 0x49) nor
+  the 0x8081 key id (59, 70); that it is the key's index in the 0x1b10 control list is **unconfirmed**.
+- The last four bytes, `80 02 00 05`, are the target: 0x80 a HID action, 0x02 a keyboard key, 0x00 no modifier,
+  0x05 the usage of B. This is the button layout libratbag documents for 0x8100 onboard profiles; that it is the
+  same here is **unconfirmed**, as are `00 01` (one entry?), the `01` after the key and `00 80 00 00 00`.
+- Function 9 names the feature the file belongs to (`1b 05`, full key customization) and repeats the length
+  (`00 0d`); `01 02` is unknown. The checksum is the standard CRC-32 (the one of zlib, polynomial 0x04c11db7
+  reflected, start and final xor 0xffffffff): `95 be f5 97` for F5, `a9 e1 9b 05` for Insert, both checked
+  against the 13 bytes.
+- So 0x8101 functions 2, 3 and 9 open, fill and close a file. Whether it is kept in the keyboard's memory is not
+  known: PeriHub treats them as memory writes and refuses them (`is_memory_write` in
+  `crates/perihub-core/src/hidpp/mod.rs`). The earlier captures of F1 → A and F2 → A came out the same, so
+  they could not show the key.
+
+**Game mode: one call to 0x4523 function 0.** Disabling A sent a single long report and nothing through 0x8101:
+0x4523 function 0 with the 16 bytes `00 00 00 00 00 00 00 00 08 00 00 00 44 00 18 08`, answered with 16 zeros
+1.2 s later. 16 bytes are 128 bits, as many as the 128 controls 0x1b10 function 0 reports on this keyboard
+(`80`): a bitmap of the disabled controls by control index is the likely reading (**unconfirmed**). Six bits are
+set (counting from the low bit of byte 0: 67, 98, 102, 115, 116 and 123), more than the one key changed, so the
+game mode had other keys disabled before (which ones is not known); which bit is A cannot be told from one
+capture. Whether the keyboard keeps the list after a power cycle is not known. Function 0 being a
+write is why PeriHub stopped calling it for the test report (above).
+
+What would settle the open points: the 0x1b10 control list (function 1, one entry per index, a read), and a game
+mode capture with no key disabled, then with only one.
