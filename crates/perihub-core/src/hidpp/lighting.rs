@@ -139,13 +139,13 @@ impl Lighting {
             out.layout = out.call(dev, feature::KEYBOARD_LAYOUT_2, 0, &[])?.map(|r| r[0]);
         }
         // Features of the newer keyboards that no public document describes: what function 0 answers,
-        // and the mode 0x8101 function 6 reads (0 asks), kept in `raw` for test reports.
-        let undocumented: [(u16, u8, &[u8]); 6] = [
+        // and the mode 0x8101 function 6 reads (0 asks), kept in `raw` for test reports. Not 0x4523
+        // (game mode): its function 0 is what G HUB writes the disabled keys with (issue #30 capture).
+        let undocumented: [(u16, u8, &[u8]); 5] = [
             (feature::PROFILE_MANAGEMENT, 0, &[]),
             (feature::PROFILE_MANAGEMENT, 6, &[0]),
             (feature::CONTROL_LIST, 0, &[]),
             (feature::FULL_KEY_CUSTOMIZATION, 0, &[]),
-            (feature::DISABLE_CONTROLS, 0, &[]),
             (feature::LOGI_MODIFIERS, 0, &[]),
         ];
         for (id, function, params) in undocumented {

@@ -133,7 +133,8 @@ const READ_ONLY_CALLS: &[(u16, u8)] = &[
     (feature::PROFILE_MANAGEMENT, 8),
     (feature::PROFILE_MANAGEMENT, 0x0C),
     (feature::FULL_KEY_CUSTOMIZATION, 0),
-    (feature::DISABLE_CONTROLS, 0),
+    // Not 0x4523 function 0: G HUB writes the game mode's disabled keys with it (issue #30 capture),
+    // so asking it with zeros may turn them all back on.
     (feature::LOGI_MODIFIERS, 0),
     // The list of the keyboard's controls: its size, then one entry at a time.
     (feature::CONTROL_LIST, 0),
@@ -1261,6 +1262,8 @@ pub(crate) mod tests {
             (PROFILE_MANAGEMENT, 4, vec![0]),
             (PROFILE_MANAGEMENT, 0x0D, vec![0]),
             (feature::FULL_KEY_CUSTOMIZATION, 1, vec![1]),
+            (feature::DISABLE_CONTROLS, 0, vec![]),
+            (feature::DISABLE_CONTROLS, 0, vec![0, 0, 0, 0, 0, 0, 0, 0, 8]),
             (feature::DISABLE_CONTROLS, 1, vec![1]),
             (feature::LOGI_MODIFIERS, 1, vec![1]),
             (feature::CONTROL_LIST, 2, vec![1]),
