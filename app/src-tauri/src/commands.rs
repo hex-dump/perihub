@@ -810,7 +810,8 @@ mod tests {
 
     /// The commands of this file, with their bodies.
     fn commands() -> Vec<(String, String)> {
-        let source = include_str!("commands.rs");
+        // Windows checkouts may have CRLF line endings.
+        let source = include_str!("commands.rs").replace("\r\n", "\n");
         let source = &source[..source.find(concat!("#[cfg(test)]\nmod ", "tests")).unwrap()];
         source
             .split(concat!("#[tauri", "::command]"))
