@@ -310,6 +310,16 @@
           "level": "by_memory_format"
         },
         {
+          "name": "PRO 2 LIGHTSPEED",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "PRO X 2 DEX",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
           "name": "G305",
           "kind": "mouse",
           "level": "by_memory_format"
@@ -1103,6 +1113,16 @@
           "name": "Viper V3 Pro SE (Wired)",
           "kind": "mouse",
           "level": "experimental"
+        },
+        {
+          "name": "BlackWidow V4 Mini HyperSpeed",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V4 Mini HyperSpeed (wireless)",
+          "kind": "keyboard",
+          "level": "read_only"
         }
       ]
     },
@@ -1242,6 +1262,31 @@
         {
           "name": "X20",
           "kind": "mouse",
+          "level": "read_only"
+        }
+      ]
+    },
+    {
+      "brand": "YJX",
+      "models": [
+        {
+          "name": "mouse (YJX receiver)",
+          "kind": "mouse",
+          "level": "read_only"
+        },
+        {
+          "name": "mouse (YJX, on its cable)",
+          "kind": "mouse",
+          "level": "read_only"
+        }
+      ]
+    },
+    {
+      "brand": "Wraith",
+      "models": [
+        {
+          "name": "W60",
+          "kind": "keyboard",
           "level": "read_only"
         }
       ]
