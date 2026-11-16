@@ -1,0 +1,1250 @@
+{
+  "about": "Brands and models listed in Settings, generated from the driver tables (cargo xtask gen).",
+  "brands": [
+    {
+      "brand": "SteelSeries",
+      "models": [
+        {
+          "name": "Apex 3 TKL",
+          "kind": "keyboard",
+          "level": "supported"
+        },
+        {
+          "name": "Apex 3",
+          "kind": "keyboard",
+          "level": "recognized"
+        },
+        {
+          "name": "Aerox 3",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Aerox 3 Wireless",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Aerox 5",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Aerox 5 Wireless",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Aerox 9 Wireless",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Kana v2",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Kinzu v2",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Prime",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Prime Mini",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Prime+",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Prime Wireless",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 100 / Rival 105",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 110 / Rival 106",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 3",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 300 / Rival",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 300S",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 310",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 3 Gen 2",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 3 Wireless",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 3 Wireless Gen 2",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 5",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 500",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 600",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 650 Wireless",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 700 / Rival 710",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Rival 95 / Rival 100 PC Bang",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Sensei 310",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Sensei [RAW]",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Sensei TEN",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Aerox 3 Wireless (through its receiver)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Aerox 5 Wireless (through its receiver)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Aerox 9 Wireless (through its receiver)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Prime Wireless (through its receiver)",
+          "kind": "mouse",
+          "level": "experimental"
+        }
+      ]
+    },
+    {
+      "brand": "Logitech",
+      "models": [
+        {
+          "name": "G502 HERO",
+          "kind": "mouse",
+          "level": "supported"
+        },
+        {
+          "name": "G502 Proteus Core",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G502 Proteus Spectrum",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G502 HERO Wireless",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G502 X",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G502 X Wireless",
+          "kind": "mouse",
+          "level": "supported"
+        },
+        {
+          "name": "G502 X PLUS",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G Pro",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G Pro Wireless",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G Pro X Superlight",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G102/G103/G203",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G302",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G303",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G303 Shroud Edition",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G402",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G403",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G403 HERO",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G403 Wireless",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G703",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G703 HERO",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G705",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G900",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G903",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G903 HERO",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "MX518",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G305",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G603",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G604",
+          "kind": "mouse",
+          "level": "by_memory_format"
+        },
+        {
+          "name": "G300",
+          "kind": "mouse",
+          "level": "supported"
+        },
+        {
+          "name": "G600",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "G9",
+          "kind": "mouse",
+          "level": "read_only"
+        },
+        {
+          "name": "G9x",
+          "kind": "mouse",
+          "level": "read_only"
+        },
+        {
+          "name": "G9x (Call of Duty MW3 Edition)",
+          "kind": "mouse",
+          "level": "read_only"
+        },
+        {
+          "name": "G500",
+          "kind": "mouse",
+          "level": "read_only"
+        },
+        {
+          "name": "G500s",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "G700",
+          "kind": "mouse",
+          "level": "read_only"
+        },
+        {
+          "name": "G700s",
+          "kind": "mouse",
+          "level": "experimental"
+        }
+      ]
+    },
+    {
+      "brand": "Corsair",
+      "models": [
+        {
+          "name": "KATAR PRO",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "KATAR PRO XT",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "M55 RGB PRO",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "M65 RGB ULTRA",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "M75",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "SABRE RGB PRO",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "SABRE PRO CS",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "IRONCLAW RGB WIRELESS",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "IRONCLAW WIRELESS SE",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DARK CORE RGB PRO",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DARK CORE RGB PRO SE",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "HARPOON RGB WIRELESS",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "HARPOON V2",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "M65 RGB ULTRA WIRELESS",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "M75 WIRELESS",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "M75 AIR WIRELESS",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "NIGHTSABRE WIRELESS",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "SCIMITAR RGB ELITE WIRELESS",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "SCIMITAR ELITE WIRELESS SE",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "SABRE RGB PRO WIRELESS",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DARKSTAR RGB WIRELESS",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "SABRE V2 PRO",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "SABRE V2 PRO MG",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "SABRE V2 PRO CF",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "SCIMITAR RGB ELITE",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "M55",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "K55 PRO RGB",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K55 RGB PRO XT",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K55 CORE RGB",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K55 CORE TKL RGB",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K57 RGB WIRELESS",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K60 RGB PRO",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K60 RGB PRO LP",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K65 PLUS WIRELESS",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K65 PRO MINI",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K65 RGB MINI",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K70 CORE RGB",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K70 CORE TKL",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K70 CORE TKL WIRELESS",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K70 MAX",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K70 PRO",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K70 PRO MINI WIRELESS",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K70 PRO TKL",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K70 RGB TKL",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K70 RGB TKL CS",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K95 RGB PLATINUM XT",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K100 RGB",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "K100 AIR WIRELESS",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "MAKR 75",
+          "kind": "keyboard",
+          "level": "experimental"
+        }
+      ]
+    },
+    {
+      "brand": "ASUS",
+      "models": [
+        {
+          "name": "ROG GX860 Buzzard",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Chakram Core",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Chakram",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Chakram X",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Gladius II",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Gladius II Origin",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Gladius II Origin PNK LTD",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Harpe Wireless",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Keris",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Keris Wireless AimPoint",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Keris Wireless",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Pugio",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Spatha X",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Strix Carry",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Strix Impact II",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Strix Impact II Wireless",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Strix Impact III",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "ROG Strix Impact",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "TUF Gaming M3 Gen II",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "TUF Gaming M4 Air",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "TUF Gaming Mini WL Mouse Miku",
+          "kind": "mouse",
+          "level": "experimental"
+        }
+      ]
+    },
+    {
+      "brand": "Razer",
+      "models": [
+        {
+          "name": "Orochi 2011",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga Epic",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Abyssus 1800",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Mamba 2012 (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga 2012",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Imperator 2012",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Ouroboros",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Taipan",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga Hex (Red)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder 2013",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder 1800",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Orochi 2013",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga Epic Chroma (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga 2014",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga Hex",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Abyssus",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder Chroma",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Mamba Chroma (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Mamba Tournament Edition",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Orochi (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Diamondback Chroma",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder 2000",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga Hex V2",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga Chroma",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder 3500",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Lancehead (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Abyssus V2",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder Elite",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Abyssus 2000",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Lancehead Tournament Edition",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Basilisk",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Basilisk Essential",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga Trinity",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Abyssus Elite (D.Va Edition)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Abyssus Essential",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Mamba Elite",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder Essential",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Lancehead Wireless (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder Essential (White Edition)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Mamba Wireless (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Viper",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Viper Ultimate (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder V2 Pro (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Pro Click (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder V2",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Basilisk V2",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Basilisk Ultimate",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Viper Mini",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder V2 Mini",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga Left Handed Edition 2020",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga Pro (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Viper 8KHz",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga X",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder Essential (2021)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Basilisk V3",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Viper Mini SE (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder V2 Lite",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Cobra",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Viper V2 Pro (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Naga V2 Pro (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Basilisk V3 Pro (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Cobra Pro (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder V3",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder V3 Pro (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "DeathAdder V4 Pro (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Viper V3 Pro (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Pro Click V2 Vertical Edition (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Basilisk V3 35K",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Basilisk V3 Pro 35K (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Pro Click V2 (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Basilisk Mobile (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Basilisk V3 Pro 35K Phantom Green Edition (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Viper V3 Pro SE (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        }
+      ]
+    },
+    {
+      "brand": "Glorious",
+      "models": [
+        {
+          "name": "Model O/O-",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Model D",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Model O Eternal",
+          "kind": "mouse",
+          "level": "experimental"
+        }
+      ]
+    },
+    {
+      "brand": "Roccat",
+      "models": [
+        {
+          "name": "Kone Pure",
+          "kind": "mouse",
+          "level": "read_only"
+        },
+        {
+          "name": "Kone XTD",
+          "kind": "mouse",
+          "level": "read_only"
+        },
+        {
+          "name": "Kone EMP",
+          "kind": "mouse",
+          "level": "read_only"
+        }
+      ]
+    },
+    {
+      "brand": "Pulsar",
+      "models": [
+        {
+          "name": "Xlite Wired",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "X2 Wired",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "X2H Wired Medium",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "X2A Medium Wired",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Xlite v4",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "X3",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "X3 LHD",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "X2 CrazyLight",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "X3 LHD CrazyLight",
+          "kind": "mouse",
+          "level": "experimental"
+        }
+      ]
+    },
+    {
+      "brand": "Cooler Master",
+      "models": [
+        {
+          "name": "MM530",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "MM711",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "MM720",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "MM730",
+          "kind": "mouse",
+          "level": "experimental"
+        }
+      ]
+    },
+    {
+      "brand": "Lamzu",
+      "models": [
+        {
+          "name": "Atlantis",
+          "kind": "mouse",
+          "level": "read_only"
+        }
+      ]
+    },
+    {
+      "brand": "EVGA",
+      "models": [
+        {
+          "name": "X12",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "X20",
+          "kind": "mouse",
+          "level": "read_only"
+        }
+      ]
+    }
+  ]
+}
