@@ -112,8 +112,8 @@
     {/if}
     <p class="muted small">
       You get one notification each time a battery goes below the limit, and another only after it was charged.
-      The tray icon shows the battery of each wireless device. PeriHub uses the values the devices already
-      report: for Logitech devices that means while the PeriHub window is open.
+      The tray icon shows the battery of each wireless device. PeriHub reads Razer and SteelSeries batteries
+      along with its usual checks, and Logitech batteries every 5 minutes.
     </p>
   </div>
 

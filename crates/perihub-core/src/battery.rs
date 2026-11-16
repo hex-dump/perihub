@@ -7,6 +7,7 @@
 
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 
@@ -110,6 +111,46 @@ impl Tracker {
             Some(Alert::Full) if !(alerts.enabled && alerts.full) => None,
             other => other,
         }
+    }
+}
+
+/// How long after a device is ready its battery is read the first time.
+const FIRST_READ: Duration = Duration::from_secs(20);
+/// How often a battery is read when nothing else read it in the meantime.
+const READ_EVERY: Duration = Duration::from_secs(5 * 60);
+
+/// When a device's own thread reads its battery without the interface asking: once shortly after
+/// it is ready, then every five minutes. A read the interface asked for counts too, so a window
+/// that polls leaves nothing to do here. A read is a single read-only call, and one that gets no
+/// answer (the device sleeps) is not repeated before the next time.
+#[derive(Debug, Clone, Copy)]
+pub struct Schedule {
+    next: Instant,
+}
+
+impl Schedule {
+    pub fn new(now: Instant) -> Self {
+        Self { next: now + FIRST_READ }
+    }
+
+    /// Time to read? Starts the wait for the next one.
+    pub fn due(&mut self, now: Instant) -> bool {
+        if now < self.next {
+            return false;
+        }
+        self.next = now + READ_EVERY;
+        true
+    }
+
+    /// The battery was read (by the interface, or after an answer): the next read is a full
+    /// interval away.
+    pub fn read(&mut self, now: Instant) {
+        self.next = now + READ_EVERY;
+    }
+
+    /// How long until the next read.
+    pub fn wait(&self, now: Instant) -> Duration {
+        self.next.saturating_duration_since(now)
     }
 }
 
@@ -255,6 +296,44 @@ mod tests {
     fn a_device_already_full_at_the_start_is_not_announced() {
         let (mut tracker, alerts) = (Tracker::default(), BatteryAlerts { full: true, ..Default::default() });
         assert_eq!(tracker.update(&entry(100, true), &alerts), None);
+    }
+
+    #[test]
+    fn the_first_read_comes_shortly_after_the_device_is_ready_then_every_five_minutes() {
+        let start = Instant::now();
+        let mut schedule = Schedule::new(start);
+        assert!(!schedule.due(start));
+        assert!(!schedule.due(start + Duration::from_secs(19)));
+        assert!(schedule.due(start + Duration::from_secs(20)));
+        assert!(!schedule.due(start + Duration::from_secs(20 + 299)));
+        assert!(schedule.due(start + Duration::from_secs(20 + 300)));
+    }
+
+    #[test]
+    fn a_read_the_interface_asked_for_postpones_the_next_one() {
+        let start = Instant::now();
+        let mut schedule = Schedule::new(start);
+        let at = |s: u64| start + Duration::from_secs(s);
+        // The window polls every few seconds: nothing is ever due.
+        for s in (5..=900).step_by(5) {
+            schedule.read(at(s));
+            assert!(!schedule.due(at(s)), "{s}");
+        }
+        assert!(!schedule.due(at(900 + 299)));
+        assert!(schedule.due(at(900 + 300)));
+    }
+
+    #[test]
+    fn a_read_without_an_answer_waits_for_the_next_interval() {
+        let start = Instant::now();
+        let mut schedule = Schedule::new(start);
+        let at = |s: u64| start + Duration::from_secs(s);
+        assert!(schedule.due(at(20)));
+        // The caller got an error and does nothing more: no retry before the next interval.
+        assert!(!schedule.due(at(21)));
+        assert!(!schedule.due(at(100)));
+        assert_eq!(schedule.wait(at(100)), Duration::from_secs(220));
+        assert!(schedule.due(at(320)));
     }
 
     #[test]
