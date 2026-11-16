@@ -60,6 +60,7 @@ export const creditGroups: CreditGroup[] = [
           "The Logitech G600's profile format (Copyright © 2018 Thomas Hindoe Paaboel Andersen), rewritten in Rust (docs/protocols/logitech-g600.md).",
           "The Roccat Kone Pure, Kone XTD and Kone EMP settings (Copyright © 2015 Red Hat, Inc., and Copyright © 2021 Alexandre Laurent), read in Rust (docs/protocols/roccat-kone.md).",
           "The HID++ 1.0 registers, memory pages and profile layouts of the Logitech G9, G9x, G500, G500s, G700 and G700s (Copyright © 2015-2017 Red Hat, Inc.), rewritten in Rust (docs/protocols/logitech-hidpp10.md).",
+          "The extended DPI (0x2202) and polling rate (0x8061) features and the layout of Logitech profile format 7, from libratbag's open pull requests #1676 (Nathan Rossi) and #1806 (nt-slug), contributed under the project's MIT license (docs/protocols/logitech-onboard-profiles.md).",
         ],
       },
       {

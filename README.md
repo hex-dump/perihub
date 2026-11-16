@@ -74,7 +74,7 @@
 
 | Devices | Level and what PeriHub can do |
 |---|---|
-| <!-- generated: count logitech-onboard:by-memory-format -->26<!-- end generated --> more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
+| <!-- generated: count logitech-onboard:by-memory-format -->28<!-- end generated --> more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
 | Logitech devices on a **Logi Bolt** or **Unifying** receiver (MX Master, MX Anywhere, MX Keys…) | 🧪 Recognized by the features they report; the DPI of those without onboard memory can be changed, everything else is read |
 | **Logitech G600** | 🧪 Read; DPI, polling rate and lighting of the profile in use can be saved at your own risk |
 | **Logitech G500s, G700s** with a cable, whose software Logitech no longer offers | 🧪 Read the profile in use; the DPI in use can be changed, not saved; their memory is never written |

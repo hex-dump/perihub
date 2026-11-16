@@ -35,7 +35,9 @@ pub mod feature {
     pub const BATTERY_VOLTAGE: u16 = 0x1001;
     pub const UNIFIED_BATTERY: u16 = 0x1004;
     pub const ADJUSTABLE_DPI: u16 = 0x2201;
+    pub const EXTENDED_DPI: u16 = 0x2202;
     pub const REPORT_RATE: u16 = 0x8060;
+    pub const EXTENDED_REPORT_RATE: u16 = 0x8061;
     pub const COLOR_LED_EFFECTS: u16 = 0x8070;
     pub const ONBOARD_PROFILES: u16 = 0x8100;
 }
@@ -69,7 +71,9 @@ const ALLOWED_FEATURES: &[u16] = &[
     feature::BATTERY_VOLTAGE,
     feature::UNIFIED_BATTERY,
     feature::ADJUSTABLE_DPI,
+    feature::EXTENDED_DPI,
     feature::REPORT_RATE,
+    feature::EXTENDED_REPORT_RATE,
     feature::COLOR_LED_EFFECTS,
     feature::ONBOARD_PROFILES,
 ];
@@ -89,8 +93,14 @@ const READ_ONLY_CALLS: &[(u16, u8)] = &[
     (feature::UNIFIED_BATTERY, 1),
     (feature::ADJUSTABLE_DPI, 1),
     (feature::ADJUSTABLE_DPI, 2),
+    (feature::EXTENDED_DPI, 0),
+    (feature::EXTENDED_DPI, 1),
+    (feature::EXTENDED_DPI, 2),
+    (feature::EXTENDED_DPI, 5),
     (feature::REPORT_RATE, 0),
     (feature::REPORT_RATE, 1),
+    (feature::EXTENDED_REPORT_RATE, 0),
+    (feature::EXTENDED_REPORT_RATE, 2),
     (feature::COLOR_LED_EFFECTS, 0),
     (feature::COLOR_LED_EFFECTS, 1),
     (feature::COLOR_LED_EFFECTS, 2),
@@ -115,6 +125,88 @@ pub struct DpiCapabilities {
     pub step: u16,
     /// Allowed values, if the sensor exposes a list instead of a range.
     pub list: Vec<u16>,
+}
+
+/// What the extended DPI feature (0x2202) reports about a sensor: a DPI range for each axis, and
+/// whether the lift-off distance is adjustable too.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ExtendedDpi {
+    pub x: DpiCapabilities,
+    /// Only when the sensor has a separate Y axis.
+    pub y: Option<DpiCapabilities>,
+    pub has_lod: bool,
+}
+
+/// The DPI a 0x2202 sensor uses now, and its default.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct ExtendedDpiNow {
+    pub x: u16,
+    pub default_x: u16,
+    pub y: Option<u16>,
+    pub default_y: Option<u16>,
+    /// Lift-off distance: 1 low, 2 medium, 3 high (as the sensors of libratbag's tested mouse answer).
+    pub lod: Option<u8>,
+}
+
+/// Polling rates of the extended report rate feature (0x8061), by bit or index: 125 Hz up to 8000 Hz.
+pub const EXTENDED_RATES_HZ: [u16; 7] = [125, 250, 500, 1000, 2000, 4000, 8000];
+
+/// The polling rate of a 0x8061 index, as it is also stored in format 7 profiles.
+pub fn extended_rate_hz(index: u8) -> Option<u16> {
+    EXTENDED_RATES_HZ.get(index as usize).copied()
+}
+
+/// How many DPI list pages are read before giving up on a list that never ends.
+const MAX_DPI_PAGES: u8 = 16;
+/// Longest DPI list kept as a list.
+const MAX_DPI_VALUES: usize = 1024;
+
+/// Reads a 0x2202 DPI list: 16-bit values, a value of 0 ends it, and a value whose top three bits
+/// are set (`0xE000 | step`) is followed by an end value and fills in the DPI values after the
+/// previous one, `step` apart, up to that end. `None` while the list has not ended in `data`.
+fn parse_extended_dpi_list(data: &[u8]) -> Option<Result<DpiCapabilities>> {
+    let mut values: Vec<u16> = Vec::new();
+    let mut words = data.as_chunks::<2>().0.iter().map(|w| u16::from_be_bytes(*w));
+    while let Some(word) = words.next() {
+        if word == 0 {
+            return Some(capabilities_from_values(values));
+        }
+        if word >> 13 == 0b111 {
+            let step = word & 0x1FFF;
+            let end = words.next()?;
+            let Some(&last) = values.last() else {
+                return Some(Err(Error::Protocol("DPI list starts with a step".into())));
+            };
+            if step == 0 || end < last {
+                return Some(Err(Error::Protocol("DPI list with a wrong step".into())));
+            }
+            let count = (end - last) / step;
+            if values.len() + count as usize > MAX_DPI_VALUES {
+                return Some(Err(Error::Protocol("DPI list is too long".into())));
+            }
+            values.extend((1..=count).map(|i| last + i * step));
+        } else {
+            values.push(word);
+        }
+        if values.len() > MAX_DPI_VALUES {
+            return Some(Err(Error::Protocol("DPI list is too long".into())));
+        }
+    }
+    None
+}
+
+/// A range (smallest, largest, step) when the values are evenly spaced, else the list itself.
+fn capabilities_from_values(values: Vec<u16>) -> Result<DpiCapabilities> {
+    let (Some(&min), Some(&max)) = (values.iter().min(), values.iter().max()) else {
+        return Err(Error::Protocol("empty DPI list".into()));
+    };
+    let step = if values.len() > 2 { values[1].wrapping_sub(values[0]) } else { 0 };
+    let even = step > 0 && values.windows(2).all(|w| w[1].wrapping_sub(w[0]) == step);
+    if even {
+        Ok(DpiCapabilities { min, max, step, list: Vec::new() })
+    } else {
+        Ok(DpiCapabilities { min, max, step: 0, list: values })
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -582,6 +674,87 @@ impl HidppDevice {
         Ok(self.call(feature::REPORT_RATE, 1, &[])?[0])
     }
 
+    // ---- 0x2202 extended adjustable DPI ----
+
+    /// The DPI ranges of sensor `sensor`, with an X axis, maybe a Y axis, and maybe a lift-off
+    /// distance. Reads only.
+    pub fn extended_dpi(&mut self, sensor: u8) -> Result<ExtendedDpi> {
+        let axes = self.call(feature::EXTENDED_DPI, 1, &[sensor])?;
+        if axes[0] != sensor {
+            return Err(Error::Protocol("DPI axes answered for another sensor".into()));
+        }
+        let (has_y, has_lod) = (axes[2] & 1 != 0, axes[2] & 2 != 0);
+        let x = self.extended_dpi_axis(sensor, 0)?;
+        let y = if has_y { Some(self.extended_dpi_axis(sensor, 1)?) } else { None };
+        Ok(ExtendedDpi { x, y, has_lod })
+    }
+
+    /// One axis list, which comes in pages of 13 bytes.
+    fn extended_dpi_axis(&mut self, sensor: u8, axis: u8) -> Result<DpiCapabilities> {
+        let mut data = Vec::new();
+        for page in 0..MAX_DPI_PAGES {
+            let r = self.call(feature::EXTENDED_DPI, 2, &[sensor, axis, page])?;
+            if r[0] != sensor || r[1] != axis || r[2] != page {
+                return Err(Error::Protocol("DPI list page out of order".into()));
+            }
+            data.extend_from_slice(&r[3..]);
+            if let Some(caps) = parse_extended_dpi_list(&data) {
+                return caps;
+            }
+        }
+        Err(Error::Protocol("DPI list does not end".into()))
+    }
+
+    /// The DPI sensor `sensor` uses now, as the mouse sends it, with the Y axis and lift-off
+    /// distance only if `dpi` says the sensor has them.
+    pub fn extended_sensor_dpi(&mut self, sensor: u8, dpi: &ExtendedDpi) -> Result<ExtendedDpiNow> {
+        let r = self.call(feature::EXTENDED_DPI, 5, &[sensor])?;
+        let word = |at: usize| u16::from_be_bytes([r[at], r[at + 1]]);
+        Ok(ExtendedDpiNow {
+            x: word(1),
+            default_x: word(3),
+            y: dpi.y.is_some().then(|| word(5)),
+            default_y: dpi.y.is_some().then(|| word(7)),
+            lod: dpi.has_lod.then_some(r[9]),
+        })
+    }
+
+    /// The DPI the mouse uses now, from whichever DPI feature it has.
+    pub fn current_dpi(&mut self) -> Result<u16> {
+        match self.sensor_dpi(0) {
+            Err(Error::FeatureMissing(_)) => {
+                let dpi = self.extended_dpi(0)?;
+                Ok(self.extended_sensor_dpi(0, &dpi)?.x)
+            }
+            other => Ok(other?.0),
+        }
+    }
+
+    /// The DPI ranges, from whichever DPI feature the mouse has (the X axis of 0x2202).
+    pub fn any_dpi_capabilities(&mut self) -> Result<DpiCapabilities> {
+        match self.dpi_capabilities(0) {
+            Err(Error::FeatureMissing(_)) => Ok(self.extended_dpi(0)?.x),
+            other => other,
+        }
+    }
+
+    // ---- 0x8061 extended polling rate ----
+
+    /// The polling rates in Hz that the mouse offers on a connection (`wireless`: through a
+    /// LIGHTSPEED receiver, else with the cable), and the bytes it sent, for test reports.
+    pub fn extended_report_rates(&mut self, wireless: bool) -> Result<(Vec<u16>, [u8; 2])> {
+        let r = self.call(feature::EXTENDED_REPORT_RATE, 0, &[wireless as u8])?;
+        let mask = u16::from_be_bytes([r[0], r[1]]);
+        let rates = (0..EXTENDED_RATES_HZ.len()).filter(|bit| mask & (1 << bit) != 0).map(|i| EXTENDED_RATES_HZ[i]);
+        Ok((rates.collect(), [r[0], r[1]]))
+    }
+
+    /// The polling rate in use on a connection: its Hz and the index the mouse sent.
+    pub fn extended_report_rate(&mut self, wireless: bool) -> Result<(Option<u16>, u8)> {
+        let index = self.call(feature::EXTENDED_REPORT_RATE, 2, &[wireless as u8])?[0];
+        Ok((extended_rate_hz(index), index))
+    }
+
     // ---- 0x8070 LED effects ----
 
     pub fn led_zones(&mut self) -> Result<Vec<LedZone>> {
@@ -794,6 +967,113 @@ pub(crate) mod tests {
             }
             vec![reply(request, &answer(features[index], function))]
         })
+    }
+
+    #[test]
+    fn an_extended_dpi_list_is_read_across_pages() {
+        // 100 to 25600 DPI in steps of 50, on the PRO X 2: one value, a step, its end, the terminator.
+        let range = [0x00, 0x64, 0xE0, 0x32, 0x64, 0x00, 0x00, 0x00];
+        let caps = parse_extended_dpi_list(&range).unwrap().unwrap();
+        assert_eq!(caps, DpiCapabilities { min: 100, max: 25600, step: 50, list: Vec::new() });
+
+        // A step cut between two pages is not a list yet.
+        assert!(parse_extended_dpi_list(&range[..3]).is_none());
+        assert!(parse_extended_dpi_list(&range[..4]).is_none(), "its end value is on the next page");
+        assert!(parse_extended_dpi_list(&range[..6]).is_none(), "no terminator yet");
+
+        // Values that are not evenly spaced stay a list; the step fills in the ones between.
+        let uneven = [0x01, 0x90, 0x03, 0x20, 0x06, 0x40, 0xE1, 0x90, 0x0C, 0x80, 0x00, 0x00];
+        let caps = parse_extended_dpi_list(&uneven).unwrap().unwrap();
+        assert_eq!((caps.min, caps.max, caps.step), (400, 3200, 0));
+        assert_eq!(caps.list, [400, 800, 1600, 2000, 2400, 2800, 3200]);
+
+        assert!(parse_extended_dpi_list(&[0xE0, 0x32, 0x64, 0x00]).unwrap().is_err(), "a step needs a first value");
+        assert!(parse_extended_dpi_list(&[0x00, 0x64, 0xE0, 0x00, 0x64, 0x00]).unwrap().is_err(), "a step of 0");
+        assert!(parse_extended_dpi_list(&[0x00, 0x00]).unwrap().is_err(), "an empty list");
+    }
+
+    /// A PRO X 2 style mouse: 0x2202 at index 1 and 0x8061 at index 2.
+    fn extended_mouse() -> FakeDevice {
+        FakeDevice::new(|request| {
+            let (index, function) = (request[2], request[3] >> 4);
+            let p = &request[4..];
+            let payload: Vec<u8> = match (index, function) {
+                (0, 1) => vec![4, 2, request[6]],
+                (0, 0) => {
+                    let id = u16::from_be_bytes([p[0], p[1]]);
+                    vec![match id {
+                        feature::EXTENDED_DPI => 1,
+                        feature::EXTENDED_REPORT_RATE => 2,
+                        _ => 0,
+                    }]
+                }
+                (1, 1) => vec![p[0], 0, 3],
+                // Pages of 13 bytes: the X list is 100, 200 … 600 (12 bytes) and the first byte of a step, which
+                // goes on in the next page; the Y list fits in one.
+                (1, 2) => {
+                    let (axis, page) = (p[1], p[2]);
+                    let x: [&[u8]; 2] = [
+                        &[0, 100, 0, 200, 1, 44, 1, 144, 1, 244, 2, 88, 0xE0],
+                        &[0x32, 0x13, 0x88, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    ];
+                    let y: &[u8] = &[0, 100, 0xE0, 0x32, 0x64, 0, 0, 0, 0, 0, 0, 0, 0];
+                    let data = if axis == 0 {
+                        x[page as usize]
+                    } else if page == 0 {
+                        y
+                    } else {
+                        &[0; 13]
+                    };
+                    [&[p[0], axis, page], data].concat()
+                }
+                (1, 5) => vec![0, 0x04, 0xB0, 0x03, 0x20, 0x04, 0xB0, 0x03, 0x20, 2],
+                (2, 0) => vec![0, if p[0] == 0 { 0x0F } else { 0x7F }],
+                (2, 2) => vec![if p[0] == 0 { 3 } else { 6 }],
+                _ => return vec![],
+            };
+            vec![reply(request, &payload)]
+        })
+    }
+
+    #[test]
+    fn the_extended_dpi_and_polling_rate_of_a_pro_x_2_are_read() {
+        let mut dev = HidppDevice::new(extended_mouse(), 0xFF, true).unwrap();
+        let dpi = dev.extended_dpi(0).unwrap();
+        assert!(dpi.has_lod && dpi.y.is_some());
+        assert_eq!((dpi.x.min, dpi.x.max, dpi.x.step), (100, 5000, 0));
+        assert_eq!(dpi.x.list.len(), 6 + 88, "six values, then every 50 from 650 to 5000");
+        assert_eq!(dpi.y.as_ref().unwrap().max, 25600);
+        let now = dev.extended_sensor_dpi(0, &dpi).unwrap();
+        assert_eq!((now.x, now.default_x, now.y, now.default_y, now.lod), (1200, 800, Some(1200), Some(800), Some(2)));
+        assert_eq!(dev.current_dpi().unwrap(), 1200, "through whichever DPI feature the mouse has");
+        assert_eq!(dev.any_dpi_capabilities().unwrap().max, 5000);
+
+        assert_eq!(dev.extended_report_rates(false).unwrap(), (vec![125, 250, 500, 1000], [0, 0x0F]));
+        assert_eq!(dev.extended_report_rates(true).unwrap().0, [125, 250, 500, 1000, 2000, 4000, 8000]);
+        assert_eq!(dev.extended_report_rate(true).unwrap(), (Some(8000), 6));
+        assert_eq!(dev.extended_report_rate(false).unwrap(), (Some(1000), 3));
+    }
+
+    #[test]
+    fn the_extended_features_are_read_only_calls_and_nothing_else_gets_through() {
+        let fake = extended_mouse();
+        let written = fake.written.clone();
+        let mut dev = HidppDevice::new(fake, 0xFF, true).unwrap();
+        let before = written.lock().unwrap().len();
+        // Setting the DPI (function 6 of 0x2202) or the rate (function 3 of 0x8061), or anything
+        // else of those features, is refused on a read-only mouse.
+        for (feature, function) in [
+            (feature::EXTENDED_DPI, 6),
+            (feature::EXTENDED_DPI, 3),
+            (feature::EXTENDED_REPORT_RATE, 3),
+            (feature::EXTENDED_REPORT_RATE, 1),
+        ] {
+            assert!(dev.call(feature, function, &[0, 0, 0, 0, 0, 0]).is_err(), "{feature:04x} {function}");
+        }
+        assert_eq!(written.lock().unwrap().len(), before, "nothing was even sent");
+        // The reads are sent.
+        dev.extended_dpi(0).unwrap();
+        assert!(written.lock().unwrap().len() > before);
     }
 
     #[test]

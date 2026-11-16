@@ -224,7 +224,9 @@ mod tests {
             firmware: Vec::new(),
             features: Vec::new(),
             dpi: dpi_feature.then(|| DpiCapabilities { min: 200, max: 8000, step: 50, list: Vec::new() }),
+            dpi_extended: None,
             report_rates_ms: Vec::new(),
+            report_rates_hz: Vec::new(),
             onboard,
             read_errors: Vec::new(),
         };

@@ -66,7 +66,8 @@ pub const MODELS: &[MouseModel] = &[
     model(0xC09D, "G102/G103/G203"),
     model(0xC07F, "G302"),
     model(0xC080, "G303"),
-    model(0xC097, "G303 Shroud Edition"),
+    // Wireless id from a test report (issue #34); libratbag lists the cable id only.
+    wireless(0xC097, 0x409E, "G303 Shroud Edition"),
     model(0xC07E, "G402"),
     model(0xC083, "G403"),
     model(0xC08F, "G403 HERO"),
@@ -78,6 +79,11 @@ pub const MODELS: &[MouseModel] = &[
     wireless(0xC086, 0x4067, "G903"),
     wireless(0xC091, 0x4087, "G903 HERO"),
     model(0xC08E, "MX518"),
+    // The two PRO mice below come from test reports (issues #33 and #32), not from libratbag: its device
+    // files (commit 8235b5b) do not list them. Open pull request #1676 there names the first one and
+    // its cable id 0xC09A. They use profile format 7, which PeriHub only reads.
+    wireless(0xC09A, 0x40A8, "PRO 2 LIGHTSPEED"),
+    wireless(0xC0A0, 0x40B8, "PRO X 2 DEX"),
     receiver_only(0x4074, "G305"),
     receiver_only(0x406C, "G603"),
     receiver_only(0x4085, "G604"),
@@ -114,6 +120,11 @@ mod tests {
         assert_eq!(find_wireless(0x4093).unwrap().name, "G Pro X Superlight");
         assert_eq!(find_wireless(0x4074).unwrap().name, "G305");
         assert_eq!(find(0xC094).unwrap().name, "G Pro X Superlight");
+        // Wireless ids read from the mice themselves (issues #32, #33, #34).
+        assert_eq!(find_wireless(0x409E).unwrap().name, "G303 Shroud Edition");
+        assert_eq!(find_wireless(0x40A8).unwrap().name, "PRO 2 LIGHTSPEED");
+        assert_eq!(find_wireless(0x40B8).unwrap().name, "PRO X 2 DEX");
+        assert_eq!(find(0xC0A0).unwrap().name, "PRO X 2 DEX");
     }
 
     #[test]

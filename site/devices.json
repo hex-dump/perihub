@@ -250,6 +250,7 @@
       "usb_ids": [
         "046d:c097"
       ],
+      "wireless_id": "409e",
       "linux": {
         "kind": "whole"
       }
@@ -400,6 +401,34 @@
       "usb_ids": [
         "046d:c08e"
       ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "PRO 2 LIGHTSPEED",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c09a"
+      ],
+      "wireless_id": "40a8",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "PRO X 2 DEX",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c0a0"
+      ],
+      "wireless_id": "40b8",
       "linux": {
         "kind": "whole"
       }

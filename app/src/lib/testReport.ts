@@ -47,8 +47,40 @@ function featureList(features: HidppFeature[]): string {
     .join(", ");
 }
 
-function dpiRange({ dpi }: MouseInfo): string {
+type DpiRanges = { min: number; max: number; step: number; list: number[] };
+
+/** "100-25600, step 50", the values of a short list, or the span of a long one. */
+function rangeText(dpi: DpiRanges): string {
+  if (dpi.list.length > 12) return `${dpi.min}-${dpi.max}, ${dpi.list.length} values`;
   return dpi.list.length ? dpi.list.join(", ") : `${dpi.min}-${dpi.max}, step ${dpi.step}`;
+}
+
+function dpiRange({ dpi }: MouseInfo): string {
+  return rangeText(dpi);
+}
+
+const hzList = (rates: number[]) => (rates.length ? rates.join(" ") : "none");
+
+/** The lines for what a PRO X 2 style mouse reports through its extended features, short enough for the form's link. */
+function extendedLines(mouse: MouseInfo): string[] {
+  const e = mouse.extended;
+  if (!e) return [];
+  const lines: string[] = [];
+  if (e.dpi_y) lines.push(`DPI Y axis: ${rangeText(e.dpi_y)}`);
+  if (e.dpi_now) {
+    const { x, default_x, y, default_y, lod } = e.dpi_now;
+    const axes = y === null ? `${x} (default ${default_x})` : `X ${x} (default ${default_x}), Y ${y} (default ${default_y})`;
+    lines.push(`DPI now: ${axes}${lod === null ? "" : `, lift-off distance ${lod}`}`);
+  }
+  if (e.rates_wired_hz.length || e.rates_wireless_hz.length || e.rate_now_hz !== null) {
+    lines.push(
+      `Polling (Hz): cable ${hzList(e.rates_wired_hz)}; receiver ${hzList(e.rates_wireless_hz)}; in use ${e.rate_now_hz ?? "not read"}`,
+    );
+  }
+  if (e.raw.length) lines.push(`Polling answers: ${e.raw.join("; ")}`);
+  lines.push(...e.profiles);
+  if (e.errors.length) lines.push(`Could not read: ${e.errors.join("; ")}`);
+  return lines;
 }
 
 /** What a tester sends about a mouse: never key presses, macros, apps or log lines. */
@@ -68,7 +100,10 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
     `Profile list: ${PROFILE_LIST[mouse.profile_list]}`,
     `G-Shift: ${onboard.has_gshift ? "yes" : "no"}, DPI shift: ${onboard.has_dpi_shift ? "yes" : "no"}`,
     `DPI: ${dpiRange(mouse)}`,
-    `Polling (ms): ${mouse.report_rates_ms.join(", ") || "none reported"}`,
+    ...(mouse.report_rates_ms.length || !mouse.extended?.rates_wireless_hz.length
+      ? [`Polling (ms): ${mouse.report_rates_ms.join(", ") || "none reported"}`]
+      : []),
+    ...extendedLines(mouse),
     `LEDs: ${zones.join("; ") || "none reported"}`,
     `Features: ${featureList(mouse.features) || "not read"}`,
   ].join("\n");
@@ -132,10 +167,10 @@ export function receiverTest(
   ];
   if (device) {
     const dpi = device.dpi
-      ? device.dpi.list.length
-        ? device.dpi.list.join(", ")
-        : `${device.dpi.min}-${device.dpi.max}, step ${device.dpi.step}`
-      : "no 0x2201";
+      ? rangeText(device.dpi)
+      : device.dpi_extended
+        ? `${rangeText(device.dpi_extended)} (0x2202)`
+        : "no 0x2201";
     const onboard = device.onboard
       ? `profile format ${device.onboard.profile_format}, ${device.onboard.sector_count} sectors of ${device.onboard.sector_size} bytes`
       : "none";
@@ -147,8 +182,9 @@ export function receiverTest(
       `Features: ${featureList(device.features) || "not read"}`,
       `DPI: ${dpi}`,
       `Polling (ms): ${device.report_rates_ms.join(", ") || "none reported"}`,
-      `Onboard memory: ${onboard}`,
     );
+    if (device.report_rates_hz?.length) lines.push(`Polling (Hz, 0x8061): ${device.report_rates_hz.join(" ")}`);
+    lines.push(`Onboard memory: ${onboard}`);
     if (live) {
       lines.push(
         `DPI now: ${live.dpi ?? "not read"}`,

@@ -4,6 +4,14 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+### New devices
+- **Logitech PRO 2 LIGHTSPEED and PRO X 2 DEX**, with a cable or a LIGHTSPEED receiver (from the test reports of issues #33 and #32), and the **G303 Shroud Edition through its receiver** (issue #34, which only lacked its wireless id): read only. These PRO mice have no `0x2201` DPI and no `0x8060` polling feature, so PeriHub now reads their extended ones (`0x2202` DPI ranges, DPI in use and lift-off distance; `0x8061` polling rates up to 8000 Hz and the one in use) and their profile format 7, shows the profiles on the mouse page, and puts all of it in the test report to compare with G HUB. Nothing is written and the onboard mode is never switched (libratbag found that it disables a PRO X 2's buttons). The 0x2202, 0x8061 and format 7 layouts come from libratbag's open pull requests #1676 and #1806 (MIT). The lights of the PRO 2 LIGHTSPEED are not read yet. The G303 Shroud Edition's memory is format 3 in 255-byte sectors, which is already tested, so it is supported like the other mice with that format (experimental saves through a receiver).
+
+### Fixed
+- **Saving no longer fails with "invalid argument" on a mouse whose other profiles are disabled** ([issue #34](https://github.com/hex-dump/perihub/issues/34)): to load a saved profile PeriHub switched to another profile and back, even a disabled one, which the G303 Shroud Edition most likely refused; the save was undone and the undo failed at the same switch, though the old profile was back in the mouse. PeriHub now switches only through an enabled profile, and a refused switch no longer undoes a save that was written and read back.
+
 ## 0.9.0 — 2026-11-16
 
 A light theme and accent colors, with System following the desktop (KDE Plasma and GNOME included), and app profiles on KDE Plasma and GNOME. Settings is tidier: the credits are in their own dialog, the supported brands are listed, and where everything is stored is complete. The program is also smaller and wakes up less. Nothing changes in how PeriHub talks to devices.
