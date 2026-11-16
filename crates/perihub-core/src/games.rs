@@ -638,7 +638,10 @@ mod tests {
         put(gog.join("goggame-1.info"), r#"{"playTasks":[{"path":"bin/x64/Cyberpunk2077.exe","isPrimary":true}]}"#);
         put(
             dir.join("gog_store/installed.json"),
-            &format!(r#"{{"installed":[{{"appName":"1","install_path":"{}","platform":"windows"}}]}}"#, gog.display()),
+            &format!(
+                r#"{{"installed":[{{"appName":"1","install_path":"{}","platform":"windows"}}]}}"#,
+                gog.display().to_string().replace('\\', "\\\\")
+            ),
         );
         put(dir.join("store_cache/gog_library.json"), r#"{"games":[{"app_name":"1","title":"Cyberpunk 2077"}]}"#);
         put(
