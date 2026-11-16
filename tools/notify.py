@@ -59,6 +59,8 @@ def git(*args: str) -> str:
     return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout
 
 
+# Only commit subjects are read: bodies often name other issues as examples ("as in #30"), and an
+# issue named there is not one the change is about.
 def refs(text: str) -> list[int]:
     """The issue numbers "#30", "issue #30" or "issues #24, #26" name, in order, once each."""
     found = []
@@ -103,7 +105,7 @@ def testbuild(sha: str, url: str, run_id: str, base: str, since: str, apply: boo
     start = since if is_ancestor(since, sha) else base
     mark = f"<!-- perihub-testbuild:{sha} -->"
     committed = when(git("show", "-s", "--format=%cI", sha).strip())
-    for number in refs(git("log", "--format=%B", f"{start}..{sha}")):
+    for number in refs(git("log", "--format=%s", f"{start}..{sha}")):
         if not open_issue(number):
             continue
         comments = api(f"repos/{REPO}/issues/{number}/comments?per_page=100")
@@ -147,7 +149,7 @@ def release(version: str, url: str, notes: str, apply: bool) -> None:
     text = notes
     previous = previous_tag(version)
     if previous:
-        text += "\n" + git("log", "--format=%B", f"{previous}..v{version}")
+        text += "\n" + git("log", "--format=%s", f"{previous}..v{version}")
     for number in refs(text):
         if not open_issue(number):
             continue
