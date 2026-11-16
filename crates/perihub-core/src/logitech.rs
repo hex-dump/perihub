@@ -72,6 +72,7 @@ impl LogitechTask {
         if dpi_changeable(&device) {
             dev.grant(Access::Ram);
         }
+        dev.set_label(device.label());
         let mut task = Self { dev, device, saved_dpi, last_check: Instant::now() };
         if let Some(dpi) = saved_dpi {
             match task.apply_dpi(dpi) {

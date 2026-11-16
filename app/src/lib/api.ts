@@ -656,6 +656,20 @@ export interface AppSettings {
   system: string;
 }
 
+/** A write PeriHub sent to a device in this session, or refused in read-only mode. */
+export interface WriteEntry {
+  /** Milliseconds since 1970. */
+  time: number;
+  device: string;
+  /** What the write does: a command name, a HID++ feature and function… */
+  kind: string;
+  /** The first bytes, in hex. */
+  data: string;
+  bytes: number;
+  /** "ok", "refused (read-only mode)", or what went wrong. */
+  result: string;
+}
+
 /** How far the download of an update has gone. */
 export interface UpdateProgress {
   received: number;
@@ -816,6 +830,14 @@ export const api = {
   setAppSettings: (settings: AppSettings) =>
     invoke<AppSettings>("app_set_settings", { settings }),
   quit: () => invoke<void>("app_quit"),
+  /** Read-only mode: nothing that changes a device is sent to it. */
+  readOnly: () => invoke<boolean>("app_read_only"),
+  setReadOnly: (on: boolean) => invoke<boolean>("app_set_read_only", { on }),
+  onReadOnly: (handler: (on: boolean) => void): Promise<UnlistenFn> =>
+    listen<boolean>("read-only-changed", (event) => handler(event.payload)),
+  /** The writes of this session, oldest first: kept in memory only. */
+  writeLog: () => invoke<WriteEntry[]>("app_write_log"),
+  clearWriteLog: () => invoke<void>("app_clear_write_log"),
   openLogFolder: () => invoke<void>("app_open_log_folder"),
   openTestForm: (url: string) => invoke<void>("app_open_test_form", { url }),
   openSupportLink: (url: string) => invoke<void>("app_open_support_link", { url }),

@@ -21,6 +21,7 @@ pub mod rawinput;
 pub mod report_devices;
 pub mod softmacro;
 pub mod worker;
+pub mod writes;
 
 pub use color::Rgb;
 pub use error::{Error, Result};

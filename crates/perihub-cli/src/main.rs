@@ -28,7 +28,10 @@ const USAGE: &str = "usage:
   perihub-cli keyboard remap <layer> <hex usage> '<json KeyBinding>'
   perihub-cli keyboard reset-keymap
   perihub-cli keyboard backups
-  perihub-cli keyboard restore <backup id>";
+  perihub-cli keyboard restore <backup id>
+
+Read-only mode, turned on in PeriHub's settings, applies here too: the commands that change a
+device are refused while it is on.";
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -77,6 +80,12 @@ fn run(args: &[&str]) -> Result<()> {
         return Err(invalid("PeriHub is open: quit it from the tray first, since both would talk to the same devices"));
     };
     let config = AppConfig::load();
+    // The core refuses every change in read-only mode; a command that only changes things is
+    // refused here already, before the devices are opened.
+    perihub_core::writes::set_read_only(config.read_only);
+    if config.read_only && changes_a_device(args) {
+        return Err(perihub_core::Error::ReadOnly);
+    }
     let manager = Manager::start(config.keyboard, false, Default::default(), Vec::new(), Box::new(|_| {}));
     wait_for_devices(&manager);
     match args {
@@ -167,6 +176,84 @@ fn run(args: &[&str]) -> Result<()> {
     }
 }
 
+/// The commands that send changes to a device.
+fn changes_a_device(args: &[&str]) -> bool {
+    matches!(
+        args,
+        ["keyboard", "brightness", _]
+            | ["keyboard", "light", ..]
+            | ["keyboard", "remap", ..]
+            | ["keyboard", "reset-keymap"]
+            | ["keyboard", "restore", _]
+            | ["mouse", "preview-dpi", _]
+            | ["mouse", "preview-led", ..]
+            | ["mouse", "profile", _]
+            | ["mouse", "dpi-level", _]
+            | ["mouse", "save-profile", ..]
+            | ["mouse", "factory", _]
+            | ["mouse", "restore", _]
+    )
+}
+
 fn invalid(what: &str) -> perihub_core::Error {
     perihub_core::Error::Invalid(what.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_command_that_changes_a_device_is_refused_in_read_only_mode() {
+        let changes: &[&[&str]] = &[
+            &["keyboard", "brightness", "8"],
+            &["keyboard", "light", "{}", "5"],
+            &["keyboard", "remap", "0", "04", "{}"],
+            &["keyboard", "reset-keymap"],
+            &["keyboard", "restore", "id"],
+            &["mouse", "preview-dpi", "800"],
+            &["mouse", "preview-led", "0", "{}"],
+            &["mouse", "profile", "2"],
+            &["mouse", "dpi-level", "1"],
+            &["mouse", "save-profile", "1", "{}"],
+            &["mouse", "factory", "1"],
+            &["mouse", "restore", "id"],
+        ];
+        for args in changes {
+            assert!(changes_a_device(args), "{args:?}");
+        }
+        let reads: &[&[&str]] = &[
+            &["status"],
+            &["keyboard", "keymap"],
+            &["keyboard", "brightness"],
+            &["keyboard", "backups"],
+            &["mouse", "state"],
+            &["mouse", "get-profile", "1"],
+            &["mouse", "backups"],
+            &["mouse", "sector", "0"],
+        ];
+        for args in reads {
+            assert!(!changes_a_device(args), "{args:?}");
+        }
+    }
+
+    /// Every command of the usage is either a read or in the list above: a new command must be
+    /// sorted into one or the other.
+    #[test]
+    fn every_command_of_the_usage_is_sorted() {
+        let reads = ["status", "focus", "keymap", "brightness", "state", "get-profile", "backups", "sector"];
+        for line in USAGE.lines().filter(|l| l.trim_start().starts_with("perihub-cli ")) {
+            let words: Vec<&str> = line.split_whitespace().skip(1).collect();
+            let fixed: Vec<&str> = words.iter().take_while(|w| !w.starts_with(['<', '[', '\''])).copied().collect();
+            // One placeholder for each argument the line shows ("<backup id>" is one).
+            let rest = words[fixed.len()..].join(" ");
+            let mut args = fixed.clone();
+            args.extend(std::iter::repeat_n("1", rest.matches(['<', '[']).count()));
+            let last = fixed.last().copied().unwrap_or_default();
+            let read = !changes_a_device(&args);
+            // "keyboard brightness" reads, "keyboard brightness 8" sets it.
+            let listed_read = reads.contains(&last) && !(last == "brightness" && args.len() == 3);
+            assert_eq!(read, listed_read, "{line}");
+        }
+    }
 }

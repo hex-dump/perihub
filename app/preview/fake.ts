@@ -124,6 +124,8 @@ export const answers: Record<string, unknown> = {
   mouse_backups: [],
   soft_get: macros,
   app_get_settings: settings,
+  app_read_only: false,
+  app_write_log: [],
   update_available: null,
   update_just_installed: null,
 };

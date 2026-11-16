@@ -10,6 +10,7 @@
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import G300ProfileEditor from "../components/G300ProfileEditor.svelte";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     info: G300Info | null;
@@ -189,7 +190,7 @@
           Profile {profile.number}
           {#if active}<span class="chip ok">Active</span>{/if}
           {#if info.editable && editing === null}
-            <button class="tiny edit" disabled={!!busy || confirmKeep} onclick={() => (editing = profile.number)}>Edit</button>
+            <button class="tiny edit" disabled={!!busy || confirmKeep || readOnly.on} onclick={() => (editing = profile.number)}>Edit</button>
           {/if}
         </h2>
         {#if editing === profile.number}

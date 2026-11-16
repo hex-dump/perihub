@@ -110,7 +110,12 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
 }
 
 /** The test form on GitHub with the fields filled in that PeriHub knows. */
-export function testFormUrl(mouse: MouseInfo, version: string, system: string): string {
+export function testFormUrl(
+  mouse: MouseInfo,
+  version: string,
+  system: string,
+  report = testReport(mouse, version, system),
+): string {
   const fields = {
     title: `${mouse.model} test report`,
     model: mouse.model,
@@ -118,7 +123,7 @@ export function testFormUrl(mouse: MouseInfo, version: string, system: string): 
     connection: mouse.receiver ? receiverName(mouse.link?.receiver_id) : "USB cable",
     version,
     os: system.toLowerCase().startsWith("windows") ? "Windows" : "Linux",
-    report: testReport(mouse, version, system),
+    report,
   };
   const query = Object.entries(fields).map(([name, value]) => `${name}=${encodeURIComponent(value)}`);
   return `${TEST_FORM}&${query.join("&")}`;

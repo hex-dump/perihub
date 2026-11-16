@@ -102,6 +102,8 @@ fn main() {
                     None
                 }
             };
+            // Before any device is opened: read-only mode applies from the first report.
+            perihub_core::writes::set_read_only(config.read_only);
             let handle = app.handle().clone();
             // The device listener starts before the app profiles exist: they are set right after.
             let profiles_slot = Arc::new(OnceLock::<Arc<AppProfileEngine>>::new());
@@ -227,6 +229,10 @@ fn main() {
             commands::app_get_settings,
             commands::app_set_settings,
             commands::app_quit,
+            commands::app_read_only,
+            commands::app_set_read_only,
+            commands::app_write_log,
+            commands::app_clear_write_log,
             commands::app_open_log_folder,
             commands::app_open_test_form,
             commands::app_open_support_link,

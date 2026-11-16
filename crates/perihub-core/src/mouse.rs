@@ -368,6 +368,7 @@ impl MouseTask {
         }
         let support = support(model, &onboard, dev.is_behind_receiver(), untested_saves);
         dev.grant(support.access());
+        dev.set_label(model.name.to_string());
         let info = MouseInfo {
             product_id: model.product_id,
             model: model.name.into(),
@@ -475,6 +476,8 @@ impl MouseTask {
         let host_mode = match mode_action(mode, self.model.verified, conflict_running) {
             ModeAction::Fine => false,
             ModeAction::Report => true,
+            // Read-only mode: the mouse stays as it is, and the interface says another program has it.
+            ModeAction::SwitchBack if crate::writes::read_only() => true,
             ModeAction::SwitchBack => {
                 log::info!("the mouse was left under software control: switching back to its onboard profiles");
                 self.dev.set_onboard_mode(ONBOARD_MODE)?;
@@ -509,6 +512,7 @@ impl MouseTask {
     }
 
     fn check_writable(&self) -> Result<()> {
+        crate::writes::refuse_if_read_only()?;
         if self.info.writable {
             Ok(())
         } else {
@@ -519,6 +523,7 @@ impl MouseTask {
     /// Changes that stay in the mouse's RAM (active profile, DPI level, previews): a tested mouse,
     /// or one with experimental saves.
     fn check_controllable(&self) -> Result<()> {
+        crate::writes::refuse_if_read_only()?;
         if self.info.verified || self.info.experimental {
             Ok(())
         } else {
@@ -1097,7 +1102,8 @@ impl MouseTask {
             let _ = std::fs::remove_file(&path);
             return;
         }
-        if !self.info.writable {
+        // In read-only mode the undo waits, with its backup, for a connection that may send it.
+        if !self.info.writable || crate::writes::read_only() {
             self.info.pending_undo = true;
             return;
         }
@@ -2376,6 +2382,38 @@ mod tests {
         task.keep_changes();
         assert!(!task.pending_undo_path().exists());
         assert_eq!(parsed(&sim.lock().unwrap().user[2]).dpi_levels[0], 3250);
+        forget_test_files();
+    }
+
+    #[test]
+    fn read_only_mode_refuses_saves_switches_and_previews() {
+        let (mut task, sim) = open_sim(g502_x(), G502_X_WIRELESS, false);
+        let state = task.state().unwrap();
+        let mut sector = vec![0u8; task.sector_size() as usize];
+        crate::hidpp::profile::write_crc(&mut sector);
+        let _read_only = crate::writes::test::read_only_mode();
+        assert!(matches!(task.save_profile(2, &edited(&state, 2)), Err(Error::ReadOnly)));
+        assert!(matches!(task.restore_factory_profile(2), Err(Error::ReadOnly)));
+        assert!(matches!(task.set_active_profile(2), Err(Error::ReadOnly)));
+        assert!(matches!(task.preview_dpi(800), Err(Error::ReadOnly)));
+        // Below the checks of the task, the connection itself refuses the memory write.
+        assert!(matches!(task.dev.write_sector(2, &sector, &task.info.onboard), Err(Error::ReadOnly)));
+        let mouse = sim.lock().unwrap();
+        assert!(mouse.written.is_empty() && mouse.selected.is_empty() && mouse.writing.is_none());
+        drop(mouse);
+        assert!(task.state().is_ok(), "reads still work");
+        assert!(!task.pending_undo_path().exists());
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_mouse_opens_in_read_only_mode_without_a_write() {
+        let _read_only = crate::writes::test::read_only_mode();
+        let (task, sim) = open_sim(g502_x(), G502_X_WIRELESS, false);
+        assert!(task.info.verified);
+        let mouse = sim.lock().unwrap();
+        assert!(mouse.written.is_empty() && mouse.selected.is_empty());
+        drop(mouse);
         forget_test_files();
     }
 

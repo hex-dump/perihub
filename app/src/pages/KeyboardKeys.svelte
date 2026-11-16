@@ -11,6 +11,7 @@
   import { keymapRestoreMessage } from "../lib/backups";
   import KeyAccessPermission from "../components/KeyAccessPermission.svelte";
   import SoftMacros from "../components/SoftMacros.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   const UNIT = 46;
   // The board shrinks to fit narrow windows.
@@ -332,7 +333,7 @@
     {/if}
 
     <div class="row">
-      <ConfirmButton class="danger" disabled={!!busy} onconfirm={resetAll} confirmLabel="Reset all keys?">
+      <ConfirmButton class="danger" disabled={!!busy || readOnly.on} onconfirm={resetAll} confirmLabel="Reset all keys?">
         Reset all to factory
       </ConfirmButton>
       <button disabled={!!busy} onclick={() => (showBackups = true)}>Backups…</button>
@@ -341,7 +342,7 @@
         <span class="muted small">{pending.length} unsaved {pending.length === 1 ? "change" : "changes"}</span>
         <button disabled={!!busy} onclick={() => (drafts = [{}, {}])}>Discard</button>
       {/if}
-      <button class="primary" disabled={!pending.length || !!busy} onclick={save}>Save to keyboard</button>
+      <button class="primary" disabled={!pending.length || !!busy || readOnly.on} onclick={save}>Save to keyboard</button>
     </div>
     <p class="muted small">
       The mapping is stored in the keyboard's memory and works without PeriHub, on any computer, except keys that start

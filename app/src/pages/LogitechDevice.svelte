@@ -11,6 +11,7 @@
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import NoWarranty from "../components/NoWarranty.svelte";
   import UnifyingPermission from "../components/UnifyingPermission.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     receiver: ReceiverReport | null;
@@ -187,9 +188,9 @@
               disabled={!!busy}
             />
           {/if}
-          <button class="primary" disabled={!!busy || dpi === null || dpi === live?.dpi} onclick={apply}>Set DPI</button>
+          <button class="primary" disabled={!!busy || dpi === null || dpi === live?.dpi || readOnly.on} onclick={apply}>Set DPI</button>
           {#if live?.saved_dpi}
-            <button disabled={!!busy} onclick={reset}>Back to the device's own DPI</button>
+            <button disabled={!!busy || readOnly.on} onclick={reset}>Back to the device's own DPI</button>
           {/if}
           <span class="grow"></span>
           {#if busy}
@@ -217,7 +218,7 @@
             <NoWarranty device={`Logitech ${name}`} bind:accepted={understood} />
             <div class="row end">
               <button onclick={() => ((asking = false), (understood = false))}>Cancel</button>
-              <button class="primary" disabled={!understood} onclick={confirm}>Set DPI</button>
+              <button class="primary" disabled={!understood || readOnly.on} onclick={confirm}>Set DPI</button>
             </div>
           </div>
         {/if}

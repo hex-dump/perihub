@@ -2,8 +2,9 @@
   // Copy test report / Open test form for Corsair devices and the G300 (the device test form).
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
-  import { api, errorText } from "../lib/api";
+  import { api, errorText, type WriteEntry } from "../lib/api";
   import { deviceTestFormUrl, type DeviceTestFields } from "../lib/testReport";
+  import { readOnly, withWriteLog } from "../lib/readOnly.svelte";
 
   interface Props {
     /** What PeriHub knows about the device, for this version and system. */
@@ -17,8 +18,24 @@
   let system = $state("");
   let copied = $state(false);
   let error = $state<string | null>(null);
+  /** The writes of this session, for the end of the report: read again before a click. */
+  let writes = $state<WriteEntry[]>([]);
+
+  async function loadWrites() {
+    try {
+      writes = await api.writeLog();
+    } catch {
+      // The report goes without them.
+    }
+  }
+
+  function report(): DeviceTestFields {
+    const f = fields(version, system);
+    return { ...f, report: withWriteLog(f.report, writes, readOnly.on) };
+  }
 
   onMount(async () => {
+    loadWrites();
     version = await getVersion();
     try {
       system = (await api.appSettings()).system;
@@ -30,7 +47,7 @@
   // Browsers allow writing to the clipboard only straight after the click: no waiting before it.
   async function copy() {
     try {
-      await navigator.clipboard.writeText(fields(version, system).report);
+      await navigator.clipboard.writeText(report().report);
       error = null;
       copied = true;
       setTimeout(() => (copied = false), COPIED_MS);
@@ -39,13 +56,16 @@
     }
   }
 
-  function openForm() {
-    api.openTestForm(deviceTestFormUrl(fields(version, system), version, system)).catch((e) => (error = errorText(e)));
+  async function openForm() {
+    await loadWrites();
+    api.openTestForm(deviceTestFormUrl(report(), version, system)).catch((e) => (error = errorText(e)));
   }
 </script>
 
 <div class="row wrap">
-  <button type="button" class="tiny" disabled={!version} onclick={copy}>{copied ? "Copied" : "Copy test report"}</button>
+  <button type="button" class="tiny" disabled={!version} onpointerenter={loadWrites} onfocus={loadWrites} onclick={copy}>
+    {copied ? "Copied" : "Copy test report"}
+  </button>
   <button type="button" class="tiny" disabled={!version} onclick={openForm}>Open test form</button>
 </div>
 {#if error}<div class="notice error">{error}</div>{/if}
