@@ -24,6 +24,10 @@ tauri-plugin-single-instance = "2.5.5"
 tauri-plugin-updater = "~2.14"
 tauri-plugin-dialog = "~2.8"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+# Already in the tree through Tauri's GTK stack: used only for the log handler in main.rs.
+glib = "0.18"
+
 [target.'cfg(windows)'.dependencies]
 windows-registry = "0.100"
 windows-result = "0.100"

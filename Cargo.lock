@@ -2781,6 +2781,7 @@ version = "0.8.4"
 dependencies = [
  "dirs 7.0.0",
  "env_logger",
+ "glib",
  "log",
  "perihub-core",
  "serde",
