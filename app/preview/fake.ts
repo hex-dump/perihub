@@ -102,6 +102,7 @@ const settings: AppSettings = {
   start_hidden: false,
   autostart: true,
   check_updates: true,
+  battery: { enabled: true, low_percent: 15, full: false },
   updates_supported: false,
   package_manager: null,
   log_dir: "~/.local/state/perihub",

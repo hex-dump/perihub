@@ -92,6 +92,11 @@ impl LogitechTask {
                 None
             }
         };
+        crate::battery::report(
+            &format!("logitech:{}", self.device.settings_key()),
+            self.device.name.as_deref().unwrap_or("Logitech device"),
+            battery.map(|b| b.reading()),
+        );
         let dpi = if self.device.dpi.is_some() { Some(self.dev.sensor_dpi(0)?.0) } else { None };
         Ok(LogitechLive { battery, dpi, saved_dpi: self.saved_dpi })
     }
@@ -137,6 +142,12 @@ impl DeviceTask for LogitechTask {
             }
         }
         Ok(CHECK_EVERY.saturating_sub(self.last_check.elapsed()))
+    }
+}
+
+impl Drop for LogitechTask {
+    fn drop(&mut self) {
+        crate::battery::forget(&format!("logitech:{}", self.device.settings_key()));
     }
 }
 

@@ -2,6 +2,7 @@
 
 pub mod apex;
 pub mod app_profiles;
+pub mod battery;
 pub mod color;
 pub mod config;
 pub mod conflicts;

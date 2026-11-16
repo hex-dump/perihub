@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod autostart;
+mod battery;
 mod commands;
 #[cfg(target_os = "linux")]
 mod flatpak;
@@ -77,6 +78,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![HIDDEN_ARG]),
@@ -143,6 +145,7 @@ fn main() {
                 app.state::<updates::Available>().started_by_update();
             }
             window::build_tray(app.handle())?;
+            battery::start(app.handle().clone());
             updates::watch(app.handle().clone());
 
             // The window opens with the system's theme, and the interface follows it as it changes.

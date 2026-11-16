@@ -263,6 +263,13 @@ pub struct Battery {
     pub state: BatteryState,
 }
 
+impl Battery {
+    /// For [`crate::battery::report`]: percent, charging, full.
+    pub fn reading(&self) -> (u8, bool, bool) {
+        (self.percent, self.state == BatteryState::Charging, self.state == BatteryState::Full)
+    }
+}
+
 /// Charge of a single-cell lithium battery by voltage (mV), on its usual discharge curve.
 const VOLTAGE_CURVE: &[(u16, u8)] = &[
     (4150, 100),

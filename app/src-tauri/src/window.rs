@@ -14,6 +14,8 @@ const TRAY: &str = "main";
 
 /// The new version shown in the tray menu, kept when the menu is built again.
 static UPDATE: Mutex<Option<String>> = Mutex::new(None);
+/// One line per wireless device with a battery, shown in the tray menu and tooltip.
+static BATTERIES: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
 /// Shows the window, creating it if needed, optionally on a page ("settings", "mouse:buttons"…).
 pub fn show(app: &AppHandle, page: Option<&str>) {
@@ -67,6 +69,10 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     if let Some(version) = UPDATE.lock().unwrap().as_deref() {
         items.push(MenuItem::with_id(app, "update", format!("Update to {version}…"), true, None::<&str>)?);
     }
+    // Information only: nothing to click.
+    for (i, line) in BATTERIES.lock().unwrap().iter().enumerate() {
+        items.push(MenuItem::with_id(app, format!("battery-{i}"), line, false, None::<&str>)?);
+    }
     items.push(MenuItem::with_id(app, "stop", "Stop software macros", true, None::<&str>)?);
     // A way out that does not need the window, in case a Corsair mouse stops clicking.
     let experimental = app
@@ -89,7 +95,7 @@ pub fn refresh_menu(app: &AppHandle) {
 
 pub fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let mut tray = TrayIconBuilder::with_id(TRAY)
-        .tooltip("PeriHub")
+        .tooltip(tooltip())
         .menu(&menu(app)?)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
@@ -123,9 +129,34 @@ pub fn quit(app: &AppHandle) {
 /// Tells about a new version from the tray, where PeriHub spends most of its time: in the
 /// tooltip and with a menu entry that opens the settings.
 pub fn show_update(app: &AppHandle, version: &str) {
-    if let Some(tray) = app.tray_by_id(TRAY) {
-        let _ = tray.set_tooltip(Some(format!("PeriHub: version {version} is available")));
-    }
     *UPDATE.lock().unwrap() = Some(version.to_string());
+    refresh_tooltip(app);
+    refresh_menu(app);
+}
+
+/// What the tray icon says when the pointer rests on it: the new version, if there is one, and
+/// the battery of each wireless device.
+fn tooltip() -> String {
+    let mut text = match UPDATE.lock().unwrap().as_deref() {
+        Some(version) => format!("PeriHub: version {version} is available"),
+        None => "PeriHub".to_string(),
+    };
+    for line in BATTERIES.lock().unwrap().iter() {
+        text.push('\n');
+        text.push_str(line);
+    }
+    text
+}
+
+fn refresh_tooltip(app: &AppHandle) {
+    if let Some(tray) = app.tray_by_id(TRAY) {
+        let _ = tray.set_tooltip(Some(tooltip()));
+    }
+}
+
+/// Shows the battery of the wireless devices in the tray (see battery.rs).
+pub fn set_batteries(app: &AppHandle, lines: Vec<String>) {
+    *BATTERIES.lock().unwrap() = lines;
+    refresh_tooltip(app);
     refresh_menu(app);
 }

@@ -231,6 +231,13 @@ pub struct MouseTask {
     list: ProfileList,
 }
 
+impl Drop for MouseTask {
+    /// A mouse that went away (or fell asleep behind its receiver) shows no battery any more.
+    fn drop(&mut self) {
+        crate::battery::forget(&self.battery_id());
+    }
+}
+
 /// How far PeriHub goes with a mouse.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Support {
@@ -1226,12 +1233,17 @@ impl MouseTask {
                 None
             }
         };
+        crate::battery::report(&self.battery_id(), &self.info.model, battery.map(|b| b.reading()));
         Ok(MouseLive {
             active_profile: self.read_active_profile()?,
             active_dpi_index: self.active_dpi_index()?,
             current_dpi: self.dev.current_dpi()?,
             battery,
         })
+    }
+
+    fn battery_id(&self) -> String {
+        format!("mouse:{:04x}", self.info.product_id)
     }
 
     fn read_active_profile(&mut self) -> Result<u8> {

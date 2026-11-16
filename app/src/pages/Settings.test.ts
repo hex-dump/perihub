@@ -26,6 +26,7 @@ const settings = (autostart: boolean): AppSettings => ({
   start_hidden: false,
   autostart,
   check_updates: false,
+  battery: { enabled: true, low_percent: 15, full: false },
   updates_supported: false,
   package_manager: null,
   log_dir: "/logs",
@@ -72,6 +73,40 @@ describe("Settings", () => {
     const linux = render(Settings, { props: { status: { ...status, sandboxed: true } } });
     await waitFor(() => expect(linux.container.textContent).toContain("Flatpak portal"));
     expect(linux.container.textContent).toContain("71");
+  });
+
+  it("saves the battery limit and the switches, and keeps the rest of the settings", async () => {
+    api.setAppSettings.mockImplementation(async (s: AppSettings) => s);
+    render(Settings, { props: { status } });
+    const limit = (await screen.findByRole("combobox", { name: "Low below" })) as HTMLSelectElement;
+    expect(limit.value).toBe("15");
+    await fireEvent.change(limit, { target: { value: "30" } });
+    await waitFor(() => expect(api.setAppSettings).toHaveBeenCalled());
+    expect(api.setAppSettings.mock.calls[0][0].battery).toEqual({ enabled: true, low_percent: 30, full: false });
+    expect(api.setAppSettings.mock.calls[0][0].autostart).toBe(true);
+
+    const full = screen.getByRole("checkbox", { name: /fully charged/ });
+    await fireEvent.click(full);
+    await waitFor(() => expect(api.setAppSettings).toHaveBeenCalledTimes(2));
+    expect(api.setAppSettings.mock.calls[1][0].battery).toEqual({ enabled: true, low_percent: 30, full: true });
+  });
+
+  it("turns the limit off with the battery switch, and shows a limit set in the file", async () => {
+    api.appSettings.mockResolvedValue({ ...settings(true), battery: { enabled: false, low_percent: 12, full: false } });
+    render(Settings, { props: { status } });
+    const limit = (await screen.findByRole("combobox", { name: "Low below" })) as HTMLSelectElement;
+    expect(limit.disabled).toBe(true);
+    expect(limit.value).toBe("12");
+    expect((screen.getByRole("checkbox", { name: /fully charged/ }) as HTMLInputElement).disabled).toBe(true);
+  });
+
+  it("puts the limit back when it cannot be saved", async () => {
+    api.setAppSettings.mockRejectedValue("cannot save");
+    render(Settings, { props: { status } });
+    const limit = (await screen.findByRole("combobox", { name: "Low below" })) as HTMLSelectElement;
+    await fireEvent.change(limit, { target: { value: "30" } });
+    await waitFor(() => expect(limit.value).toBe("15"));
+    expect(document.body.textContent).toContain("cannot save");
   });
 
   it("reads autostart again when the window comes back, as Task Manager can change it", async () => {

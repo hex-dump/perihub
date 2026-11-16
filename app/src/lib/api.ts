@@ -639,11 +639,22 @@ export interface CorsairInfo {
   lighting: string | null;
 }
 
+export interface BatteryAlerts {
+  /** Warn when a battery gets low. */
+  enabled: boolean;
+  /** Percent: the warning comes when the battery goes below it. */
+  low_percent: number;
+  /** Also tell when a battery is fully charged. */
+  full: boolean;
+}
+
 export interface AppSettings {
   start_hidden: boolean;
   autostart: boolean;
   /** Look for a new version on GitHub at startup and once a day. */
   check_updates: boolean;
+  /** Notifications about the battery of wireless devices. */
+  battery: BatteryAlerts;
   /** This build can update itself (Windows). */
   updates_supported: boolean;
   /** The package manager that installed PeriHub and updates it, such as Scoop. */

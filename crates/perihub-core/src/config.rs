@@ -65,6 +65,8 @@ pub struct AppConfig {
     pub logitech_dpi: std::collections::HashMap<String, u16>,
     /// Keyboards with a raw HID collection the user turned on as VIA keyboards, by "vvvv:pppp".
     pub qmk_keyboards: Vec<String>,
+    /// Notifications about the battery of wireless devices.
+    pub battery: crate::battery::BatteryAlerts,
 }
 
 impl Default for AppConfig {
@@ -78,6 +80,7 @@ impl Default for AppConfig {
             software_macros: Vec::new(),
             logitech_dpi: std::collections::HashMap::new(),
             qmk_keyboards: Vec::new(),
+            battery: Default::default(),
         }
     }
 }
