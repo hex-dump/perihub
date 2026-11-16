@@ -10,6 +10,8 @@ mod logfile;
 mod macro_files;
 mod qmk_access;
 mod soft_macros;
+#[cfg(target_os = "linux")]
+mod system_theme;
 mod unifying_access;
 mod updates;
 mod window;
@@ -164,6 +166,10 @@ fn main() {
             }
             window::build_tray(app.handle())?;
             updates::watch(app.handle().clone());
+
+            // The window opens with the system's theme, and the interface follows it as it changes.
+            #[cfg(target_os = "linux")]
+            system_theme::watch(app.handle().clone());
 
             // Started hidden (autostart), PeriHub creates no window until it is opened.
             if !start_hidden {

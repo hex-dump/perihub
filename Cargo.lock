@@ -2795,6 +2795,7 @@ dependencies = [
  "windows-registry 0.100.0",
  "windows-result 0.100.0",
  "windows-sys 0.61.2",
+ "zbus",
 ]
 
 [[package]]

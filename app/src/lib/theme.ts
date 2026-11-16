@@ -34,11 +34,34 @@ export function systemQuery(): MediaQueryList | null {
   return typeof window !== "undefined" && typeof window.matchMedia === "function" ? window.matchMedia(LIGHT_QUERY) : null;
 }
 
-/** "System" is dark unless the system says light, as it was before there was a choice. */
-export function resolveTheme(choice: ThemeChoice): "dark" | "light" {
-  if (choice === "system") return systemQuery()?.matches ? "light" : "dark";
-  return choice;
+declare global {
+  interface Window {
+    /** Linux: the desktop's theme as the XDG portal says it (system_theme.rs sets it before the page runs and the
+     * "system-theme" event keeps it), because WebKitGTK answers matchMedia from the GTK theme's name. */
+    __PERIHUB_SYSTEM_THEME__?: "dark" | "light";
+  }
 }
+
+/** What the app reported for the desktop, if it did. */
+export function reportedTheme(): "dark" | "light" | null {
+  const v = typeof window !== "undefined" ? window.__PERIHUB_SYSTEM_THEME__ : undefined;
+  return v === "dark" || v === "light" ? v : null;
+}
+
+/** Keeps what the "system-theme" event says: a theme, or nothing when the desktop has no preference to read. */
+export function setReportedTheme(v: unknown) {
+  if (v === "dark" || v === "light") window.__PERIHUB_SYSTEM_THEME__ = v;
+  else delete window.__PERIHUB_SYSTEM_THEME__;
+}
+
+/** What the app reported, else matchMedia; dark unless either says light, as it was before there was a choice. */
+export function resolveTheme(choice: ThemeChoice): "dark" | "light" {
+  if (choice !== "system") return choice;
+  return reportedTheme() ?? (systemQuery()?.matches ? "light" : "dark");
+}
+
+/** WebKitGTK: the window has no "follow the system" that works (see __PERIHUB_SYSTEM_THEME__), so it is told. */
+export const isLinux = () => typeof navigator !== "undefined" && /Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent);
 
 export function applyToDocument(choice: ThemeChoice, accent: AccentId) {
   const root = document.documentElement;
@@ -46,11 +69,12 @@ export function applyToDocument(choice: ThemeChoice, accent: AccentId) {
   root.dataset.accent = accent;
 }
 
-/** Tells the window, so what the system draws (title bar, menus) matches. System gives the choice back to it. */
+/** Tells the window, so what the system draws (title bar, menus) matches. System gives the choice back to it,
+ * except on Linux, where null would only turn the GTK dark preference off: the resolved theme is set. */
 export async function setNativeTheme(choice: ThemeChoice) {
   try {
     const { getCurrentWindow } = await import("@tauri-apps/api/window");
-    await getCurrentWindow().setTheme(choice === "system" ? null : choice);
+    await getCurrentWindow().setTheme(choice === "system" && !isLinux() ? null : resolveTheme(choice));
   } catch {
     /* not in the app, or the system cannot: the interface still follows the choice */
   }

@@ -5,7 +5,12 @@
     var root = document.documentElement;
     var theme = localStorage.getItem("perihub.theme");
     var accent = localStorage.getItem("perihub.accent");
-    var light = theme === "light" || (theme !== "dark" && !!window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches);
+    // Linux: the app's answer first (see __PERIHUB_SYSTEM_THEME__ in src/lib/theme.ts), WebKitGTK's matchMedia can be wrong.
+    var system = window.__PERIHUB_SYSTEM_THEME__;
+    var light =
+      theme === "light" ||
+      (theme !== "dark" &&
+        (system === "light" || (system !== "dark" && !!window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches)));
     root.dataset.theme = light ? "light" : "dark";
     if (accent && /^[a-z]+$/.test(accent)) root.dataset.accent = accent;
   } catch (e) {

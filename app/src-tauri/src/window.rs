@@ -37,7 +37,15 @@ pub fn show(app: &AppHandle, page: Option<&str>) {
 
 fn create(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     let config = app.config().app.windows.iter().find(|w| w.label == MAIN).expect("main window in tauri.conf.json");
-    let window = WebviewWindowBuilder::from_config(app, config)?.build()?;
+    #[allow(unused_mut)]
+    let mut builder = WebviewWindowBuilder::from_config(app, config)?;
+    // Linux: the web view cannot tell a dark desktop from a light one (see system_theme.rs), so the
+    // window opens with the theme the portal gave, the title bar included.
+    #[cfg(target_os = "linux")]
+    if let Some(script) = crate::system_theme::init_script() {
+        builder = builder.theme(crate::system_theme::current()).initialization_script(script);
+    }
+    let window = builder.build()?;
     crate::autostart::restart_hidden();
     // Development only: PERIHUB_PAGE=mouse:buttons opens a page directly.
     #[cfg(debug_assertions)]
