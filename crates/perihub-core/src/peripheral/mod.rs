@@ -18,6 +18,7 @@ pub mod nordic;
 pub mod pulsar;
 pub mod qmk;
 pub mod razer;
+pub mod razer_keyboard;
 #[rustfmt::skip]
 pub mod razer_models;
 pub mod roccat;
@@ -26,6 +27,8 @@ pub mod steelseries;
 #[rustfmt::skip]
 pub mod steelseries_models;
 pub mod task;
+pub mod wraith;
+pub mod yjx;
 
 use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
@@ -77,9 +80,12 @@ pub enum Protocol {
     Pulsar(pulsar::Params),
     Qmk(qmk::Params),
     Razer(razer::Params),
+    RazerKeyboard(razer_keyboard::Params),
     Roccat(roccat::Params),
     Sinowealth(sinowealth::Params),
     SteelSeries(steelseries::Params),
+    Wraith(wraith::Params),
+    Yjx(yjx::Params),
 }
 
 /// A device PeriHub recognizes, from a driver's table.
@@ -104,6 +110,7 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
         .iter()
         .chain(steelseries_models::MODELS)
         .chain(razer_models::MODELS)
+        .chain(razer_keyboard::MODELS)
         .chain(sinowealth::MODELS)
         .chain(logitech_g600::MODELS)
         .chain(logitech_hidpp10::MODELS)
@@ -112,6 +119,8 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
         .chain(coolermaster::MODELS)
         .chain(nordic::MODELS)
         .chain(evga::MODELS)
+        .chain(yjx::MODELS)
+        .chain(wraith::MODELS)
 }
 
 pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {
@@ -308,6 +317,11 @@ pub trait Hid: Send {
     fn read_timeout(&self, buf: &mut [u8], timeout_ms: i32) -> Result<usize>;
     fn send_feature(&self, data: &[u8]) -> Result<()>;
     fn get_feature(&self, buf: &mut [u8]) -> Result<usize>;
+    /// The collection's report descriptor: asked of the system, nothing is sent to the device's
+    /// configuration. Windows rebuilds it from what it parsed.
+    fn report_descriptor(&self, _buf: &mut [u8]) -> Result<usize> {
+        Err(Error::Invalid("no report descriptor".into()))
+    }
 }
 
 impl Hid for hidapi::HidDevice {
@@ -322,6 +336,9 @@ impl Hid for hidapi::HidDevice {
     }
     fn get_feature(&self, buf: &mut [u8]) -> Result<usize> {
         Ok(self.get_feature_report(buf)?)
+    }
+    fn report_descriptor(&self, buf: &mut [u8]) -> Result<usize> {
+        Ok(self.get_report_descriptor(buf)?)
     }
 }
 
@@ -602,6 +619,40 @@ impl Io {
         }
     }
 
+    /// The report descriptor of the collection, kept for the test report. Nothing is sent to the
+    /// device's configuration.
+    pub fn report_descriptor(&mut self) -> Result<Vec<u8>> {
+        let mut buf = vec![0u8; 4096];
+        let n = self.hid.report_descriptor(&mut buf)?;
+        buf.truncate(n.min(4096));
+        self.note(format!("report descriptor, {n} bytes: {}", hex(&buf)));
+        Ok(buf)
+    }
+
+    /// The next input report of `reply.len()` bytes that `answers` accepts, within `timeout`,
+    /// without sending anything: the second answer of a request answered twice.
+    pub fn read_matching(
+        &mut self,
+        reply: &mut [u8],
+        timeout: Duration,
+        answers: impl Fn(&[u8]) -> bool,
+    ) -> Result<()> {
+        let mut scratch = [0u8; 256];
+        let end = Instant::now() + timeout;
+        loop {
+            let left = end.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                return Err(Error::Timeout);
+            }
+            let n = self.hid.read_timeout(&mut scratch, left.as_millis().clamp(1, 1000) as i32)?;
+            if n == reply.len() && answers(&scratch[..n]) {
+                reply.copy_from_slice(&scratch[..n]);
+                self.note(format!("  ← {}", hex(reply)));
+                return Ok(());
+            }
+        }
+    }
+
     /// Keeps a line for the test report.
     pub fn note_line(&mut self, line: String) {
         self.note(line);
@@ -642,6 +693,59 @@ impl Io {
             }
         }
     }
+}
+
+/// The report descriptor declares keys that are typed: the Keyboard/Keypad usage page (0x07), or a
+/// keyboard or keypad of the Generic Desktop page. A long item, which no keyboard needs, counts as
+/// one too: the descriptor cannot be checked.
+pub fn descriptor_carries_typing(descriptor: &[u8]) -> bool {
+    let mut page = 0u32;
+    let mut i = 0;
+    while i < descriptor.len() {
+        let prefix = descriptor[i];
+        if prefix == 0xFE {
+            return true;
+        }
+        let size = match prefix & 0x03 {
+            3 => 4,
+            n => n as usize,
+        };
+        let Some(bytes) = descriptor.get(i + 1..i + 1 + size) else { return true };
+        let value = bytes.iter().rev().fold(0u32, |v, &b| (v << 8) | b as u32);
+        match prefix & 0xFC {
+            // Usage Page
+            0x04 => {
+                page = value;
+                if page == 0x07 {
+                    return true;
+                }
+            }
+            // Usage, Usage Minimum, Usage Maximum: with their page in the high bytes when they have four.
+            0x08 | 0x18 | 0x28 => {
+                let (p, u) = if size == 4 { (value >> 16, value & 0xFFFF) } else { (page, value) };
+                if p == 0x07 || (p == 0x01 && matches!(u, 0x06 | 0x07)) {
+                    return true;
+                }
+            }
+            _ => {}
+        }
+        i += 1 + size;
+    }
+    false
+}
+
+/// On Linux: the hidraw node at `path` declares typed keys (see [`descriptor_carries_typing`]), or
+/// its descriptor cannot be read. A keyboard's node is opened only if not, whatever rule opened it.
+/// Elsewhere the system keeps typed keys from other programs by itself: always `false`.
+pub fn node_carries_typing(path: &str) -> bool {
+    if !cfg!(target_os = "linux") {
+        return false;
+    }
+    let Some(name) = path.strip_prefix("/dev/").filter(|n| n.starts_with("hidraw") && !n.contains('/')) else {
+        return true;
+    };
+    std::fs::read(format!("/sys/class/hidraw/{name}/device/report_descriptor"))
+        .map_or(true, |d| descriptor_carries_typing(&d))
 }
 
 /// Looks for a value in a list of (value, label) pairs.
@@ -733,6 +837,8 @@ pub(crate) mod fake {
         pub numbered: Option<(SetNumbered, GetNumbered)>,
         /// A device whose output reports have numbers (the Nordic mice): `answer` gets them whole.
         pub numbered_output: bool,
+        /// The report descriptor, if the device gives one.
+        pub descriptor: Option<Vec<u8>>,
     }
 
     impl FakeHid {
@@ -747,6 +853,7 @@ pub(crate) mod fake {
                 feature_answer: None,
                 numbered: None,
                 numbered_output: false,
+                descriptor: None,
             })))
         }
 
@@ -796,6 +903,12 @@ pub(crate) mod fake {
             let answer = state.on_feature.as_mut().map(|f| f(&data[1..]));
             state.feature_answer = answer;
             Ok(())
+        }
+        fn report_descriptor(&self, buf: &mut [u8]) -> Result<usize> {
+            let state = self.0.lock().unwrap();
+            let d = state.descriptor.as_ref().ok_or_else(|| Error::Invalid("no report descriptor".into()))?;
+            buf[..d.len()].copy_from_slice(d);
+            Ok(d.len())
         }
         fn get_feature(&self, buf: &mut [u8]) -> Result<usize> {
             let mut state = self.0.lock().unwrap();
@@ -881,6 +994,20 @@ mod tests {
             io.hidpp_exchange(&[0x10, 0x00, 0x80, 0x0F, 0, 1, 0], Duration::from_millis(10), false, |_| true).is_err()
         );
         assert_eq!(short.sent().len(), 1, "not listed: never sent");
+    }
+
+    #[test]
+    fn typed_keys_are_found_in_a_descriptor() {
+        // A boot keyboard: Generic Desktop, Keyboard, then the Keyboard/Keypad page.
+        assert!(descriptor_carries_typing(&[0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0x05, 0x07, 0xC0]));
+        // A keyboard usage alone, and one with its page in a four-byte usage.
+        assert!(descriptor_carries_typing(&[0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0xC0]));
+        assert!(descriptor_carries_typing(&[0x0B, 0x06, 0x00, 0x01, 0x00, 0xA1, 0x01, 0xC0]));
+        // Consumer control (media keys) and a vendor collection carry nothing typed.
+        assert!(!descriptor_carries_typing(&[0x05, 0x0C, 0x09, 0x01, 0xA1, 0x01, 0x19, 0x00, 0x2A, 0x3C, 0x02, 0xC0]));
+        assert!(!descriptor_carries_typing(&[0x06, 0x01, 0xFF, 0x09, 0x10, 0xA1, 0x01, 0x85, 0xF0, 0xC0]));
+        // A cut descriptor cannot be checked.
+        assert!(descriptor_carries_typing(&[0x06, 0x01]));
     }
 
     #[test]

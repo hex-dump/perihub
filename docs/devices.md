@@ -24,6 +24,7 @@ the same format.
 - [ASUS](#asus)
 - [SteelSeries mice](#steelseries-mice)
 - [Razer mice](#razer-mice)
+- [Razer keyboards](#razer-keyboards)
 - [Glorious mice](#glorious-mice)
 - [Logitech G600](#logitech-g600)
 - [Older Logitech mice: G9, G9x, G500, G500s, G700, G700s](#older-logitech-mice-g9-g9x-g500-g500s-g700-g700s)
@@ -32,6 +33,8 @@ the same format.
 - [Pulsar CrazyLight and Lamzu Atlantis](#pulsar-crazylight-and-lamzu-atlantis)
 - [Cooler Master mice](#cooler-master-mice)
 - [EVGA mice](#evga-mice)
+- [YJX mice](#yjx-mice)
+- [Wraith W60](#wraith-w60)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
 ## SteelSeries
@@ -422,6 +425,27 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 | Viper V3 Pro SE (Wired) | `1532:00de` | interface 0 | DPI up to 35000, polling rate |
 <!-- end generated -->
 
+## Razer keyboards
+
+👁 Read-only: nobody has tried PeriHub on one yet. The protocol is the one of the Razer mice, from facts found in
+[OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0), described in
+[protocols/razer-keyboards.md](protocols/razer-keyboards.md): no code was copied.
+
+- **BlackWidow V4 Mini HyperSpeed**, on its cable and through its HyperSpeed receiver (the receiver belongs to this
+  keyboard alone): PeriHub reads the firmware, the battery and whether it is charging, the backlight brightness and
+  the game mode, and changes nothing.
+- Left out: lighting effects (OpenRazer stores them in the keyboard's memory and nothing reads them back, so one could
+  not be undone), changing the brightness and the game mode, macros, key remapping and profiles.
+- On Linux only interface 3 is opened, and PeriHub reads the report descriptor of a keyboard's node first: a node that
+  declares typed keys is never opened, whatever rule gave access to it.
+
+<!-- generated: table razer-keyboard -->
+| Keyboard | USB ID | Opened on Linux |
+|---|---|---|
+| BlackWidow V4 Mini HyperSpeed | `1532:02b9` | interface 3 |
+| BlackWidow V4 Mini HyperSpeed (wireless) | `1532:02ba` | interface 3 |
+<!-- end generated -->
+
 ## Glorious mice
 
 🧪 Experimental: <!-- generated: count glorious -->3<!-- end generated --> Glorious mice with a cable, built on a SinoWealth controller. Nobody has tried PeriHub
@@ -630,6 +654,52 @@ drivers (no code copied), described in [protocols/evga-mice.md](protocols/evga-m
 |---|---|---|---|
 | X12 | `3842:2422` | interface 1 | 🧪 Experimental |
 | X20 | `3842:2420` | interface 2 | 👁 Read-only |
+<!-- end generated -->
+
+## YJX mice
+
+👁 Read-only: nobody has tried PeriHub on one yet. Many wireless mice (MAMBASNAKE M4, Rajin Blaze Claws, K-Snake X11,
+EWEADN GS02 Pro…) use a receiver with the id `a8a5:2255` (`a8a4:2255` on the cable), and the same id stands for
+mice that wrap their reports in different ways. The protocol is described in [protocols/yjx-mice.md](protocols/yjx-mice.md),
+from [claws-mouse-linux](https://github.com/naevui/claws-mouse-linux) and
+[EWEADN-GS02-Pro-Control](https://github.com/mimuruu/EWEADN-GS02-Pro-Control) (both MIT) and facts from
+[OpenMouse](https://github.com/OpenMouse-Project/mouse-protocol) (AGPL-3.0): no code was copied.
+
+- PeriHub first reads the report descriptor of the configuration collection, which asks the system and sends nothing to
+  the mouse, and sends its reads only when the descriptor has no report numbers, the format the two MIT sources tried
+  on real mice. Any other mouse is left alone and shown read-only, with the descriptor in its test report.
+- It reads the model name, the DPI levels and the one in use, the polling rate, the lighting mode and lift-off
+  distance (as numbers) and the battery. A mouse that is off or away from its receiver does not answer: PeriHub asks
+  again later.
+- Left out: changing any setting (a malformed settings write can stop the sensor until the mouse is turned off),
+  buttons, lighting and macros.
+- On Linux only interface 2, the vendor collection, is opened. The receiver's other interfaces carry the mouse and a
+  keyboard.
+
+<!-- generated: table yjx -->
+| Mouse | USB ID | Opened on Linux |
+|---|---|---|
+| mouse (YJX receiver) | `a8a5:2255` | interface 2 |
+| mouse (YJX, on its cable) | `a8a4:2255` | interface 2 |
+<!-- end generated -->
+
+## Wraith W60
+
+👁 Read-only, on Windows only for now: read on a real W60 (firmware V3.22.19, issue #35). It is a magnetic (Hall
+effect) keyboard on the platform of the AULA WIN60 HE, described in [protocols/wraith-he.md](protocols/wraith-he.md)
+from [AulaControl](https://github.com/sgtflixy/AulaControl) (Apache-2.0): no code was copied. PeriHub reads the model,
+the firmware version, the firmware date and the key and side lighting (mode as a number, speed, brightness, both
+colours, direction, full colour).
+
+- Left out: changing the lighting, per-key colours, actuation and rapid trigger, SOCD, key remapping and the polling rate.
+- Its configuration collection can also send how far each key is pressed (while the vendor's travel test runs). PeriHub
+  never asks for it and skips such reports, but on Linux any program that could open the collection could read it, so
+  PeriHub does not open this keyboard there yet: it will take a rule you turn on.
+
+<!-- generated: table wraith -->
+| Keyboard | USB ID | Opened on Linux |
+|---|---|---|
+| W60 | `2e3c:c368` | — |
 <!-- end generated -->
 
 ## Keyboards with QMK firmware (Vial, VIA)

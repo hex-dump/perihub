@@ -86,6 +86,9 @@ pub fn family(protocol: &Protocol) -> Option<&'static str> {
         Protocol::Asus(_) => "asus",
         Protocol::SteelSeries(_) => "steelseries-mice",
         Protocol::Razer(_) => "razer",
+        Protocol::RazerKeyboard(_) => "razer-keyboard",
+        Protocol::Yjx(_) => "yjx",
+        Protocol::Wraith(_) => "wraith",
         Protocol::Sinowealth(_) => "glorious",
         Protocol::LogitechG600 => "g600",
         Protocol::LogitechHidpp10(_) => "logitech-hidpp10",
@@ -247,7 +250,10 @@ pub fn devices() -> Vec<Device> {
             PeripheralKind::Mouse => Kind::Mouse,
             PeripheralKind::Keyboard => Kind::Keyboard,
         };
-        let access = m.interface.map_or(Access::Whole, Access::Interface);
+        // The Wraith W60's configuration collection can carry how far each key is pressed: on Linux it
+        // is opened only by a rule the user turns on (perihub-core/src/manager.rs), never by 70-perihub.rules.
+        let access =
+            if family == "wraith" { Access::Closed } else { m.interface.map_or(Access::Whole, Access::Interface) };
         list.push(device(
             family,
             m.brand,

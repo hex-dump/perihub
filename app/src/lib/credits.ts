@@ -64,6 +64,27 @@ export const creditGroups: CreditGroup[] = [
         ],
       },
       {
+        name: "claws-mouse-linux",
+        link: "https://github.com/naevui/claws-mouse-linux",
+        license: "MIT license",
+        copyright: ["Copyright (c) 2026 tuxdevv"],
+        notes: ["How the mice on the YJX receiver take their reports, the version and settings commands and the layout of the settings (docs/protocols/yjx-mice.md)."],
+      },
+      {
+        name: "EWEADN-GS02-Pro-Control",
+        link: "https://github.com/mimuruu/EWEADN-GS02-Pro-Control",
+        license: "MIT license",
+        copyright: ["Copyright (c) 2026 yudhis"],
+        notes: ["That some mice of the YJX platform number their reports, and the battery command (docs/protocols/yjx-mice.md)."],
+      },
+      {
+        name: "AulaControl",
+        link: "https://github.com/sgtflixy/AulaControl",
+        license: "Apache License 2.0",
+        copyright: [],
+        notes: ["The configuration collection, report and commands of the AULA WIN60 HE, which the Wraith W60 shares, and how its model and lighting are read (docs/protocols/wraith-he.md)."],
+      },
+      {
         name: "apex-3-tkl (gorkemgun)",
         link: "https://github.com/gorkemgun/apex-3-tkl",
         license: "MIT license",
@@ -163,7 +184,15 @@ export const creditGroups: CreditGroup[] = [
         link: "https://github.com/openrazer/openrazer",
         license: "GPL-2.0",
         notes: [
-          "The Razer report layout and commands, and per mouse its USB interface, transaction ids, maximum DPI, lights with a brightness and custom frame width, read as text by tools/openrazer_facts.py (docs/protocols/razer-mice.md). " + NO_CODE,
+          "The Razer report layout and commands, and per mouse its USB interface, transaction ids, maximum DPI, lights with a brightness and custom frame width, read as text by tools/openrazer_facts.py (docs/protocols/razer-mice.md); for the BlackWidow V4 Mini HyperSpeed, its interface, waits and transaction ids, and the battery, charging, brightness and game mode reads (docs/protocols/razer-keyboards.md). " + NO_CODE,
+        ],
+      },
+      {
+        name: "OpenMouse mouse-protocol",
+        link: "https://github.com/OpenMouse-Project/mouse-protocol",
+        license: "AGPL-3.0",
+        notes: [
+          "The battery request of the YJX mice and where their settings hold the lift-off distance (docs/protocols/yjx-mice.md). " + NO_CODE,
         ],
       },
       {

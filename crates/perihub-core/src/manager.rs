@@ -1101,6 +1101,22 @@ impl Manager {
                 found.push((d.clone(), model));
             }
         }
+        // A keyboard of another brand is opened only where nothing typed arrives (Linux; elsewhere the
+        // system keeps typed keys away from programs). QMK keyboards were checked above, more strictly.
+        found.retain(|(d, model)| {
+            // On Linux the Wraith's collection is opened only by a rule the user turns on: it can carry
+            // how far each key is pressed. That rule is not there yet.
+            if cfg!(target_os = "linux") && matches!(model.protocol, Protocol::Wraith(_)) {
+                return false;
+            }
+            let typing = model.kind == peripheral::Kind::Keyboard
+                && !matches!(model.protocol, Protocol::Qmk(_))
+                && peripheral::node_carries_typing(&d.path().to_string_lossy());
+            if typing {
+                log::debug!("{} {}: its node also carries typed keys, not opened", model.brand, model.name);
+            }
+            !typing
+        });
         let present = |path: &CStr| found.iter().any(|(d, _)| d.path() == path);
         let mut changed = false;
         let mut slots = self.slots.lock().unwrap();
