@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { api, debounce, errorText, type AppProfiles, type DeviceStatus, type ProfilesInfo } from "../lib/api";
+  import { api, debounce, errorText, type AppProfiles, type DeviceStatus, type InstalledGame, type ProfilesInfo } from "../lib/api";
 
   interface Props {
     status: DeviceStatus;
@@ -14,6 +14,10 @@
   let settingUp = $state(false);
   let setupMessage = $state<string | null>(null);
   let copied = $state(false);
+  let games = $state<InstalledGame[] | null>(null);
+  let pickingGame = $state(false);
+  let gameSearch = $state("");
+  let gameMessage = $state<string | null>(null);
 
   /** PeriHub's own window: never a useful rule. */
   const SELF = ["perihub", "perihub.exe"];
@@ -83,10 +87,39 @@
     changed();
   }
 
+  async function openGames() {
+    pickingGame = !pickingGame;
+    gameMessage = null;
+    if (!pickingGame || games) return;
+    try {
+      games = await api.installedGames();
+    } catch (e) {
+      error = errorText(e);
+      pickingGame = false;
+    }
+  }
+
+  function addGame(game: InstalledGame) {
+    if (profiles.rules.some((r) => r.app.toLowerCase() === game.app.toLowerCase())) {
+      gameMessage = `There is already a rule for ${game.app}.`;
+      return;
+    }
+    profiles.rules.push({ app: game.app, lighting: null, mouse_profile: null });
+    changed();
+    gameMessage = game.certain
+      ? `Rule added for ${game.name}.`
+      : `Rule added for ${game.name}. The app name is a guess: check it against "App in focus" while the game runs.`;
+  }
+
   function removeRule(i: number) {
     profiles.rules.splice(i, 1);
     changed();
   }
+
+  const shownGames = $derived.by(() => {
+    const q = gameSearch.trim().toLowerCase();
+    return (games ?? []).filter((g) => !q || g.name.toLowerCase().includes(q) || g.app.toLowerCase().includes(q));
+  });
 
   const value = (e: Event) => (e.target as HTMLInputElement | HTMLSelectElement).value;
 </script>
@@ -168,8 +201,34 @@
         {/if}
         <div class="row">
           <button onclick={addRule}>Add rule</button>
+          <button onclick={openGames}>Add from installed games</button>
           <span class="small muted">The new rule starts with the last app you used: switch to the game, then come back here.</span>
         </div>
+        {#if pickingGame}
+          <div class="col games">
+            <input type="search" placeholder="Search games" aria-label="Search games" bind:value={gameSearch} />
+            {#if gameMessage}<div class="notice info">{gameMessage}</div>{/if}
+            {#if !games}
+              <p class="muted small">Looking for games...</p>
+            {:else if !games.length}
+              <p class="muted small">No games found. PeriHub looks at Steam, Lutris and Heroic.</p>
+            {:else if !shownGames.length}
+              <p class="muted small">No game matches.</p>
+            {:else}
+              <ul class="game-list">
+                {#each shownGames as game (game.launcher + game.app + game.name)}
+                  <li>
+                    <button class="ghost game" onclick={() => addGame(game)}>
+                      <span>{game.name}</span>
+                      <span class="small muted">{game.launcher} · <code>{game.app}</code>{game.certain ? "" : " · not sure"}</span>
+                    </button>
+                    {#if game.note}<span class="small muted">{game.note}</span>{/if}
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        {/if}
         {#if !info.presets.length}
           <p class="muted small">To change the keyboard lighting, first save a lighting on the Apex 3 TKL page (Lighting → Saved lightings).</p>
         {/if}
@@ -202,6 +261,22 @@
 
   code {
     color: var(--text);
+  }
+
+  .game-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .game {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
   }
 
   .command {
