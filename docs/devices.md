@@ -163,7 +163,7 @@ the format a mouse reports in PeriHub's test report is what counts.
 | PRO X 2 DEX | 7 | 255 bytes | PeriHub ([issue #32](https://github.com/hex-dump/perihub/issues/32)) |
 | G Pro X Superlight 2 (not recognized yet) | 6, then 7 after a firmware update | | libratbag ([issue #1572](https://github.com/libratbag/libratbag/issues/1572)) |
 
-Own one? Send a [mouse test report](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml)
+Own one? Send a [test report](https://github.com/hex-dump/perihub/issues/new?template=test_report.yml)
 (**Open test form** on the mouse page fills it in).
 
 ## Logitech G300
@@ -187,7 +187,7 @@ experimental feature. It was confirmed on a real G300 in
 [issue #21](https://github.com/hex-dump/perihub/issues/21), on Windows: the changes took effect,
 they were still there after the mouse was unplugged and plugged back in, and a save that was not
 kept was undone. No G300 has been tried on Linux yet. Something does not work on yours? Send a
-[device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
+[test report](https://github.com/hex-dump/perihub/issues/new?template=test_report.yml).
 
 ## Corsair
 
@@ -223,7 +223,7 @@ USB IDs, packet sizes and LED counts are in [protocols/corsair-bragi.md](protoco
 Older Corsair devices (K70 RGB MK.2, K95 RGB PLATINUM, M65 RGB ELITE and others) speak an older
 protocol and are not recognized.
 
-Own one? Send a [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml)
+Own one? Send a [test report](https://github.com/hex-dump/perihub/issues/new?template=test_report.yml)
 (**Open test form** on the device page fills it in).
 
 ## ASUS

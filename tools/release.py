@@ -234,7 +234,7 @@ def notes(version: str) -> str:
         "",
         "## 🧪 Help test your device",
         "",
-        "On a device's page, **Open test form** fills in a [test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml). "
+        "On a device's page, **Open test form** fills in a [test report](https://github.com/hex-dump/perihub/issues/new?template=test_report.yml). "
         "Sending one only reads the device, and one report moves the device up for everyone who has it.",
         "",
         "---",

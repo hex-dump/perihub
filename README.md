@@ -468,7 +468,7 @@ The interface is in English. More languages are planned.
 - **Ideas and suggestions**: [Discussions → Ideas](https://github.com/hex-dump/perihub/discussions/categories/ideas), where others can vote for them and add to them.
 - **Questions**: [Discussions → Q&A](https://github.com/hex-dump/perihub/discussions/categories/q-a).
 - **Bugs**: a [bug report](https://github.com/hex-dump/perihub/issues/new?template=bug_report.yml) with your system, the device, what PeriHub showed and the log file.
-- **Test reports**: **Open test form** on the device's page in the app, or the forms for [Logitech mice](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml) and [every other device](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
+- **Test reports**: **Open test form** on the device's page in the app, or the [test report form](https://github.com/hex-dump/perihub/issues/new?template=test_report.yml).
 - **New devices**: a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) with the model and USB ID.
 - **Code**: the rules are in [CONTRIBUTING.md](CONTRIBUTING.md); how to build, test and find your way around the code is in [docs/development.md](docs/development.md).
 

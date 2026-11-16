@@ -59,7 +59,7 @@ devices.md and the website, a generated block where the family is described:
 Write the text around it by hand: level, what PeriHub reads and changes, what is left out.
 udev files that use `uaccess` must sort before `73-seat-late.rules`.
 
-Also by hand: the brand in `.github/ISSUE_TEMPLATE/device_test.yml` (description and checkboxes), and
+Also by hand: the brand in `.github/ISSUE_TEMPLATE/test_report.yml` (description and checkboxes; the brand dropdown there and in `device_request.yml` has the five named brands and Other, add a brand to it, and to `tools/labels-migrate.sh`, only when it has a label of its own), and
 README.md where it lists brands.
 
 ## 5. Checks

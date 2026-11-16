@@ -17,11 +17,11 @@ const info: CorsairInfo = {
 };
 
 describe("the device test form", () => {
-  it("is the device_test form, filled in with what PeriHub read", () => {
+  it("is the test_report form, filled in with what PeriHub read", () => {
     const fields = corsairTest(info, "0.6.1", "windows x86_64");
     const url = new URL(deviceTestFormUrl(fields, "0.6.1", "windows x86_64"));
     expect(url.origin + url.pathname).toBe("https://github.com/hex-dump/perihub/issues/new");
-    expect(url.searchParams.get("template")).toBe("device_test.yml");
+    expect(url.searchParams.get("template")).toBe("test_report.yml");
     expect(url.searchParams.get("model")).toBe("Corsair IRONCLAW RGB WIRELESS");
     expect(url.searchParams.get("usb-id")).toBe("1b1c:1b4c");
     expect(url.searchParams.get("connection")).toBe("wireless receiver");
