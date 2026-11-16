@@ -6,6 +6,7 @@
   import NoWarranty from "../components/NoWarranty.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import { corsairTest } from "../lib/testReport";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     info: CorsairInfo | null;
@@ -145,7 +146,7 @@
         <NoWarranty device={`Corsair ${info.model}`} bind:accepted={understood} />
         <div class="row end">
           <button onclick={() => (asking = false)}>Cancel</button>
-          <button class="primary" disabled={!understood || !!busy} onclick={turnOn}>Turn on for this session</button>
+          <button class="primary" disabled={!understood || !!busy || readOnly.on} onclick={turnOn}>Turn on for this session</button>
         </div>
       </div>
     {:else}
@@ -153,7 +154,7 @@
       <div class="row">
         <label class="row color">Colour <input type="color" value={color} oninput={(e) => pick((e.target as HTMLInputElement).value)} /></label>
         <div class="grow"></div>
-        <button disabled={!!busy} onclick={() => (asking = true)}>Try experimental lighting…</button>
+        <button disabled={!!busy || readOnly.on} onclick={() => (asking = true)}>Try experimental lighting…</button>
       </div>
     {/if}
     {#if busy}<p class="small muted" role="status">{busy}</p>{/if}

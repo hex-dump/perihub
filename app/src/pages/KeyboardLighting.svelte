@@ -6,6 +6,7 @@
   import { ZONES } from "../lib/effects";
   import KeyAccessPermission from "../components/KeyAccessPermission.svelte";
   import ZoneStrip from "../components/ZoneStrip.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     connected: boolean;
@@ -186,6 +187,8 @@
 
   {#if error}<div class="notice error">{error}</div>{/if}
 
+  <!-- Read-only mode: the lighting is shown, nothing can be changed. -->
+  <fieldset class="guard" disabled={readOnly.on}>
   <div class="kinds">
     {#each KINDS as k (k.kind)}
       <button class="kind" class:active={kind === k.kind} onclick={() => (kind = k.kind)}>
@@ -266,6 +269,7 @@
         oninput={onBrightness} onchange={onBrightnessEnd} />
     </label>
   </div>
+  </fieldset>
 
   <div class="card col">
     <h2>Saved lightings</h2>
@@ -274,7 +278,7 @@
       <div class="row wrap">
         {#each saved as preset (preset.name)}
           <span class="chip">
-            <button class="ghost tight" onclick={() => show(preset.lighting)}>{preset.name}</button>
+            <button class="ghost tight" disabled={readOnly.on} onclick={() => show(preset.lighting)}>{preset.name}</button>
             <button class="ghost tight" aria-label="Delete {preset.name}" title="Delete" onclick={() => deletePreset(preset.name)}>×</button>
           </span>
         {/each}
@@ -290,6 +294,11 @@
 <style>
   .gap {
     gap: 18px;
+  }
+
+  /* Only there to disable the controls: it adds no box of its own. */
+  .guard {
+    display: contents;
   }
 
   .kinds {

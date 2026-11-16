@@ -11,6 +11,9 @@ const api = vi.hoisted(() => ({
   updateAvailable: vi.fn(),
   onUpdate: vi.fn(),
   installUpdate: vi.fn(),
+  setReadOnly: vi.fn(),
+  writeLog: vi.fn(),
+  clearWriteLog: vi.fn(),
 }));
 
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
@@ -21,6 +24,7 @@ import type { AppSettings, DeviceStatus } from "../lib/api";
 import Settings from "./Settings.svelte";
 import { updates } from "../lib/updates.svelte";
 import { prefs } from "../lib/prefs.svelte";
+import { readOnly } from "../lib/readOnly.svelte";
 
 const settings = (autostart: boolean): AppSettings => ({
   start_hidden: false,
@@ -63,6 +67,42 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Settings", () => {
+  it("turns read-only mode on and shows the writes of this session", async () => {
+    readOnly.on = false;
+    api.setReadOnly.mockResolvedValue(true);
+    api.writeLog.mockResolvedValue([
+      { time: 0, device: "G502 HERO", kind: "HID++ 0x8100 function 7", data: "01 02", bytes: 2, result: "ok" },
+      { time: 0, device: "G502 HERO", kind: "HID++ 0x2201 function 3", data: "00 03 20", bytes: 3, result: "refused (read-only mode)" },
+    ]);
+    render(Settings, { props: { status } });
+    const box = screen.getByRole("checkbox", { name: /Read-only mode/ }) as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    box.checked = true;
+    await fireEvent.change(box);
+    expect(api.setReadOnly).toHaveBeenCalledWith(true);
+    await waitFor(() => expect(readOnly.on).toBe(true));
+    expect(box.checked).toBe(true);
+
+    const details = screen.getByText("Writes sent this session").closest("details")!;
+    details.open = true;
+    await fireEvent(details, new Event("toggle"));
+    // Newest first.
+    await waitFor(() => expect(details.querySelectorAll("li")).toHaveLength(2));
+    expect(details.querySelector("li")!.textContent).toContain("refused (read-only mode)");
+    readOnly.on = false;
+  });
+
+  it("puts the box back when read-only mode cannot be changed", async () => {
+    readOnly.on = false;
+    api.setReadOnly.mockRejectedValue("the settings could not be saved");
+    render(Settings, { props: { status } });
+    const box = screen.getByRole("checkbox", { name: /Read-only mode/ }) as HTMLInputElement;
+    box.checked = true;
+    await fireEvent.change(box);
+    await waitFor(() => expect(screen.getByText("the settings could not be saved")).toBeTruthy());
+    expect(box.checked).toBe(false);
+  });
+
   it("says where the settings are stored for this system", async () => {
     const page = render(Settings, { props: { status } });
     await waitFor(() => expect(screen.getByText("/config")).toBeTruthy());

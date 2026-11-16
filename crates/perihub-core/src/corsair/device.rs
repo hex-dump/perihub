@@ -70,6 +70,7 @@ fn polling_hz(value: u32) -> Option<u16> {
 impl CorsairTask {
     /// Reads what it can without changing anything. A device that answers nothing at all is an error.
     pub fn open(mut dev: BragiDevice, model: &'static CorsairModel) -> Result<Self> {
+        dev.set_label(format!("Corsair {}", model.name));
         let mut errors = Vec::new();
         let mut answered = false;
         let mut note = |what: &str, error: Error, answered: &mut bool| {
@@ -148,6 +149,7 @@ impl CorsairTask {
     /// Shows one colour on every LED (experimental). The first time it takes the device into
     /// software mode. If anything fails the device is given back at once.
     pub fn set_lighting(&mut self, color: Rgb) -> Result<CorsairInfo> {
+        crate::writes::refuse_if_read_only()?;
         if self.info.leds == 0 {
             return Err(Error::Invalid(format!("the {} has no lighting", self.info.model)));
         }
@@ -345,6 +347,28 @@ mod tests {
 
     fn open(fake: &FakeMouse) -> CorsairTask {
         CorsairTask::open(BragiDevice::new(fake.clone(), 64), models::find(0x1B70).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn read_only_mode_keeps_the_lighting_off_and_sends_nothing_but_reads() {
+        let fake = FakeMouse::default();
+        let mut task = open(&fake);
+        let device = format!("Corsair {}", task.info.model);
+        let read_only = crate::writes::test::read_only_mode();
+        assert!(matches!(task.set_lighting(Rgb { r: 255, g: 0, b: 0 }), Err(Error::ReadOnly)));
+        assert!(task.info.lighting.is_none());
+        // Below the task, the connection itself refuses every change.
+        task.dev.set_lighting_allowed(true);
+        assert!(matches!(task.dev.set_mode(MODE_SOFTWARE), Err(Error::ReadOnly)));
+        assert!(matches!(task.dev.open_lighting(), Err(Error::ReadOnly)));
+        assert!(matches!(task.dev.write_lighting(&[Rgb { r: 1, g: 2, b: 3 }]), Err(Error::ReadOnly)));
+        assert!(matches!(task.dev.keep_alive(), Err(Error::ReadOnly)));
+        assert!(fake.commands().iter().all(|&(c, _)| c == 0x02), "{:?}", fake.commands());
+        let log = crate::writes::test::entries_of(&device);
+        let kinds: Vec<&str> = log.iter().map(|e| e.kind.as_str()).collect();
+        assert_eq!(kinds, ["set mode", "open lighting", "write lighting", "keep-alive"]);
+        drop(read_only);
+        task.dev.set_lighting_allowed(false);
     }
 
     #[test]

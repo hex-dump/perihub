@@ -166,7 +166,9 @@ impl PeripheralTask {
         changes: bool,
         backups: PathBuf,
     ) -> Result<Self> {
-        let mut io = Io::new(hid, driver.commands(), changes).with_short(short);
+        let mut io = Io::new(hid, driver.commands(), changes)
+            .with_short(short)
+            .with_device(format!("{} {}", who.brand, who.name));
         let reading = driver.read(&mut io)?;
         let info = PeripheralInfo {
             key: format!("{:04x}:{:04x}", who.vendor_id, who.product_id),
@@ -262,6 +264,7 @@ impl PeripheralTask {
     /// memory, and nothing can be read back or undone: unplugging the device brings back what it
     /// has saved.
     pub fn set_blind(&mut self, id: &str, value: &BlindValue) -> Result<PeripheralInfo> {
+        crate::writes::refuse_if_read_only()?;
         if !self.info.editable {
             return Err(Error::Invalid("this connection may not change anything".into()));
         }
@@ -281,6 +284,7 @@ impl PeripheralTask {
     /// kept (see [`Self::keep_changes`]). `profile`: the active profile the settings were edited on;
     /// if the device switched profile since, nothing is changed.
     pub fn change(&mut self, wanted: &Settings, save: bool, profile: Option<u8>) -> Result<PeripheralInfo> {
+        crate::writes::refuse_if_read_only()?;
         if !self.info.editable {
             return Err(Error::Invalid(match &self.info.problem {
                 Some(problem) => format!("nothing is changed on this device: {problem}"),
@@ -437,7 +441,8 @@ impl PeripheralTask {
             let _ = std::fs::remove_file(&path);
             return;
         }
-        if !self.io.granted() {
+        // In read-only mode the undo waits, with its backup, for a connection that may send it.
+        if !self.io.granted() || crate::writes::read_only() {
             self.info.pending_undo = true;
             return;
         }

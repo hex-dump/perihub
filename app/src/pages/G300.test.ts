@@ -16,6 +16,7 @@ api.appSettings.mockResolvedValue({ system: "linux x86_64" });
 
 import type { G300Info } from "../lib/api";
 import G300 from "./G300.svelte";
+import { readOnly } from "../lib/readOnly.svelte";
 
 /** Profile 1 of the G300 in issue #16, as the core reads it. */
 const info: G300Info = {
@@ -69,6 +70,13 @@ describe("the G300 page", () => {
     expect(row("G8")).toContain("Next profile");
     expect(screen.queryAllByRole("textbox").length + screen.queryAllByRole("spinbutton").length).toBe(0);
     expect(screen.queryAllByRole("combobox").length).toBe(0);
+  });
+
+  it("offers no Edit in read-only mode", () => {
+    readOnly.on = true;
+    render(G300, { props: { info, error: null } });
+    expect((screen.getByRole("button", { name: "Edit" }) as HTMLButtonElement).disabled).toBe(true);
+    readOnly.on = false;
   });
 
   it("offers Edit straight away, with no experimental warning to accept", async () => {

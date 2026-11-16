@@ -371,11 +371,19 @@ pub struct Io {
     /// The connection was opened to change things (PeriHub's app, never the command line).
     granted: bool,
     raw: Vec<String>,
+    /// The device's name in the write log.
+    device: String,
 }
 
 impl Io {
     pub fn new(hid: Box<dyn Hid>, commands: Vec<Command>, changes: bool) -> Self {
-        Self { hid, short: None, commands, changes, granted: changes, raw: Vec::new() }
+        Self { hid, short: None, commands, changes, granted: changes, raw: Vec::new(), device: String::new() }
+    }
+
+    /// Names the device in the write log.
+    pub fn with_device(mut self, name: String) -> Self {
+        self.device = name;
+        self
     }
 
     /// Adds the short HID++ collection, when it has a path of its own (Windows).
@@ -403,8 +411,13 @@ impl Io {
         self.changes = false;
     }
 
-    /// What may be sent: a command of the list, and on a read-only connection only a read.
+    /// What may be sent: a command of the list, and on a read-only connection, or in read-only
+    /// mode, only a read.
     pub fn check(&self, payload: &[u8]) -> Result<Effect> {
+        self.command(payload).map(|c| c.effect)
+    }
+
+    fn command(&self, payload: &[u8]) -> Result<Command> {
         let command = self
             .commands
             .iter()
@@ -412,10 +425,21 @@ impl Io {
             .ok_or_else(|| {
                 Error::Invalid(format!("{} is not a command PeriHub may send", hex(&payload[..payload.len().min(4)])))
             })?;
-        if command.effect != Effect::Read && !self.changes {
-            return Err(Error::Invalid(format!("{}: this connection may not change anything", command.name)));
+        if command.effect != Effect::Read {
+            crate::writes::allow(&self.device, command.name, payload)?;
+            if !self.changes {
+                return Err(Error::Invalid(format!("{}: this connection may not change anything", command.name)));
+            }
         }
-        Ok(command.effect)
+        Ok(*command)
+    }
+
+    /// Keeps a change that was sent in the write log.
+    fn logged(&self, command: &Command, data: &[u8], sent: Result<()>) -> Result<()> {
+        if command.effect != Effect::Read {
+            crate::writes::sent(&self.device, command.name, data, &sent);
+        }
+        sent
     }
 
     /// The requests and answers since the last call, for test reports.
@@ -447,11 +471,11 @@ impl Io {
         wait: Duration,
         ready: impl Fn(&[u8; N]) -> bool,
     ) -> Result<[u8; N]> {
-        self.check(request)?;
+        let command = self.command(request)?;
         let mut report = Vec::with_capacity(N + 1);
         report.push(0);
         report.extend_from_slice(request);
-        self.hid.send_feature(&report)?;
+        self.logged(&command, request, self.hid.send_feature(&report))?;
         let mut buf = vec![0u8; N + 1];
         for _ in 0..5 {
             std::thread::sleep(wait);
@@ -472,15 +496,12 @@ impl Io {
 
     /// Sends `payload`, after report number 0, as an output report or a feature report.
     pub fn send(&mut self, payload: &[u8], feature: bool) -> Result<()> {
-        self.check(payload)?;
+        let command = self.command(payload)?;
         let mut report = Vec::with_capacity(payload.len() + 1);
         report.push(0);
         report.extend_from_slice(payload);
-        if feature {
-            self.hid.send_feature(&report)?;
-        } else {
-            self.hid.write(&report)?;
-        }
+        let sent = if feature { self.hid.send_feature(&report) } else { self.hid.write(&report).map(|_| ()) };
+        self.logged(&command, payload, sent)?;
         self.note(format!("{} {}", if feature { "feature" } else { "out" }, hex(payload)));
         Ok(())
     }
@@ -491,8 +512,8 @@ impl Io {
         if report.first().is_none_or(|&id| id == 0) {
             return Err(Error::Invalid("a numbered feature report needs its number".into()));
         }
-        self.check(report)?;
-        self.hid.send_feature(report)?;
+        let command = self.command(report)?;
+        self.logged(&command, report, self.hid.send_feature(report))?;
         self.note(format!("feature {}", hex(&report[..report.len().min(NUMBERED_SHOWN)])));
         Ok(())
     }
@@ -549,8 +570,8 @@ impl Io {
         if report.first().is_none_or(|&id| id == 0) {
             return Err(Error::Invalid("a numbered output report needs its number".into()));
         }
-        self.check(report)?;
-        self.hid.write(report)?;
+        let command = self.command(report)?;
+        self.logged(&command, report, self.hid.write(report).map(|_| ()))?;
         let mut scratch = [0u8; 256];
         let end = Instant::now() + timeout;
         loop {
@@ -583,7 +604,7 @@ impl Io {
         if !matches!(report.first(), Some(0x10 | 0x11)) {
             return Err(Error::Invalid("a HID++ report starts with 0x10 or 0x11".into()));
         }
-        self.check(report)?;
+        let command = self.command(report)?;
         let mut scratch = [0u8; 64];
         for hid in std::iter::once(&self.hid).chain(self.short.as_ref()) {
             for _ in 0..64 {
@@ -596,7 +617,8 @@ impl Io {
             (Some(short), 0x10) => short,
             _ => &self.hid,
         };
-        out.write(report)?;
+        let sent = out.write(report).map(|_| ());
+        self.logged(&command, report, sent)?;
         let end = Instant::now() + timeout;
         // With two collections each is asked in turn, briefly.
         let slice = if self.short.is_some() { 5 } else { 1000 };
@@ -667,7 +689,7 @@ impl Io {
         timeout: Duration,
         answers: impl Fn(&[u8]) -> bool,
     ) -> Result<()> {
-        self.check(payload)?;
+        let command = self.command(payload)?;
         let mut scratch = [0u8; 256];
         for _ in 0..64 {
             if self.hid.read_timeout(&mut scratch, 0)? == 0 {
@@ -677,7 +699,7 @@ impl Io {
         let mut report = Vec::with_capacity(payload.len() + 1);
         report.push(0);
         report.extend_from_slice(payload);
-        self.hid.write(&report)?;
+        self.logged(&command, payload, self.hid.write(&report).map(|_| ()))?;
         let end = Instant::now() + timeout;
         loop {
             let left = end.saturating_duration_since(Instant::now());
@@ -943,6 +965,49 @@ mod tests {
 
     fn echo() -> FakeHid {
         FakeHid::new(|p| vec![vec![0x01; 8], p.iter().copied().chain(std::iter::repeat(0)).take(64).collect()])
+    }
+
+    #[test]
+    fn read_only_mode_lets_only_reads_through_every_way_of_sending() {
+        const HIDPP: &[Command] = &[
+            Command { prefix: &[0x11, 0x00, 0x82], at: 0, effect: Effect::Change, name: "hidpp change" },
+            Command { prefix: &[0x10, 0x00, 0x83], at: 0, effect: Effect::Read, name: "hidpp read" },
+        ];
+        const NUMBERED: &[Command] = &[Command { prefix: &[0x05, 0x01], at: 0, effect: Effect::Save, name: "save" }];
+        let device = "io read-only test";
+        let hid = echo();
+        let mut commands = COMMANDS.to_vec();
+        commands.extend_from_slice(HIDPP);
+        commands.extend_from_slice(NUMBERED);
+        let mut io = Io::new(Box::new(hid.clone()), commands, true).with_device(device.into());
+        let mut reply = [0u8; 64];
+        let wait = Duration::from_millis(20);
+        let read_only = crate::writes::test::read_only_mode();
+        let refused = |result: Result<()>| assert!(matches!(result, Err(Error::ReadOnly)), "{result:?}");
+        refused(io.output_query(&[0x51, 0x31, 0], &mut reply, wait));
+        refused(io.output_exchange(&[0x51, 0x31, 0], &mut reply, wait, |_| true));
+        refused(io.send(&[0x51, 0x31, 0], false));
+        refused(io.send(&[0x51, 0x31, 0], true));
+        refused(io.feature_query(&[0x51, 0x31, 0], wait, |_| true).map(|_: [u8; 3]| ()));
+        refused(io.send_numbered(&[0x05, 0x01, 0x02]));
+        refused(io.numbered_output_exchange(&[0x05, 0x01, 0x02], &mut reply, wait, |_| true));
+        refused(io.hidpp_exchange(&[0x11, 0x00, 0x82, 0x63, 0, 0, 0], wait, false, |_| true).map(|_| ()));
+        assert!(hid.sent().is_empty(), "nothing reached the device: {:?}", hid.sent());
+        // Reads still go out: PeriHub needs them to show the device.
+        io.output_query(&[0x12, 0x04, 0], &mut reply, wait).unwrap();
+        assert_eq!(hid.sent(), [vec![0x12, 0x04, 0]]);
+        let log = crate::writes::test::entries_of(device);
+        assert_eq!(log.len(), 8);
+        assert!(log.iter().all(|e| e.result == crate::writes::REFUSED));
+        assert_eq!((log[0].kind.as_str(), log[0].data.as_str()), ("change", "51 31 00"));
+
+        // Off again: the same connection sends changes, and the log keeps them.
+        drop(read_only);
+        io.send(&[0x51, 0x31, 0], false).unwrap();
+        assert_eq!(hid.sent().len(), 2);
+        let log = crate::writes::test::entries_of(device);
+        assert_eq!(log.last().map(|e| e.result.as_str()), Some("ok"));
+        assert_eq!(log.len(), 9, "reads are not kept in the write log");
     }
 
     #[test]

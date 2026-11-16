@@ -5,7 +5,7 @@
 
 use std::sync::Mutex;
 
-use tauri::menu::{IsMenuItem, Menu, MenuItem};
+use tauri::menu::{CheckMenuItem, IsMenuItem, Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, WebviewWindow, WebviewWindowBuilder, Wry};
 
@@ -75,8 +75,17 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     if experimental {
         items.push(MenuItem::with_id(app, "experimental-off", "Turn off experimental lighting", true, None::<&str>)?);
     }
-    items.push(MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?);
-    let refs: Vec<&dyn IsMenuItem<Wry>> = items.iter().map(|i| i as &dyn IsMenuItem<Wry>).collect();
+    let read_only = CheckMenuItem::with_id(
+        app,
+        "read-only",
+        "Read-only mode",
+        true,
+        perihub_core::writes::read_only(),
+        None::<&str>,
+    )?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let refs: Vec<&dyn IsMenuItem<Wry>> =
+        items.iter().map(|i| i as &dyn IsMenuItem<Wry>).chain([&read_only as &dyn IsMenuItem<Wry>, &quit]).collect();
     Menu::with_items(app, &refs)
 }
 
@@ -97,6 +106,16 @@ pub fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             "update" => show(app, Some("settings")),
             "stop" => app.state::<crate::AppState>().soft.stop_all(),
             "experimental-off" => crate::commands::turn_off_experimental(app),
+            "read-only" => {
+                let app = app.clone();
+                let on = !perihub_core::writes::read_only();
+                // Turning it on may first give a Corsair device back: not on the thread of the menu.
+                std::thread::spawn(move || {
+                    if let Err(error) = crate::commands::set_read_only(&app, on) {
+                        log::warn!("read-only mode: {error}");
+                    }
+                });
+            }
             "quit" => quit(app),
             _ => {}
         })

@@ -4,6 +4,7 @@
   import { errorText, type BackupEntry } from "../lib/api";
   import { describeBackup } from "../lib/backups";
   import ConfirmButton from "./ConfirmButton.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     /** The device, e.g. "G502 HERO". */
@@ -80,7 +81,7 @@
               <span>{describeBackup(backup.label)}</span>
               <span class="muted small">{when(backup.created)}</span>
             </div>
-            <ConfirmButton disabled={!!restoring} onconfirm={() => run(backup.id)} confirmLabel="Restore this backup?">
+            <ConfirmButton disabled={!!restoring || readOnly.on} onconfirm={() => run(backup.id)} confirmLabel="Restore this backup?">
               {restoring === backup.id ? "Restoring…" : "Restore"}
             </ConfirmButton>
           </li>

@@ -18,6 +18,7 @@
   import { receiverName, receiverTest } from "../lib/testReport";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
   import MousePerformance from "./MousePerformance.svelte";
   import MouseButtons from "./MouseButtons.svelte";
   import MouseLighting from "./MouseLighting.svelte";
@@ -64,8 +65,10 @@
   let pendingWrite = $state<{ action: string; write: () => Promise<void> } | null>(null);
   /** An experimental save waits to be kept or undone. */
   let confirmKeep = $state(false);
-  /** A tested mouse, or one with experimental saves: the controls are enabled. */
-  const editable = $derived(!!info && (info.verified || info.experimental));
+  /** A tested mouse, or one with experimental saves: the controls are enabled, but not in read-only mode. */
+  const editable = $derived(!!info && (info.verified || info.experimental) && !readOnly.on);
+  /** Saves are possible on this connection, and read-only mode is off. */
+  const writable = $derived(!!info?.writable && !readOnly.on);
 
   /** Saves over the radio are accepted apart from saves with the cable. */
   const warrantyKey = $derived(info ? (info.receiver ? `${info.product_id}-radio` : info.product_id) : 0);
@@ -490,7 +493,7 @@
             <input
               type="checkbox"
               checked={profile.enabled}
-              disabled={!!busy || !info.writable || !info.verified || info.experimental}
+              disabled={!!busy || !writable || !info.verified || info.experimental}
               title={!info.verified
                 ? "Needs a tested memory format"
                 : info.experimental
@@ -534,10 +537,10 @@
   </fieldset>
 
   <footer class="row">
-    <ConfirmButton class="danger" disabled={!!busy || !info.writable} onconfirm={factory} confirmLabel="Reset this profile?">
+    <ConfirmButton class="danger" disabled={!!busy || !writable} onconfirm={factory} confirmLabel="Reset this profile?">
       Factory settings
     </ConfirmButton>
-    <button disabled={!!busy || !info.writable} onclick={() => (showBackups = true)}>Backups…</button>
+    <button disabled={!!busy || !writable} onclick={() => (showBackups = true)}>Backups…</button>
     <div class="grow"></div>
     {#if busy}
       <span class="muted small" role="status">{busy}</span>
@@ -549,7 +552,7 @@
       <span class="unsaved">Unsaved changes</span>
     {/if}
     <button disabled={!dirty || !!busy} onclick={discard}>Discard</button>
-    <button class="primary" disabled={!dirty || !!busy || leftClickMissing || !info.writable} onclick={save}>
+    <button class="primary" disabled={!dirty || !!busy || leftClickMissing || !writable} onclick={save}>
       Save to mouse
     </button>
   </footer>

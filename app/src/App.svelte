@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { api, type DeviceStatus } from "./lib/api";
   import { updates } from "./lib/updates.svelte";
+  import { followReadOnly, readOnly, setReadOnly } from "./lib/readOnly.svelte";
   import Keyboard from "./pages/Keyboard.svelte";
   import AppProfiles from "./pages/AppProfiles.svelte";
   import Mouse from "./pages/Mouse.svelte";
@@ -163,7 +164,9 @@
     };
     window.addEventListener("hashchange", onHash);
     const unlisten = api.onStatus(received);
+    const stopReadOnly = followReadOnly();
     return () => {
+      stopReadOnly();
       unlistenUpdate.then((fn) => fn());
       unlistenProgress.then((fn) => fn());
       unlisten.then((fn) => fn());
@@ -317,6 +320,12 @@
         <div class="notice ok row updated">
           <span>PeriHub was updated to {updates.installed}.</span>
           <button class="tiny" onclick={() => (updates.installed = null)}>Close</button>
+        </div>
+      {/if}
+      {#if readOnly.on}
+        <div class="notice warn row read-only">
+          <span><b>Read-only mode is on.</b> PeriHub reads your devices but sends them no changes.</span>
+          <button class="tiny" onclick={() => setReadOnly(false).catch(() => {})}>Turn off</button>
         </div>
       {/if}
       {#each status.conflicts as name (name)}
@@ -477,6 +486,13 @@
   }
 
   .conflict {
+    margin-bottom: 18px;
+  }
+
+  .read-only {
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 18px;
   }
 
