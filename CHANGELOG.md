@@ -9,6 +9,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ### Added
 - **Settings lists the supported brands**: under Devices, each brand shows how many models are supported, experimental or read-only, and opens to its models. The list is generated from the driver tables, so it cannot go stale.
 - **Support me, in the sidebar**: a small **Support me** button at the bottom opens two optional links, Buy me a coffee and Star on GitHub. Nothing pops up on its own.
+- **App profiles on KDE Plasma**, on Wayland and X11: PeriHub loads a small KWin script of its own while it runs, which tells it the class of the window in focus (never its title) as it changes; nothing is polled, and the script is unloaded when PeriHub quits. Nothing to set up, also in the Flatpak. If KWin does not answer, the App profiles page says why and what to do. Tested on Plasma 6; Plasma 5 should work too.
 - **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.
 
 ### Changed
