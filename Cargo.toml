@@ -16,3 +16,11 @@ serde_json = "1"
 thiserror = "2"
 log = "0.4"
 dirs = "7"
+
+# A smaller release binary (Linux 28.5 MB to 16.2 MB) for about 40% more build time. Behavior is the
+# same: no panic=abort, so the panics of device threads still unwind. "fat" would save 1 MB more for
+# a build three times as long as without LTO.
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

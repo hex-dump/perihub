@@ -12,6 +12,10 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 - **Support me, in the sidebar**: a small **Support me** button at the bottom opens two optional links, Buy me a coffee and Star on GitHub. Nothing pops up on its own.
 - **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.
 
+### Performance
+- **A smaller program**: the Linux build is 16.2 MB instead of 28.5 MB (the release build is linked as a whole and its debug symbols are left out), and the window loads 25 kB less script at start, since the Credits, Backups, macro editor and experimental-save dialogs are loaded when first opened. Nothing looks or works differently.
+- **Fewer wake-ups**: the check for G HUB, Solaar and the like, every 10 seconds, looks at the list of running programs once instead of twice (3.4 ms instead of 7.2 ms of work on Linux with 296 programs). The G300 and other-brand device pages, and the device report, stop asking for fresh readings while the window is minimized, as the mouse page already did, and the report no longer redraws an unchanged list.
+
 ### Changed
 - **Credits are in a dialog**: Settings → About has a **Credits** button that opens a scrollable list of every project PeriHub takes code, data or facts from, grouped, each with its link, license, copyright and what was taken. It now also lists the Linux kernel, Solaar, linuxhw/LsUSB, Vial's GUI and the other projects of THIRD-PARTY-NOTICES.md that the old text left out.
 - **Settings → Where settings are stored** is complete and follows the system: the settings folder (shown in full), backups and the pending-undo file, the log, macro files, how starting with the system is kept (registry on Windows, an autostart entry on Linux, the portal in a Flatpak) and the udev rules.

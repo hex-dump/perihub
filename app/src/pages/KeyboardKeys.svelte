@@ -7,11 +7,9 @@
   import { bindingLabel, keyLabel, LAYOUT_HEIGHT, LAYOUT_WIDTH, layoutCaps, type KeyCap } from "../lib/keys";
   import { softSummary } from "../lib/macros";
   import { LAYOUTS, prefs, setLayout, type LayoutId } from "../lib/prefs.svelte";
-  import BackupsDialog from "../components/BackupsDialog.svelte";
   import ConfirmButton from "../components/ConfirmButton.svelte";
   import { keymapRestoreMessage } from "../lib/backups";
   import KeyAccessPermission from "../components/KeyAccessPermission.svelte";
-  import MacroEditor from "../components/MacroEditor.svelte";
   import SoftMacros from "../components/SoftMacros.svelte";
 
   const UNIT = 46;
@@ -354,13 +352,18 @@
   {/if}
 </div>
 
+<!-- The dialogs are loaded when first opened. -->
 {#if showBackups}
-  <BackupsDialog device="Apex 3 TKL" load={api.keyboardBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
+  {#await import("../components/BackupsDialog.svelte") then { default: BackupsDialog }}
+    <BackupsDialog device="Apex 3 TKL" load={api.keyboardBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
+  {/await}
 {/if}
 
 {#if editingSoft}
-  <MacroEditor content={EMPTY_MACRO} soft={editingSoft.macro} onsavesoft={saveSoft} keys={catalog?.targets ?? []}
-    button={keyName(editingSoft.layer, editingSoft.usage)} keyboard onsave={() => {}} oncancel={() => (editingSoft = null)} />
+  {#await import("../components/MacroEditor.svelte") then { default: MacroEditor }}
+    <MacroEditor content={EMPTY_MACRO} soft={editingSoft.macro} onsavesoft={saveSoft} keys={catalog?.targets ?? []}
+      button={keyName(editingSoft.layer, editingSoft.usage)} keyboard onsave={() => {}} oncancel={() => (editingSoft = null)} />
+  {/await}
 {/if}
 
 <style>

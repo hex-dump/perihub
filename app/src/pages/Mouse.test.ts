@@ -485,7 +485,8 @@ describe("a memory format nobody has tested", () => {
     await open(firstTime(0xc07e));
     await changeFirstLevel(1000);
     await clickSave();
-    const dialog = screen.getByRole("dialog");
+    // The dialog is loaded when first opened.
+    const dialog = await screen.findByRole("dialog");
     expect(dialog.textContent).toContain("Save to the G402?");
     expect(screen.getByRole("note").textContent).toContain("accepts no responsibility for any damage");
     expect(api.saveProfile).not.toHaveBeenCalled();
@@ -510,7 +511,7 @@ describe("a memory format nobody has tested", () => {
     await open(firstTime(0xc07f));
     await changeFirstLevel(1000);
     await clickSave();
-    await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
     await wait(0);
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(api.saveProfile).not.toHaveBeenCalled();
@@ -651,7 +652,7 @@ describe("Backups", () => {
 
   it("lists the backups, newest first, with what they were taken before", async () => {
     await openBackups();
-    const dialog = screen.getByRole("dialog");
+    const dialog = await screen.findByRole("dialog");
     expect(dialog.textContent).toContain("Backups of the G502 HERO");
     const items = screen.getAllByRole("listitem").map((li) => li.textContent);
     expect(items[0]).toContain("Before saving profile 1");

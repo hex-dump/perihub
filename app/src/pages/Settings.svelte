@@ -5,7 +5,6 @@
   import { INSTALL_NOTE, checkForUpdate, installUpdate, installingText, updates } from "../lib/updates.svelte";
   import TestReport from "../components/TestReport.svelte";
   import SupportedDevices from "../components/SupportedDevices.svelte";
-  import CreditsDialog from "../components/CreditsDialog.svelte";
   import { ACCENTS, THEMES } from "../lib/theme";
   import { prefs, setAccent, setTheme } from "../lib/prefs.svelte";
 
@@ -217,7 +216,12 @@
   </div>
 </div>
 
-{#if showCredits}<CreditsDialog onclose={() => (showCredits = false)} />{/if}
+<!-- Loaded when first opened: most people never open the credits. -->
+{#if showCredits}
+  {#await import("../components/CreditsDialog.svelte") then { default: CreditsDialog }}
+    <CreditsDialog onclose={() => (showCredits = false)} />
+  {/await}
+{/if}
 
 <style>
   .about { justify-content: space-between; align-items: center; }
