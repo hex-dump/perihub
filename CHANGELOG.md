@@ -7,6 +7,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ## Unreleased
 
 ### Security
+- The AUR and screenshots workflows no longer push to main: they open a pull request from a bot/ branch, run the required checks on it and ask for auto-merge.
 - The CI and test-build workflows now give their GitHub token read-only access by default, and only the job that comments on issues can write to them.
 
 ## 0.9.1 — 2026-11-16
