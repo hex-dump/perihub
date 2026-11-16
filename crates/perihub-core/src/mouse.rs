@@ -312,12 +312,17 @@ fn mode_action(mode: u8, verified: bool, conflict_running: bool) -> ModeAction {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Reload {
     /// Switch to this other profile and back. Selecting the same profile again keeps a preview
-    /// (verified on the G502 HERO).
+    /// (verified on the G502 HERO). Always an enabled profile: see [`reload_method`].
     Through(u8),
     /// Host mode, then onboard mode again: drops a DPI preview on the G502 HERO and keeps the
     /// profile and DPI level (verified on 2026-11-05). For mice with a single profile, such as
     /// the G403 HERO, where there is no other profile to go through.
     ModeSwitch,
+    /// The other profiles are all disabled in the mouse's list: nothing is sent. A profile the list
+    /// disables is never selected (libratbag enables it first; a G303 Shroud Edition most likely
+    /// answered "invalid argument" to that switch, issue #34). A written profile takes effect by itself on the
+    /// G502 HERO (verified on 2026-11-05); a preview stays until the mouse changes level.
+    Stay,
 }
 
 /// The profile to switch to after a restore, if the backup disabled the active one. With no active
@@ -333,13 +338,14 @@ fn profile_after_restore(active: u8, enabled: &[bool]) -> Option<u8> {
     enabled.iter().position(|&on| on).map(|i| i as u8 + 1)
 }
 
-/// Mice with more profiles keep the way verified since 0.1.0. Better to go through an enabled
-/// profile: the behavior with disabled ones is not verified.
+/// Mice with more profiles keep the way verified since 0.1.0, through another enabled profile only.
 fn reload_method(active: u8, enabled: &[bool]) -> Reload {
-    let others = || (1..=enabled.len() as u8).filter(|&n| n != active);
-    match others().find(|&n| enabled[n as usize - 1]).or_else(|| others().next()) {
+    if enabled.len() <= 1 {
+        return Reload::ModeSwitch;
+    }
+    match (1..=enabled.len() as u8).find(|&n| n != active && enabled[n as usize - 1]) {
         Some(other) => Reload::Through(other),
-        None => Reload::ModeSwitch,
+        None => Reload::Stay,
     }
 }
 
@@ -892,9 +898,30 @@ impl MouseTask {
                 self.dev.set_onboard_mode(ONBOARD_MODE)?;
                 self.dev.set_active_dpi_index(level)?;
             }
+            Reload::Stay => {
+                log::info!("no other enabled profile to reload profile {active} through: left as it is");
+                return Ok(());
+            }
         }
         self.previewing = false;
         Ok(())
+    }
+
+    /// After every sector of a save or restore was written and read back. Loading the new settings
+    /// by switching profiles is a convenience: a mouse that refuses the switch keeps what was written,
+    /// so the save is not reported as failed, and an experimental one is not undone (issue #34).
+    fn reload_after_writing(&mut self, reload: Result<()>) -> Result<()> {
+        match reload {
+            // Only while the mouse is still in onboard mode: a single-profile mouse refusing to go
+            // back from host mode must not be reported as saved.
+            Err(Error::Hidpp(code)) if matches!(self.dev.onboard_mode(), Ok(ONBOARD_MODE)) => {
+                log::warn!(
+                    "the mouse refused to load the profile again after a write ({code:?}): the memory is written"
+                );
+                Ok(())
+            }
+            other => other,
+        }
     }
 
     /// Raw read of a sector (diagnostics).
@@ -904,7 +931,15 @@ impl MouseTask {
 
     /// Cancels DPI and LED previews by going back to the saved settings.
     pub fn revert_preview(&mut self) -> Result<()> {
-        self.reload_active()
+        self.reload_active()?;
+        if self.previewing {
+            return Err(Error::Invalid(
+                "the preview stays until the mouse changes DPI level or is unplugged: PeriHub cancels it by switching \
+                 to another enabled profile and back, and this mouse has none"
+                    .into(),
+            ));
+        }
+        Ok(())
     }
 
     /// Cancels a preview left by an interface that went away.
@@ -954,7 +989,10 @@ impl MouseTask {
                     self.write_verified(0, directory)?;
                     self.adopt_own_profiles(enabled, number)
                 }
-                None => self.reload_if_active(number),
+                None => {
+                    let reload = self.reload_if_active(number);
+                    self.reload_after_writing(reload)
+                }
             }
         })();
         self.after_writing(written)?;
@@ -974,7 +1012,8 @@ impl MouseTask {
         self.backup_before_writing(&format!("factory{number}"))?;
         let written = (|| {
             self.write_verified(number as u16, &sector)?;
-            self.reload_if_active(number)
+            let reload = self.reload_if_active(number);
+            self.reload_after_writing(reload)
         })();
         self.after_writing(written)?;
         self.state()
@@ -1120,14 +1159,14 @@ impl MouseTask {
                 self.write_verified(sector, &backup[sector as usize])?;
             }
             let enabled = profile::parse_directory(&backup[0], onboard.profile_count as usize);
-            match profile_after_restore(self.dev.active_profile()?, &enabled) {
+            let reload = match profile_after_restore(self.dev.active_profile()?, &enabled) {
                 Some(other) => {
                     self.list = ProfileList::Own;
-                    self.select_profile(other)?;
-                    self.previewing = false;
+                    self.select_profile(other).map(|()| self.previewing = false)
                 }
-                None => self.reload_active()?,
-            }
+                None => self.reload_active(),
+            };
+            self.reload_after_writing(reload)?;
             log::info!("mouse backup restored: {id}, sectors {order:?}");
         }
         let profiles =
@@ -1361,11 +1400,14 @@ mod tests {
 
     #[test]
     fn reload_goes_through_another_profile_when_there_is_one() {
-        // As before: the first other enabled profile, or else the first other one.
+        // The first other enabled profile.
         assert_eq!(reload_method(4, &[true; 5]), Reload::Through(1));
         assert_eq!(reload_method(1, &[true; 5]), Reload::Through(2));
         assert_eq!(reload_method(1, &[true, false, true, true, true]), Reload::Through(3));
-        assert_eq!(reload_method(1, &[true, false]), Reload::Through(2));
+        // Never a disabled one (issue #34): with no other enabled profile nothing is switched.
+        assert_eq!(reload_method(1, &[true, false]), Reload::Stay);
+        assert_eq!(reload_method(1, &[true, false, false, false, false]), Reload::Stay);
+        assert_eq!(reload_method(3, &[false; 5]), Reload::Stay);
         // A single profile (G403 HERO): host mode and back.
         assert_eq!(reload_method(1, &[true]), Reload::ModeSwitch);
     }
@@ -1558,6 +1600,15 @@ mod tests {
         selected: Vec<[u8; 2]>,
         /// Like the G305: reading the profile list fails until one was written.
         refuses_blank_list: bool,
+        /// Answers "invalid argument" to the selection of a profile its own list disables, as the
+        /// G303 Shroud Edition of issue #34 most likely did.
+        refuses_disabled_profiles: bool,
+        /// Answers "invalid argument" to every profile switch.
+        refuses_switches: bool,
+        /// Answers "invalid argument" to the start of every memory write.
+        refuses_writes: bool,
+        /// Profile switches answered with an error.
+        refused_switches: Vec<[u8; 2]>,
     }
 
     impl Sim {
@@ -1593,6 +1644,10 @@ mod tests {
                 written: Vec::new(),
                 selected: Vec::new(),
                 refuses_blank_list: false,
+                refuses_disabled_profiles: false,
+                refuses_switches: false,
+                refuses_writes: false,
+                refused_switches: Vec::new(),
             }
         }
 
@@ -1688,7 +1743,16 @@ mod tests {
                 (feature::ONBOARD_PROFILES, 2) => vec![ONBOARD_MODE],
                 (feature::ONBOARD_PROFILES, 3) => {
                     let limit = if p[0] == 1 { info.rom_profile_count } else { info.profile_count };
-                    if p[0] > 1 || !(1..=limit).contains(&p[1]) {
+                    let list = &self.user[0];
+                    let own = p[0] == 0 && profile::crc_is_valid(list);
+                    let refused = p[0] > 1
+                        || !(1..=limit).contains(&p[1])
+                        || self.refuses_switches
+                        || (self.refuses_disabled_profiles
+                            && own
+                            && !profile::parse_directory(list, info.profile_count as usize)[p[1] as usize - 1]);
+                    if refused {
+                        self.refused_switches.push([p[0], p[1]]);
                         return Err(INVALID_ARGUMENT);
                     }
                     self.active = [p[0], p[1]];
@@ -1711,7 +1775,8 @@ mod tests {
                 (feature::ONBOARD_PROFILES, 6) => {
                     let (sector, length) =
                         (u16::from_be_bytes([p[0], p[1]]), u16::from_be_bytes([p[4], p[5]]) as usize);
-                    if sector as usize >= self.user.len() || length != info.sector_size as usize {
+                    if sector as usize >= self.user.len() || length != info.sector_size as usize || self.refuses_writes
+                    {
                         return Err(INVALID_ARGUMENT);
                     }
                     self.writing = Some((sector, length, Vec::new()));
@@ -2169,6 +2234,93 @@ mod tests {
         assert!(!task.info.verified && !task.info.writable && !task.info.experimental);
         assert!(task.set_active_profile(2).is_err());
         assert!(sim.lock().unwrap().selected.is_empty());
+    }
+
+    /// The G303 Shroud Edition of issue #34, as its test report describes it: format 3 in 255-byte
+    /// sectors, one factory profile, six buttons and a profile list of its own. The report does not
+    /// say which profiles that list enables: here only the first, and the mouse refuses to switch to
+    /// the others.
+    fn g303_shroud() -> Sim {
+        let (memory, onboard) = g502_memory();
+        let onboard = OnboardInfo { rom_profile_count: 1, button_count: 6, ..onboard };
+        let mut sim = Sim::new(memory, onboard).resized(255, 3);
+        sim.user[0] = profile::build_directory(&[true, false, false, false, false], 255);
+        sim.refuses_disabled_profiles = true;
+        sim
+    }
+
+    #[test]
+    fn a_save_never_switches_to_a_disabled_profile_to_reload_the_active_one() {
+        // Issue #34: the save of the active profile, and then its undo, ended in "invalid argument".
+        let (mut task, sim) = open_sim_through(g303_shroud(), G303_SHROUD, true, true);
+        assert!(task.info.writable && task.info.experimental);
+        let before = sim.lock().unwrap().user.clone();
+        let state = task.state().unwrap();
+        assert_eq!(state.active_profile, 1);
+        assert_eq!(state.profiles.iter().map(|p| p.enabled).collect::<Vec<_>>(), [true, false, false, false, false]);
+
+        let saved = task.save_profile(1, &edited(&state, 1)).unwrap();
+        assert_eq!(saved.profiles[0].settings.dpi_levels[0], 3250);
+        assert!(task.pending_undo_path().exists(), "the undo is armed");
+        {
+            let mouse = sim.lock().unwrap();
+            assert_eq!(mouse.written, [1]);
+            assert!(mouse.selected.is_empty() && mouse.refused_switches.is_empty(), "no switch to a disabled profile");
+        }
+
+        // The undo puts the profile back the same way.
+        task.undo_last_write().unwrap();
+        let mouse = sim.lock().unwrap();
+        assert_eq!(mouse.user, before);
+        assert_eq!(mouse.written, [1, 1]);
+        assert!(mouse.selected.is_empty() && mouse.refused_switches.is_empty());
+        drop(mouse);
+        assert!(!task.pending_undo_path().exists());
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_refused_profile_switch_after_a_verified_write_neither_fails_nor_undoes_the_save() {
+        let mut sim = g303_shroud();
+        sim.user[0] = profile::build_directory(&[true; 5], 255);
+        sim.refuses_switches = true;
+        let (mut task, sim) = open_sim_through(sim, G303_SHROUD, true, true);
+        let before = sim.lock().unwrap().user.clone();
+        let state = task.state().unwrap();
+
+        // Saved and read back: the refused switch to profile 2 and back is only logged.
+        let saved = task.save_profile(1, &edited(&state, 1)).unwrap();
+        assert_eq!(saved.profiles[0].settings.dpi_levels[0], 3250);
+        assert_eq!(sim.lock().unwrap().written, [1]);
+        assert!(task.pending_undo_path().exists(), "the 15-second undo is still there");
+
+        // The undo succeeds too, instead of "Putting the backup back failed too".
+        task.undo_last_write().unwrap();
+        assert_eq!(sim.lock().unwrap().user, before);
+        assert!(sim.lock().unwrap().selected.is_empty());
+        assert!(!task.pending_undo_path().exists());
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_refused_first_write_leaves_the_mouse_untouched_and_the_undo_writes_nothing() {
+        let mut sim = g303_shroud();
+        sim.refuses_writes = true;
+        let (mut task, sim) = open_sim_through(sim, G303_SHROUD, true, true);
+        let before = sim.lock().unwrap().user.clone();
+        let state = task.state().unwrap();
+
+        let error = task.save_profile(1, &edited(&state, 1)).unwrap_err().to_string();
+        assert!(error.contains("invalid argument (0x02)"), "{error}");
+        assert!(error.contains("The backup was put back"), "{error}");
+        let mouse = sim.lock().unwrap();
+        assert_eq!(mouse.user, before);
+        assert!(mouse.written.is_empty() && mouse.selected.is_empty());
+        // The start of the write was refused: no data, no end of write followed it.
+        assert!(mouse.writing.is_none());
+        drop(mouse);
+        assert!(!task.pending_undo_path().exists(), "nothing left to undo");
+        forget_test_files();
     }
 
     #[test]

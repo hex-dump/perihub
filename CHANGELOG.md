@@ -15,6 +15,9 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ### Changed
 - The udev rule, the device list, the website's catalogue and the AppStream metadata are now generated from PeriHub's own driver tables, so they can no longer disagree. The rule opens exactly the same interfaces as before. Razer mice are counted by name: 74, not 75, since the DeathAdder V3 Pro (Wired) has two USB ids.
 
+### Fixed
+- **Saving no longer fails with "invalid argument" on a mouse whose other profiles are disabled** ([issue #34](https://github.com/hex-dump/perihub/issues/34)): to load a saved profile PeriHub switched to another profile and back, even a disabled one, which the G303 Shroud Edition most likely refused; the save was undone and the undo failed at the same switch, though the old profile was back in the mouse. PeriHub now switches only through an enabled profile, and a refused switch no longer undoes a save that was written and read back.
+
 ## 0.8.4 — 2026-11-15
 
 On Windows a mouse behind a LIGHTSPEED, Bolt or Unifying receiver is found, and a mouse with a tested memory format can be saved to through its receiver, as an experimental feature: a G502 HERO Wireless on a POWERPLAY mat was the first. Also: the G502 HERO Wireless's lights have the right names.

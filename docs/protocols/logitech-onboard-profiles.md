@@ -9,7 +9,8 @@ Sources studied (read only, for the protocol facts):
 
 - [libratbag](https://github.com/libratbag/libratbag) (MIT), `hidpp20.c`: the profile list
   ("dictionary"), its checksum, the fallback to the factory profiles, how a commit writes the
-  profiles and then the list, the G305 that refuses to read a list that was never written.
+  profiles and then the list, the G305 that refuses to read a list that was never written;
+  `driver-hidpp20.c` and `libratbag.c`: a disabled profile is never selected.
 - [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0), `hidpp20.py` and
   `settings_templates.py`: the factory list in sector `0x0100`, and profiles selected by their
   two-byte address, `0x01nn` for a factory profile.
@@ -91,6 +92,26 @@ and the name of the firmware in ASCII (`U127.03_B0010`): the same entries with a
   explanation; a profile saved once with Logitech G HUB or Onboard Memory Manager creates it.
 - A backup taken while the mouse had no list cannot be restored: there is nothing in it the mouse
   would use. **Factory settings** on a profile gives the same result.
+
+## Selecting a profile
+
+- libratbag never selects a profile that the list disables: asked to, its HID++ driver first
+  enables it and writes the profiles and the list again, and only then selects it; the library
+  above it refuses to make a disabled profile active at all.
+- After a save PeriHub loads the saved settings by selecting another profile and then the saved
+  one again, since selecting the same profile keeps a preview **(G502)**. It used to fall back on a
+  disabled profile when no other one was enabled. A save to a G303 Shroud Edition behind its
+  receiver ([issue #34](https://github.com/hex-dump/perihub/issues/34)) failed with "invalid
+  argument" (`0x02`), and so did its undo. That fits the switch being refused, after the profile
+  had been written and read back (the undo writes only sectors that changed, so a refused write
+  would have left it nothing to do): the write commands are the ones a G502 HERO Wireless with the
+  same memory (format 3, 16 sectors of 255 bytes, one factory profile) took through its receiver in
+  [issue #28](https://github.com/hex-dump/perihub/issues/28). The report does not say which
+  profiles the list enables, so a disabled profile is the likely reason, not a proven one.
+- PeriHub now goes only through an enabled profile, and with none sends nothing: a written profile
+  takes effect by itself **(G502)**. A switch the mouse refuses once every sector is written and read
+  back is only logged: the save stands, and on an experimental save the 15-second undo is still
+  offered.
 
 ## Format 7 and the extended DPI and polling rate features
 
