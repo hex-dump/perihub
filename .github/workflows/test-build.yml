@@ -2,7 +2,8 @@ name: Test build
 
 # Builds the Windows installer and the Linux AppImage, .deb and Flatpak for testing, without a tag or a
 # release: by itself for every push to a test/… branch, or by hand for any branch (Actions → Test build
-# → Run workflow). The files are attached to the run as artifacts.
+# → Run workflow). The files are attached to the run as artifacts. When all three are built, the
+# open issues the branch's commits name ("#30") get one comment with the link (tools/notify.py).
 on:
   push:
     branches: ["test/**"]
@@ -99,8 +100,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The image has the GNOME runtime in a read-only layer of the container: when Flathub has a newer
+      # one, flatpak-builder updates it by renaming folders across layers, which fails with "Invalid
+      # cross-device link". A copy first puts the installation in the container's own layer.
+      - name: Make the preinstalled runtimes updatable
+        run: cp -a /var/lib/flatpak /var/lib/flatpak.copy && rm -rf /var/lib/flatpak && mv /var/lib/flatpak.copy /var/lib/flatpak
+
+      # Flathub's runtime download sometimes fails with "Failed to update org.gnome.Sdk: Invalid cross-device
+      # link": one more try is enough.
       - name: Build the bundle
-        run: packaging/flatpak/build-local.sh --system
+        run: |
+          packaging/flatpak/build-local.sh --system || {
+            echo "::warning::The Flatpak build failed, trying once more"
+            packaging/flatpak/build-local.sh --system
+          }
 
       - uses: actions/upload-artifact@v7
         with:
@@ -109,3 +122,29 @@ jobs:
           # .build is a hidden folder, which upload-artifact leaves out by default.
           include-hidden-files: true
           if-no-files-found: error
+
+  # The issues "#N" in the commit messages of the branch (since main) get the link to this run, once per
+  # commit, unless the maintainer already posted it by hand.
+  notify:
+    name: Tell the issues
+    needs: [windows, linux, flatpak]
+    if: github.ref_type == 'branch' && startsWith(github.ref_name, 'test/')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The commits since main.
+          fetch-depth: 0
+          sparse-checkout: tools/notify.py
+          sparse-checkout-cone-mode: false
+
+      - name: Comment on the issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # The commit before the push: only the issues its new commits name get the link.
+          BEFORE: ${{ github.event.before }}
+        run: python3 tools/notify.py testbuild "$GITHUB_SHA" "$RUN_URL" "$GITHUB_RUN_ID" --since "$BEFORE" --apply
