@@ -68,6 +68,18 @@ export interface ProfilesInfo {
   presets: string[];
 }
 
+export interface InstalledGame {
+  name: string;
+  /** "Steam", "Lutris" or "Heroic". */
+  launcher: string;
+  /** Executable name on Windows, window class on Linux. */
+  app: string;
+  /** False when the app is a best guess that may need correcting. */
+  certain: boolean;
+  /** Why it is not certain. */
+  note: string | null;
+}
+
 export type KeyBinding =
   | { type: "key"; usage: number }
   | { type: "function"; code: number; param: number }
@@ -807,6 +819,8 @@ export const api = {
   profiles: () => invoke<ProfilesInfo>("profiles_get"),
   setProfiles: (profiles: AppProfiles) =>
     invoke<void>("profiles_set", { profiles }),
+  /** Games installed through Steam, Lutris and Heroic (reads their files only). */
+  installedGames: () => invoke<InstalledGame[]>("games_installed"),
   /** Runs the step a "setup" FocusSupport offers; resolves with what to tell the user. */
   setupFocus: () => invoke<string>("profiles_setup_focus"),
   onFocus: (handler: (app: string | null) => void): Promise<UnlistenFn> =>

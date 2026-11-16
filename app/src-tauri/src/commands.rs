@@ -548,6 +548,12 @@ pub fn profiles_get(app: AppHandle, state: State<'_, AppState>) -> ProfilesInfo 
     }
 }
 
+/// The games installed through Steam, Lutris and Heroic, for suggesting rules. Reads files only.
+#[tauri::command]
+pub async fn games_installed() -> CmdResult<Vec<perihub_core::games::InstalledGame>> {
+    blocking(|| Ok(perihub_core::games::installed_games())).await
+}
+
 /// The one-time step that makes detecting the focused app possible (on GNOME: installing and
 /// enabling PeriHub's Shell extension). Returns what to tell the user.
 #[tauri::command]

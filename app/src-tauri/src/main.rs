@@ -224,6 +224,7 @@ fn main() {
             commands::profiles_get,
             commands::profiles_set,
             commands::profiles_setup_focus,
+            commands::games_installed,
             commands::app_get_settings,
             commands::app_set_settings,
             commands::app_quit,
