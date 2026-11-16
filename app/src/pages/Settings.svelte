@@ -203,9 +203,12 @@
 
   <div class="card col">
     <h2>About</h2>
-    <div class="row wrap">
-      <span class="small">PeriHub {version}</span>
-      <button class="ghost small" onclick={() => (showCredits = true)}>Credits</button>
+    <div class="row wrap about">
+      <div class="col about-text">
+        <span>PeriHub {version}</span>
+        <span class="small muted">Free and open source (MIT). It builds on the work of other projects: Credits lists every one, with its license.</span>
+      </div>
+      <button onclick={() => (showCredits = true)}>Credits</button>
     </div>
   </div>
 
@@ -217,6 +220,8 @@
 {#if showCredits}<CreditsDialog onclose={() => (showCredits = false)} />{/if}
 
 <style>
+  .about { justify-content: space-between; align-items: center; }
+  .about-text { gap: 2px; flex: 1 1 260px; }
   h1 {
     margin-bottom: 18px;
   }
