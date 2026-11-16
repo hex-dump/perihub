@@ -131,7 +131,7 @@
   .warning {
     gap: 8px;
     padding: 12px 14px;
-    border: 1px solid rgba(255, 107, 120, 0.3);
+    border: 1px solid rgb(var(--bad-rgb) / 0.3);
     border-left: 3px solid var(--bad);
     border-radius: var(--radius-sm);
     background: var(--bad-soft);
@@ -156,6 +156,6 @@
   .running {
     color: var(--ok);
     background: var(--ok-soft);
-    border-color: rgba(60, 207, 145, 0.35);
+    border-color: rgb(var(--ok-rgb) / 0.35);
   }
 </style>

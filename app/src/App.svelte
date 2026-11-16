@@ -464,7 +464,7 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #4a4f5e;
+    background: var(--idle);
   }
 
   .state.on {

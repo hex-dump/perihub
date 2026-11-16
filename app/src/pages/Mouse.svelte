@@ -689,7 +689,7 @@
     padding: 14px var(--pad-x);
     background: var(--panel);
     border-top: 1px solid var(--line);
-    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-bar);
   }
 
   .warn {
