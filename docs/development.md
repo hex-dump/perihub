@@ -107,6 +107,7 @@ cargo xtask check   # fails if one is out of date (cargo test runs it too, so CI
 | `site/index.html` | the same, and the `data-models` the search uses after each `data-catalog` |
 | `packaging/linux/…metainfo.xml` | `<modalias>` entries, so software centres suggest PeriHub for a supported device |
 | `site/devices.json` | every device, its level and USB ids, published with the website |
+| `app/src/lib/devices.generated.json` | the brands and models Settings lists, imported by the app at build time |
 
 The text around the generated blocks is written by hand. What a block lists is a selector, described in
 `crates/xtask/src/select.rs`: a family (`razer`), a brand (`Cooler Master`), a level

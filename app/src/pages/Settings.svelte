@@ -4,6 +4,7 @@
   import { api, errorText, type AppSettings, type DeviceStatus } from "../lib/api";
   import { INSTALL_NOTE, checkForUpdate, installUpdate, installingText, updates } from "../lib/updates.svelte";
   import TestReport from "../components/TestReport.svelte";
+  import SupportedDevices from "../components/SupportedDevices.svelte";
 
   interface Props {
     status: DeviceStatus;
@@ -115,6 +116,7 @@
       <div>Apex 3 TKL: {status.keyboard ? `firmware ${status.keyboard.firmware}` : status.keyboard_error ?? "not connected"}</div>
       <div>{status.mouse?.model ?? "Mouse"}: {status.mouse ? status.mouse.firmware.map((f) => `${f.name} ${f.version}`).join(", ") : status.mouse_error ?? (status.mouse_asleep ? "asleep" : "not connected")}</div>
     </div>
+    <SupportedDevices />
     <p class="small">Is your mouse or keyboard missing? <a href="#report">Send a report for it</a>.</p>
     <p class="muted small">
       Quit SteelSeries GG, Logitech G HUB and Logitech Gaming Software while using PeriHub: two programs talking to the same device get in each other's way.

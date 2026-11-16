@@ -16,7 +16,7 @@ if echo "$staged" | grep -q '\.rs$'; then
 fi
 
 # Device tables, or the files generated from them.
-if echo "$staged" | grep -qE '^(crates/|docs/devices\.md|README\.md|site/index\.html|site/devices\.json|packaging/linux/)'; then
+if echo "$staged" | grep -qE '^(crates/|docs/devices\.md|README\.md|site/index\.html|site/devices\.json|app/src/lib/devices\.generated\.json|packaging/linux/)'; then
     cargo xtask check || fail "generated files are out of date: run cargo xtask gen"
 fi
 
