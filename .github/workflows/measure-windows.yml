@@ -11,6 +11,9 @@ on:
         description: Release to measure (empty = build this branch)
         default: ""
 
+permissions:
+  contents: read
+
 jobs:
   measure:
     runs-on: windows-latest

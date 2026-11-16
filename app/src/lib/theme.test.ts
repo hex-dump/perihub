@@ -9,7 +9,7 @@ import { ACCENTS } from "./theme";
 const source = styles.replace(/\/\*[\s\S]*?\*\//g, "");
 
 function block(selector: string): Record<string, string> {
-  const found = new RegExp("(?:^|\\})\\s*" + selector.replace(/[[\]"=.:()]/g, "\\$&") + "\\s*\\{([^}]*)\\}", "m").exec(source);
+  const found = new RegExp("(?:^|\\})\\s*" + selector.replace(/[.*+?^${}()|[\]\\"=:]/g, "\\$&") + "\\s*\\{([^}]*)\\}", "m").exec(source);
   if (!found) throw new Error("no block for " + selector);
   return Object.fromEntries([...found[1].matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
 }
