@@ -238,11 +238,11 @@ fn main() {
         ])
         .build(tauri::generate_context!())
         .expect("failed to start PeriHub")
-        .run(|_app, event| {
+        .run(|_app, event| match event {
             // Without windows PeriHub keeps running in the tray; Quit sets an exit code.
-            if let RunEvent::ExitRequested { code: None, api, .. } = event {
-                api.prevent_exit();
-            }
+            RunEvent::ExitRequested { code: None, api, .. } => api.prevent_exit(),
+            RunEvent::Exit => perihub_core::focus::stop(),
+            _ => {}
         });
 }
 

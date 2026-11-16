@@ -1,11 +1,15 @@
 //! Which app is in focus, for app profiles. Only the app's identifier is read, never window titles.
 //!
-//! Linux: Hyprland's event socket (other desktops do not tell apps which window is focused).
+//! Linux: Hyprland's event socket, or a KWin script on KDE Plasma (other desktops do not tell apps
+//! which window is focused).
 //! Windows: the executable of the foreground window, checked twice a second.
 
 use std::thread;
 
 use serde::Serialize;
+
+#[cfg(target_os = "linux")]
+mod kwin;
 
 /// Whether the focused app can be detected here.
 #[derive(Debug, Clone, Serialize)]
@@ -18,8 +22,11 @@ pub enum FocusSupport {
 pub fn support() -> FocusSupport {
     #[cfg(target_os = "linux")]
     if hyprland::socket_dir().is_none() {
+        if let Some(support) = kwin::support() {
+            return support;
+        }
         return FocusSupport::Unsupported {
-            reason: "On Linux, detecting the app in focus works on Hyprland only for now.",
+            reason: "On Linux, detecting the app in focus works on Hyprland and KDE Plasma only for now.",
         };
     }
     FocusSupport::Supported { desktop: if cfg!(windows) { "Windows" } else { "Hyprland" } }
@@ -31,11 +38,17 @@ pub fn watch(on_change: impl FnMut(Option<String>) + Send + 'static) -> bool {
     #[cfg(target_os = "linux")]
     let run = match hyprland::socket_dir() {
         Some(dir) => move || hyprland::run(dir, on_change),
-        None => return false,
+        None => return kwin::watch(on_change),
     };
     #[cfg(windows)]
     let run = move || windows::run(on_change);
     thread::Builder::new().name("perihub-focus".into()).spawn(run).is_ok()
+}
+
+/// Undoes what watching left on the desktop (the KWin script), when PeriHub quits.
+pub fn stop() {
+    #[cfg(target_os = "linux")]
+    kwin::stop();
 }
 
 #[cfg(target_os = "linux")]
