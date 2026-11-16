@@ -548,6 +548,17 @@ pub fn profiles_get(app: AppHandle, state: State<'_, AppState>) -> ProfilesInfo 
     }
 }
 
+/// The one-time step that makes detecting the focused app possible (on GNOME: installing and
+/// enabling PeriHub's Shell extension). Returns what to tell the user.
+#[tauri::command]
+pub async fn profiles_setup_focus(app: AppHandle) -> CmdResult<String> {
+    let message = tauri::async_runtime::spawn_blocking(focus::setup).await.map_err(|e| e.to_string())??;
+    if let Some(state) = app.try_state::<AppState>() {
+        crate::watch_focus(&app, &state.profiles);
+    }
+    Ok(message)
+}
+
 #[tauri::command]
 pub fn profiles_set(app: AppHandle, state: State<'_, AppState>, profiles: AppProfiles) -> CmdResult<()> {
     save_profiles(&state, |_, current| *current = profiles)?;

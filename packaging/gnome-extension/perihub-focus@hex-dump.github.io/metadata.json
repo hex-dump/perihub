@@ -1,0 +1,8 @@
+{
+  "uuid": "perihub-focus@hex-dump.github.io",
+  "name": "PeriHub focus",
+  "description": "Tells PeriHub which app is in focus, so its app profiles can switch the keyboard lighting and the mouse profile. Only the focused window's app id, window class and process id are shared on the session bus, never window titles.",
+  "shell-version": ["45", "46", "47", "48", "49", "50", "51"],
+  "url": "https://github.com/hex-dump/perihub",
+  "version": 1
+}

@@ -15,7 +15,8 @@ dirs.workspace = true
 [target.'cfg(target_os = "linux")'.dependencies]
 evdev = "0.13"
 xkbcommon = { version = "0.9", default-features = false }
-# App profiles on KDE Plasma: KWin's scripting interface (already in the build through Tauri).
+# App profiles on KDE Plasma (KWin's scripting interface) and on GNOME (the focus from PeriHub's
+# Shell extension). Already in the build through Tauri.
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 
 [target.'cfg(windows)'.dependencies]

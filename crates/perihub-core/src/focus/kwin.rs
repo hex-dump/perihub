@@ -73,7 +73,7 @@ fn is_plasma(current_desktop: Option<&str>) -> bool {
     current_desktop.is_some_and(|d| d.split(':').any(|d| d.eq_ignore_ascii_case("kde")))
 }
 
-fn on_plasma() -> bool {
+pub fn on_plasma() -> bool {
     is_plasma(std::env::var("XDG_CURRENT_DESKTOP").ok().as_deref())
 }
 

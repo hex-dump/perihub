@@ -52,7 +52,9 @@ export interface AppProfiles {
 
 export type FocusSupport =
   | { kind: "supported"; desktop: string }
-  | { kind: "unsupported"; reason: string };
+  | { kind: "unsupported"; reason: string }
+  /** Possible after a one-time step started with a button labelled `action` (`api.setupFocus`). */
+  | { kind: "setup"; desktop: string; reason: string; action: string };
 
 export interface ProfilesInfo {
   support: FocusSupport;
@@ -778,6 +780,8 @@ export const api = {
   profiles: () => invoke<ProfilesInfo>("profiles_get"),
   setProfiles: (profiles: AppProfiles) =>
     invoke<void>("profiles_set", { profiles }),
+  /** Runs the step a "setup" FocusSupport offers; resolves with what to tell the user. */
+  setupFocus: () => invoke<string>("profiles_setup_focus"),
   onFocus: (handler: (app: string | null) => void): Promise<UnlistenFn> =>
     listen<string | null>("focus-changed", (event) => handler(event.payload)),
 

@@ -25,6 +25,12 @@ finish-args:
   # App profiles on KDE Plasma: PeriHub loads a small KWin script, which calls it back on
   # io.github.hex_dump.perihub.Focus (a Flatpak may own names under its app id without asking).
   - --talk-name=org.kde.KWin
+  # App profiles on GNOME: the window in focus, from PeriHub's own GNOME Shell extension (its bus
+  # name), and the App profiles button that installs it in the user's extensions folder and asks
+  # GNOME Shell to enable it.
+  - --talk-name=io.github.hex_dump.perihub.GnomeFocus
+  - --talk-name=org.gnome.Shell.Extensions
+  - --filesystem=~/.local/share/gnome-shell/extensions/perihub-focus@hex-dump.github.io:create
 
 modules:
   # Tauri's tray icon loads libayatana-appindicator, which the GNOME runtime does not have. From

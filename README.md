@@ -131,7 +131,7 @@ Not on the list? Open a [device request](https://github.com/hex-dump/perihub/iss
 
 ### Everything else
 
-- **App profiles**: while a game or an app is in focus, PeriHub can switch the keyboard lighting and the mouse profile, and switch back afterwards. On Windows, on Hyprland and on KDE Plasma (Wayland and X11). PeriHub only reads the app's identifier (the executable name or window class), never window titles or contents.
+- **App profiles**: while a game or an app is in focus, PeriHub can switch the keyboard lighting and the mouse profile, and switch back afterwards. On Windows, and on Linux on Hyprland, KDE Plasma and GNOME (Wayland and X11; GNOME 45 or newer, through a small GNOME Shell extension that the App profiles page helps you install). PeriHub only reads the app's identifier (the executable name or window class), never window titles or contents.
 - **Backups**: before every write to a device, PeriHub saves its memory, and **Backups…** puts it back.
 - **Updates in one click** on Windows, signed, and only when you choose.
 
@@ -457,7 +457,7 @@ The interface is in English. More languages are planned.
 - **Logitech mice through a LIGHTSPEED receiver**: with a tested memory format PeriHub switches their profile and DPI level, and saving is experimental. A G903 HERO was read through a receiver on Linux ([issue #22](https://github.com/hex-dump/perihub/issues/22)), and a G502 HERO Wireless on a POWERPLAY mat on Windows was read and saved to ([issues #4](https://github.com/hex-dump/perihub/issues/4) and [#28](https://github.com/hex-dump/perihub/issues/28)): the only mouse saved to over the radio so far. Their buttons do not start software macros.
 - **Devices on a Logi Bolt or Unifying receiver**, such as the MX Master 3S, are experimental: nobody has tried PeriHub on one yet ([issue #17](https://github.com/hex-dump/perihub/issues/17)). Each one gets a page with what it can do, its battery and DPI, and a test report. Only the DPI can be changed, on devices without onboard memory: PeriHub sets it in the device's RAM, so the device forgets it when it is turned off or falls asleep, and PeriHub sets it again when it connects or wakes up (it checks every 10 seconds), while PeriHub is running. Other Logitech devices PeriHub does not know, also behind a LIGHTSPEED receiver, get a read-only page. Solaar and logiops may undo it: PeriHub says so when one of them runs. Bluetooth and the USB cable of these devices are not supported yet. On Linux the Unifying receivers need an [optional rule](#optional-unifying-receivers), because the typing of the keyboards paired with them goes through the same interface.
 - **Corsair devices** have not been tried on real hardware yet. With more than one device on the same receiver, only the first one is shown, and the Slipstream V2 receiver is not recognized.
-- **App profiles** work on Windows, Hyprland and KDE Plasma only. They switch lighting and mouse profiles, not key mappings.
+- **App profiles** work on Windows, and on Linux on Hyprland, KDE Plasma and GNOME only. They switch lighting and mouse profiles, not key mappings.
 - **Software macros** on Linux skip characters the keyboard layout cannot type. On Windows many games ignore typed text, but not keys.
 - **Not available yet**: GameSense. **Out of scope**: SteelSeries Sonar and Moments, G HUB Lua scripts.
 
