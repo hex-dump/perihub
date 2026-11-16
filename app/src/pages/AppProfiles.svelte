@@ -11,6 +11,8 @@
   let profiles = $state<AppProfiles>({ enabled: false, rules: [] });
   let focused = $state<string | null>(null);
   let error = $state<string | null>(null);
+  let settingUp = $state(false);
+  let setupMessage = $state<string | null>(null);
 
   /** PeriHub's own window: never a useful rule. */
   const SELF = ["perihub", "perihub.exe"];
@@ -23,12 +25,30 @@
     save($state.snapshot(profiles));
   }
 
-  onMount(() => {
-    api.profiles().then((i) => {
+  function load() {
+    return api.profiles().then((i) => {
       info = i;
       profiles = i.profiles;
       focused = i.focused;
     }, (e) => (error = errorText(e)));
+  }
+
+  /** E.g. on GNOME: installs and enables PeriHub's Shell extension. */
+  async function setUp() {
+    settingUp = true;
+    error = null;
+    try {
+      setupMessage = await api.setupFocus();
+      await load();
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      settingUp = false;
+    }
+  }
+
+  onMount(() => {
+    load();
     const unlisten = api.onFocus((app) => {
       focused = app;
       if (info && app && !SELF.includes(app)) info.recent = [app, ...info.recent.filter((a) => a !== app)].slice(0, 12);
@@ -69,8 +89,16 @@
   {#if error}<div class="notice error">{error}</div>{/if}
 
   {#if info}
+    {#if setupMessage}<div class="notice info">{setupMessage}</div>{/if}
     {#if info.support.kind === "unsupported"}
-      <div class="notice info">{info.support.reason}</div>
+      {#if !setupMessage}<div class="notice info">{info.support.reason}</div>{/if}
+    {:else if info.support.kind === "setup"}
+      <div class="card col">
+        <p>{info.support.reason}</p>
+        <div class="row">
+          <button onclick={setUp} disabled={settingUp}>{info.support.action}</button>
+        </div>
+      </div>
     {:else}
       <div class="card col">
         <label class="row">

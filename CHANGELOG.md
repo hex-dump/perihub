@@ -9,6 +9,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ### Added
 - **Settings lists the supported brands**: under Devices, each brand shows how many models are supported, experimental or read-only, and opens to its models. The list is generated from the driver tables, so it cannot go stale.
 - **Support me, in the sidebar**: a small **Support me** button at the bottom opens two optional links, Buy me a coffee and Star on GitHub. Nothing pops up on its own.
+- **App profiles on GNOME**: on GNOME 45 or newer (Wayland or X11), app profiles follow the app in focus. GNOME does not tell other apps which window is focused, so PeriHub brings a small GNOME Shell extension of its own: **Enable GNOME integration** on the App profiles page installs and turns it on (the first time, GNOME needs a log out and back in). The extension only shares the focused window's app id, window class and process id, never titles, and PeriHub is told of each change instead of asking over and over.
 - **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.
 
 ### Changed

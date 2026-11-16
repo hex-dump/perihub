@@ -1,25 +1,42 @@
 //! Which app is in focus, for app profiles. Only the app's identifier is read, never window titles.
 //!
-//! Linux: Hyprland's event socket (other desktops do not tell apps which window is focused).
+//! Linux: Hyprland's event socket; on GNOME, PeriHub's own Shell extension ([`gnome`]). Other
+//! desktops do not tell apps which window is focused.
 //! Windows: the executable of the foreground window, checked twice a second.
 
 use std::thread;
 
 use serde::Serialize;
 
+#[cfg(target_os = "linux")]
+mod gnome;
+
 /// Whether the focused app can be detected here.
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum FocusSupport {
-    Supported { desktop: &'static str },
-    Unsupported { reason: &'static str },
+    Supported {
+        desktop: &'static str,
+    },
+    Unsupported {
+        reason: &'static str,
+    },
+    /// Possible after a one-time step the user starts with a button labelled `action`, see [`setup`].
+    Setup {
+        desktop: &'static str,
+        reason: &'static str,
+        action: &'static str,
+    },
 }
 
 pub fn support() -> FocusSupport {
     #[cfg(target_os = "linux")]
     if hyprland::socket_dir().is_none() {
+        if gnome::detected() {
+            return gnome::support();
+        }
         return FocusSupport::Unsupported {
-            reason: "On Linux, detecting the app in focus works on Hyprland only for now.",
+            reason: "On Linux, detecting the app in focus works on Hyprland and GNOME only for now.",
         };
     }
     FocusSupport::Supported { desktop: if cfg!(windows) { "Windows" } else { "Hyprland" } }
@@ -29,13 +46,25 @@ pub fn support() -> FocusSupport {
 /// the window class on Linux, the executable name on Windows. Returns `false` if not supported.
 pub fn watch(on_change: impl FnMut(Option<String>) + Send + 'static) -> bool {
     #[cfg(target_os = "linux")]
-    let run = match hyprland::socket_dir() {
-        Some(dir) => move || hyprland::run(dir, on_change),
-        None => return false,
+    let run: Box<dyn FnOnce() + Send> = if let Some(dir) = hyprland::socket_dir() {
+        Box::new(move || hyprland::run(dir, on_change))
+    } else if gnome::detected() {
+        Box::new(move || gnome::run(on_change))
+    } else {
+        return false;
     };
     #[cfg(windows)]
     let run = move || windows::run(on_change);
     thread::Builder::new().name("perihub-focus".into()).spawn(run).is_ok()
+}
+
+/// Runs the one-time step a [`FocusSupport::Setup`] offers. Returns what to tell the user.
+pub fn setup() -> Result<String, String> {
+    #[cfg(target_os = "linux")]
+    if hyprland::socket_dir().is_none() && gnome::detected() {
+        return gnome::setup();
+    }
+    Err("Nothing needs to be set up here.".into())
 }
 
 #[cfg(target_os = "linux")]

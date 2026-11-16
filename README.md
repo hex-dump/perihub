@@ -131,7 +131,7 @@ Not on the list? Open a [device request](https://github.com/hex-dump/perihub/iss
 
 ### Everything else
 
-- **App profiles**: while a game or an app is in focus, PeriHub can switch the keyboard lighting and the mouse profile, and switch back afterwards. On Windows and on Hyprland. PeriHub only reads the app's identifier (the executable name or window class), never window titles or contents.
+- **App profiles**: while a game or an app is in focus, PeriHub can switch the keyboard lighting and the mouse profile, and switch back afterwards. On Windows, on Hyprland and on GNOME (45 or newer, through a small GNOME Shell extension that the App profiles page installs with one click). PeriHub only reads the app's identifier (the executable name or window class), never window titles or contents.
 - **Backups**: before every write to a device, PeriHub saves its memory, and **Backups…** puts it back.
 - **Updates in one click** on Windows, signed, and only when you choose.
 

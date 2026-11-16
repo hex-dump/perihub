@@ -22,6 +22,12 @@ finish-args:
   - --talk-name=org.kde.StatusNotifierWatcher
   # App profiles on Hyprland: the window in focus, from Hyprland's event socket.
   - --filesystem=xdg-run/hypr:ro
+  # App profiles on GNOME: the window in focus, from PeriHub's own GNOME Shell extension (its bus
+  # name), and the App profiles button that installs it in the user's extensions folder and asks
+  # GNOME Shell to enable it.
+  - --talk-name=io.github.hex_dump.perihub.GnomeFocus
+  - --talk-name=org.gnome.Shell.Extensions
+  - --filesystem=~/.local/share/gnome-shell/extensions/perihub-focus@hex-dump.github.io:create
 
 modules:
   # Tauri's tray icon loads libayatana-appindicator, which the GNOME runtime does not have. From

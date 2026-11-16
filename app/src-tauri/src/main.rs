@@ -217,6 +217,7 @@ fn main() {
             commands::corsair_keep_lighting,
             commands::profiles_get,
             commands::profiles_set,
+            commands::profiles_setup_focus,
             commands::app_get_settings,
             commands::app_set_settings,
             commands::app_quit,
