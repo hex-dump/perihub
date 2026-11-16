@@ -138,7 +138,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://gitlab.com/CalcProgrammer1/OpenRGB",
         license: "GPL-2.0-or-later",
         notes: [
-          "The Apex 8-zone lighting protocol, the interface and usage page of each ASUS mouse's configuration collection, and for the Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and that a reading right after a write is incomplete, and the interface and usage page of the Logitech G600's. " + NO_CODE,
+          "The Apex 8-zone lighting protocol, the interface and usage page of each ASUS mouse's configuration collection, and for the Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and that a reading right after a write is incomplete, and the interface and usage page of the Logitech G600's, and the name and USB id of a white Corsair K70 PRO MINI WIRELESS (docs/protocols/corsair-bragi.md). " + NO_CODE,
         ],
       },
       {

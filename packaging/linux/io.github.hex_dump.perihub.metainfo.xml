@@ -365,6 +365,7 @@
     <modalias>usb:v1B1Cp1BC5d*</modalias>
     <modalias>usb:v1B1Cp1BC6d*</modalias>
     <modalias>usb:v1B1Cp1BCFd*</modalias>
+    <modalias>usb:v1B1Cp1BD3d*</modalias>
     <modalias>usb:v1B1Cp1BD4d*</modalias>
     <modalias>usb:v1B1Cp1BD6d*</modalias>
     <modalias>usb:v1B1Cp1BD7d*</modalias>

@@ -209,6 +209,8 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bc6", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bd4", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair K70 PRO MINI WIRELESS
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb6", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 PRO MINI WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bd3", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair K70 PRO TKL
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b14", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair K70 RGB TKL

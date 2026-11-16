@@ -1398,6 +1398,20 @@
     {
       "family": "corsair-keyboard",
       "brand": "Corsair",
+      "name": "K70 PRO MINI WIRELESS",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bd3"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
       "name": "K70 PRO TKL",
       "kind": "keyboard",
       "level": "experimental",

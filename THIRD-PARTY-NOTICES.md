@@ -453,7 +453,7 @@ was copied.
   protocol, the interface and usage page of each ASUS mouse's configuration collection, and for the
   Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and
   that a reading right after a write is incomplete, and the interface and usage page of the Logitech
-  G600's.
+  G600's, and the name and USB id of a white Corsair K70 PRO MINI WIRELESS (see `docs/protocols/corsair-bragi.md`).
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its issues 1782 and 2305: the USB captures
   of Cooler Master's app that users attached there, read as data, and which product ids form the Cooler Master mouse
   family (see `docs/protocols/coolermaster-mm.md`).

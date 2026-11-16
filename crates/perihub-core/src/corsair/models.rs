@@ -91,6 +91,7 @@ pub const MODELS: &[CorsairModel] = &[
     keyboard(0x1BC6, "K70 PRO", 1024, 142),
     keyboard(0x1BD4, "K70 PRO", 1024, 142),
     keyboard(0x1BB6, "K70 PRO MINI WIRELESS", 1024, 130),
+    keyboard(0x1BD3, "K70 PRO MINI WIRELESS", 1024, 130),
     keyboard(0x2B14, "K70 PRO TKL", 256, 139),
     keyboard(0x1B73, "K70 RGB TKL", 1024, 130),
     keyboard(0x1BB9, "K70 RGB TKL CS", 1024, 130),
