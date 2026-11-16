@@ -381,7 +381,7 @@
     padding: 12px;
     box-sizing: content-box;
     border-radius: var(--radius);
-    background: #0b0c10;
+    background: var(--board);
     border: 1px solid var(--line);
   }
 

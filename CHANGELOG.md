@@ -7,6 +7,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ## Unreleased
 
 ### Added
+- **Light theme and accent colors**: Settings → Appearance has a **Theme** (System, the default, which follows the computer's light or dark setting and changes with it; Dark, as before; or Light) and an **Accent color** (orange as before, blue, green, purple, pink or teal). The light palette keeps text at 4.5:1 or better and the borders of controls at 3:1, and a test checks every pair of both themes and every accent. The choice is kept in the interface preferences and applied before the first paint, so the window does not flash dark; the window's own title bar follows it where the system allows.
 - **Settings lists the supported brands**: under Devices, each brand shows how many models are supported, experimental or read-only, and opens to its models. The list is generated from the driver tables, so it cannot go stale.
 - **Support me, in the sidebar**: a small **Support me** button at the bottom opens two optional links, Buy me a coffee and Star on GitHub. Nothing pops up on its own.
 - **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.

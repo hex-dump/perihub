@@ -7,21 +7,38 @@
   --field: #111318;
   --line: #2a2e39;
   --line-strong: #3a3f4c;
+  --line-hover: #4a5060;
   /* Text: muted is for descriptions and stays above 7:1 on every surface. */
   --text: #eef0f5;
   --muted: #a9b0c0;
   --faint: #8a91a3;
-  /* Orange is for what matters: the main action, the selection, the value in use. */
-  --accent: #ff6a2b;
-  --accent-2: #ff8a52;
-  --accent-soft: rgba(255, 106, 43, 0.12);
+  /* Colors that need a transparency are written as "r g b", and the ones used as they are come from them. */
+  --ok-rgb: 60 207 145;
+  --warn-rgb: 255 194 77;
+  --bad-rgb: 255 107 120;
+  --ok: rgb(var(--ok-rgb));
+  --ok-soft: rgb(var(--ok-rgb) / 0.12);
+  --warn: rgb(var(--warn-rgb));
+  --warn-soft: rgb(var(--warn-rgb) / 0.1);
+  --bad: rgb(var(--bad-rgb));
+  --bad-soft: rgb(var(--bad-rgb) / 0.1);
+  /* The accent is for what matters: the main action, the selection, the value in use. Orange unless the
+     Appearance setting says otherwise (see the data-accent blocks below). */
+  --accent-rgb: 255 106 43;
+  --accent-2-rgb: 255 138 82;
   --on-accent: #1a0d05;
-  --ok: #3ccf91;
-  --ok-soft: rgba(60, 207, 145, 0.12);
-  --warn: #ffc24d;
-  --warn-soft: rgba(255, 194, 77, 0.1);
-  --bad: #ff6b78;
-  --bad-soft: rgba(255, 107, 120, 0.1);
+  --accent: rgb(var(--accent-rgb));
+  --accent-2: rgb(var(--accent-2-rgb));
+  --accent-soft: rgb(var(--accent-rgb) / 0.12);
+  /* Things that are dark on purpose (the lit keyboard and light strip), a dot for "not active". */
+  --stage: #08090c;
+  --board: #0b0c10;
+  --idle: #4a4f5e;
+  --scrim: rgb(0 0 0 / 0.6);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-bar: 0 -8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.5);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23a9b0c0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --radius: 12px;
   --radius-sm: 8px;
   color-scheme: dark;
@@ -32,6 +49,52 @@
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Light theme: the same names, darker colors on pale surfaces. Text is at least 4.5:1 on every surface and the
+   borders of controls 3:1 (tested in theme.test.ts). The theme is on <html data-theme>, set before the first
+   paint by public/theme-init.js and then by prefs.svelte.ts. */
+:root[data-theme="light"] {
+  --bg: #f1f2f6;
+  --panel: #ffffff;
+  --panel-2: #f5f6fa;
+  --panel-3: #e6e8ef;
+  --field: #ffffff;
+  --line: #dadde6;
+  --line-strong: #858c9e;
+  --line-hover: #5f6679;
+  --text: #14161c;
+  --muted: #444b5c;
+  --faint: #566074;
+  --ok-rgb: 10 108 68;
+  --warn-rgb: 138 82 0;
+  --bad-rgb: 190 30 52;
+  --accent-rgb: 172 50 6;
+  --accent-2-rgb: 140 40 8;
+  --on-accent: #ffffff;
+  --stage: #1a1d25;
+  --board: #e8eaf1;
+  --idle: #9aa1b2;
+  --scrim: rgb(20 24 36 / 0.45);
+  --shadow-card: 0 1px 2px rgba(20, 24, 36, 0.08);
+  --shadow-bar: 0 -8px 24px rgba(20, 24, 36, 0.12);
+  --shadow-modal: 0 24px 64px rgba(20, 24, 36, 0.28);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23444b5c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+/* Accent colors (Settings → Appearance): orange is the one above. Each has a version for the dark theme,
+   light enough to read on it with dark text on top, and one for the light theme, dark enough to read on it
+   with white text on top. */
+:root[data-accent="blue"] { --accent-rgb: 79 157 255; --accent-2-rgb: 122 182 255; --on-accent: #04101f; }
+:root[data-accent="green"] { --accent-rgb: 70 199 107; --accent-2-rgb: 111 219 140; --on-accent: #04140a; }
+:root[data-accent="purple"] { --accent-rgb: 172 138 255; --accent-2-rgb: 190 165 255; --on-accent: #0f0720; }
+:root[data-accent="pink"] { --accent-rgb: 255 95 162; --accent-2-rgb: 255 134 187; --on-accent: #200612; }
+:root[data-accent="teal"] { --accent-rgb: 44 198 192; --accent-2-rgb: 93 217 212; --on-accent: #031615; }
+:root[data-theme="light"][data-accent="blue"] { --accent-rgb: 29 78 216; --accent-2-rgb: 30 64 175; --on-accent: #ffffff; }
+:root[data-theme="light"][data-accent="green"] { --accent-rgb: 20 108 50; --accent-2-rgb: 21 90 44; --on-accent: #ffffff; }
+:root[data-theme="light"][data-accent="purple"] { --accent-rgb: 109 40 217; --accent-2-rgb: 91 33 182; --on-accent: #ffffff; }
+:root[data-theme="light"][data-accent="pink"] { --accent-rgb: 176 20 86; --accent-2-rgb: 145 18 70; --on-accent: #ffffff; }
+:root[data-theme="light"][data-accent="teal"] { --accent-rgb: 13 108 101; --accent-2-rgb: 15 86 82; --on-accent: #ffffff; }
 
 * {
   box-sizing: border-box;
@@ -78,7 +141,7 @@ button {
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 
-button:hover:not(:disabled) { border-color: #4a5060; background: var(--panel-3); }
+button:hover:not(:disabled) { border-color: var(--line-hover); background: var(--panel-3); }
 button:disabled { opacity: 0.45; cursor: default; }
 
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 650; }
@@ -86,7 +149,7 @@ button.primary:hover:not(:disabled) { background: var(--accent-2); border-color:
 /* A primary action that cannot run yet is neutral, so the enabled one stands out. */
 button.primary:disabled { opacity: 1; background: var(--panel-2); border-color: var(--line); color: var(--faint); }
 
-button.danger { color: var(--bad); border-color: rgba(255, 107, 120, 0.35); background: transparent; }
+button.danger { color: var(--bad); border-color: rgb(var(--bad-rgb) / 0.35); background: transparent; }
 button.danger:hover:not(:disabled) { background: var(--bad-soft); border-color: var(--bad); }
 
 button.ghost { background: transparent; border-color: transparent; color: var(--muted); }
@@ -107,7 +170,7 @@ input, select, textarea {
 select {
   appearance: none;
   padding-right: 32px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23a9b0c0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: var(--select-arrow);
   background-repeat: no-repeat;
   background-position: right 11px center;
   cursor: pointer;
@@ -115,7 +178,7 @@ select {
 
 select option, select optgroup { background: var(--panel-2); color: var(--text); }
 
-input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover:not(:disabled) { border-color: #4a5060; }
+input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover:not(:disabled) { border-color: var(--line-hover); }
 input:disabled, select:disabled, textarea:disabled { opacity: 0.5; }
 input::placeholder, textarea::placeholder { color: var(--faint); }
 
@@ -151,7 +214,7 @@ label:has(> input[type="checkbox"], > input[type="radio"]) { cursor: pointer; }
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 20px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-card);
 }
 
 .row { display: flex; align-items: center; gap: 10px; }
@@ -191,8 +254,8 @@ label:has(> input[type="checkbox"], > input[type="radio"]) { cursor: pointer; }
   font-weight: 600;
   white-space: nowrap;
 }
-.chip.ok { color: var(--ok); background: var(--ok-soft); border-color: rgba(60, 207, 145, 0.35); }
-.chip.accent { color: var(--accent); background: var(--accent-soft); border-color: rgba(255, 106, 43, 0.4); }
+.chip.ok { color: var(--ok); background: var(--ok-soft); border-color: rgb(var(--ok-rgb) / 0.35); }
+.chip.accent { color: var(--accent); background: var(--accent-soft); border-color: rgb(var(--accent-rgb) / 0.4); }
 
 /* Messages: a colored edge says what kind, the text stays readable. */
 
@@ -205,11 +268,11 @@ label:has(> input[type="checkbox"], > input[type="radio"]) { cursor: pointer; }
   color: var(--text);
   background: var(--panel-2);
 }
-.notice.error { border-color: rgba(255, 107, 120, 0.3); border-left-color: var(--bad); background: var(--bad-soft); }
+.notice.error { border-color: rgb(var(--bad-rgb) / 0.3); border-left-color: var(--bad); background: var(--bad-soft); }
 .notice.error :is(b, strong) { color: var(--bad); }
-.notice.warn { border-color: rgba(255, 194, 77, 0.3); border-left-color: var(--warn); background: var(--warn-soft); }
+.notice.warn { border-color: rgb(var(--warn-rgb) / 0.3); border-left-color: var(--warn); background: var(--warn-soft); }
 .notice.warn :is(b, strong) { color: var(--warn); }
-.notice.ok { border-color: rgba(60, 207, 145, 0.3); border-left-color: var(--ok); background: var(--ok-soft); }
+.notice.ok { border-color: rgb(var(--ok-rgb) / 0.3); border-left-color: var(--ok); background: var(--ok-soft); }
 .notice.info { border-left-color: var(--faint); color: var(--muted); }
 
 /* Choice between a few values */
@@ -225,8 +288,8 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
 .unsaved { display: inline-flex; align-items: center; gap: 8px; color: var(--warn); font-size: 14px; font-weight: 600; }
 .unsaved::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
 
-/* Scrollbars that belong to a dark app. */
+/* Scrollbars that follow the theme. */
 ::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; border: 3px solid var(--bg); }
-::-webkit-scrollbar-thumb:hover { background: #4a5060; }
+::-webkit-scrollbar-thumb:hover { background: var(--line-hover); }

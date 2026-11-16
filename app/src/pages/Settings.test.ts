@@ -15,10 +15,12 @@ const api = vi.hoisted(() => ({
 
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.5.2" }));
+vi.mock("@tauri-apps/api/window", () => ({ getCurrentWindow: () => ({ setTheme: async () => {} }) }));
 
 import type { AppSettings, DeviceStatus } from "../lib/api";
 import Settings from "./Settings.svelte";
 import { updates } from "../lib/updates.svelte";
+import { prefs } from "../lib/prefs.svelte";
 
 const settings = (autostart: boolean): AppSettings => ({
   start_hidden: false,
@@ -148,5 +150,36 @@ describe("Settings", () => {
     render(Settings, { props: { status } });
     await waitFor(() => expect(autostartBox().checked).toBe(true));
     expect(screen.queryByRole("button", { name: "Copy test report" })).toBeNull();
+  });
+});
+
+describe("Settings → Appearance", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    prefs.theme = "system";
+    prefs.accent = "orange";
+  });
+
+  it("switches the theme and keeps the choice", async () => {
+    render(Settings, { props: { status } });
+    const light = screen.getByRole("button", { name: "Light" });
+    expect(screen.getByRole("button", { name: "System" }).getAttribute("aria-pressed")).toBe("true");
+    await fireEvent.click(light);
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(light.getAttribute("aria-pressed")).toBe("true");
+    expect(localStorage.getItem("perihub.theme")).toBe("light");
+    await fireEvent.click(screen.getByRole("button", { name: "Dark" }));
+    expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
+  it("offers the accents as labeled round swatches, and keeps the one chosen", async () => {
+    render(Settings, { props: { status } });
+    const names = screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label"));
+    expect(names).toEqual(["Orange", "Blue", "Green", "Purple", "Pink", "Teal"]);
+    expect((screen.getByRole("radio", { name: "Orange" }) as HTMLInputElement).checked).toBe(true);
+    await fireEvent.click(screen.getByRole("radio", { name: "Blue" }));
+    expect(document.documentElement.dataset.accent).toBe("blue");
+    expect(localStorage.getItem("perihub.accent")).toBe("blue");
+    expect((screen.getByRole("radio", { name: "Blue" }) as HTMLInputElement).checked).toBe(true);
   });
 });
