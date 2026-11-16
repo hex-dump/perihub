@@ -139,4 +139,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: python3 tools/notify.py testbuild "$GITHUB_SHA" "$RUN_URL" "$GITHUB_RUN_ID" --apply
+          # The commit before the push: only the issues its new commits name get the link.
+          BEFORE: ${{ github.event.before }}
+        run: python3 tools/notify.py testbuild "$GITHUB_SHA" "$RUN_URL" "$GITHUB_RUN_ID" --since "$BEFORE" --apply

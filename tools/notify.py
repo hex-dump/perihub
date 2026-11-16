@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Comments on the issues a change is about, once, and the "waiting for reporter" label.
 
-  notify.py testbuild SHA RUN_URL RUN_ID [--base origin/main] [--apply]
+  notify.py testbuild SHA RUN_URL RUN_ID [--base origin/main] [--since BEFORE] [--apply]
       a test build of SHA is ready: one comment on each open issue that "#N" names in the commit
-      messages of BASE..SHA (the workflow's test build job)
+      messages of BEFORE..SHA (the commits of the push), or BASE..SHA when BEFORE is not given or
+      not an ancestor (the workflow's test build job)
   notify.py release VERSION RELEASE_URL [--notes FILE] [--apply]
       VERSION is published: one comment on each open issue named in its release notes or in the
       commits since the previous tag (the release comment workflow)
@@ -76,6 +77,10 @@ def post(number: int, body: str, apply: bool) -> None:
         gh("issue", "comment", str(number), "--repo", REPO, "--body", body)
 
 
+def bot(comment: dict) -> bool:
+    return comment["user"]["login"].endswith("[bot]")
+
+
 def open_issue(number: int) -> bool:
     """An open issue, not a pull request, with that number."""
     try:
@@ -85,28 +90,45 @@ def open_issue(number: int) -> bool:
     return issue["state"] == "open" and "pull_request" not in issue
 
 
-def testbuild(sha: str, url: str, run_id: str, base: str, apply: bool) -> None:
+def is_ancestor(old: str, new: str) -> bool:
+    if not old or set(old) == {"0"}:
+        return False
+    return subprocess.run(["git", "merge-base", "--is-ancestor", old, new], capture_output=True).returncode == 0
+
+
+def testbuild(sha: str, url: str, run_id: str, base: str, since: str, apply: bool) -> None:
     sha = git("rev-parse", sha).strip()
+    # Only the issues the commits of this push name: an issue the branch named before already has
+    # its build, and a new one for an unrelated commit would be noise.
+    start = since if is_ancestor(since, sha) else base
     mark = f"<!-- perihub-testbuild:{sha} -->"
     committed = when(git("show", "-s", "--format=%cI", sha).strip())
-    for number in refs(git("log", "--format=%B", f"{base}..{sha}")):
+    for number in refs(git("log", "--format=%B", f"{start}..{sha}")):
         if not open_issue(number):
             continue
         comments = api(f"repos/{REPO}/issues/{number}/comments?per_page=100")
+        body = (
+            f"New test build for this: {url}\n\n"
+            "Download the file for your system at the bottom of that page (you need to be signed in to GitHub). "
+            f"It still says the previous version number, that's expected.\n\n{mark}"
+        )
         if any(mark in c["body"] for c in comments):
             print(f"#{number}: already told about {sha[:8]}")
-        # The maintainer often posts the link by hand, with the steps to try: no second comment.
+        # Already linked, by anyone, at any time: no second comment.
+        elif any(url in c["body"] or f"actions/runs/{run_id}" in c["body"] for c in comments):
+            print(f"#{number}: a comment already has the link of this run")
+        # The maintainer posted a test build by hand after this commit, with the steps to try.
         elif any(
-            when(c["created_at"]) > committed and (url in c["body"] or f"actions/runs/{run_id}" in c["body"])
+            c["user"]["login"] == MAINTAINER and when(c["created_at"]) > committed and "/actions/runs/" in c["body"]
             for c in comments
         ):
-            print(f"#{number}: a comment already has the link of this run")
+            print(f"#{number}: the maintainer already posted a test build for this")
+        # The last comment is an automatic test build one nobody answered: update it instead of adding one.
+        elif comments and bot(comments[-1]) and "<!-- perihub-testbuild:" in comments[-1]["body"]:
+            print(f"#{number}: update the last automatic comment with {url}")
+            if apply:
+                gh("api", "-X", "PATCH", f"repos/{REPO}/issues/comments/{comments[-1]['id']}", "-f", f"body={body}")
         else:
-            body = (
-                f"New test build for this: {url}\n\n"
-                "Download the file for your system at the bottom of that page (you need to be signed in to GitHub). "
-                f"It still says the previous version number, that's expected.\n\n{mark}"
-            )
             print(f"#{number}: comment with {url}")
             post(number, body, apply)
 
@@ -129,7 +151,8 @@ def release(version: str, url: str, notes: str, apply: bool) -> None:
     for number in refs(text):
         if not open_issue(number):
             continue
-        if any(mark in c["body"] for c in api(f"repos/{REPO}/issues/{number}/comments?per_page=100")):
+        said = (mark, url, f"releases/tag/v{version}", f"{version} is out")
+        if any(s in c["body"] for c in api(f"repos/{REPO}/issues/{number}/comments?per_page=100") for s in said):
             print(f"#{number}: already told about {version}")
             continue
         body = (
@@ -175,9 +198,9 @@ def main() -> None:
             return value
         return default
 
-    base, notes_file = option("--base", "origin/main"), option("--notes", "")
+    base, notes_file, since = option("--base", "origin/main"), option("--notes", ""), option("--since", "")
     if args[:1] == ["testbuild"] and len(args) == 4:
-        testbuild(args[1], args[2], args[3], base, apply)
+        testbuild(args[1], args[2], args[3], base, since, apply)
     elif args[:1] == ["release"] and len(args) == 3:
         release(args[1], args[2], Path(notes_file).read_text() if notes_file else "", apply)
     elif args[:1] == ["waiting"] and len(args) == 2:
