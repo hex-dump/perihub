@@ -14,6 +14,9 @@ concurrency:
   group: test-build-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   windows:
     name: Windows installer
