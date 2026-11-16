@@ -275,6 +275,8 @@ Once someone confirms a model, it becomes fully supported for everyone. For a Lo
 
 Get the file for your system from the [releases page](https://github.com/hex-dump/perihub/releases/latest).
 
+**Verify a download** (releases from the first one with build provenance on): `gh attestation verify FILE -R hex-dump/perihub` checks that GitHub Actions built the file from this repository. The release also has `SHA256SUMS.txt` (`sha256sum -c --ignore-missing SHA256SUMS.txt`), and `.sig` files that PeriHub's updater checks. See [code signing](CODE_SIGNING.md).
+
 ### Windows
 
 1. Download `PeriHub_…_x64-setup.exe` and run it.
