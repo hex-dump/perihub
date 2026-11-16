@@ -103,11 +103,22 @@ when function 5 says the keyboard drives its own lights (0):
    reach the off timer.
 4. The effect of the keys' zone (function 1, persistence 0x01), the per-key colours (0x8081), then the effects of
    the other zones, the logo last. The first per-key frame after the take-over is sent twice, as Solaar does: it
-   can come before the keyboard has left its own mode. The logo's key (210) is left out of the per-key frame
-   unless the logo zone has a fixed colour, and then it gets that colour: with the logo in the frame, the logo's
-   breathing never showed and its colour cycle stayed on the keys' red in issue #30. (G HUB never sets the logo
-   zone on its own in the captures: it sends one effect on all zones, `ff 06 …`, the keyboard's multi-zone effect
-   0x18 with two colours, a 3000 ms period and intensity 100, or 50 while idle.)
+   can come before the keyboard has left its own mode. (G HUB never sets the logo zone on its own in the
+   captures: it sends one effect on all zones, `ff 06 …`, the keyboard's multi-zone effect 0x18 with two colours,
+   a 3000 ms period and intensity 100, or 50 while idle.)
+
+**The logo under colours per key.** While a per-key frame is shown (the keys' zone on a fixed colour, then 0x8081
+functions 6 and 7), the G915 X LS shows the logo with the frame's colour for the logo's key (210), whatever the
+logo zone's effect, and a key left out of the frame keeps the colour it had. In issue #30 the logo's breathing
+never showed and its colour cycle stayed red, first with the logo's key in the frame, then with it left out and
+the logo's effect sent after the frame; with the keys on a wave (no frame) both showed at once. That the frame
+hides the logo zone, rather than the order of the calls, is PeriHub's reading of these three tests
+(**unconfirmed** by another source). So with colours per key PeriHub gives the logo's key the logo zone's look
+itself: its colour when fixed, black when off, and for breathing and colour cycle the colour of the moment,
+sent every 100 ms when it changed (0x8081 function 6 with the one key, then function 7 `00…`, in RAM; a quarter of
+the colour while idle, nothing while the lights are off). Breathing goes from the colour to dark and back as a
+cosine over the period; the colour cycle goes once round the hue wheel per period, rounded to the keyboard's unit
+as for the zone's own effect. The logo zone's own effect is still sent, last.
 
 A new look is sent the same way, without the take-over. Leaving a wave "to the centre" (direction 8) is the
 exception: the G915 X LS of issue #30 kept that wave, its period too, through every later effect of the zone
@@ -173,7 +184,7 @@ notes. PeriHub never calls 0x0020.
 | 1 set colours | up to 4 `key r g b`; a key id 0x00 or 0xff ends the list | – | change (RAM, shown at function 7) |
 | 2, 3, 4 | 5 colours from a key on; the same with 5-bit and 4-bit differences | – | never sent |
 | 5 set ranges | up to 3 `first last r g b` | – | change (RAM) |
-| 6 one colour | `r g b`, then up to 13 key ids | – | change (RAM); what PeriHub sends |
+| 6 one colour | `r g b`, then up to 13 key ids | – | change (RAM); what PeriHub sends; a key not listed keeps its colour (issue #30, below) |
 | 7 end of frame | byte 0 persistence (0 RAM), 1–2 frame, 3–4 frames until the next change: everyone sends zeros | – | change; PeriHub sends only `00…` |
 
 There is **no function that reads the colours back**. Key ids (not in the specification; Solaar, logi-ghub-linux and

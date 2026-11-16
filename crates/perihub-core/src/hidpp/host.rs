@@ -59,6 +59,9 @@ const STICKY_DIRECTIONS: [u8; 1] = [8];
 const RESET_PAUSE_MS: u64 = 150;
 /// The key id of the logo in 0x8081 (Solaar, logi-ghub-linux and the G915 X LS's own key list).
 const LOGO_KEY: u8 = 210;
+/// How often PeriHub paints the logo's key while it plays the logo's breathing or colour cycle on it
+/// (see [`Host::animate`]): one colour and one end of frame each time.
+pub const ANIMATE_EVERY: Duration = Duration::from_millis(100);
 
 /// What one lighting zone shows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -132,19 +135,58 @@ fn zone_at(lighting: &Lighting, location: u16) -> Option<u8> {
     lighting.effects.as_ref()?.zones.iter().find(|z| z.location == location).map(|z| z.index)
 }
 
-/// The per-key frame for `look`: its keys, except the logo when the keyboard has a logo zone. That
-/// one gets the logo zone's colour while it is fixed, and is left out otherwise: a per-key colour on
-/// the logo held it on one colour whatever its zone's effect (issue #30: the logo's breathing never
-/// showed, and its colour cycle stayed red).
-fn frame_keys(look: &Look, lighting: &Lighting) -> Vec<(u8, Rgb)> {
-    let Some(logo) = zone_at(lighting, 2) else { return look.keys.clone() };
+/// The logo zone's look when the per-key frame decides what the logo shows: the keys show colours
+/// per key, and the logo is one of the keys with a colour of their own (210 on the G915 X LS).
+///
+/// While a per-key frame is shown the logo shows the frame's colour for its key, whatever the logo
+/// zone's effect, even an effect set after the frame, and a key left out of the frame keeps the
+/// colour it had (issue #30: with colours per key the logo's breathing never showed and its colour
+/// cycle stayed red, first with the logo in the frame, then with it left out and its effect sent
+/// last; with the keys on a wave, and so no frame, both showed). So PeriHub gives the logo's key
+/// the logo zone's look itself: its colour, black when it is off, and the breathing or colour cycle
+/// played frame by frame (see [`Host::animate`]).
+fn logo_in_frame<'a>(look: &'a Look, lighting: &Lighting) -> Option<&'a ZoneLook> {
+    if look.keys.is_empty() || !lighting.keys.contains(&LOGO_KEY) {
+        return None;
+    }
+    let logo = zone_at(lighting, 2)?;
+    look.zones.iter().find(|z| z.zone == logo)
+}
+
+/// The logo zone plays an effect that changes over time.
+fn animated(zone: &ZoneLook) -> bool {
+    matches!(zone.effect, effect::BREATHING | effect::CYCLE)
+}
+
+/// The colour of the logo's key `elapsed` into the logo zone's effect, at full strength: what the
+/// keyboard's own effect would show, played by PeriHub. Breathing rises and falls as a cosine from
+/// the colour to dark and back; the colour cycle goes once round the colour wheel each period.
+pub fn logo_color(zone: &ZoneLook, found: &ZoneEffect, elapsed: Duration) -> Rgb {
+    let color = zone.color.unwrap_or(Rgb::WHITE);
+    let turn = |default: u16, range: (u16, u16), unit: bool| {
+        let ms = period(zone, found, default, range, unit).map(u16::from_be_bytes).unwrap_or(default).max(1);
+        (elapsed.as_millis() % ms as u128) as f32 / ms as f32
+    };
+    match zone.effect {
+        effect::FIXED => color,
+        effect::BREATHING => {
+            let t = turn(5000, (1000, 20000), false);
+            color.scale((1.0 + (t * std::f32::consts::TAU).cos()) / 2.0)
+        }
+        effect::CYCLE => Rgb::from_hsv(turn(5000, (1000, 30000), true), 1.0, 1.0),
+        _ => Rgb::BLACK,
+    }
+}
+
+/// The per-key frame for `look`, with `logo` as the colour of the logo's key when the frame decides
+/// what the logo shows (see [`logo_in_frame`]). Without a logo zone the logo is a key like the others.
+fn frame_keys(look: &Look, lighting: &Lighting, logo: Option<Rgb>) -> Vec<(u8, Rgb)> {
+    if zone_at(lighting, 2).is_none() {
+        return look.keys.clone();
+    }
     let mut keys: Vec<(u8, Rgb)> = look.keys.iter().filter(|(k, _)| *k != LOGO_KEY).copied().collect();
-    let fixed = look.zones.iter().find(|z| z.zone == logo && z.effect == effect::FIXED);
-    if !keys.is_empty()
-        && lighting.keys.contains(&LOGO_KEY)
-        && let Some(zone) = fixed
-    {
-        keys.push((LOGO_KEY, zone.color.unwrap_or(Rgb::WHITE)));
+    if let Some(color) = logo.filter(|_| !keys.is_empty()) {
+        keys.push((LOGO_KEY, color));
     }
     keys
 }
@@ -311,6 +353,10 @@ pub struct Host {
     sleep_after: Option<Duration>,
     /// A paint failed half-way (the keyboard did not answer): done again at the next tick.
     needs_paint: bool,
+    /// When the look was shown: the clock of the logo's breathing or colour cycle.
+    shown_at: Instant,
+    /// The colour the logo's key got last, so that an unchanged one is not sent again.
+    logo_sent: Option<Rgb>,
 }
 
 impl Host {
@@ -330,6 +376,8 @@ impl Host {
             },
             idle_since: None,
             needs_paint: false,
+            shown_at: Instant::now(),
+            logo_sent: None,
             // 0xFFFF: never.
             sleep_after: (sleep_s != 0xFFFF).then(|| Duration::from_secs(sleep_s as u64)),
         };
@@ -380,8 +428,10 @@ impl Host {
             set_zone(dev, zone)?;
         }
         if !self.look.keys.is_empty() {
+            let logo = self.logo_now(lighting);
             let keys: Vec<(u8, Rgb)> =
-                frame_keys(&self.look, lighting).iter().map(|&(k, c)| (k, c.scale(factor))).collect();
+                frame_keys(&self.look, lighting, logo).iter().map(|&(k, c)| (k, c.scale(factor))).collect();
+            self.logo_sent = None;
             for _ in 0..if twice { 2 } else { 1 } {
                 // A frame that failed half-way is not shown: no end of frame.
                 for params in key_reports(&keys) {
@@ -389,6 +439,7 @@ impl Host {
                 }
                 send(dev, feature::PER_KEY_LIGHTING_V2, 7, &[0, 0, 0, 0, 0])?;
             }
+            self.logo_sent = logo.map(|c| c.scale(factor));
         }
         for zone in rest {
             set_zone(dev, zone)?;
@@ -408,6 +459,7 @@ impl Host {
         });
         self.look = look;
         self.status.shown += 1;
+        self.shown_at = Instant::now();
         if sticky {
             self.status.resets += 1;
             give_back(dev)?;
@@ -420,6 +472,41 @@ impl Host {
             self.wake(dev)?;
         }
         self.paint(dev, lighting, false)
+    }
+
+    /// The colour of the logo's key now, at full strength, when the per-key frame decides what the
+    /// logo shows (see [`logo_in_frame`]).
+    fn logo_now(&self, lighting: &Lighting) -> Option<Rgb> {
+        let zone = logo_in_frame(&self.look, lighting)?;
+        let found = find_effect(lighting, zone.zone, zone.effect).ok()?;
+        Some(logo_color(zone, found, self.shown_at.elapsed()))
+    }
+
+    /// PeriHub plays the logo's breathing or colour cycle on the logo's key: the keys show colours
+    /// per key, which hide the logo zone's own effect (see [`logo_in_frame`]). The device's thread
+    /// then calls [`Host::animate`] every [`ANIMATE_EVERY`].
+    pub fn animates(&self, lighting: &Lighting) -> bool {
+        logo_in_frame(&self.look, lighting).is_some_and(animated)
+    }
+
+    /// One step of the logo's breathing or colour cycle: the logo's key gets its colour of the moment
+    /// (0x8081 function 6, then the end of the frame, in RAM), when it changed. Nothing while the
+    /// lights are off or a paint is still to be done again.
+    pub fn animate(&mut self, dev: &mut HidppDevice, lighting: &Lighting) -> Result<()> {
+        if !self.animates(lighting) || self.needs_paint || self.status.power == Power::Off {
+            return Ok(());
+        }
+        let factor = if self.status.power == Power::Dimmed { DIMMED } else { 1.0 };
+        let Some(color) = self.logo_now(lighting).map(|c| c.scale(factor)) else { return Ok(()) };
+        if self.logo_sent == Some(color) {
+            return Ok(());
+        }
+        let [r, g, b] = color.to_bytes();
+        self.logo_sent = None;
+        send(dev, feature::PER_KEY_LIGHTING_V2, 6, &[r, g, b, LOGO_KEY])?;
+        send(dev, feature::PER_KEY_LIGHTING_V2, 7, &[0, 0, 0, 0, 0])?;
+        self.logo_sent = Some(color);
+        Ok(())
     }
 
     /// The last paint failed half-way: the next tick paints again (not while the lights are off).
@@ -500,6 +587,11 @@ impl Host {
     #[cfg(test)]
     pub(crate) fn idle_for(&mut self, elapsed: Duration) {
         self.idle_since = Some(Instant::now() - elapsed);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shown_for(&mut self, elapsed: Duration) {
+        self.shown_at = Instant::now() - elapsed;
     }
 }
 
@@ -693,8 +785,8 @@ pub(crate) mod tests {
             (feature::RGB_EFFECTS, 8),
             (feature::RGB_EFFECTS, 1),
         ];
-        // 124 red keys (not the logo) in 10 reports and the blue one in 1, then the end of the
-        // frame: twice. Then the logo's own effect.
+        // 124 red keys in 10 reports, Escape and the logo (blue, at the start of its breath) in 1,
+        // then the end of the frame: twice. Then the logo's own effect.
         for _ in 0..2 {
             expected.extend(frame.clone().take(11).copied());
             expected.push((feature::PER_KEY_LIGHTING_V2, 7));
@@ -736,25 +828,92 @@ pub(crate) mod tests {
             .collect()
     }
 
+    /// The logo's key in the per-key reports of `sent`.
+    fn logo_sent(sent: &[(u16, u8, Vec<u8>)]) -> Vec<[u8; 3]> {
+        keys_sent(sent).into_iter().filter(|(k, _)| *k == LOGO_KEY).map(|(_, c)| c).collect()
+    }
+
     #[test]
-    fn the_logo_keeps_its_own_effect_next_to_colours_per_key() {
+    fn with_colours_per_key_the_logo_s_key_gets_the_logo_s_look() {
         let (mut dev, state, _) = keyboard();
         let lighting = g915x();
-        // Breathing logo: the logo's key is not in the frame, and its effect comes after it.
+        // Breathing blue logo: its key starts at full blue in both frames, and the logo zone's own
+        // effect still comes last.
         let mut host = Host::take(&mut dev, &lighting, look()).unwrap();
         let sent = calls(&state);
-        assert!(!keys_sent(&sent).iter().any(|(k, _)| *k == LOGO_KEY));
-        assert_eq!(keys_sent(&sent).len(), 2 * 125);
+        assert_eq!(logo_sent(&sent), [[0, 0, 0xFF]; 2]);
+        assert_eq!(keys_sent(&sent).len(), 2 * 126);
         assert_eq!(sent.last().unwrap().2[..2], [1, 2], "the logo's breathing last");
+        assert!(host.animates(&lighting));
 
-        // A fixed green logo: the logo's key gets green, not the colour of its key group.
+        // A fixed green logo: green, and nothing to play.
         let green = Rgb::new(0, 0xFF, 0);
         let mut fixed = look();
         fixed.zones[1] = zone(1, effect::FIXED, Some(green));
         host.show(&mut dev, &lighting, fixed).unwrap();
-        let sent = calls(&state);
-        assert!(keys_sent(&sent).contains(&(LOGO_KEY, [0, 0xFF, 0])));
-        assert!(!keys_sent(&sent).contains(&(LOGO_KEY, [0xFF, 0, 0])));
+        assert_eq!(logo_sent(&calls(&state)), [[0, 0xFF, 0]]);
+        assert!(!host.animates(&lighting));
+        host.animate(&mut dev, &lighting).unwrap();
+        assert!(calls(&state).is_empty());
+
+        // The logo off: its key is dark, instead of keeping the colour it had.
+        let mut off = look();
+        off.zones[1] = zone(1, effect::OFF, None);
+        host.show(&mut dev, &lighting, off).unwrap();
+        assert_eq!(logo_sent(&calls(&state)), [[0, 0, 0]]);
+
+        // The keys on a wave: no frame, the logo zone's own effect shows.
+        let wave =
+            Look { zones: vec![zone(0, effect::WAVE, None), zone(1, effect::BREATHING, Some(BLUE))], keys: vec![] };
+        host.show(&mut dev, &lighting, wave).unwrap();
+        assert!(logo_sent(&calls(&state)).is_empty());
+        assert!(!host.animates(&lighting));
+    }
+
+    #[test]
+    fn the_logo_s_breathing_and_colour_cycle_are_played_on_its_key() {
+        let (mut dev, state, _) = keyboard();
+        let lighting = g915x();
+        let mut host = Host::take(&mut dev, &lighting, look()).unwrap();
+        calls(&state);
+        // Unchanged since the frame: nothing sent.
+        host.animate(&mut dev, &lighting).unwrap();
+        assert!(calls(&state).is_empty());
+        // Half-way through the 5 s breath: dark, one colour and one end of frame, in RAM.
+        host.shown_for(Duration::from_millis(2500));
+        host.animate(&mut dev, &lighting).unwrap();
+        assert_eq!(
+            calls(&state),
+            [(feature::PER_KEY_LIGHTING_V2, 6, vec![0, 0, 0, LOGO_KEY]), (feature::PER_KEY_LIGHTING_V2, 7, vec![])]
+        );
+        host.animate(&mut dev, &lighting).unwrap();
+        assert!(calls(&state).is_empty(), "the same colour is not sent again");
+
+        // Idle: a quarter of the colour. Off: nothing.
+        host.on_events(&mut dev, &lighting, &[Event { feature: feature::RGB_EFFECTS, event: 1, data: [0; 16] }])
+            .unwrap();
+        calls(&state);
+        host.shown_for(Duration::from_millis(5000));
+        host.animate(&mut dev, &lighting).unwrap();
+        assert_eq!(calls(&state)[0].2, [0, 0, 0x40, LOGO_KEY]);
+        host.idle_for(Duration::from_secs(270));
+        host.on_timer(&mut dev).unwrap();
+        calls(&state);
+        host.shown_for(Duration::from_millis(2500));
+        host.animate(&mut dev, &lighting).unwrap();
+        assert!(calls(&state).is_empty());
+
+        // The colour cycle goes round the wheel: red, then green a third of the way (5 s → 4960 ms,
+        // a multiple of the keyboard's 992 ms).
+        let found = &lighting.effects.as_ref().unwrap().zones[1].effects[3];
+        let cycle = zone(1, effect::CYCLE, None);
+        assert_eq!(logo_color(&cycle, found, Duration::ZERO), Rgb::new(0xFF, 0, 0));
+        assert_eq!(logo_color(&cycle, found, Duration::from_millis(4960 / 3)), Rgb::new(0, 0xFF, 0));
+        let breathing = &lighting.effects.as_ref().unwrap().zones[1].effects[2];
+        let slow = ZoneLook { period_ms: Some(8000), ..zone(1, effect::BREATHING, Some(BLUE)) };
+        // A quarter of an 8 s breath: half the colour.
+        let quarter = logo_color(&slow, breathing, Duration::from_millis(2000)).to_bytes();
+        assert!(quarter[..2] == [0, 0] && (0x7F..=0x80).contains(&quarter[2]), "{quarter:02x?}");
     }
 
     #[test]

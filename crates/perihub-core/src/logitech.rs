@@ -492,7 +492,8 @@ impl LogitechTask {
             log::info!("{}: the keyboard took its lights back: taking them again", self.device.label());
             host.retake(&mut self.dev, lighting)?;
         }
-        Ok(())
+        // The logo's breathing or colour cycle, played on its key under colours per key.
+        host.animate(&mut self.dev, lighting)
     }
 
     pub fn live(&mut self) -> Result<LogitechLive> {
@@ -533,6 +534,16 @@ impl LogitechTask {
             drive_at_start: self.wants_lights(),
             waiting: self.waiting.clone().filter(|_| self.host.is_none() && self.wants_lights()),
         })
+    }
+
+    /// How soon the next tick comes while PeriHub drives the lights: sooner while it plays the logo's
+    /// effect on the logo's key (see [`Host::animates`]).
+    fn drive_every(&self) -> Duration {
+        let animates = match (&self.host, &self.device.lighting) {
+            (Some(host), Some(lighting)) => host.animates(lighting),
+            _ => false,
+        };
+        if animates { host::ANIMATE_EVERY } else { EVENTS_EVERY }
     }
 
     /// The user wants PeriHub to drive the lights, and there is a look to show.
@@ -578,7 +589,7 @@ impl DeviceTask for LogitechTask {
     fn tick(&mut self) -> Result<Duration> {
         if self.host.is_some() {
             self.drive_tick()?;
-            return Ok(EVENTS_EVERY);
+            return Ok(self.drive_every());
         }
         // The user wants PeriHub to drive the lights and it does not: tried again every few
         // seconds, such as once G HUB or Solaar quit.
@@ -587,7 +598,7 @@ impl DeviceTask for LogitechTask {
             self.last_host_check = Instant::now();
             self.auto_take()?;
             if self.host.is_some() {
-                return Ok(EVENTS_EVERY);
+                return Ok(self.drive_every());
             }
         }
         if self.last_check.elapsed() >= CHECK_EVERY {
@@ -927,7 +938,8 @@ mod tests {
             assert!(!took(&state));
             task.programs = Vec::new;
             task.last_host_check = Instant::now() - HOST_CHECK_EVERY;
-            assert_eq!(task.tick().unwrap(), EVENTS_EVERY);
+            // Sooner than EVENTS_EVERY: the look has colours per key and a breathing logo.
+            assert_eq!(task.tick().unwrap(), host::ANIMATE_EVERY);
             assert!(took(&state));
             let live = task.live().unwrap();
             assert!(live.host.is_some() && live.gave_back.is_none() && live.waiting.is_none());
@@ -1003,6 +1015,15 @@ mod tests {
         }
 
         #[test]
+        fn the_thread_plays_the_logo_s_breathing_on_its_key() {
+            let (mut task, state) = open(Some(look()));
+            task.host.as_mut().unwrap().shown_for(Duration::from_millis(2500));
+            calls(&state);
+            assert_eq!(task.tick().unwrap(), host::ANIMATE_EVERY);
+            assert!(calls(&state).contains(&(feature::PER_KEY_LIGHTING_V2, 6, vec![0, 0, 0, 210])));
+        }
+
+        #[test]
         fn a_keyboard_back_on_its_own_lights_is_taken_again() {
             let (mut task, state) = open(Some(look()));
             {
@@ -1012,7 +1033,7 @@ mod tests {
                 k.calls.clear();
             }
             task.last_host_check = Instant::now() - HOST_CHECK_EVERY;
-            assert_eq!(task.tick().unwrap(), EVENTS_EVERY);
+            assert_eq!(task.tick().unwrap(), host::ANIMATE_EVERY);
             let sent = calls(&state);
             assert_eq!(sent[1], (feature::PROFILE_MANAGEMENT, 6, vec![5]));
             assert_eq!(sent[2], (feature::RGB_EFFECTS, 5, vec![1, 3, 6]));

@@ -139,8 +139,9 @@ const KEY_GROUPS: [string, (id: number) => boolean][] = [
 export const LOGO_KEY = 210;
 
 /** The keys "Colours per key" sets: all those with a colour of their own, except the logo when the
- * keyboard has a logo zone. The logo then follows that zone's effect (a per-key colour held it on one
- * colour, issue #30), and PeriHub gives its key the zone's colour while the zone is fixed. */
+ * keyboard has a logo zone. The logo keeps that zone's effect: while the keys show colours per key the
+ * frame decides what the logo shows, so the core gives the logo's key the zone's colour, black when it
+ * is off, and plays its breathing or colour cycle on it (issue #30). */
 export function perKeyKeys(lighting: { keys: number[]; effects: { zones: { location: number }[] } | null }): number[] {
   const logoZone = lighting.effects?.zones.some((z) => z.location === 2) ?? false;
   return logoZone ? lighting.keys.filter((k) => k !== LOGO_KEY) : lighting.keys;
