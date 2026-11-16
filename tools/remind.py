@@ -22,7 +22,7 @@ from notify import asks  # noqa: E402
 
 REPO = "hex-dump/perihub"
 MAINTAINER = "hex-dump"
-LABELS = ("device request", "device test", "mouse test")
+LABELS = ("device request", "test report")
 # Issues with any of these labels, or with none, are looked at ("waiting for reporter" is put on by
 # the maintainer's question, and must not hide an issue).
 LOOKED_AT = {*LABELS, "waiting for reporter"}

@@ -275,6 +275,8 @@ Once someone confirms a model, it becomes fully supported for everyone. For a Lo
 
 Get the file for your system from the [releases page](https://github.com/hex-dump/perihub/releases/latest).
 
+**Verify a download** (releases from the first one with build provenance on): `gh attestation verify FILE -R hex-dump/perihub` checks that GitHub Actions built the file from this repository. The release also has `SHA256SUMS.txt` (`sha256sum -c --ignore-missing SHA256SUMS.txt`), and `.sig` files that PeriHub's updater checks. See [code signing](CODE_SIGNING.md).
+
 ### Windows
 
 1. Download `PeriHub_…_x64-setup.exe` and run it.
@@ -466,7 +468,7 @@ The interface is in English. More languages are planned.
 - **Ideas and suggestions**: [Discussions → Ideas](https://github.com/hex-dump/perihub/discussions/categories/ideas), where others can vote for them and add to them.
 - **Questions**: [Discussions → Q&A](https://github.com/hex-dump/perihub/discussions/categories/q-a).
 - **Bugs**: a [bug report](https://github.com/hex-dump/perihub/issues/new?template=bug_report.yml) with your system, the device, what PeriHub showed and the log file.
-- **Test reports**: **Open test form** on the device's page in the app, or the forms for [Logitech mice](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml) and [every other device](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
+- **Test reports**: **Open test form** on the device's page in the app, or the [test report form](https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml).
 - **New devices**: a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) with the model and USB ID.
 - **Code**: the rules are in [CONTRIBUTING.md](CONTRIBUTING.md); how to build, test and find your way around the code is in [docs/development.md](docs/development.md).
 

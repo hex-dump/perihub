@@ -21,11 +21,10 @@ use crate::AppState;
 
 type CmdResult<T> = Result<T, String>;
 
-/// The test forms on GitHub (Logitech mice, and Corsair devices and the G300); the interface adds
-/// the fields it fills in.
+/// The forms on GitHub (the test report and the device request); the interface adds the fields it
+/// fills in.
 const TEST_FORM_URLS: &[&str] = &[
-    "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml&",
-    "https://github.com/hex-dump/perihub/issues/new?template=device_test.yml&",
+    "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml&",
     "https://github.com/hex-dump/perihub/issues/new?template=device_request.yml&",
 ];
 

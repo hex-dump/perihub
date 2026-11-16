@@ -137,6 +137,12 @@ jobs:
     name: Checks, checksums and notes
     needs: [build, flatpak-release]
     runs-on: ubuntu-latest
+    # The job-level permissions replace the workflow's: contents for the uploads, the other two for
+    # the build provenance attestation.
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -151,6 +157,14 @@ jobs:
       # Each signature against the updater key in tauri.conf.json, latest.json against the files.
       - name: Signatures, latest.json and SHA256SUMS.txt
         run: python3 tools/release.py check "$RUNNER_TEMP/release" "${GITHUB_REF_NAME#v}"
+
+      # A signed statement from GitHub that each file was built by this workflow from this tag:
+      # `gh attestation verify FILE -R hex-dump/perihub`. It covers every file the draft will have,
+      # SHA256SUMS.txt included (made by the check above).
+      - name: Build provenance of every release file
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: ${{ runner.temp }}/release/*
 
       - name: Checksums, notes and title on the draft
         env:
