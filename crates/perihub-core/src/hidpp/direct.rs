@@ -1,5 +1,5 @@
-//! Logitech HID++ 2.0 devices on a USB connection of their own, without a receiver: a keyboard on
-//! its cable, or a headset through its own wireless dongle. PeriHub only reads them until someone tests one: nothing but the reads of
+//! Logitech HID++ 2.0 devices on a USB connection of their own, without a receiver, such as a
+//! keyboard on its cable. PeriHub only reads them until someone tests one: nothing but the reads of
 //! [`super::READ_ONLY_CALLS`] is ever sent (docs/protocols/logitech-usb-hidpp.md).
 //!
 //! Newer Logitech devices put HID++ in collections of the vendor usage page 0xFF43 instead of
@@ -22,7 +22,6 @@ pub const USAGE_PAGE_HIDPP_OLD: u16 = 0xFF00;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DirectKind {
     Keyboard,
-    Headset,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,16 +52,6 @@ pub const DIRECT: &[DirectModel] = &[
         connection: "USB cable",
         typing: true,
     },
-    // Issue #41: interface 3 of its LIGHTSPEED dongle has telephony (000b/0001), consumer keys
-    // (000c/0001) and HID++ (ff00/0001 and ff43/0202); no keyboard.
-    DirectModel {
-        product_id: 0x0AB5,
-        name: "G733",
-        kind: DirectKind::Headset,
-        interface: 3,
-        connection: "USB wireless dongle",
-        typing: false,
-    },
 ];
 
 pub fn find(product_id: u16) -> Option<&'static DirectModel> {
@@ -74,8 +63,6 @@ impl DirectModel {
     pub fn hidpp_kind(&self) -> Option<u8> {
         match self.kind {
             DirectKind::Keyboard => Some(0),
-            // Logitech's specification lists no kind for headsets.
-            DirectKind::Headset => None,
         }
     }
 }
@@ -106,10 +93,9 @@ pub fn not_read(model: &DirectModel, why: String) -> UnsupportedDevice {
 }
 
 /// The device indexes tried, in order. 0xFF is the index of a device without a receiver: Linux's
-/// hid-logitech-hidpp sends every request with it (also to the G935 headset through its dongle),
-/// and Solaar uses it for devices on their own USB connection. Solaar asks again at 0x00 when 0xFF
-/// gets no device: PeriHub does too, and the test report says which one answered.
-pub const INDEXES: &[u8] = &[WIRED_INDEX, 0x00];
+/// hid-logitech-hidpp sends every request with it, and Solaar uses it for devices on their own
+/// USB connection.
+pub const INDEXES: &[u8] = &[WIRED_INDEX];
 
 /// Whether a collection may carry HID++: the vendor usage pages above, or 0 when hidapi did not read
 /// the usage (older hidapi on Linux).
@@ -243,8 +229,6 @@ mod tests {
         assert!(!hidpp_collection(0x0001) && !hidpp_collection(0x000C));
         assert_eq!(find(0xC339).unwrap().interface, 1);
         assert!(find(0xC339).unwrap().typing, "its HID++ interface also carries the keyboard");
-        let g733 = find(0x0AB5).unwrap();
-        assert_eq!((g733.interface, g733.typing, g733.hidpp_kind()), (3, false, None));
     }
 
     #[test]
@@ -293,85 +277,6 @@ mod tests {
         }
         // Nothing else gets through on this connection.
         assert!(dev.preview_led_effect(&device.led_zones[0], &super::super::profile::LedEffect::Off).is_err());
-    }
-
-    /// The features of the headset below, by index (made up, in the shape of the G935's on Linux).
-    const HEADSET: &[u16] =
-        &[feature::ROOT, feature::FEATURE_SET, feature::DEVICE_INFO, feature::DEVICE_NAME, feature::ADC_MEASUREMENT];
-
-    /// A headset through its dongle, with long reports only, that answers at `index` only.
-    fn headset(index: u8) -> FakeDevice {
-        FakeDevice::new(move |request| {
-            if request[0] != REPORT_LONG || request[1] != index {
-                return Vec::new();
-            }
-            let (feature_index, function, param) = (request[2] as usize, request[3] >> 4, request[4]);
-            let payload: Vec<u8> = match (HEADSET.get(feature_index).copied(), function) {
-                (Some(feature::ROOT), 1) => vec![4, 2, request[6]],
-                (Some(feature::ROOT), 0) => {
-                    let id = u16::from_be_bytes([request[4], request[5]]);
-                    vec![HEADSET.iter().position(|&f| f == id).unwrap_or(0) as u8, 0, 0]
-                }
-                (Some(feature::FEATURE_SET), 0) => vec![HEADSET.len() as u8 - 1],
-                (Some(feature::FEATURE_SET), 1) => {
-                    let [high, low] = HEADSET[param as usize].to_be_bytes();
-                    vec![high, low, 0, 0]
-                }
-                (Some(feature::DEVICE_INFO), 0) => vec![1, 0, 0, 0, 0, 0x00, 0x04, 0x0A, 0xB5],
-                (Some(feature::DEVICE_INFO), 1) => vec![0, b'H', b'S', b'T', 0x02, 0x05, 0x00, 0x21],
-                (Some(feature::DEVICE_NAME), 0) => vec![4],
-                (Some(feature::DEVICE_NAME), 1) => b"G733".to_vec(),
-                // Kind 8: not in the specification's list, kept as reported.
-                (Some(feature::DEVICE_NAME), 2) => vec![8],
-                // 0f 3c = 3900 mV, flags 01: discharging.
-                (Some(feature::ADC_MEASUREMENT), 0) => vec![0x0F, 0x3C, 0x01],
-                _ => return vec![[&[REPORT_LONG, index, 0xFF, request[2], request[3], 0x07][..], &[0; 14]].concat()],
-            };
-            vec![reply(request, &payload)]
-        })
-    }
-
-    #[test]
-    fn a_headset_is_read_through_its_dongle_with_its_battery_voltage() {
-        let fake = headset(WIRED_INDEX);
-        let written = fake.written.clone();
-        let mut fake = Some(fake);
-        let mut open = || Ok(Box::new(fake.take().unwrap()) as Box<dyn Transport>);
-        let mut answers = Vec::new();
-        let (mut dev, index) = connect(&mut open, "usage page ff43, usage 0202", &mut answers).unwrap();
-        assert_eq!((index, answers.len()), (0xFF, 1));
-        let device = UnsupportedDevice::read(&mut dev, index).unwrap();
-        assert_eq!(device.name.as_deref(), Some("G733"));
-        assert_eq!(device.kind, Some(8), "kept as the device reports it");
-        let battery = device.battery.unwrap();
-        assert!(battery.estimated && battery.state == super::super::BatteryState::Discharging);
-        assert_eq!(battery.percent, 68);
-        assert_eq!(device.battery_reply.as_deref(), Some("1f20: 0f 3c 01 00"));
-        assert!(device.read_errors.is_empty(), "{:?}", device.read_errors);
-        for request in written.lock().unwrap().iter() {
-            assert_eq!(&request[..2], [REPORT_LONG, WIRED_INDEX]);
-            let (index, function) = (request[2] as usize, request[3] >> 4);
-            if index > 0 {
-                assert!(is_read_call(HEADSET[index], function, &request[4..]), "{:04x} {function}", HEADSET[index]);
-            }
-        }
-    }
-
-    #[test]
-    fn a_device_silent_at_index_ff_is_asked_at_index_0() {
-        let mut fakes = vec![headset(0x00), headset(0x00)];
-        let mut open = || Ok(Box::new(fakes.remove(0)) as Box<dyn Transport>);
-        let mut answers = Vec::new();
-        let (mut dev, index) = connect(&mut open, "usage page ff43, usage 0202", &mut answers).unwrap();
-        assert_eq!(index, 0x00);
-        assert_eq!(
-            answers,
-            [
-                "usage page ff43, usage 0202, index ff: the device did not respond in time",
-                "usage page ff43, usage 0202, index 00: HID++ 4.2",
-            ]
-        );
-        assert_eq!(dev.device_name().unwrap(), "G733");
     }
 
     #[test]

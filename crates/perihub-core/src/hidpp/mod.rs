@@ -37,7 +37,6 @@ pub mod feature {
     pub const BATTERY_STATUS: u16 = 0x1000;
     pub const BATTERY_VOLTAGE: u16 = 0x1001;
     pub const UNIFIED_BATTERY: u16 = 0x1004;
-    pub const ADC_MEASUREMENT: u16 = 0x1F20;
     pub const ADJUSTABLE_DPI: u16 = 0x2201;
     pub const REPORT_RATE: u16 = 0x8060;
     pub const COLOR_LED_EFFECTS: u16 = 0x8070;
@@ -81,7 +80,6 @@ const ALLOWED_FEATURES: &[u16] = &[
     feature::BATTERY_STATUS,
     feature::BATTERY_VOLTAGE,
     feature::UNIFIED_BATTERY,
-    feature::ADC_MEASUREMENT,
     feature::ADJUSTABLE_DPI,
     feature::REPORT_RATE,
     feature::COLOR_LED_EFFECTS,
@@ -110,8 +108,6 @@ const READ_ONLY_CALLS: &[(u16, u8)] = &[
     (feature::BATTERY_STATUS, 0),
     (feature::BATTERY_VOLTAGE, 0),
     (feature::UNIFIED_BATTERY, 1),
-    // The battery voltage of the headsets (docs/protocols/logitech-usb-hidpp.md).
-    (feature::ADC_MEASUREMENT, 0),
     (feature::ADJUSTABLE_DPI, 1),
     (feature::ADJUSTABLE_DPI, 2),
     (feature::REPORT_RATE, 0),
@@ -346,23 +342,6 @@ fn parse_battery_voltage(r: &[u8; 16]) -> Option<Battery> {
         _ => BatteryState::Charging,
     };
     Some(Battery { percent: percent_from_voltage(millivolts), estimated: true, state })
-}
-
-/// 0x1F20 function 0: the battery voltage in mV (big-endian), then flags: 0x01 discharging, 0x03
-/// charging, 0x07 full; anything else (0x0F) is not documented and read as discharging. Headsets
-/// report this instead of a percentage.
-fn parse_adc_measurement(r: &[u8; 16]) -> Option<Battery> {
-    let millivolts = u16::from_be_bytes([r[0], r[1]]);
-    if millivolts == 0 {
-        return None;
-    }
-    let state = match r[2] {
-        0x03 => BatteryState::Charging,
-        0x07 => BatteryState::Full,
-        _ => BatteryState::Discharging,
-    };
-    let percent = if state == BatteryState::Full { 100 } else { percent_from_voltage(millivolts) };
-    Some(Battery { percent, estimated: true, state })
 }
 
 /// 0x0003 function 0: entity count, unit id (4 bytes), transports (2 bytes), then up to three
@@ -708,11 +687,10 @@ impl HidppDevice {
     /// `None` without a battery feature.
     pub fn battery_reading(&mut self) -> Result<Option<BatteryReading>> {
         type Parse = fn(&[u8; 16]) -> Option<Battery>;
-        let features: [(u16, u8, Parse); 4] = [
+        let features: [(u16, u8, Parse); 3] = [
             (feature::UNIFIED_BATTERY, 1, parse_unified_battery),
             (feature::BATTERY_STATUS, 0, parse_battery_status),
             (feature::BATTERY_VOLTAGE, 0, parse_battery_voltage),
-            (feature::ADC_MEASUREMENT, 0, parse_adc_measurement),
         ];
         for (feature, function, parse) in features {
             match self.call(feature, function, &[]) {
@@ -1064,21 +1042,6 @@ pub(crate) mod tests {
         );
         assert_eq!(percent_from_voltage(3000), 0);
         assert_eq!(percent_from_voltage(3840), 55);
-        // 0x1F20 (headsets): 0f 3c = 3900 mV with 01 discharging, 03 charging, 07 full.
-        r[..3].copy_from_slice(&[0x0F, 0x3C, 0x01]);
-        assert_eq!(
-            parse_adc_measurement(&r),
-            Some(Battery { percent: 68, estimated: true, state: BatteryState::Discharging })
-        );
-        r[2] = 0x03;
-        assert_eq!(parse_adc_measurement(&r).unwrap().state, BatteryState::Charging);
-        r[2] = 0x07;
-        assert_eq!(
-            parse_adc_measurement(&r),
-            Some(Battery { percent: 100, estimated: true, state: BatteryState::Full })
-        );
-        r[..3].copy_from_slice(&[0, 0, 0x0F]);
-        assert_eq!(parse_adc_measurement(&r), None, "no voltage: headset off");
     }
 
     #[test]

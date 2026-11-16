@@ -198,16 +198,11 @@ offered, and the connection refuses anything but reads. The test report has ever
 - **PRO K/DA** keyboard ([issue #40](https://github.com/hex-dump/perihub/issues/40)): on Windows
   only. Its HID++ collections share USB interface 1 with what is typed on it, so on Linux, where
   one device node holds both, PeriHub neither opens it nor asks for a udev rule.
-- **G733** headset, through its LIGHTSPEED dongle ([issue #41](https://github.com/hex-dump/perihub/issues/41)):
-  interface 3 of the dongle, which has no keyboard. The battery is worked out from the voltage the
-  headset reports (0x1F20), so it is an estimate. Turn the headset on before you copy the test
-  report: with the headset off the dongle may not answer.
 
 <!-- generated: table logitech-direct -->
-| Device | USB ID | Opened on Linux |
+| Keyboard | USB ID | Opened on Linux |
 |---|---|---|
 | PRO K/DA | `046d:c339` | — |
-| G733 | `046d:0ab5` | interface 3 |
 <!-- end generated -->
 
 ## Corsair
