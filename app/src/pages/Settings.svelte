@@ -106,9 +106,36 @@
   <div class="card col">
     <h2>Where settings are stored</h2>
     <ul class="small">
-      <li><b>Mouse</b>: DPI, polling, buttons and lighting are stored in the mouse's memory and work without PeriHub.</li>
-      <li><b>Keyboard</b>: the key mapping is stored in the Apex's memory. Lighting is not kept by the keyboard, so PeriHub reapplies it.</li>
-      <li>Before every write to a device, a backup is saved in the <code>perihub/backups</code> folder of your user configuration.</li>
+      <li><b>In the device</b>: a mouse keeps its DPI, polling, buttons, macros and lighting in its own memory, and the Apex keeps its key mapping. They work without PeriHub. The Apex does not keep its lighting: PeriHub reapplies it.</li>
+      <li>
+        <b>PeriHub's settings</b>: <code>config.json</code> in the settings folder. It holds the keyboard lighting, saved lighting, app profiles, macros run by PeriHub and the options on this page.
+        {#if settings}<br /><code>{settings.config_dir}</code>{/if}
+      </li>
+      <li>
+        <b>Backups</b>: before every write to a device, PeriHub saves what it is about to replace in the <code>backups</code> folder inside the settings folder, one folder per device. They are never deleted. While an experimental save is neither kept nor undone, a <code>pending-undo</code> file in the same folder lets PeriHub undo it after a restart.
+      </li>
+      <li>
+        <b>Log</b>: <code>perihub.log</code>, and <code>perihub.old.log</code> once it passes 1 MB, in the log folder (see Problems below).
+      </li>
+      <li><b>Macro files</b>: only where you choose, when you export a macro. PeriHub keeps no other copy.</li>
+      <li>
+        <b>Start with the system</b>:
+        {#if status.sandboxed}
+          the desktop's background permission, asked through the Flatpak portal. PeriHub also keeps an <code>autostart-requested</code> file in the settings folder.
+        {:else if settings?.system.startsWith("windows")}
+          a PeriHub value under <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code> in the registry. Task Manager can turn it off.
+        {:else}
+          an entry in <code>~/.config/autostart</code>.
+        {/if}
+      </li>
+      {#if settings?.system.startsWith("windows")}
+        <li><b>Updates</b>: a downloaded update waits in PeriHub's cache folder until you install it.</li>
+      {:else}
+        <li>
+          <b>Linux permissions</b>: the udev rules, in <code>/etc/udev/rules.d</code> (<code>70-perihub.rules</code> comes with the package).
+          The optional ones, <code>71</code> to <code>73</code>, are added only when you allow them in PeriHub{#if status.sandboxed}; in a Flatpak you run the commands PeriHub shows{/if}.
+        </li>
+      {/if}
     </ul>
   </div>
 

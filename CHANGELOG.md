@@ -8,10 +8,12 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ### Added
 - **Settings lists the supported brands**: under Devices, each brand shows how many models are supported, experimental or read-only, and opens to its models. The list is generated from the driver tables, so it cannot go stale.
+- **A Support entry in the sidebar**: a small **Support** button at the bottom opens two optional links, Buy me a coffee and Star on GitHub. Nothing pops up on its own.
 - **Software centres suggest PeriHub for a supported device**: the AppStream metadata lists the USB ids of the mice, keyboards and receivers PeriHub supports, so GNOME Software and KDE Discover can offer it when one is plugged in.
 
 ### Changed
 - **Credits are in a dialog**: Settings → About has a **Credits** button that opens a scrollable list of every project PeriHub takes code, data or facts from, grouped, each with its link, license, copyright and what was taken. It now also lists the Linux kernel, Solaar, linuxhw/LsUSB, Vial's GUI and the other projects of THIRD-PARTY-NOTICES.md that the old text left out.
+- **Settings → Where settings are stored** is complete and follows the system: the settings folder (shown in full), backups and the pending-undo file, the log, macro files, how starting with the system is kept (registry on Windows, an autostart entry on Linux, the portal in a Flatpak) and the udev rules.
 - The udev rule, the device list, the website's catalogue and the AppStream metadata are now generated from PeriHub's own driver tables, so they can no longer disagree. The rule opens exactly the same interfaces as before. Razer mice are counted by name: 74, not 75, since the DeathAdder V3 Pro (Wired) has two USB ids.
 
 ## 0.8.4 — 2026-11-15

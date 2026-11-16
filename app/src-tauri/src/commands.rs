@@ -29,6 +29,9 @@ const TEST_FORM_URLS: &[&str] = &[
     "https://github.com/hex-dump/perihub/issues/new?template=device_request.yml&",
 ];
 
+/// The links of the Support entry in the sidebar.
+const SUPPORT_URLS: &[&str] = &["https://buymeacoffee.com/hexdump1", "https://github.com/hex-dump/perihub"];
+
 async fn blocking<T: Send + 'static>(f: impl FnOnce() -> perihub_core::Result<T> + Send + 'static) -> CmdResult<T> {
     tauri::async_runtime::spawn_blocking(f).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())
 }
@@ -568,6 +571,9 @@ pub struct AppSettings {
     /// Folder of the log file: read only.
     #[serde(default)]
     log_dir: String,
+    /// Folder of the settings and backups: read only.
+    #[serde(default)]
+    config_dir: String,
     /// Operating system and architecture, for test reports: read only.
     #[serde(default)]
     system: String,
@@ -583,6 +589,7 @@ pub fn app_get_settings(app: AppHandle, state: State<'_, AppState>) -> AppSettin
         updates_supported: crate::updates::supported(),
         package_manager: crate::updates::package_manager().map(String::from),
         log_dir: crate::logfile::dir().display().to_string(),
+        config_dir: perihub_core::config::config_dir().display().to_string(),
         system: format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
     }
 }
@@ -616,6 +623,15 @@ pub fn app_open_log_folder() -> CmdResult<()> {
 pub fn app_open_test_form(url: String) -> CmdResult<()> {
     if !TEST_FORM_URLS.iter().any(|form| url.starts_with(form)) {
         return Err("not PeriHub's test form".to_string());
+    }
+    perihub_core::softmacro::inject::open_target(&url).map_err(|e| e.to_string())
+}
+
+/// Opens one of the two links of the Support entry in the browser. Those exact addresses only.
+#[tauri::command]
+pub fn app_open_support_link(url: String) -> CmdResult<()> {
+    if !SUPPORT_URLS.contains(&url.as_str()) {
+        return Err("not a PeriHub support link".to_string());
     }
     perihub_core::softmacro::inject::open_target(&url).map_err(|e| e.to_string())
 }

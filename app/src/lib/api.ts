@@ -621,6 +621,8 @@ export interface AppSettings {
   package_manager: string | null;
   /** Folder of the log file. */
   log_dir: string;
+  /** Folder of the settings and backups. */
+  config_dir: string;
   /** Operating system and architecture, for test reports. */
   system: string;
 }
@@ -785,6 +787,7 @@ export const api = {
   quit: () => invoke<void>("app_quit"),
   openLogFolder: () => invoke<void>("app_open_log_folder"),
   openTestForm: (url: string) => invoke<void>("app_open_test_form", { url }),
+  openSupportLink: (url: string) => invoke<void>("app_open_support_link", { url }),
   softMacros: () => invoke<SoftMacrosInfo>("soft_get"),
   /** Saves a macro run by PeriHub; a new one (key 0) gets its trigger key. */
   saveSoftMacro: (item: SoftwareMacro) =>

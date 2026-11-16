@@ -27,6 +27,7 @@ const settings = (autostart: boolean): AppSettings => ({
   updates_supported: false,
   package_manager: null,
   log_dir: "/logs",
+  config_dir: "/config",
   system: "windows x86_64",
 });
 
@@ -60,6 +61,17 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Settings", () => {
+  it("says where the settings are stored for this system", async () => {
+    const page = render(Settings, { props: { status } });
+    await waitFor(() => expect(screen.getByText("/config")).toBeTruthy());
+    expect(page.container.textContent).toContain("HKCU");
+    cleanup();
+    api.appSettings.mockResolvedValue({ ...settings(true), system: "linux x86_64" });
+    const linux = render(Settings, { props: { status: { ...status, sandboxed: true } } });
+    await waitFor(() => expect(linux.container.textContent).toContain("Flatpak portal"));
+    expect(linux.container.textContent).toContain("71");
+  });
+
   it("reads autostart again when the window comes back, as Task Manager can change it", async () => {
     render(Settings, { props: { status } });
     await waitFor(() => expect(autostartBox().checked).toBe(true));
