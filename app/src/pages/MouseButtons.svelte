@@ -16,9 +16,11 @@
     profileNumber: number;
     /** Bytes free for new macros in the mouse. */
     macroSpace: number;
+    /** The controls are disabled; the Normal / G-Shift switch still works, to look at the G-Shift layer. */
+    readOnly?: boolean;
   }
 
-  let { info, settings = $bindable(), profiles, profileNumber, macroSpace }: Props = $props();
+  let { info, settings = $bindable(), profiles, profileNumber, macroSpace, readOnly = false }: Props = $props();
   let layer = $state<"normal" | "gshift">("normal");
   let keys = $state<KeyInfo[]>([]);
   let soft = $state<SoftMacrosInfo | null>(null);
@@ -38,6 +40,13 @@
     macroLibrary(info.product_id, profiles, { number: profileNumber, enabled: true, settings }),
   );
   const hasGShiftButton = $derived(settings.buttons.some((b) => b.type === "special" && b.function === "g_shift"));
+  /**
+   * Some mice do not say they have G-Shift in their memory description but still keep a G-Shift layer
+   * in the profile (a G502 X wired): show it when something is assigned there too.
+   */
+  const showLayers = $derived(
+    info.onboard.has_gshift || hasGShiftButton || settings.gshift_buttons.some((b) => b.type !== "disabled"),
+  );
 
   function update(i: number, action: ButtonAction) {
     if (layer === "normal") settings.buttons[i] = action;
@@ -46,7 +55,7 @@
 </script>
 
 <div class="col gap">
-  {#if info.onboard.has_gshift}
+  {#if showLayers}
     <div class="row">
       <div class="segmented">
         <button class:active={layer === "normal"} onclick={() => (layer = "normal")}>Normal</button>
@@ -63,6 +72,7 @@
     </div>
   {/if}
 
+  <fieldset disabled={readOnly}>
   <div class="card buttons">
     {#each list as action, i (i)}
       <div class="name">
@@ -74,9 +84,20 @@
     {/each}
   </div>
   {#if soft}<SoftMacros info={soft} onchange={refreshSoft} />{/if}
+  </fieldset>
 </div>
 
 <style>
+  fieldset {
+    border: none;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
   .gap {
     gap: 16px;
   }

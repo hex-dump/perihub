@@ -20,6 +20,8 @@ const api = vi.hoisted(() => ({
   unifyingAccess: vi.fn(),
   grantUnifyingAccess: vi.fn(),
   revokeUnifyingAccess: vi.fn(),
+  keyCatalog: vi.fn(),
+  softMacros: vi.fn(),
 }));
 
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
@@ -777,5 +779,58 @@ describe("Lighting", () => {
     await fireEvent.click(within(cardOf("G logo")).getByRole("button", { name: "Color cycle" }));
     await wait(PREVIEW_WAIT);
     expect(previews()).toEqual([[0, "off"], [1, "cycle"]]);
+  });
+});
+
+describe("a read-only mouse without lights (G502 X)", () => {
+  const readOnly = {
+    ...info,
+    verified: false,
+    writable: false,
+    writable_format: false,
+    led_zones: [],
+    onboard: { ...info.onboard, profile_format: 4, sector_size: 255, has_gshift: false },
+  };
+  const withGShift = () => {
+    api.keyCatalog.mockResolvedValue({ targets: [] });
+    api.softMacros.mockResolvedValue(null);
+    api.mouseState.mockImplementation(async () => {
+      const s = state();
+      for (const p of s.profiles) {
+        p.settings.buttons = [{ type: "mouse", button: 1 }, { type: "special", function: "g_shift" }];
+        p.settings.gshift_buttons = [{ type: "mouse", button: 3 }, { type: "disabled" }];
+      }
+      return s;
+    });
+  };
+
+  it("has no Lighting tab, and opens on DPI when asked for Lighting", async () => {
+    await open(readOnly);
+    expect(screen.queryByRole("button", { name: "Lighting" })).toBeNull();
+    cleanup();
+    render(Mouse, { props: { info: readOnly, error: null, asleep: null, initialTab: "lighting" } });
+    await wait(0);
+    expect(firstLevel()).toBeTruthy();
+  });
+
+  it("keeps the Lighting tab on a mouse with LED zones", async () => {
+    await open({ ...readOnly, led_zones: [{ index: 0, location: 1, effects: [0, 1] }] });
+    expect(screen.getByRole("button", { name: "Lighting" })).toBeTruthy();
+  });
+
+  it("lets you look at the G-Shift layer even though the controls are disabled", async () => {
+    withGShift();
+    await open(readOnly);
+    await fireEvent.click(screen.getByRole("button", { name: "Buttons" }));
+    await wait(0);
+    const gshift = screen.getByRole("button", { name: "G-Shift" }) as HTMLButtonElement;
+    expect(gshift.disabled).toBe(false);
+    await fireEvent.click(gshift);
+    expect(screen.getByText(/Functions used while you hold/)).toBeTruthy();
+    expect(screen.queryByText(/No button has the G-Shift function/)).toBeNull();
+    // The editors stay disabled.
+    const editors = screen.getAllByRole("combobox") as HTMLSelectElement[];
+    expect(editors.length).toBeGreaterThan(0);
+    expect(editors.every((e) => e.matches(":disabled"))).toBe(true);
   });
 });

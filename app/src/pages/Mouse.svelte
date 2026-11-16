@@ -44,6 +44,13 @@
   type Tab = "performance" | "buttons" | "lighting";
   const startTab = untrack(() => initialTab);
   let tab = $state<Tab>(startTab === "buttons" || startTab === "lighting" ? startTab : "performance");
+  /**
+   * The Lighting tab needs LED zones. They come from the mouse's color LED effects feature (0x8070 or
+   * 0x8071), the only way PeriHub finds them, so a mouse that lists none has no lights PeriHub can drive.
+   */
+  const hasLights = $derived(!!info && info.led_zones.length > 0);
+  /** The tab on show: Lighting falls back to the first tab on a mouse without lights. */
+  const shownTab = $derived<Tab>(tab === "lighting" && !hasLights ? "performance" : tab);
   let busy = $state<string | null>(null);
   let error = $state<string | null>(null);
   let message = $state<string | null>(null);
@@ -501,21 +508,24 @@
   {#if error}<div class="notice error">{error}</div>{/if}
 
   <div class="tabs">
-    <button class:active={tab === "performance"} onclick={() => changeTab("performance")}>DPI and polling</button>
-    <button class:active={tab === "buttons"} onclick={() => changeTab("buttons")}>Buttons</button>
-    <button class:active={tab === "lighting"} onclick={() => changeTab("lighting")}>Lighting</button>
+    <button class:active={shownTab === "performance"} onclick={() => changeTab("performance")}>DPI and polling</button>
+    <button class:active={shownTab === "buttons"} onclick={() => changeTab("buttons")}>Buttons</button>
+    {#if hasLights}
+      <button class:active={shownTab === "lighting"} onclick={() => changeTab("lighting")}>Lighting</button>
+    {/if}
   </div>
 
   <!-- A read-only mouse (memory format PeriHub cannot write): every control in the editor is disabled. -->
-  <fieldset disabled={!editable}>
-    {#if tab === "performance"}
+  <!-- The buttons tab disables its own editors, so that its Normal / G-Shift switch still works. -->
+  <fieldset disabled={!editable && shownTab !== "buttons"}>
+    {#if shownTab === "performance"}
       {#key previewEpoch}
         <MousePerformance {info} bind:settings={draft} onpreview={() => (previewing = true)}
           activeLevel={selected === mouse.active_profile ? mouse.active_dpi_index : null} />
       {/key}
-    {:else if tab === "buttons"}
+    {:else if shownTab === "buttons"}
       <MouseButtons {info} bind:settings={draft} profiles={mouse.profiles} profileNumber={selected}
-        macroSpace={mouse.macro_space} />
+        macroSpace={mouse.macro_space} readOnly={!editable} />
     {:else}
       {#key previewEpoch}
         <MouseLighting {info} bind:settings={draft} onpreview={() => (previewing = true)} />
