@@ -68,6 +68,8 @@ pub struct AppConfig {
     /// Read-only mode: nothing that changes a device is sent to it (see [`crate::writes`]). The
     /// app and the command line both follow it.
     pub read_only: bool,
+    /// Notifications about the battery of wireless devices.
+    pub battery: crate::battery::BatteryAlerts,
 }
 
 impl Default for AppConfig {
@@ -82,6 +84,7 @@ impl Default for AppConfig {
             logitech_dpi: std::collections::HashMap::new(),
             qmk_keyboards: Vec::new(),
             read_only: false,
+            battery: Default::default(),
         }
     }
 }

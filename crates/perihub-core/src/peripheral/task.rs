@@ -142,6 +142,12 @@ pub struct PeripheralTask {
     in_memory: Option<Settings>,
 }
 
+impl Drop for PeripheralTask {
+    fn drop(&mut self) {
+        crate::battery::forget(&format!("peripheral:{}", self.info.key));
+    }
+}
+
 impl PeripheralTask {
     /// `changes`: changes may be tried (PeriHub's app; never the command line).
     /// `short`: the short HID++ collection of a Logitech HID++ 1.0 mouse, when it has a path of its
@@ -236,6 +242,11 @@ impl PeripheralTask {
         }
         self.info.firmware = reading.firmware;
         self.info.battery = reading.battery.map(|(level, charging)| super::Battery { level, charging });
+        crate::battery::report(
+            &format!("peripheral:{}", self.info.key),
+            &format!("{} {}", self.info.brand, self.info.model),
+            self.info.battery.map(|b| (b.level, b.charging, b.charging && b.level >= 100)),
+        );
         self.info.active_profile = reading.active_profile;
         self.info.active_dpi = reading.active_dpi;
         self.info.settings = reading.settings;

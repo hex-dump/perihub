@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
-  import { api, errorText, type AppSettings, type DeviceStatus, type WriteEntry } from "../lib/api";
+  import { api, errorText, type AppSettings, type BatteryAlerts, type DeviceStatus, type WriteEntry } from "../lib/api";
   import { readOnly, setReadOnly, writeTime } from "../lib/readOnly.svelte";
   import { INSTALL_NOTE, checkForUpdate, installUpdate, installingText, updates } from "../lib/updates.svelte";
   import TestReport from "../components/TestReport.svelte";
@@ -58,6 +58,25 @@
     } finally {
       box.checked = readOnly.on;
       switching = false;
+    }
+  }
+
+  const LOW_LEVELS = [5, 10, 15, 20, 25, 30, 40, 50];
+
+  /** The levels to choose from, with the one in use if it came from the settings file. */
+  const lowLevels = (current: number) => (LOW_LEVELS.includes(current) ? LOW_LEVELS : [...LOW_LEVELS, current].sort((a, b) => a - b));
+
+  async function updateBattery(change: Partial<BatteryAlerts>, input: HTMLInputElement | HTMLSelectElement) {
+    if (!settings) return;
+    const before = settings.battery;
+    try {
+      settings = await api.setAppSettings({ ...settings, battery: { ...before, ...change } });
+      error = null;
+    } catch (e) {
+      error = errorText(e);
+      // Nothing changed, so the control goes back.
+      if (input instanceof HTMLInputElement) input.checked = !input.checked;
+      else input.value = String(before.low_percent);
     }
   }
 
@@ -137,6 +156,36 @@
         </div>
       </div>
     </details>
+  </div>
+
+  <div class="card col">
+    <h2>Battery</h2>
+    {#if settings}
+      <label class="row">
+        <input type="checkbox" checked={settings.battery.enabled}
+          onchange={(e) => updateBattery({ enabled: e.currentTarget.checked }, e.currentTarget)} />
+        Tell me when the battery of a wireless device is low
+      </label>
+      <label class="row wrap">
+        <span class="label">Low below</span>
+        <select value={settings.battery.low_percent} disabled={!settings.battery.enabled}
+          onchange={(e) => updateBattery({ low_percent: Number(e.currentTarget.value) }, e.currentTarget)}>
+          {#each lowLevels(settings.battery.low_percent) as level (level)}
+            <option value={level}>{level}%</option>
+          {/each}
+        </select>
+      </label>
+      <label class="row">
+        <input type="checkbox" checked={settings.battery.full} disabled={!settings.battery.enabled}
+          onchange={(e) => updateBattery({ full: e.currentTarget.checked }, e.currentTarget)} />
+        Also tell me when it is fully charged
+      </label>
+    {/if}
+    <p class="muted small">
+      You get one notification each time a battery goes below the limit, and another only after it was charged.
+      The tray icon shows the battery of each wireless device. PeriHub reads Razer and SteelSeries batteries
+      along with its usual checks, and Logitech batteries every 5 minutes.
+    </p>
   </div>
 
   <div class="card col">

@@ -219,6 +219,10 @@ pub struct MouseTask {
     /// Another program controls the mouse now (shared with the manager, for the status).
     host_mode: Arc<AtomicBool>,
     last_mode_check: Instant,
+    /// The slow battery read for a mouse on its receiver (see [`crate::battery::Schedule`]).
+    battery_read: crate::battery::Schedule,
+    /// The mouse answered and has no battery feature: it is not asked again.
+    no_battery: bool,
     /// Last valid active profile, restored if the mouse comes back without one.
     last_profile: u8,
     /// A DPI or LED preview is shown instead of the saved settings.
@@ -229,6 +233,13 @@ pub struct MouseTask {
     undo_at: Option<Instant>,
     /// The mouse's profile list, as last read (see [`MouseTask::read_directory`]).
     list: ProfileList,
+}
+
+impl Drop for MouseTask {
+    /// A mouse that went away (or fell asleep behind its receiver) shows no battery any more.
+    fn drop(&mut self) {
+        crate::battery::forget(&self.battery_id());
+    }
 }
 
 /// How far PeriHub goes with a mouse.
@@ -402,6 +413,8 @@ impl MouseTask {
             info,
             host_mode: Arc::new(AtomicBool::new(false)),
             last_mode_check: Instant::now(),
+            battery_read: crate::battery::Schedule::new(Instant::now()),
+            no_battery: false,
             last_profile: 1,
             previewing: false,
             last_backup: None,
@@ -1223,6 +1236,7 @@ impl MouseTask {
 
     /// Active profile and DPI, which the mouse's buttons change without PeriHub, and the battery.
     pub fn live(&mut self) -> Result<MouseLive> {
+        self.battery_read.read(Instant::now());
         let battery = match self.dev.battery() {
             Ok(battery) => battery,
             Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
@@ -1232,12 +1246,17 @@ impl MouseTask {
                 None
             }
         };
+        crate::battery::report(&self.battery_id(), &self.info.model, battery.map(|b| b.reading()));
         Ok(MouseLive {
             active_profile: self.read_active_profile()?,
             active_dpi_index: self.active_dpi_index()?,
             current_dpi: self.dev.current_dpi()?,
             battery,
         })
+    }
+
+    fn battery_id(&self) -> String {
+        format!("mouse:{:04x}", self.info.product_id)
     }
 
     fn read_active_profile(&mut self) -> Result<u8> {
@@ -1320,6 +1339,17 @@ impl DeviceTask for MouseTask {
                 Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
                 // Anything else (a busy mouse, a refused command) must not close the connection.
                 Err(e) => log::debug!("mouse mode check: {e}"),
+            }
+        }
+        // Only a mouse on its receiver has a battery to watch. An error, a sleeping mouse included,
+        // waits for the next time: the mode check above ends the thread if the mouse is gone.
+        if self.info.receiver && !self.no_battery && self.battery_read.due(Instant::now()) {
+            match self.dev.battery() {
+                Ok(Some(battery)) => {
+                    crate::battery::report(&self.battery_id(), &self.info.model, Some(battery.reading()))
+                }
+                Ok(None) => self.no_battery = true,
+                Err(e) => log::debug!("mouse battery: {e}"),
             }
         }
         let next = MODE_CHECK.saturating_sub(self.last_mode_check.elapsed());

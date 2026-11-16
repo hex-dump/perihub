@@ -602,6 +602,9 @@ pub struct AppSettings {
     start_hidden: bool,
     autostart: bool,
     check_updates: bool,
+    /// Notifications about the battery of wireless devices.
+    #[serde(default)]
+    battery: perihub_core::battery::BatteryAlerts,
     /// This build can update itself (Windows): read only.
     #[serde(default)]
     updates_supported: bool,
@@ -626,6 +629,7 @@ pub fn app_get_settings(app: AppHandle, state: State<'_, AppState>) -> AppSettin
         start_hidden: config.start_hidden,
         autostart: crate::autostart::is_enabled(&app),
         check_updates: config.check_updates,
+        battery: config.battery,
         updates_supported: crate::updates::supported(),
         package_manager: crate::updates::package_manager().map(String::from),
         log_dir: crate::logfile::dir().display().to_string(),
@@ -640,6 +644,10 @@ pub fn app_set_settings(app: AppHandle, state: State<'_, AppState>, settings: Ap
     let mut config = state.config.lock().unwrap();
     config.start_hidden = settings.start_hidden;
     config.check_updates = settings.check_updates;
+    config.battery = perihub_core::battery::BatteryAlerts {
+        low_percent: settings.battery.low_percent.clamp(1, 100),
+        ..settings.battery
+    };
     config.save().map_err(|e| e.to_string())?;
     drop(config);
     Ok(app_get_settings(app, state))
