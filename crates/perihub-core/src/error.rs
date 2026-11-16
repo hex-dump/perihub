@@ -23,6 +23,9 @@ pub enum Error {
     /// what was read about the old one no longer applies.
     #[error("a different device answers in this receiver slot")]
     OtherDevice,
+    /// Read-only mode is on: nothing that changes a device is sent (see [`crate::writes`]).
+    #[error("Read-only mode is on")]
+    ReadOnly,
     #[error("file error: {0}")]
     Io(#[from] std::io::Error),
     #[error("format error: {0}")]

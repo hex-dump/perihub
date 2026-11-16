@@ -1,31 +1,62 @@
-name: Device test report
-description: Tell us how PeriHub works with a Corsair, ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA or YJX device, a Razer BlackWidow V4 Mini, a Wraith W60, a QMK keyboard (Vial, VIA), the Logitech G300, G600, G500s, G700s, G9x and their older siblings (G9, G500, G700), or a Logitech device on a Bolt or Unifying receiver
-labels: ["device test"]
+# LEGACY: the test forms of PeriHub 0.9.0 and older open device_test.yml (with the model, usb-id, connection,
+# version, os and report fields prefilled). It gives the same result as 01_test_report.yml: the same
+# fields and headings (tools/triage.py reads them), and the label "test report". Keep it in step with
+# 01_test_report.yml. Delete this file once PeriHub 0.9.0 and older are no longer in use.
+name: Test report, other devices (from PeriHub 0.9.0 or older)
+description: For PeriHub 0.9.0 or older. For everything else, use "Test report".
+labels: ["test report"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing! PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session, if you turn it on. On the Logitech G300 it reads and saves the three profiles. On the Logitech G9, G9x, G500, G500s, G700 and G700s (with the cable) it reads the profile in use, and on the G500s and G700s it can set the DPI in use without saving it, if you choose to; it never writes their memory. For a Logitech device on a Bolt or Unifying receiver it reads what the device is, and can set its DPI, if you choose to. The Razer BlackWidow V4 Mini, the Wraith W60 and mice on a YJX receiver are only read. On ASUS, SteelSeries, Razer and Glorious mice, and on QMK keyboards, it reads what the device reports, and changes settings only if you choose to, at your own risk. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
+        Thanks for testing! Sending a report only reads the device, so it is safe. PeriHub changes settings only if you choose to, after a **No warranty** box, at your own risk, and each save is undone after 15 seconds unless you keep it.
+
+        What it does depends on the device. On a Logitech mouse whose memory format is untested it can save, and once someone confirms that what PeriHub shows matches the mouse and that saving works, the format becomes tested for every mouse that uses it. On the Logitech G300 it reads and saves the three profiles. On the Logitech G9, G9x, G500, G500s, G700 and G700s (with the cable) it reads the profile in use, and on the G500s and G700s it can set the DPI in use without saving it; it never writes their memory. For a Logitech device on a Bolt or Unifying receiver it reads what the device is, and can set its DPI. PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session. The Razer BlackWidow V4 Mini, the Wraith W60 and mice on a YJX receiver are only read. On ASUS, SteelSeries, Razer and Glorious mice, and on QMK keyboards (Vial, VIA), it reads what the device reports and changes settings only if you choose to. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
+  - type: dropdown
+    id: device-type
+    attributes:
+      label: Device type
+      options:
+        - Mouse
+        - Keyboard
+        - Receiver
+    validations:
+      required: true
+  - type: dropdown
+    id: brand
+    attributes:
+      label: Brand
+      description: "Pick Other for Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX and any brand not listed."
+      options:
+        - Logitech
+        - SteelSeries
+        - Corsair
+        - Razer
+        - ASUS
+        - Other
+    validations:
+      required: true
   - type: input
     id: model
     attributes:
       label: Device
       description: The name PeriHub shows at the top of the device page.
-      placeholder: e.g. Corsair M65 RGB ULTRA, ASUS ROG Keris, or Logitech G300
+      placeholder: e.g. Logitech G502 X, Corsair M65 RGB ULTRA, ASUS ROG Keris
     validations:
       required: true
   - type: input
     id: usb-id
     attributes:
       label: USB ID (vendor:product)
-      description: "Linux: `lsusb`. Windows: Device Manager → device → Properties → Details → Hardware IDs (VID_xxxx&PID_xxxx)."
-      placeholder: e.g. 1b1c:1b9e
+      description: "Linux: `lsusb`. Windows: Device Manager → device → Properties → Details → Hardware IDs (VID_xxxx&PID_xxxx). Through a receiver, give the receiver's USB ID."
+      placeholder: e.g. 046d:c099
     validations:
       required: true
   - type: input
     id: connection
     attributes:
       label: Connection
+      description: "Through a LIGHTSPEED, Bolt or Unifying receiver, give the receiver's USB ID above."
       placeholder: USB cable or wireless receiver
     validations:
       required: true
@@ -33,7 +64,7 @@ body:
     id: version
     attributes:
       label: PeriHub version
-      placeholder: e.g. 0.6.1
+      placeholder: e.g. 0.8.5
     validations:
       required: true
   - type: input
@@ -47,17 +78,21 @@ body:
     id: report
     attributes:
       label: Test report
-      description: "**Open test form** on the device page fills this in, and **Copy test report** copies it. It has no key presses, apps or log lines."
+      description: "**Open test form** in PeriHub fills this in, and **Copy test report** copies it (Settings → Problems, or the notice on the device page). It has no key presses, apps or log lines. Through a receiver it names the receiver, the slot and the device's wireless ID."
       render: text
   - type: checkboxes
     id: matches
     attributes:
       label: What PeriHub shows correctly
-      description: Compare with the official software (iCUE, Logitech Gaming Software, Armoury Crate) or with how the device behaves.
+      description: Compare with the official software (iCUE, Logitech G HUB or Gaming Software, Armoury Crate) or with how the device behaves.
       options:
         - label: Firmware version
         - label: Polling rate (report rate)
         - label: DPI (mice)
+        - label: "Logitech mouse: profiles (number of profiles, which one is active)"
+        - label: "Logitech mouse: DPI levels and the default level"
+        - label: "Logitech mouse: button assignments"
+        - label: "Logitech mouse: lighting zones and their colors"
         - label: "G300: profiles, DPI levels, light colour and buttons"
         - label: "G300: a profile I saved took effect and was still there after unplugging the mouse"
         - label: "Corsair: experimental lighting showed the colour, and the device went back to its own lighting when it was turned off"
@@ -67,15 +102,23 @@ body:
         - label: "Bolt or Unifying: without PeriHub running, the device kept the DPI after it slept or was turned off and on"
         - label: "Bolt or Unifying: Back to the device's own DPI worked"
         - label: "Other brands (ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX, Wraith, QMK keyboards): the DPI levels, polling rate, lighting and buttons PeriHub shows match the device"
+  - type: checkboxes
+    id: saving
+    attributes:
+      label: Saving, if you tried it
+      description: Optional, and at your own risk. Leave these empty if you only read the device.
+      options:
+        - label: A change I saved took effect on the device
+        - label: It was still there after unplugging the device and plugging it back in
+        - label: Letting the 15 seconds run out put the old settings back
         - label: "Other brands: a change made with Apply took effect"
         - label: "Other brands: after unplugging the device (or turning it off) a change made only with Apply was gone"
         - label: "Other brands: a change made with Save to memory was still there after unplugging the device"
-        - label: "Other brands: a change I did not keep was undone after 15 seconds"
   - type: textarea
     id: notices
     attributes:
       label: Messages and errors
-      description: Any message PeriHub shows on the device page, or an error if the device does not appear. Also say which official software was running, such as Logi Options+.
+      description: Any message PeriHub shows on the device page (for example about software control or the profile format), or an error if the device does not appear. Also say which official software was running, such as Logi Options+.
   - type: textarea
     id: details
     attributes:

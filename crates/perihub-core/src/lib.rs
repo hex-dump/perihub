@@ -2,6 +2,7 @@
 
 pub mod apex;
 pub mod app_profiles;
+pub mod battery;
 pub mod color;
 pub mod config;
 pub mod conflicts;
@@ -10,17 +11,20 @@ pub mod effects;
 pub mod error;
 pub mod focus;
 pub mod g300;
+pub mod games;
 pub mod hidpp;
 pub mod keyboard;
 pub mod logitech;
 pub mod manager;
 pub mod mouse;
 pub mod peripheral;
+pub mod quick;
 #[cfg(windows)]
 pub mod rawinput;
 pub mod report_devices;
 pub mod softmacro;
 pub mod worker;
+pub mod writes;
 
 pub use color::Rgb;
 pub use error::{Error, Result};

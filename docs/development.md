@@ -56,6 +56,9 @@ cargo run -p perihub-cli -- mouse backups
 cargo run -p perihub-cli -- keyboard light '{"type":"wave","period_ms":3000,"reverse":false}' 10
 ```
 
+While the app is open, `perihub-cli app ...` asks it to switch a profile, a DPI level or a lighting
+preset (see [quick-actions.md](quick-actions.md)).
+
 The command-line tool never saves to a mouse whose memory format is untested, and never uses
 experimental lighting.
 

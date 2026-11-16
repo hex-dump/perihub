@@ -5,6 +5,7 @@ const api = vi.hoisted(() => ({
   profiles: vi.fn(),
   setProfiles: vi.fn(),
   setupFocus: vi.fn(),
+  installedGames: vi.fn(),
   onFocus: vi.fn(),
 }));
 
@@ -107,5 +108,26 @@ describe("App profiles", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Copy command" }));
     await flush();
     expect(screen.getByText("The command could not be copied: select it and copy it by hand.")).toBeTruthy();
+  });
+
+  it("adds a rule from an installed game and warns about a guessed app name", async () => {
+    api.profiles.mockResolvedValue(info({ kind: "supported", desktop: "KDE" }));
+    api.installedGames.mockResolvedValue([
+      { name: "Elden Ring", launcher: "Steam", app: "steam_app_1245620", certain: true, note: null },
+      { name: "Super Game", launcher: "Lutris", app: "start.sh", certain: false, note: "Native games choose their own window class." },
+    ]);
+    render(AppProfiles, { status });
+    await flush();
+    await fireEvent.click(screen.getByRole("button", { name: "Add from installed games" }));
+    await flush();
+    expect(screen.getByText("Native games choose their own window class.")).toBeTruthy();
+    await fireEvent.input(screen.getByLabelText("Search games"), { target: { value: "elden" } });
+    expect(screen.queryByText("Super Game")).toBeNull();
+    await fireEvent.click(screen.getByText("Elden Ring"));
+    expect((screen.getByPlaceholderText("window class") as HTMLInputElement).value).toBe("steam_app_1245620");
+    expect(screen.getByText("Rule added for Elden Ring.")).toBeTruthy();
+    await fireEvent.click(screen.getByText("Elden Ring"));
+    expect(screen.getByText("There is already a rule for steam_app_1245620.")).toBeTruthy();
+    expect(screen.getAllByPlaceholderText("window class")).toHaveLength(1);
   });
 });

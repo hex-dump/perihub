@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { api, type DeviceStatus } from "./lib/api";
   import { updates } from "./lib/updates.svelte";
+  import { followReadOnly, readOnly, setReadOnly } from "./lib/readOnly.svelte";
   import Keyboard from "./pages/Keyboard.svelte";
   import AppProfiles from "./pages/AppProfiles.svelte";
   import Mouse from "./pages/Mouse.svelte";
@@ -14,6 +15,8 @@
   import QmkKeyboards from "./pages/QmkKeyboards.svelte";
   import Settings from "./pages/Settings.svelte";
   import DeviceReport from "./pages/DeviceReport.svelte";
+  import TestWizard from "./pages/TestWizard.svelte";
+  import MouseTester from "./pages/MouseTester.svelte";
   import Icon from "./components/Icon.svelte";
   import Support from "./components/Support.svelte";
   import logo from "../icon.svg";
@@ -27,6 +30,8 @@
     | "peripheral"
     | "qmk"
     | "report"
+    | "wizard"
+    | "tester"
     | "profiles"
     | "settings";
   const PAGES: Page[] = [
@@ -38,6 +43,8 @@
     "peripheral",
     "qmk",
     "report",
+    "wizard",
+    "tester",
     "profiles",
     "settings",
   ];
@@ -163,7 +170,9 @@
     };
     window.addEventListener("hashchange", onHash);
     const unlisten = api.onStatus(received);
+    const stopReadOnly = followReadOnly();
     return () => {
+      stopReadOnly();
       unlistenUpdate.then((fn) => fn());
       unlistenProgress.then((fn) => fn());
       unlisten.then((fn) => fn());
@@ -299,6 +308,14 @@
     {/if}
 
     <div class="grow"></div>
+    <button class:active={page === "wizard"} onclick={() => go("wizard")}>
+      <Icon name="report" />
+      <span class="name">Test my device</span>
+    </button>
+    <button class:active={page === "tester"} onclick={() => go("tester")}>
+      <Icon name="mouse" />
+      <span class="name">Mouse tester</span>
+    </button>
     <button class:active={page === "profiles"} onclick={() => go("profiles")}>
       <Icon name="profiles" />
       <span class="name">App profiles</span>
@@ -317,6 +334,12 @@
         <div class="notice ok row updated">
           <span>PeriHub was updated to {updates.installed}.</span>
           <button class="tiny" onclick={() => (updates.installed = null)}>Close</button>
+        </div>
+      {/if}
+      {#if readOnly.on}
+        <div class="notice warn row read-only">
+          <span><b>Read-only mode is on.</b> PeriHub reads your devices but sends them no changes.</span>
+          <button class="tiny" onclick={() => setReadOnly(false).catch(() => {})}>Turn off</button>
         </div>
       {/if}
       {#each status.conflicts as name (name)}
@@ -368,6 +391,10 @@
         <QmkKeyboards keyboards={status.qmk} onopen={(key) => go("peripheral", peripheralTab(key))} />
       {:else if page === "report"}
         <DeviceReport alone={!anyDevice} shown={status.qmk.map((k) => k.key)} />
+      {:else if page === "wizard"}
+        <TestWizard {status} />
+      {:else if page === "tester"}
+        <MouseTester />
       {:else if page === "profiles"}
         <AppProfiles {status} />
       {:else if page === "settings"}
@@ -477,6 +504,13 @@
   }
 
   .conflict {
+    margin-bottom: 18px;
+  }
+
+  .read-only {
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 18px;
   }
 

@@ -35,6 +35,9 @@ pub struct LogitechTask {
     pub device: UnsupportedDevice,
     saved_dpi: Option<u16>,
     last_check: Instant,
+    battery: crate::battery::Schedule,
+    /// The device answered and has no battery feature: it is not asked again.
+    no_battery: bool,
 }
 
 /// The DPI can be changed: the device has adjustable DPI (0x2201) and no onboard profiles. With
@@ -72,7 +75,15 @@ impl LogitechTask {
         if dpi_changeable(&device) {
             dev.grant(Access::Ram);
         }
-        let mut task = Self { dev, device, saved_dpi, last_check: Instant::now() };
+        dev.set_label(device.label());
+        let mut task = Self {
+            dev,
+            device,
+            saved_dpi,
+            last_check: Instant::now(),
+            battery: crate::battery::Schedule::new(Instant::now()),
+            no_battery: false,
+        };
         if let Some(dpi) = saved_dpi {
             match task.apply_dpi(dpi) {
                 Ok(()) => log::info!("{}: DPI set to {dpi} again", task.device.label()),
@@ -83,7 +94,29 @@ impl LogitechTask {
         Ok(task)
     }
 
+    fn battery_id(&self) -> String {
+        format!("logitech:{}", self.device.settings_key())
+    }
+
+    /// The slow read that keeps the warnings and the tray going while the window is closed. Any
+    /// error, a sleeping device included, only waits for the next time: the check in `tick`
+    /// decides whether the device is still there.
+    fn read_battery_quietly(&mut self) {
+        match self.dev.battery() {
+            Ok(Some(battery)) => {
+                crate::battery::report(
+                    &self.battery_id(),
+                    self.device.name.as_deref().unwrap_or("Logitech device"),
+                    Some(battery.reading()),
+                );
+            }
+            Ok(None) => self.no_battery = true,
+            Err(e) => log::debug!("{} battery: {e}", self.device.label()),
+        }
+    }
+
     pub fn live(&mut self) -> Result<LogitechLive> {
+        self.battery.read(Instant::now());
         let battery = match self.dev.battery() {
             Ok(battery) => battery,
             Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
@@ -92,6 +125,11 @@ impl LogitechTask {
                 None
             }
         };
+        crate::battery::report(
+            &self.battery_id(),
+            self.device.name.as_deref().unwrap_or("Logitech device"),
+            battery.map(|b| b.reading()),
+        );
         let dpi = if self.device.dpi.is_some() { Some(self.dev.sensor_dpi(0)?.0) } else { None };
         Ok(LogitechLive { battery, dpi, saved_dpi: self.saved_dpi })
     }
@@ -136,7 +174,17 @@ impl DeviceTask for LogitechTask {
                 Ok(_) => {}
             }
         }
-        Ok(CHECK_EVERY.saturating_sub(self.last_check.elapsed()))
+        if !self.no_battery && self.battery.due(Instant::now()) {
+            self.read_battery_quietly();
+        }
+        let next = CHECK_EVERY.saturating_sub(self.last_check.elapsed());
+        Ok(if self.no_battery { next } else { next.min(self.battery.wait(Instant::now())) })
+    }
+}
+
+impl Drop for LogitechTask {
+    fn drop(&mut self) {
+        crate::battery::forget(&format!("logitech:{}", self.device.settings_key()));
     }
 }
 

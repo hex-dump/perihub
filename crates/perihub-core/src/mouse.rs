@@ -219,6 +219,10 @@ pub struct MouseTask {
     /// Another program controls the mouse now (shared with the manager, for the status).
     host_mode: Arc<AtomicBool>,
     last_mode_check: Instant,
+    /// The slow battery read for a mouse on its receiver (see [`crate::battery::Schedule`]).
+    battery_read: crate::battery::Schedule,
+    /// The mouse answered and has no battery feature: it is not asked again.
+    no_battery: bool,
     /// Last valid active profile, restored if the mouse comes back without one.
     last_profile: u8,
     /// A DPI or LED preview is shown instead of the saved settings.
@@ -229,6 +233,13 @@ pub struct MouseTask {
     undo_at: Option<Instant>,
     /// The mouse's profile list, as last read (see [`MouseTask::read_directory`]).
     list: ProfileList,
+}
+
+impl Drop for MouseTask {
+    /// A mouse that went away (or fell asleep behind its receiver) shows no battery any more.
+    fn drop(&mut self) {
+        crate::battery::forget(&self.battery_id());
+    }
 }
 
 /// How far PeriHub goes with a mouse.
@@ -368,6 +379,7 @@ impl MouseTask {
         }
         let support = support(model, &onboard, dev.is_behind_receiver(), untested_saves);
         dev.grant(support.access());
+        dev.set_label(model.name.to_string());
         let info = MouseInfo {
             product_id: model.product_id,
             model: model.name.into(),
@@ -401,6 +413,8 @@ impl MouseTask {
             info,
             host_mode: Arc::new(AtomicBool::new(false)),
             last_mode_check: Instant::now(),
+            battery_read: crate::battery::Schedule::new(Instant::now()),
+            no_battery: false,
             last_profile: 1,
             previewing: false,
             last_backup: None,
@@ -475,6 +489,8 @@ impl MouseTask {
         let host_mode = match mode_action(mode, self.model.verified, conflict_running) {
             ModeAction::Fine => false,
             ModeAction::Report => true,
+            // Read-only mode: the mouse stays as it is, and the interface says another program has it.
+            ModeAction::SwitchBack if crate::writes::read_only() => true,
             ModeAction::SwitchBack => {
                 log::info!("the mouse was left under software control: switching back to its onboard profiles");
                 self.dev.set_onboard_mode(ONBOARD_MODE)?;
@@ -509,6 +525,7 @@ impl MouseTask {
     }
 
     fn check_writable(&self) -> Result<()> {
+        crate::writes::refuse_if_read_only()?;
         if self.info.writable {
             Ok(())
         } else {
@@ -519,6 +536,7 @@ impl MouseTask {
     /// Changes that stay in the mouse's RAM (active profile, DPI level, previews): a tested mouse,
     /// or one with experimental saves.
     fn check_controllable(&self) -> Result<()> {
+        crate::writes::refuse_if_read_only()?;
         if self.info.verified || self.info.experimental {
             Ok(())
         } else {
@@ -1097,7 +1115,8 @@ impl MouseTask {
             let _ = std::fs::remove_file(&path);
             return;
         }
-        if !self.info.writable {
+        // In read-only mode the undo waits, with its backup, for a connection that may send it.
+        if !self.info.writable || crate::writes::read_only() {
             self.info.pending_undo = true;
             return;
         }
@@ -1217,6 +1236,7 @@ impl MouseTask {
 
     /// Active profile and DPI, which the mouse's buttons change without PeriHub, and the battery.
     pub fn live(&mut self) -> Result<MouseLive> {
+        self.battery_read.read(Instant::now());
         let battery = match self.dev.battery() {
             Ok(battery) => battery,
             Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
@@ -1226,12 +1246,17 @@ impl MouseTask {
                 None
             }
         };
+        crate::battery::report(&self.battery_id(), &self.info.model, battery.map(|b| b.reading()));
         Ok(MouseLive {
             active_profile: self.read_active_profile()?,
             active_dpi_index: self.active_dpi_index()?,
             current_dpi: self.dev.current_dpi()?,
             battery,
         })
+    }
+
+    fn battery_id(&self) -> String {
+        format!("mouse:{:04x}", self.info.product_id)
     }
 
     fn read_active_profile(&mut self) -> Result<u8> {
@@ -1314,6 +1339,17 @@ impl DeviceTask for MouseTask {
                 Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
                 // Anything else (a busy mouse, a refused command) must not close the connection.
                 Err(e) => log::debug!("mouse mode check: {e}"),
+            }
+        }
+        // Only a mouse on its receiver has a battery to watch. An error, a sleeping mouse included,
+        // waits for the next time: the mode check above ends the thread if the mouse is gone.
+        if self.info.receiver && !self.no_battery && self.battery_read.due(Instant::now()) {
+            match self.dev.battery() {
+                Ok(Some(battery)) => {
+                    crate::battery::report(&self.battery_id(), &self.info.model, Some(battery.reading()))
+                }
+                Ok(None) => self.no_battery = true,
+                Err(e) => log::debug!("mouse battery: {e}"),
             }
         }
         let next = MODE_CHECK.saturating_sub(self.last_mode_check.elapsed());
@@ -2376,6 +2412,38 @@ mod tests {
         task.keep_changes();
         assert!(!task.pending_undo_path().exists());
         assert_eq!(parsed(&sim.lock().unwrap().user[2]).dpi_levels[0], 3250);
+        forget_test_files();
+    }
+
+    #[test]
+    fn read_only_mode_refuses_saves_switches_and_previews() {
+        let (mut task, sim) = open_sim(g502_x(), G502_X_WIRELESS, false);
+        let state = task.state().unwrap();
+        let mut sector = vec![0u8; task.sector_size() as usize];
+        crate::hidpp::profile::write_crc(&mut sector);
+        let _read_only = crate::writes::test::read_only_mode();
+        assert!(matches!(task.save_profile(2, &edited(&state, 2)), Err(Error::ReadOnly)));
+        assert!(matches!(task.restore_factory_profile(2), Err(Error::ReadOnly)));
+        assert!(matches!(task.set_active_profile(2), Err(Error::ReadOnly)));
+        assert!(matches!(task.preview_dpi(800), Err(Error::ReadOnly)));
+        // Below the checks of the task, the connection itself refuses the memory write.
+        assert!(matches!(task.dev.write_sector(2, &sector, &task.info.onboard), Err(Error::ReadOnly)));
+        let mouse = sim.lock().unwrap();
+        assert!(mouse.written.is_empty() && mouse.selected.is_empty() && mouse.writing.is_none());
+        drop(mouse);
+        assert!(task.state().is_ok(), "reads still work");
+        assert!(!task.pending_undo_path().exists());
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_mouse_opens_in_read_only_mode_without_a_write() {
+        let _read_only = crate::writes::test::read_only_mode();
+        let (task, sim) = open_sim(g502_x(), G502_X_WIRELESS, false);
+        assert!(task.info.verified);
+        let mouse = sim.lock().unwrap();
+        assert!(mouse.written.is_empty() && mouse.selected.is_empty());
+        drop(mouse);
         forget_test_files();
     }
 

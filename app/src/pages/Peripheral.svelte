@@ -11,6 +11,7 @@
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import PeripheralSaveDialog from "../components/PeripheralSaveDialog.svelte";
   import BlindSettings from "../components/BlindSettings.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     info: PeripheralInfo | null;
@@ -298,7 +299,7 @@
         </div>
         <div class="row actions">
           <button disabled={!changed || !!busy || confirmKeep} onclick={() => (draft = null)}>Discard</button>
-          <button class="primary" disabled={!changed || !!busy || confirmKeep} onclick={saveToMemory}>Save to memory…</button>
+          <button class="primary" disabled={!changed || !!busy || confirmKeep || readOnly.on} onclick={saveToMemory}>Save to memory…</button>
         </div>
       {:else if info.editable}
         <div class="notice warn change">
@@ -309,9 +310,9 @@
         </div>
         <div class="row actions">
           <button disabled={!changed || !!busy || confirmKeep} onclick={() => (draft = null)}>Discard</button>
-          <button class="primary" disabled={!changed || !!busy || confirmKeep} onclick={() => send(false)}>Apply</button>
+          <button class="primary" disabled={!changed || !!busy || confirmKeep || readOnly.on} onclick={() => send(false)}>Apply</button>
           {#if info.can_save}
-            <button disabled={!!busy || confirmKeep} onclick={saveToMemory}>Save to memory…</button>
+            <button disabled={!!busy || confirmKeep || readOnly.on} onclick={saveToMemory}>Save to memory…</button>
           {/if}
         </div>
       {/if}

@@ -263,6 +263,13 @@ pub struct Battery {
     pub state: BatteryState,
 }
 
+impl Battery {
+    /// For [`crate::battery::report`]: percent, charging, full.
+    pub fn reading(&self) -> (u8, bool, bool) {
+        (self.percent, self.state == BatteryState::Charging, self.state == BatteryState::Full)
+    }
+}
+
 /// Charge of a single-cell lithium battery by voltage (mV), on its usual discharge curve.
 const VOLTAGE_CURVE: &[(u16, u8)] = &[
     (4150, 100),
@@ -402,6 +409,8 @@ pub struct HidppDevice {
     behind_receiver: bool,
     /// The receiver's short HID++ collection, when it has its own path (Windows).
     short: Option<Box<dyn Transport>>,
+    /// The device's name in the write log.
+    label: String,
 }
 
 impl HidppDevice {
@@ -429,7 +438,12 @@ impl HidppDevice {
         read_only: bool,
     ) -> Result<Self> {
         let access = if read_only { Access::ReadOnly } else { Access::Full };
-        let mut device = Self { dev, device_index, access, features: HashMap::new(), behind_receiver, short };
+        let label = if behind_receiver {
+            format!("Logitech device in receiver slot {device_index}")
+        } else {
+            "Logitech device".to_string()
+        };
+        let mut device = Self { dev, device_index, access, features: HashMap::new(), behind_receiver, short, label };
         let (major, _) = device.protocol_version()?;
         if major < 2 {
             return Err(Error::Protocol(format!("HID++ {major}.x is not supported")));
@@ -445,6 +459,11 @@ impl HidppDevice {
     /// grants more once it has read which memory format the mouse uses.
     pub fn grant(&mut self, access: Access) {
         self.access = access;
+    }
+
+    /// Names the device in the write log.
+    pub fn set_label(&mut self, label: String) {
+        self.label = label;
     }
 
     fn transact(&mut self, index: u8, function: u8, params: &[u8]) -> Result<[u8; 16]> {
@@ -527,6 +546,11 @@ impl HidppDevice {
     }
 
     fn call(&mut self, feature: u16, function: u8, params: &[u8]) -> Result<[u8; 16]> {
+        // Every call that is not a read changes something, if only in RAM: none in read-only mode.
+        let change = (!is_read_call(feature, function)).then(|| format!("HID++ {feature:#06x} function {function}"));
+        if let Some(kind) = &change {
+            crate::writes::allow(&self.label, kind, params)?;
+        }
         match self.access {
             Access::ReadOnly if !is_read_call(feature, function) => {
                 return Err(Error::Invalid("PeriHub only reads this mouse".into()));
@@ -537,7 +561,11 @@ impl HidppDevice {
             _ => {}
         }
         let index = self.feature_index(feature)?;
-        self.transact(index, function, params)
+        let result = self.transact(index, function, params);
+        if let Some(kind) = &change {
+            crate::writes::sent(&self.label, kind, params, &result);
+        }
+        result
     }
 
     pub fn has_feature(&mut self, id: u16) -> bool {
@@ -1169,6 +1197,57 @@ pub(crate) mod tests {
         let started = Instant::now();
         assert!(matches!(dev.firmware(), Err(Error::Unreachable)));
         assert!(started.elapsed() < TIMEOUT);
+    }
+
+    #[test]
+    fn read_only_mode_refuses_every_call_that_is_not_a_read() {
+        const FEATURES: &[u16] = &[feature::ROOT, feature::ADJUSTABLE_DPI, feature::ONBOARD_PROFILES];
+        let fake = fake_mouse(FEATURES, |_, _| vec![0, 0x06, 0x40, 0x06, 0x40]);
+        let written = fake.written.clone();
+        let mut dev = HidppDevice::new(fake, models::WIRED_INDEX, false).unwrap();
+        dev.set_label("hidpp read-only test".into());
+        assert_eq!(dev.access, Access::Full);
+        let info = OnboardInfo {
+            memory_model: 1,
+            profile_format: 2,
+            macro_format: 1,
+            profile_count: 1,
+            rom_profile_count: 1,
+            button_count: 11,
+            sector_count: 4,
+            sector_size: 16,
+            has_gshift: false,
+            has_dpi_shift: false,
+        };
+        let _read_only = crate::writes::test::read_only_mode();
+        let before = written.lock().unwrap().len();
+        assert!(matches!(dev.set_sensor_dpi(0, 800), Err(Error::ReadOnly)));
+        let mut sector = vec![0u8; 16];
+        profile::write_crc(&mut sector);
+        assert!(matches!(dev.write_sector(1, &sector, &info), Err(Error::ReadOnly)));
+        assert_eq!(written.lock().unwrap().len(), before, "nothing was sent");
+        // Reads still go out, the ping of the device included.
+        dev.sensor_dpi(0).unwrap();
+        dev.protocol_version().unwrap();
+        let reports = written.lock().unwrap()[before..].to_vec();
+        assert!(reports.iter().filter(|r| r[2] != 0).all(|r| is_read_call(FEATURES[r[2] as usize], r[3] >> 4)));
+        let log = crate::writes::test::entries_of("hidpp read-only test");
+        assert_eq!(log.len(), 2);
+        assert_eq!(log[0].kind, "HID++ 0x2201 function 3");
+        assert!(log.iter().all(|e| e.result == crate::writes::REFUSED));
+    }
+
+    #[test]
+    fn the_battery_is_read_in_read_only_mode() {
+        // The slow battery read of the warnings (logitech.rs, mouse.rs) only reads: it goes on.
+        const FEATURES: &[u16] = &[feature::ROOT, feature::UNIFIED_BATTERY];
+        let fake = fake_mouse(FEATURES, |_, _| vec![55, 0x04, 0x00, 0x00]);
+        let mut dev = HidppDevice::new(fake, models::WIRED_INDEX, false).unwrap();
+        dev.set_label("hidpp battery read-only test".into());
+        let _read_only = crate::writes::test::read_only_mode();
+        let battery = dev.battery().unwrap().expect("a battery");
+        assert_eq!(battery.percent, 55);
+        assert!(crate::writes::test::entries_of("hidpp battery read-only test").is_empty(), "no write, none refused");
     }
 
     /// The reports `write_sector` sends for a sector of `size` bytes, after the feature lookup.

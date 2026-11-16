@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
-  import { api, errorText, type AppSettings, type DeviceStatus } from "../lib/api";
+  import { api, errorText, type AppSettings, type BatteryAlerts, type DeviceStatus, type WriteEntry } from "../lib/api";
+  import { readOnly, setReadOnly, writeTime } from "../lib/readOnly.svelte";
   import { INSTALL_NOTE, checkForUpdate, installUpdate, installingText, updates } from "../lib/updates.svelte";
   import TestReport from "../components/TestReport.svelte";
   import SupportedDevices from "../components/SupportedDevices.svelte";
@@ -29,6 +30,55 @@
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
   });
+
+  /** The writes of this session, newest first, read when the list is opened. */
+  let writes = $state<WriteEntry[]>([]);
+  let switching = $state(false);
+
+  async function loadWrites() {
+    try {
+      writes = (await api.writeLog()).reverse();
+    } catch (e) {
+      error = errorText(e);
+    }
+  }
+
+  async function clearWrites() {
+    await api.clearWriteLog().catch((e) => (error = errorText(e)));
+    await loadWrites();
+  }
+
+  async function toggleReadOnly(box: HTMLInputElement) {
+    switching = true;
+    try {
+      await setReadOnly(box.checked);
+      error = null;
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      box.checked = readOnly.on;
+      switching = false;
+    }
+  }
+
+  const LOW_LEVELS = [5, 10, 15, 20, 25, 30, 40, 50];
+
+  /** The levels to choose from, with the one in use if it came from the settings file. */
+  const lowLevels = (current: number) => (LOW_LEVELS.includes(current) ? LOW_LEVELS : [...LOW_LEVELS, current].sort((a, b) => a - b));
+
+  async function updateBattery(change: Partial<BatteryAlerts>, input: HTMLInputElement | HTMLSelectElement) {
+    if (!settings) return;
+    const before = settings.battery;
+    try {
+      settings = await api.setAppSettings({ ...settings, battery: { ...before, ...change } });
+      error = null;
+    } catch (e) {
+      error = errorText(e);
+      // Nothing changed, so the control goes back.
+      if (input instanceof HTMLInputElement) input.checked = !input.checked;
+      else input.value = String(before.low_percent);
+    }
+  }
 
   async function update(change: Partial<AppSettings>, box: HTMLInputElement) {
     if (!settings) return;
@@ -65,6 +115,76 @@
     <p class="muted small">
       Closing the window does not quit PeriHub: it keeps running to animate the keyboard lighting and to
       reapply colors when the keyboard is plugged back in. Reopen it from the tray icon or by launching it again.
+    </p>
+  </div>
+
+  <div class="card col">
+    <h2>Read-only mode</h2>
+    <label class="row">
+      <input type="checkbox" checked={readOnly.on} disabled={switching}
+        onchange={(e) => toggleReadOnly(e.currentTarget)} />
+      Read-only mode: PeriHub reads your devices but sends them no changes
+    </label>
+    <p class="muted small">
+      Use it to look at a device without any risk, for example one PeriHub has not been tested with. It takes effect at
+      once, also from the tray menu, and stays on until you turn it off. Saving, lighting, DPI previews, undo and app
+      profiles wait until then. Software macros still run: they type on your computer and send nothing to the devices.
+    </p>
+    <details ontoggle={(e) => e.currentTarget.open && loadWrites()}>
+      <summary class="small">Writes sent this session</summary>
+      <div class="col writes">
+        <p class="muted small">
+          Every change PeriHub sent to a device since it started, and every one read-only mode refused. Kept in memory
+          only, and added to test reports without the bytes.
+        </p>
+        {#if writes.length}
+          <ol class="small">
+            {#each writes as w, i (i)}
+              <li>
+                <span class="muted">{writeTime(w.time)}</span> {w.device}: {w.kind}
+                <code>{w.data}</code>
+                <span class:refused={w.result !== "ok"}>{w.result}</span>
+              </li>
+            {/each}
+          </ol>
+        {:else}
+          <p class="small">Nothing was sent to a device yet.</p>
+        {/if}
+        <div class="row">
+          <button class="tiny" onclick={loadWrites}>Refresh</button>
+          <button class="tiny" disabled={!writes.length} onclick={clearWrites}>Clear</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="card col">
+    <h2>Battery</h2>
+    {#if settings}
+      <label class="row">
+        <input type="checkbox" checked={settings.battery.enabled}
+          onchange={(e) => updateBattery({ enabled: e.currentTarget.checked }, e.currentTarget)} />
+        Tell me when the battery of a wireless device is low
+      </label>
+      <label class="row wrap">
+        <span class="label">Low below</span>
+        <select value={settings.battery.low_percent} disabled={!settings.battery.enabled}
+          onchange={(e) => updateBattery({ low_percent: Number(e.currentTarget.value) }, e.currentTarget)}>
+          {#each lowLevels(settings.battery.low_percent) as level (level)}
+            <option value={level}>{level}%</option>
+          {/each}
+        </select>
+      </label>
+      <label class="row">
+        <input type="checkbox" checked={settings.battery.full} disabled={!settings.battery.enabled}
+          onchange={(e) => updateBattery({ full: e.currentTarget.checked }, e.currentTarget)} />
+        Also tell me when it is fully charged
+      </label>
+    {/if}
+    <p class="muted small">
+      You get one notification each time a battery goes below the limit, and another only after it was charged.
+      The tray icon shows the battery of each wireless device. PeriHub reads Razer and SteelSeries batteries
+      along with its usual checks, and Logitech batteries every 5 minutes.
     </p>
   </div>
 
@@ -261,5 +381,22 @@
     margin: 0;
     padding-left: 18px;
     line-height: 1.7;
+  }
+
+  .writes {
+    margin-top: 10px;
+  }
+
+  .writes ol {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    max-height: 260px;
+    overflow: auto;
+    line-height: 1.7;
+  }
+
+  .refused {
+    color: var(--warn);
   }
 </style>

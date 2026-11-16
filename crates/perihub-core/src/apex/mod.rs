@@ -10,11 +10,11 @@ use std::collections::BTreeMap;
 use std::thread::sleep;
 use std::time::Duration;
 
-use hidapi::HidDevice;
 use serde::{Deserialize, Serialize};
 
 use crate::color::Rgb;
 use crate::error::{Error, Result};
+use crate::peripheral::Hid;
 
 pub const ZONES: usize = 8;
 pub const MAX_BRIGHTNESS: u8 = 0x10;
@@ -25,6 +25,8 @@ const FEATURE_LEN: usize = 257;
 const READ_DELAY: Duration = Duration::from_millis(80);
 const WRITE_DELAY: Duration = Duration::from_millis(250);
 const BINDINGS_PER_QUERY: usize = 30;
+/// The keyboard's name in the write log.
+const DEVICE: &str = "SteelSeries Apex 3 TKL";
 
 /// Commands sent as output reports (lighting, volatile).
 enum OutputCommand<'a> {
@@ -63,6 +65,15 @@ impl FeatureCommand<'_> {
                 out
             }
             Self::Save => vec![0x11],
+        }
+    }
+
+    /// What a command that changes the keyboard does, for the write log.
+    fn name(&self) -> &'static str {
+        match self {
+            Self::SetBinding { .. } => "key binding",
+            Self::Save => "save key map",
+            _ => "read",
         }
     }
 }
@@ -113,16 +124,21 @@ impl KeyBinding {
 pub type Layer = BTreeMap<u8, KeyBinding>;
 
 pub struct Apex3Tkl {
-    dev: HidDevice,
+    dev: Box<dyn Hid>,
 }
 
 impl Apex3Tkl {
-    pub fn new(dev: HidDevice) -> Self {
-        Self { dev }
+    pub fn new(dev: impl Hid + 'static) -> Self {
+        Self { dev: Box::new(dev) }
     }
 
     fn output(&self, command: OutputCommand) -> Result<()> {
         let mut packet = [0u8; OUTPUT_LEN];
+        let kind = match command {
+            OutputCommand::Colors(_) => "lighting colors",
+            OutputCommand::Rainbow => "hardware rainbow",
+            OutputCommand::Brightness(_) => "brightness",
+        };
         match command {
             OutputCommand::Colors(colors) => {
                 packet[1] = 0x21;
@@ -140,18 +156,21 @@ impl Apex3Tkl {
                 packet[2] = level.min(MAX_BRIGHTNESS);
             }
         }
-        self.dev.write(&packet)?;
-        Ok(())
+        let used = match command {
+            OutputCommand::Colors(_) => 3 + 3 * ZONES,
+            _ => 3,
+        };
+        crate::writes::send(DEVICE, kind, &packet[1..used], || self.dev.write(&packet).map(|_| ()))
     }
 
     fn send_feature(&self, command: &FeatureCommand, delay: Duration) -> Result<[u8; FEATURE_LEN]> {
         let request = command.encode();
         let mut packet = [0u8; FEATURE_LEN];
         packet[1..1 + request.len()].copy_from_slice(&request);
-        self.dev.send_feature_report(&packet)?;
+        self.dev.send_feature(&packet)?;
         sleep(delay);
         let mut reply = [0u8; FEATURE_LEN];
-        let n = self.dev.get_feature_report(&mut reply)?;
+        let n = self.dev.get_feature(&mut reply)?;
         if n < 3 || reply[1] != request[0] {
             return Err(Error::Protocol(format!(
                 "reply {:#04x} to command {:#04x} (is SteelSeries GG running?)",
@@ -174,11 +193,13 @@ impl Apex3Tkl {
     }
 
     fn write(&self, command: &FeatureCommand) -> Result<()> {
-        let reply = self.send_feature(command, WRITE_DELAY)?;
-        if reply[2] != 0 {
-            return Err(Error::Protocol(format!("command rejected (status {:#04x})", reply[2])));
-        }
-        Ok(())
+        crate::writes::send(DEVICE, command.name(), &command.encode(), || {
+            let reply = self.send_feature(command, WRITE_DELAY)?;
+            if reply[2] != 0 {
+                return Err(Error::Protocol(format!("command rejected (status {:#04x})", reply[2])));
+            }
+            Ok(())
+        })
     }
 
     fn read_string(&self, command: &FeatureCommand) -> Result<String> {
@@ -257,6 +278,7 @@ impl Apex3Tkl {
     /// then saves to the keyboard's memory. If anything does not match, restores the previous values.
     /// Returns the map read after saving.
     pub fn apply_changes(&self, changes: &[(u8, u8, KeyBinding)]) -> Result<[Layer; 2]> {
+        crate::writes::refuse_if_read_only()?;
         for &(layer, source, binding) in changes {
             check_layer(layer)?;
             validate_binding(layer, source, binding)?;
@@ -319,8 +341,48 @@ pub fn validate_binding(layer: u8, source: u8, binding: KeyBinding) -> Result<()
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
+    use crate::peripheral::fake::FakeHid;
+
+    /// A keyboard that answers every feature report: firmware "1", brightness 8, every binding
+    /// empty, every change accepted.
+    pub(crate) fn fake_keyboard() -> FakeHid {
+        let hid = FakeHid::new(|_| Vec::new());
+        hid.0.lock().unwrap().on_feature = Some(Box::new(|request: &[u8]| match request[0] {
+            0x90 => vec![0x90, b'1', 0],
+            0xA3 => vec![0xA3, 8],
+            0xAA => [&[0xAA, 0][..], &request[3..]].concat(),
+            command => vec![command, 0],
+        }));
+        hid
+    }
+
+    #[test]
+    fn read_only_mode_refuses_lighting_and_key_map_writes() {
+        let hid = fake_keyboard();
+        let dev = Apex3Tkl::new(hid.clone());
+        let read_only = crate::writes::test::read_only_mode();
+        let refused = |result: Result<()>| assert!(matches!(result, Err(Error::ReadOnly)), "{result:?}");
+        let binding = KeyBinding::Key { usage: 0x05 };
+        refused(dev.set_colors(&[Rgb { r: 1, g: 2, b: 3 }; ZONES]));
+        refused(dev.set_hardware_rainbow());
+        refused(dev.set_brightness(4));
+        refused(dev.set_binding_volatile(0, 0x04, binding));
+        refused(dev.save());
+        refused(dev.apply_changes(&[(0, 0x04, binding)]).map(|_| ()));
+        assert!(hid.sent().is_empty(), "nothing reached the keyboard");
+        assert_eq!(dev.brightness().unwrap(), 8, "reads still work");
+        assert!(hid.sent().iter().all(|r| r[0] == 0xA3));
+        let log = crate::writes::test::entries_of(DEVICE);
+        let kinds: Vec<&str> = log.iter().map(|e| e.kind.as_str()).collect();
+        assert_eq!(kinds, ["lighting colors", "hardware rainbow", "brightness", "key binding", "save key map"]);
+
+        drop(read_only);
+        dev.set_brightness(4).unwrap();
+        assert_eq!(hid.sent().last().unwrap()[..2], [0x23, 4]);
+        assert_eq!(crate::writes::test::entries_of(DEVICE).last().unwrap().result, "ok");
+    }
 
     #[test]
     fn slot_table_has_114_entries() {

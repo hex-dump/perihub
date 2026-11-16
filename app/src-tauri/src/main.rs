@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod autostart;
+mod battery;
 mod commands;
 #[cfg(target_os = "linux")]
 mod flatpak;
@@ -9,6 +10,7 @@ mod key_access;
 mod logfile;
 mod macro_files;
 mod qmk_access;
+mod quick;
 mod soft_macros;
 #[cfg(target_os = "linux")]
 mod system_theme;
@@ -77,6 +79,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![HIDDEN_ARG]),
@@ -102,6 +105,8 @@ fn main() {
                     None
                 }
             };
+            // Before any device is opened: read-only mode applies from the first report.
+            perihub_core::writes::set_read_only(config.read_only);
             let handle = app.handle().clone();
             // The device listener starts before the app profiles exist: they are set right after.
             let profiles_slot = Arc::new(OnceLock::<Arc<AppProfileEngine>>::new());
@@ -122,6 +127,9 @@ fn main() {
                         soft.watch_keyboard(manager.keyboard_triggers());
                     }
                     let _ = handle.emit("devices-changed", status);
+                    // The tray's quick actions follow the connected devices.
+                    quick::refresh_mouse_choices(&handle);
+                    window::refresh_menu(&handle);
                 }),
             );
             let soft = SoftMacroEngine::new(config.software_macros.clone());
@@ -143,7 +151,14 @@ fn main() {
                 app.state::<updates::Available>().started_by_update();
             }
             window::build_tray(app.handle())?;
+            battery::start(app.handle().clone());
             updates::watch(app.handle().clone());
+            // `perihub-cli app ...` talks to the app here, since the CLI cannot open devices the app holds.
+            let quick_app = app.handle().clone();
+            if let Err(error) = perihub_core::quick::serve(move |action| quick::run_from_cli(&quick_app, action)) {
+                log::warn!("quick actions from perihub-cli are not available: {error}");
+            }
+            quick::refresh_mouse_choices(app.handle());
 
             // The window opens with the system's theme, and the interface follows it as it changes.
             #[cfg(target_os = "linux")]
@@ -224,9 +239,14 @@ fn main() {
             commands::profiles_get,
             commands::profiles_set,
             commands::profiles_setup_focus,
+            commands::games_installed,
             commands::app_get_settings,
             commands::app_set_settings,
             commands::app_quit,
+            commands::app_read_only,
+            commands::app_set_read_only,
+            commands::app_write_log,
+            commands::app_clear_write_log,
             commands::app_open_log_folder,
             commands::app_open_test_form,
             commands::app_open_support_link,
@@ -248,7 +268,10 @@ fn main() {
         .run(|_app, event| match event {
             // Without windows PeriHub keeps running in the tray; Quit sets an exit code.
             RunEvent::ExitRequested { code: None, api, .. } => api.prevent_exit(),
-            RunEvent::Exit => perihub_core::focus::stop(),
+            RunEvent::Exit => {
+                perihub_core::focus::stop();
+                perihub_core::quick::stop();
+            }
             _ => {}
         });
 }

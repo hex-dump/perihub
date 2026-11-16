@@ -87,7 +87,12 @@ impl KeyboardTask {
             macro_keys: Arc::default(),
             key_zones: KeyZones::default(),
         };
-        task.dev.set_brightness(config.brightness.min(MAX_BRIGHTNESS))?;
+        // In read-only mode the keyboard keeps the lighting it has.
+        if crate::writes::read_only() {
+            log::info!("keyboard: read-only mode, its brightness and lighting are left as they are");
+        } else {
+            task.dev.set_brightness(config.brightness.min(MAX_BRIGHTNESS))?;
+        }
         // Which keys start software macros, and which zones remapped keys light. The keyboard works
         // without it.
         match task.keymap() {
@@ -120,6 +125,10 @@ impl KeyboardTask {
     }
 
     fn render(&mut self) -> Result<()> {
+        // Read-only mode: no frame is sent, and the lighting comes back once it is off.
+        if crate::writes::read_only() {
+            return Ok(());
+        }
         let since_press = self.keys.as_ref().map_or(NO_PRESSES, KeyWatcher::since_press);
         match self.lighting.frame(self.started.elapsed(), &since_press) {
             Frame::Colors(colors) => self.dev.set_colors(&colors)?,
@@ -132,6 +141,7 @@ impl KeyboardTask {
     /// Applies the lighting. If it reacts to keys and they cannot be read, the base color is shown
     /// and the error is returned.
     pub fn set_lighting(&mut self, lighting: KeyboardLighting) -> Result<()> {
+        crate::writes::refuse_if_read_only()?;
         self.lighting = lighting;
         self.started = Instant::now();
         let watching = self.watch_keys();
@@ -146,6 +156,7 @@ impl KeyboardTask {
     }
 
     pub fn set_brightness(&mut self, level: u8) -> Result<()> {
+        crate::writes::refuse_if_read_only()?;
         if level > MAX_BRIGHTNESS {
             return Err(Error::Invalid(format!("brightness {level}")));
         }
@@ -167,6 +178,7 @@ impl KeyboardTask {
     }
 
     fn write_keymap(&mut self, changes: &[(u8, u8, KeyBinding)], label: &str) -> Result<Keymap> {
+        crate::writes::refuse_if_read_only()?;
         let before = self.keymap()?;
         // Nothing to write (a reset of a key map that is already the factory one): no backup either.
         if changes.is_empty() {
@@ -279,6 +291,21 @@ impl DeviceTask for KeyboardTask {
 mod tests {
     use super::*;
     use crate::apex::keys::STEELSERIES_KEY;
+
+    #[test]
+    fn a_keyboard_opened_in_read_only_mode_is_only_read() {
+        let hid = crate::apex::tests::fake_keyboard();
+        let _read_only = crate::writes::test::read_only_mode();
+        let dev = Apex3Tkl::new(hid.clone());
+        let mut task = KeyboardTask::open(dev, &KeyboardConfig::default(), KeyInterfaces::default()).unwrap();
+        task.tick().unwrap();
+        assert!(matches!(task.set_brightness(3), Err(Error::ReadOnly)));
+        assert!(matches!(task.set_lighting(KeyboardLighting::default()), Err(Error::ReadOnly)));
+        let change = (0, 0x04, KeyBinding::Key { usage: 0x05 });
+        assert!(matches!(task.apply_keymap(&[change]), Err(Error::ReadOnly)));
+        // Only the reads of the firmware version and the key map: no lighting, no brightness.
+        assert!(hid.sent().iter().all(|r| matches!(r[0], 0x90 | 0xAA)), "{:?}", hid.sent());
+    }
 
     /// A key map backup saved by PeriHub from a real Apex 3 TKL.
     fn real_backup() -> Keymap {

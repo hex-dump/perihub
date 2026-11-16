@@ -118,6 +118,10 @@ impl AppProfileEngine {
     }
 
     fn update(&self) {
+        // Read-only mode: nothing is sent; the rule is applied at the next change after it is off.
+        if crate::writes::read_only() {
+            return;
+        }
         let _applying = self.applying.lock().unwrap();
         let (lighting, mouse) = self.targets();
         if let Err(error) = self.apply_lighting(lighting) {

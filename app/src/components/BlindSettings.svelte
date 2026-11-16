@@ -3,6 +3,7 @@
   // device cannot report (the colour of Razer mice): PeriHub sends one at a time and never saves it
   // to the device's memory. It cannot show, check or undo them, so the warning is always on screen.
   import { api, errorText, type BlindSetting, type BlindValue, type PeripheralInfo } from "../lib/api";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     info: PeripheralInfo;
@@ -129,7 +130,7 @@
                   placeholder={s.kind.type === "dpi" ? "e.g. 800, 1600" : ""}
                   onchange={(e) => (drafts[s.id] = e.currentTarget.value)} />
               {/if}
-              <button class="tiny" disabled={!!busy} onclick={() => send(s)}>{busy === s.id ? "Sending…" : "Send"}</button>
+              <button class="tiny" disabled={!!busy || readOnly.on} onclick={() => send(s)}>{busy === s.id ? "Sending…" : "Send"}</button>
             </div>
           {/if}
           <span class="muted small">Last sent: {shown(s.last)}</span>
