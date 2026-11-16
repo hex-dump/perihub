@@ -43,7 +43,7 @@
   });
 
   const timer = setInterval(() => {
-    if (!initial || draft || busy || confirmKeep) return;
+    if (!initial || draft || busy || confirmKeep || document.hidden) return;
     api.peripheralInfo(initial.key).then((i) => (live = i)).catch(() => {});
   }, LIVE_MS);
   onDestroy(() => clearInterval(timer));

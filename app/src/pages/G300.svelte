@@ -34,7 +34,7 @@
   });
 
   const timer = setInterval(() => {
-    if (!initial) return;
+    if (!initial || document.hidden) return;
     api.g300Info().then((i) => (live = i)).catch(() => {});
   }, LIVE_MS);
   onDestroy(() => clearInterval(timer));

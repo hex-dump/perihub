@@ -113,7 +113,8 @@ describe("Settings", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     button.focus();
     await fireEvent.click(button);
-    const dialog = screen.getByRole("dialog", { name: "Credits" });
+    // The dialog is loaded when first opened.
+    const dialog = await screen.findByRole("dialog", { name: "Credits" });
     expect(dialog.getAttribute("aria-modal")).toBe("true");
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Close" }));
     for (const text of ["libratbag", "rivalcfg", "WTFPL", "GPL-2.0-or-later", "OpenRGB", "Solaar", "No code was copied."]) {
@@ -131,7 +132,7 @@ describe("Settings", () => {
     const button = screen.getByRole("button", { name: "Credits" });
     button.focus();
     await fireEvent.click(button);
-    const close = screen.getByRole("button", { name: "Close" });
+    const close = await screen.findByRole("button", { name: "Close" });
     const list = screen.getByRole("region", { name: "List of credits" });
     close.focus();
     await fireEvent.keyDown(close, { key: "Tab", shiftKey: true });

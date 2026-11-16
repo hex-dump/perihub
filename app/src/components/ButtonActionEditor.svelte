@@ -2,7 +2,6 @@
   import { api, errorText, type ButtonAction, type KeyInfo, type Macro, type SoftwareMacro } from "../lib/api";
   import { CONSUMER_KEYS, keyLabel, MODIFIERS, MOUSE_CLICKS, SPECIAL_FUNCTIONS } from "../lib/keys";
   import { macroSummary, softSummary, type MacroSource } from "../lib/macros";
-  import MacroEditor from "./MacroEditor.svelte";
 
   interface Props {
     action: ButtonAction;
@@ -153,12 +152,17 @@
 
 {#if softError}<div class="notice error">{softError}</div>{/if}
 
+<!-- The macro editor is loaded when first opened. -->
 {#if editing}
-  <MacroEditor content={editing} {keys} {library} space={macroSpace} button={name} onsave={saveMacro} oncancel={cancelMacro} />
+  {#await import("./MacroEditor.svelte") then { default: MacroEditor }}
+    <MacroEditor content={editing} {keys} {library} space={macroSpace} button={name} onsave={saveMacro} oncancel={cancelMacro} />
+  {/await}
 {/if}
 {#if editingSoft}
-  <MacroEditor content={EMPTY} soft={editingSoft} onsavesoft={saveSoft} {keys} {library} button={name}
-    onsave={() => {}} oncancel={cancelMacro} />
+  {#await import("./MacroEditor.svelte") then { default: MacroEditor }}
+    <MacroEditor content={EMPTY} soft={editingSoft} onsavesoft={saveSoft} {keys} {library} button={name}
+      onsave={() => {}} oncancel={cancelMacro} />
+  {/await}
 {/if}
 
 <style>

@@ -26,9 +26,17 @@
 
   const listed = $derived((devices ?? []).filter((d) => !shown.includes(usbId(d))));
 
+  /** The list as last shown: the same list again changes nothing on screen, so it is not set again. */
+  let shownJson = "";
+
   async function load() {
     try {
-      devices = await api.devicesForReport();
+      const next = await api.devicesForReport();
+      const json = JSON.stringify(next);
+      if (json !== shownJson) {
+        shownJson = json;
+        devices = next;
+      }
     } catch (e) {
       error = errorText(e);
     }
@@ -41,7 +49,8 @@
       .appSettings()
       .then((s) => (system = s.system))
       .catch(() => (system = "unknown system"));
-    const timer = setInterval(load, REFRESH_MS);
+    // Not while the window is minimized: nobody sees the list.
+    const timer = setInterval(() => document.hidden || load(), REFRESH_MS);
     return () => clearInterval(timer);
   });
 

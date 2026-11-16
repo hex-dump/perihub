@@ -10,14 +10,12 @@
     type ReceiverReport,
   } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
-  import BackupsDialog from "../components/BackupsDialog.svelte";
   import ConfirmButton from "../components/ConfirmButton.svelte";
   import { mouseRestoreMessage } from "../lib/backups";
   import TestReport from "../components/TestReport.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import UnifyingPermission from "../components/UnifyingPermission.svelte";
   import { receiverName, receiverTest } from "../lib/testReport";
-  import ExperimentalDialog from "../components/ExperimentalDialog.svelte";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import MousePerformance from "./MousePerformance.svelte";
@@ -416,15 +414,17 @@
   </div>
 {/if}
 {#if info && pendingWrite}
-  <ExperimentalDialog
-    model={info.model}
-    profileFormat={info.onboard.profile_format}
-    sectorSize={info.onboard.sector_size}
-    action={pendingWrite.action}
-    receiver={info.receiver}
-    onconfirm={confirmWrite}
-    onclose={() => (pendingWrite = null)}
-  />
+  {#await import("../components/ExperimentalDialog.svelte") then { default: ExperimentalDialog }}
+    <ExperimentalDialog
+      model={info.model}
+      profileFormat={info.onboard.profile_format}
+      sectorSize={info.onboard.sector_size}
+      action={pendingWrite.action}
+      receiver={info.receiver}
+      onconfirm={confirmWrite}
+      onclose={() => (pendingWrite = null)}
+    />
+  {/await}
 {/if}
 {#if info?.host_mode}
   <div class="notice" class:error={editable} class:info={!editable}>
@@ -549,7 +549,9 @@
   {/if}
 
   {#if showBackups}
-    <BackupsDialog device={info.model} load={api.mouseBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
+    {#await import("../components/BackupsDialog.svelte") then { default: BackupsDialog }}
+      <BackupsDialog device={info.model} load={api.mouseBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
+    {/await}
   {/if}
 {:else if info}
   {#if error}<div class="notice error">{error}</div>{:else}<div class="notice info">{busy ?? "Loading…"}</div>{/if}

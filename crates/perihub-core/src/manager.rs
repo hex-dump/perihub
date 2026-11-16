@@ -923,8 +923,7 @@ impl Manager {
 
     /// Looks for running programs that take control of the devices. Returns `true` if the list changed.
     fn check_conflicts(&self) -> bool {
-        let running = conflicts::running();
-        let logitech_programs = conflicts::logitech_programs_running();
+        let (running, logitech_programs) = conflicts::running_and_logitech_programs();
         let mut slots = self.slots.lock().unwrap();
         if slots.conflicts == running && slots.logitech_programs == logitech_programs {
             return false;
