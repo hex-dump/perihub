@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MARK = "<!-- perihub-triage -->"
 DEVICES_MD = "https://github.com/hex-dump/perihub/blob/main/docs/devices.md"
-TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=device_test.yml"
+TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=test_report.yml"
 LEVELS = {
     "supported": "✅ **supported**: tested on real hardware",
     "experimental": "🧪 **experimental**: recognized, not tested yet, changes at your own risk",
@@ -69,7 +69,40 @@ def brand_labels(usb: str | None, devices: list[dict]) -> list[str]:
     return labels
 
 
-TYPES = ("device request", "device test", "mouse test")
+TYPES = ("device request", "test report")
+# The brands that have a label of their own: the options of the "Brand" dropdown of the forms, and "Other".
+BRANDS = ("Logitech", "SteelSeries", "Corsair", "Razer", "ASUS")
+KINDS = ("mouse", "keyboard")  # "Receiver" has no label
+
+
+def form_type(body: str) -> str | None:
+    """The kind of issue a form made, from its headings, for when GitHub did not put the label on
+    (a label that does not exist yet is dropped when the issue is made)."""
+    headings = set(re.findall(r"^### (.+?)\s*$", body or "", re.M))
+    if "What PeriHub shows correctly" in headings:
+        return "test report"
+    if "What the device can do in its official software" in headings:
+        return "device request"
+    return None
+
+
+def form_labels(answers: dict[str, str], from_catalogue: list[str]) -> list[str]:
+    """The kind of device and the brand: what the form's dropdowns say, else what the catalogue
+    knows for the USB ID. A brand not in BRANDS ("Other") is the catalogue's brand if it has one,
+    and "brand: Other" if not."""
+    catalogue_brand = next((l for l in from_catalogue if l.startswith("brand: ")), None)
+    catalogue_kind = next((l for l in from_catalogue if l in KINDS), None)
+    kind = answers.get("Device type", "").strip().lower()
+    kind = kind if kind in KINDS else catalogue_kind
+    chosen = answers.get("Brand", "").strip()
+    named = next((b for b in BRANDS if b.lower() == chosen.lower()), None)
+    if named:
+        brand = f"brand: {named}"
+    elif chosen.lower() == "other":
+        brand = catalogue_brand or "brand: Other"
+    else:
+        brand = catalogue_brand
+    return [l for l in (brand, kind) if l]
 
 
 def pasted(body: str) -> tuple[str, dict[str, str]] | None:
@@ -83,10 +116,8 @@ def pasted(body: str) -> tuple[str, dict[str, str]] | None:
     second = rest[0] if rest else ""
     text = "\n".join(lines[start:])
     found = {"PeriHub version": lines[start], "USB ID (vendor:product)": usb_id(text) or ""}
-    if second.startswith("Mouse: ") and "reports itself as" in second:
-        kind = "mouse test"
-    elif second.startswith(("Receiver: ", "Mouse: ")) or (second.startswith("Device: ") and ", USB ID " in second):
-        kind = "device test"
+    if second.startswith(("Receiver: ", "Mouse: ")) or (second.startswith("Device: ") and ", USB ID " in second):
+        kind = "test report"
     elif second.startswith("Device: "):
         kind = "device request"
     else:
@@ -95,7 +126,7 @@ def pasted(body: str) -> tuple[str, dict[str, str]] | None:
 
 
 def kind_label(body: str) -> list[str]:
-    """"mouse" or "keyboard", when the report says what the device is."""
+    """"mouse" or "keyboard", when a pasted report says what the device is."""
     m = re.search(r"^Kind: (Mouse|Keyboard)\b|^Device: .*\((mouse|keyboard)\)|^(Mouse): ", body or "", re.M | re.I)
     return [next(g for g in m.groups() if g).lower()] if m else []
 
@@ -104,18 +135,21 @@ def triage(issue: dict, latest: str, devices: list[dict], current: list[dict] | 
     """devices: those the latest release knows. current: those on main, for the labels."""
     current = devices if current is None else current
     labels = {label["name"] for label in issue.get("labels", [])}
+    present = set(labels)
     answers = fields(issue.get("body", ""))
-    added = []
+    pasted_kind = []
     if not labels & set(TYPES):
-        found = pasted(issue.get("body", ""))
-        if not found:
-            return {"comment": None, "labels": []}
-        kind, answers = found
+        kind = form_type(issue.get("body", ""))
+        if not kind:
+            found = pasted(issue.get("body", ""))
+            if not found:
+                return {"comment": None, "labels": []}
+            kind, answers = found
+            pasted_kind = kind_label(issue.get("body", ""))
         labels.add(kind)
-        added = [kind]
-    result = {"comment": None, "labels": added + brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), current)}
-    if added:
-        result["labels"] += [k for k in kind_label(issue.get("body", "")) if k not in result["labels"]]
+    catalogue = brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), current)
+    wanted = sorted(labels - present) + form_labels(answers, pasted_kind + catalogue)
+    result = {"comment": None, "labels": [l for i, l in enumerate(wanted) if l not in present and l not in wanted[:i]]}
 
     if "device request" in labels:
         given = answers.get("USB ID (vendor:product)", "")
@@ -143,7 +177,7 @@ def triage(issue: dict, latest: str, devices: list[dict], current: list[dict] | 
             )
         return result
 
-    if labels & {"device test", "mouse test"}:
+    if "test report" in labels:
         used, newest = version(answers.get("PeriHub version", "")), version(latest)
         if used and newest and used < newest:
             result["comment"] = (
