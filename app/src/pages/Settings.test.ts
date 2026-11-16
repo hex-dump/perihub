@@ -95,6 +95,43 @@ describe("Settings", () => {
     updates.installing = false;
   });
 
+  it("opens the credits in a dialog that Esc closes, and focus goes back to the button", async () => {
+    render(Settings, { props: { status } });
+    const button = screen.getByRole("button", { name: "Credits" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    button.focus();
+    await fireEvent.click(button);
+    const dialog = screen.getByRole("dialog", { name: "Credits" });
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Close" }));
+    for (const text of ["libratbag", "rivalcfg", "WTFPL", "GPL-2.0-or-later", "OpenRGB", "Solaar", "No code was copied."]) {
+      expect(dialog.textContent).toContain(text);
+    }
+    expect(screen.getByRole("region", { name: "List of credits" }).getAttribute("tabindex")).toBe("0");
+
+    await fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(button);
+  });
+
+  it("closes the credits with the Close button, and keeps Tab inside", async () => {
+    render(Settings, { props: { status } });
+    const button = screen.getByRole("button", { name: "Credits" });
+    button.focus();
+    await fireEvent.click(button);
+    const close = screen.getByRole("button", { name: "Close" });
+    const list = screen.getByRole("region", { name: "List of credits" });
+    close.focus();
+    await fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(list);
+    await fireEvent.keyDown(list, { key: "Tab" });
+    expect(document.activeElement).toBe(close);
+
+    await fireEvent.click(close);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(button);
+  });
+
   it("offers the test report only with a mouse connected", async () => {
     render(Settings, { props: { status } });
     await waitFor(() => expect(autostartBox().checked).toBe(true));
