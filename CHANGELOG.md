@@ -23,9 +23,6 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 - **Settings → Where settings are stored** is complete and follows the system: the settings folder (shown in full), backups and the pending-undo file, the log, macro files, how starting with the system is kept (registry on Windows, an autostart entry on Linux, the portal in a Flatpak) and the udev rules.
 - The udev rule, the device list, the website's catalogue and the AppStream metadata are now generated from PeriHub's own driver tables, so they can no longer disagree. The rule opens exactly the same interfaces as before. Razer mice are counted by name: 74, not 75, since the DeathAdder V3 Pro (Wired) has two USB ids.
 
-### Fixed
-- **No more "libayatana-appindicator is deprecated" line in the terminal** when PeriHub starts on Linux: it came from the tray library Tauri uses, and now goes to the debug log. The tray looks and works as before.
-
 ## 0.8.4 — 2026-11-15
 
 On Windows a mouse behind a LIGHTSPEED, Bolt or Unifying receiver is found, and a mouse with a tested memory format can be saved to through its receiver, as an experimental feature: a G502 HERO Wireless on a POWERPLAY mat was the first. Also: the G502 HERO Wireless's lights have the right names.

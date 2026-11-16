@@ -56,33 +56,11 @@ fn starts_hidden(args: &[String], start_hidden_setting: bool) -> bool {
     start_hidden_setting || args.iter().any(|a| a == HIDDEN_ARG)
 }
 
-/// Silences one message the tray prints on stderr at startup: "libayatana-appindicator is deprecated.
-/// Please use libayatana-appindicator-glib in newly written code". Tauri's tray-icon loads that
-/// library through the libappindicator crate, and Tauri 2 (up to 2.12) turns on only that backend
-/// (tray-icon's pure-Rust "ksni" one is not reachable from Tauri's features), so the warning is not
-/// ours to fix. It goes to the debug log; every other message of that domain is printed as before.
-#[cfg(target_os = "linux")]
-fn quiet_appindicator_deprecation() {
-    use glib::{LogLevel, LogLevels};
-    const DOMAIN: &str = "libayatana-appindicator";
-    let levels = LogLevels::LEVEL_WARNING | LogLevels::LEVEL_MESSAGE | LogLevels::LEVEL_INFO | LogLevels::LEVEL_DEBUG;
-    // The handler lives as long as the process.
-    let _ = glib::log_set_handler(Some(DOMAIN), levels, false, false, |domain, level, message| {
-        if level == LogLevel::Warning && message.contains("is deprecated") {
-            log::debug!("{}: {message}", domain.unwrap_or(DOMAIN));
-        } else {
-            glib::log_default_handler(domain, level, Some(message));
-        }
-    });
-}
-
 fn main() {
     // PeriHub's own messages at info level, other libraries only when something goes wrong.
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn,perihub=info,perihub_core=info"))
         .target(env_logger::Target::Pipe(Box::new(logfile::LogWriter::open())))
         .init();
-    #[cfg(target_os = "linux")]
-    quiet_appindicator_deprecation();
     let args: Vec<String> = std::env::args().collect();
 
     tauri::Builder::default()
