@@ -9,6 +9,9 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ### Changed
 - Automatic issue comments are quieter. A test build comments only on issues named by a `Test: #N` line in a commit message, and later builds edit that comment instead of adding one. The release comment goes to open issues the CHANGELOG names, quotes the line, and is skipped when the maintainer already said the fix ships.
 
+### Fixed
+- The "Send a report" prompt no longer flashes for a second at start-up while PeriHub is still looking for your devices.
+
 ### Security
 - The AUR and screenshots workflows no longer push to main: they open a pull request from a bot/ branch, run the required checks on it and ask for auto-merge.
 - The CI and test-build workflows now give their GitHub token read-only access by default, and only the job that comments on issues can write to them.
