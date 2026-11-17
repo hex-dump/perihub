@@ -4,6 +4,11 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+### Fixed
+- **Steam and Epic Games games now show up in "Add from installed games" on Windows.** PeriHub only looked for Steam in `Program Files (x86)\Steam`, ignored the Epic Games Launcher, and only found a game's program when it sat directly in the game's folder (not in `bin\x64` or an Unreal game's `Binaries\Win64`). It now finds Steam where Windows says it is installed (also when it is not in Program Files), reads the Epic Games Launcher's list of installed games, and looks a few folders deep, preferring the real game program over launchers, crash reporters and installers. Games started from a folder with a very long path are also recognised as the app in focus.
+
 ## 0.9.3 — 2026-11-17
 
 A damaged `config.json` is no longer overwritten by the defaults: PeriHub keeps it and brings back the last good save. Device detection recovers on its own when HID access is not ready at start-up, errors are shown in plain words instead of being swallowed, and on Linux desktops without a system tray closing the window quits PeriHub instead of hiding it. Test reports now carry every request and answer in full, and the interface works better with screen readers.

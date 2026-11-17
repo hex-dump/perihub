@@ -95,7 +95,7 @@ export interface ProfilesInfo {
 
 export interface InstalledGame {
   name: string;
-  /** "Steam", "Lutris" or "Heroic". */
+  /** "Steam", "Epic", "Lutris" or "Heroic". */
   launcher: string;
   /** Executable name on Windows, window class on Linux. */
   app: string;
@@ -892,7 +892,7 @@ export const api = {
   profiles: () => invoke<ProfilesInfo>("profiles_get"),
   setProfiles: (profiles: AppProfiles) =>
     invoke<void>("profiles_set", { profiles }),
-  /** Games installed through Steam, Lutris and Heroic (reads their files only). */
+  /** Games installed through Steam, the Epic Games Launcher, Lutris and Heroic (reads their files only). */
   installedGames: () => invoke<InstalledGame[]>("games_installed"),
   /** Runs the step a "setup" FocusSupport offers; resolves with what to tell the user. */
   setupFocus: () => invoke<string>("profiles_setup_focus"),

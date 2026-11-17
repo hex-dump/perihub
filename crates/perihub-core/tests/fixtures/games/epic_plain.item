@@ -1,0 +1,9 @@
+﻿{
+	"FormatVersion": 0,
+	"bIsIncompleteInstall": false,
+	"LaunchExecutable": "Binaries/Win64/RocketThing.exe",
+	"DisplayName": "Rocket Thing",
+	"InstallLocation": "C:\\Program Files\\Epic Games\\RocketThing",
+	"MainGameAppName": "",
+	"AppName": "Sugar"
+}
