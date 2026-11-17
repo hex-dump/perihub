@@ -4,6 +4,11 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+### Fixed
+- A settings file that cannot be read is no longer overwritten by the defaults at the next save, which also turned read-only mode off: PeriHub keeps it as `config.corrupt-<time>.json` in its settings folder, and uses `config.json.bak`, a copy of the last good save, if it is there.
+
 ## 0.9.2 — 2026-11-17
 
 A keyboard's page now shows its layout (ANSI, ISO, JIS or ABNT2, and the key legends) and lets you change it when detection is wrong, and the Apex 3 TKL's Keys tab draws the right keys for it. Also new: clearer status marks (an icon and a word, in colors that no longer look like the accent), a tidier look for every page, and a fix for the "Send a report" prompt that flashed at start-up. CI and release workflows are also safer. The layout read has not been tried on a real Corsair or Razer keyboard yet, and a Logitech keyboard's layout code is only written into test reports, not used, because what it means is not documented.
