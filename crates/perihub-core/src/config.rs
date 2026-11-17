@@ -72,6 +72,11 @@ pub struct AppConfig {
     pub logitech_drive: Vec<String>,
     /// Keyboards with a raw HID collection the user turned on as VIA keyboards, by "vvvv:pppp".
     pub qmk_keyboards: Vec<String>,
+    /// Read-only mode: nothing that changes a device is sent to it (see [`crate::writes`]). The
+    /// app and the command line both follow it.
+    pub read_only: bool,
+    /// Notifications about the battery of wireless devices.
+    pub battery: crate::battery::BatteryAlerts,
 }
 
 impl Default for AppConfig {
@@ -87,6 +92,8 @@ impl Default for AppConfig {
             logitech_looks: std::collections::HashMap::new(),
             logitech_drive: Vec::new(),
             qmk_keyboards: Vec::new(),
+            read_only: false,
+            battery: Default::default(),
         }
     }
 }
@@ -236,6 +243,14 @@ mod tests {
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).unwrap();
         root
+    }
+
+    #[test]
+    fn read_only_mode_is_off_unless_the_settings_turn_it_on() {
+        assert!(!AppConfig::default().read_only);
+        // Settings saved by an older PeriHub have no such field.
+        assert!(!serde_json::from_str::<AppConfig>("{}").unwrap().read_only);
+        assert!(serde_json::from_str::<AppConfig>(r#"{"read_only": true}"#).unwrap().read_only);
     }
 
     #[test]

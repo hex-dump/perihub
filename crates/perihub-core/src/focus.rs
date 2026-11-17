@@ -1,25 +1,55 @@
 //! Which app is in focus, for app profiles. Only the app's identifier is read, never window titles.
 //!
-//! Linux: Hyprland's event socket (other desktops do not tell apps which window is focused).
+//! Linux: Hyprland's event socket; on KDE Plasma a KWin script of PeriHub's own ([`kwin`]); on
+//! GNOME, PeriHub's own Shell extension ([`gnome`]). Other desktops do not tell apps which window
+//! is focused.
 //! Windows: the executable of the foreground window, checked twice a second.
 
 use std::thread;
 
 use serde::Serialize;
 
+#[cfg(target_os = "linux")]
+mod gnome;
+#[cfg(target_os = "linux")]
+mod kwin;
+
 /// Whether the focused app can be detected here.
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum FocusSupport {
-    Supported { desktop: &'static str },
-    Unsupported { reason: &'static str },
+    Supported {
+        desktop: &'static str,
+    },
+    Unsupported {
+        reason: &'static str,
+    },
+    /// Possible after a one-time step the user starts with a button labelled `action`, see [`setup`].
+    Setup {
+        desktop: &'static str,
+        reason: &'static str,
+        action: &'static str,
+    },
+    /// Possible after the user runs `command` outside the sandbox (GNOME in the Flatpak, which may
+    /// not install the extension itself) and logs in again.
+    HostCommand {
+        desktop: &'static str,
+        reason: &'static str,
+        command: String,
+    },
 }
 
 pub fn support() -> FocusSupport {
     #[cfg(target_os = "linux")]
     if hyprland::socket_dir().is_none() {
+        if let Some(support) = kwin::support() {
+            return support;
+        }
+        if gnome::detected() {
+            return gnome::support();
+        }
         return FocusSupport::Unsupported {
-            reason: "On Linux, detecting the app in focus works on Hyprland only for now.",
+            reason: "On Linux, detecting the app in focus works on Hyprland, KDE Plasma and GNOME only for now.",
         };
     }
     FocusSupport::Supported { desktop: if cfg!(windows) { "Windows" } else { "Hyprland" } }
@@ -29,13 +59,34 @@ pub fn support() -> FocusSupport {
 /// the window class on Linux, the executable name on Windows. Returns `false` if not supported.
 pub fn watch(on_change: impl FnMut(Option<String>) + Send + 'static) -> bool {
     #[cfg(target_os = "linux")]
-    let run = match hyprland::socket_dir() {
-        Some(dir) => move || hyprland::run(dir, on_change),
-        None => return false,
+    let run: Box<dyn FnOnce() + Send> = if let Some(dir) = hyprland::socket_dir() {
+        Box::new(move || hyprland::run(dir, on_change))
+    } else if kwin::on_plasma() {
+        return kwin::watch(on_change);
+    } else if gnome::detected() {
+        Box::new(move || gnome::run(on_change))
+    } else {
+        return false;
     };
     #[cfg(windows)]
     let run = move || windows::run(on_change);
     thread::Builder::new().name("perihub-focus".into()).spawn(run).is_ok()
+}
+
+/// Undoes what watching left on the desktop (the KWin script), when PeriHub quits. Nothing to undo
+/// elsewhere: GNOME's extension stays installed, it is the user's.
+pub fn stop() {
+    #[cfg(target_os = "linux")]
+    kwin::stop();
+}
+
+/// Runs the one-time step a [`FocusSupport::Setup`] offers. Returns what to tell the user.
+pub fn setup() -> Result<String, String> {
+    #[cfg(target_os = "linux")]
+    if hyprland::socket_dir().is_none() && gnome::detected() {
+        return gnome::setup();
+    }
+    Err("Nothing needs to be set up here.".into())
 }
 
 #[cfg(target_os = "linux")]

@@ -5,6 +5,7 @@
   // channel, after PeriHub checked that nothing typed arrives there.
   import { onMount } from "svelte";
   import { api, errorText, type QmkAccess, type QmkKeyboard } from "../lib/api";
+  import Status from "../components/Status.svelte";
 
   interface Props {
     keyboards: QmkKeyboard[];
@@ -66,9 +67,9 @@
   const manualInstall = (key: string) => access?.manual_install.find(([k]) => k === key)?.[1] ?? null;
 </script>
 
-<header>
+<header class="page-head">
   <h1>QMK keyboards</h1>
-  <span class="chip test">Experimental</span>
+  <Status kind="experimental" label="Experimental" chip />
 </header>
 
 <div class="notice info">
@@ -172,16 +173,6 @@
 {#if error && error.key === ""}<div class="notice error">{error.text}</div>{/if}
 
 <style>
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    margin: 0;
-  }
 
   section {
     gap: 10px;

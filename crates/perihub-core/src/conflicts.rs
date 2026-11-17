@@ -91,6 +91,13 @@ pub fn running() -> Vec<Conflict> {
     running_in(&process_names())
 }
 
+/// [`running`] and [`logitech_programs_running`] from one look at the process list, which costs
+/// more than matching the names.
+pub fn running_and_logitech_programs() -> (Vec<Conflict>, Vec<&'static str>) {
+    let names = process_names();
+    (running_in(&names), logitech_programs_in(&names))
+}
+
 fn running_in(names: &[String]) -> Vec<Conflict> {
     ALL.iter().copied().filter(|c| c.processes().iter().any(|p| names.iter().any(|n| n == p))).collect()
 }
@@ -166,6 +173,13 @@ mod tests {
         // Its sound service alone, which stays after it is quit.
         assert!(running_in(&names(&["logiregistryservice.exe"])).is_empty());
         assert_eq!(Conflict::LogitechGamingSoftware.name(), "Logitech Gaming Software");
+    }
+
+    #[test]
+    fn one_look_at_the_processes_gives_both_lists() {
+        let names = |list: &[&str]| list.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        let seen = names(&["lghub.exe", "solaar", "zsh"]);
+        assert_eq!((running_in(&seen), logitech_programs_in(&seen)), (vec![Conflict::LogitechGHub], vec!["Solaar"]));
     }
 
     #[test]

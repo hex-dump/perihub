@@ -1,6 +1,7 @@
 //! cargo xtask gen: writes the files generated from the device tables in perihub-core.
 //! cargo xtask check: fails if one of them is out of date (also run by cargo test).
 
+mod appdevices;
 mod catalog;
 mod docs;
 mod json;
@@ -30,6 +31,7 @@ fn generated() -> Vec<(&'static str, String)> {
         (site::PATH, site::render(&read(site::PATH), &devices)),
         (metainfo::PATH, metainfo::render(&read(metainfo::PATH), &devices)),
         (json::PATH, json::render(&devices)),
+        (appdevices::PATH, appdevices::render(&devices)),
         (preview::PATH, preview::render()),
     ]
 }

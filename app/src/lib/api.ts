@@ -5,6 +5,31 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 export type Rgb = string; // "#rrggbb"
 
+// Keyboard layouts (perihub-core kblayout.rs); app/src/lib/keyboardLayout.svelte.ts combines them.
+export type Physical = "ansi" | "iso" | "jis" | "abnt";
+export type Legends = "us" | "uk" | "it" | "de" | "fr" | "es" | "pt" | "se" | "no" | "dk" | "jp" | "br";
+
+/** What a keyboard says about its own layout. */
+export interface DeviceLayout {
+  /** null for a value PeriHub does not know the meaning of yet. */
+  physical: Physical | null;
+  /** The region of its keycaps, when the keyboard tells it (Razer). */
+  region: string | null;
+  /** What was read, such as "Corsair property 0x41 = 2". */
+  read: string;
+}
+
+/** The layout the system types with. */
+export interface SystemLayout {
+  /** null for a layout PeriHub has no legends for. */
+  legends: Legends | null;
+  /** The system's own name for it: "it", "us(intl)", or a Windows layout handle. */
+  name: string;
+  /** Where it was read: "localectl", "GNOME", "Windows"… */
+  source: string;
+  physical: Physical | null;
+}
+
 export type KeyboardLighting =
   | { type: "off" }
   | { type: "static"; colors: Rgb[] }
@@ -52,7 +77,11 @@ export interface AppProfiles {
 
 export type FocusSupport =
   | { kind: "supported"; desktop: string }
-  | { kind: "unsupported"; reason: string };
+  | { kind: "unsupported"; reason: string }
+  /** Possible after a one-time step started with a button labelled `action` (`api.setupFocus`). */
+  | { kind: "setup"; desktop: string; reason: string; action: string }
+  /** Possible after the user runs `command` in a terminal outside the sandbox (GNOME in the Flatpak). */
+  | { kind: "host_command"; desktop: string; reason: string; command: string };
 
 export interface ProfilesInfo {
   support: FocusSupport;
@@ -62,6 +91,18 @@ export interface ProfilesInfo {
   profiles: AppProfiles;
   /** Names of the saved lightings. */
   presets: string[];
+}
+
+export interface InstalledGame {
+  name: string;
+  /** "Steam", "Lutris" or "Heroic". */
+  launcher: string;
+  /** Executable name on Windows, window class on Linux. */
+  app: string;
+  /** False when the app is a best guess that may need correcting. */
+  certain: boolean;
+  /** Why it is not certain. */
+  note: string | null;
 }
 
 export type KeyBinding =
@@ -176,6 +217,8 @@ export type LedEffect =
 
 export interface ProfileSettings {
   report_rate_ms: number;
+  /** Polling rate in Hz, for memory formats that go above 1000 Hz (format 7); then `report_rate_ms` is 0 above 1000 Hz. */
+  report_rate_hz?: number;
   dpi_levels: number[];
   default_dpi_index: number;
   shift_dpi_index: number;
@@ -243,6 +286,23 @@ export interface HidppFeature {
   version: number;
 }
 
+/** What a PRO X 2 style mouse reports through its extended DPI and polling rate features and
+ * format 7 profiles. PeriHub only reads it. */
+export interface ExtendedReads {
+  /** The Y axis, when it has a range of its own (the X axis is `MouseInfo.dpi`). */
+  dpi_y: { min: number; max: number; step: number; list: number[] } | null;
+  dpi_now: { x: number; default_x: number; y: number | null; default_y: number | null; lod: number | null } | null;
+  rates_wired_hz: number[];
+  rates_wireless_hz: number[];
+  /** The rate on the connection the mouse is on. */
+  rate_now_hz: number | null;
+  /** What the mouse sent, as received. */
+  raw: string[];
+  /** One line for each profile of memory format 7. */
+  profiles: string[];
+  errors: string[];
+}
+
 export interface MouseInfo {
   product_id: number;
   /** Model name from PeriHub's list, e.g. "G502 HERO". */
@@ -266,6 +326,8 @@ export interface MouseInfo {
   firmware: { kind: number; name: string; version: string }[];
   dpi: { min: number; max: number; step: number; list: number[] };
   report_rates_ms: number[];
+  /** Extended features (0x2202, 0x8061) and format 7 profiles, if the mouse has them. */
+  extended?: ExtendedReads | null;
   led_zones: LedZone[];
   /** The HID++ features the mouse lists, for test reports. */
   features: HidppFeature[];
@@ -335,6 +397,8 @@ export interface DeviceStatus {
   logitech_programs: string[];
   /** PeriHub runs as a Flatpak and cannot see the other programs running. */
   sandboxed: boolean;
+  /** The first detection pass is over: until then empty lists mean "not looked at yet", not "nothing there". */
+  scanned: boolean;
 }
 
 /** A device paired with a receiver that PeriHub does not support yet, as far as it could be read. */
@@ -355,8 +419,12 @@ export interface UnsupportedReceiverDevice {
   features: HidppFeature[];
   /** The DPI it accepts (0x2201), if it has that feature. */
   dpi: { min: number; max: number; step: number; list: number[] } | null;
+  /** The DPI of its X axis (0x2202), if it has that instead of 0x2201. */
+  dpi_extended?: { min: number; max: number; step: number; list: number[] } | null;
   /** The polling rates it offers, in milliseconds (0x8060). */
   report_rates_ms: number[];
+  /** The polling rates it offers through the receiver, in Hz (0x8061). */
+  report_rates_hz?: number[];
   /** Its onboard profile memory (0x8100), if it has one. */
   onboard: MouseInfo["onboard"] | null;
   /** Its lighting (0x8040, 0x8071, 0x8081, 0x4540), if it has one of those features. */
@@ -370,6 +438,8 @@ export interface UnsupportedReceiverDevice {
   /** PeriHub only reads it: a device on its own USB connection nobody has tested yet. */
   read_only: boolean;
   read_errors: string[];
+  /** A keyboard's layout code (0x4540), if it has that feature. */
+  layout?: DeviceLayout | null;
 }
 
 /** What PeriHub read of a Logitech device's lighting, by its features. Read only. */
@@ -687,6 +757,8 @@ export interface PeripheralInfo {
   pending_undo: boolean;
   /** Requests and answers of the last reading, for test reports. */
   raw: string[];
+  /** A keyboard's physical layout, when its protocol has a read for it. */
+  layout?: DeviceLayout | null;
 }
 
 export interface CorsairInfo {
@@ -705,6 +777,17 @@ export interface CorsairInfo {
   read_errors: string[];
   /** The colour shown on every LED while experimental lighting is on ("#rrggbb"). */
   lighting: string | null;
+  /** A keyboard's physical layout, read from it. */
+  layout?: DeviceLayout | null;
+}
+
+export interface BatteryAlerts {
+  /** Warn when a battery gets low. */
+  enabled: boolean;
+  /** Percent: the warning comes when the battery goes below it. */
+  low_percent: number;
+  /** Also tell when a battery is fully charged. */
+  full: boolean;
 }
 
 export interface AppSettings {
@@ -712,14 +795,32 @@ export interface AppSettings {
   autostart: boolean;
   /** Look for a new version on GitHub at startup and once a day. */
   check_updates: boolean;
+  /** Notifications about the battery of wireless devices. */
+  battery: BatteryAlerts;
   /** This build can update itself (Windows). */
   updates_supported: boolean;
   /** The package manager that installed PeriHub and updates it, such as Scoop. */
   package_manager: string | null;
   /** Folder of the log file. */
   log_dir: string;
+  /** Folder of the settings and backups. */
+  config_dir: string;
   /** Operating system and architecture, for test reports. */
   system: string;
+}
+
+/** A write PeriHub sent to a device in this session, or refused in read-only mode. */
+export interface WriteEntry {
+  /** Milliseconds since 1970. */
+  time: number;
+  device: string;
+  /** What the write does: a command name, a HID++ feature and function… */
+  kind: string;
+  /** The first bytes, in hex. */
+  data: string;
+  bytes: number;
+  /** "ok", "refused (read-only mode)", or what went wrong. */
+  result: string;
 }
 
 /** How far the download of an update has gone. */
@@ -784,6 +885,7 @@ export const api = {
   restoreKeyboardBackup: (id: string) =>
     invoke<KeymapRestore>("kb_restore_backup", { id }),
   keyCatalog: () => invoke<KeyCatalog>("kb_key_catalog"),
+  systemLayout: () => invoke<SystemLayout | null>("kb_system_layout"),
   keyAccess: () => invoke<KeyAccess>("kb_key_access"),
   grantKeyAccess: () => invoke<void>("kb_grant_key_access"),
   revokeKeyAccess: () => invoke<void>("kb_revoke_key_access"),
@@ -879,6 +981,10 @@ export const api = {
   profiles: () => invoke<ProfilesInfo>("profiles_get"),
   setProfiles: (profiles: AppProfiles) =>
     invoke<void>("profiles_set", { profiles }),
+  /** Games installed through Steam, Lutris and Heroic (reads their files only). */
+  installedGames: () => invoke<InstalledGame[]>("games_installed"),
+  /** Runs the step a "setup" FocusSupport offers; resolves with what to tell the user. */
+  setupFocus: () => invoke<string>("profiles_setup_focus"),
   onFocus: (handler: (app: string | null) => void): Promise<UnlistenFn> =>
     listen<string | null>("focus-changed", (event) => handler(event.payload)),
 
@@ -886,8 +992,17 @@ export const api = {
   setAppSettings: (settings: AppSettings) =>
     invoke<AppSettings>("app_set_settings", { settings }),
   quit: () => invoke<void>("app_quit"),
+  /** Read-only mode: nothing that changes a device is sent to it. */
+  readOnly: () => invoke<boolean>("app_read_only"),
+  setReadOnly: (on: boolean) => invoke<boolean>("app_set_read_only", { on }),
+  onReadOnly: (handler: (on: boolean) => void): Promise<UnlistenFn> =>
+    listen<boolean>("read-only-changed", (event) => handler(event.payload)),
+  /** The writes of this session, oldest first: kept in memory only. */
+  writeLog: () => invoke<WriteEntry[]>("app_write_log"),
+  clearWriteLog: () => invoke<void>("app_clear_write_log"),
   openLogFolder: () => invoke<void>("app_open_log_folder"),
   openTestForm: (url: string) => invoke<void>("app_open_test_form", { url }),
+  openSupportLink: (url: string) => invoke<void>("app_open_support_link", { url }),
   softMacros: () => invoke<SoftMacrosInfo>("soft_get"),
   /** Saves a macro run by PeriHub; a new one (key 0) gets its trigger key. */
   saveSoftMacro: (item: SoftwareMacro) =>

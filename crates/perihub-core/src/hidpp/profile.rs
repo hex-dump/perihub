@@ -270,6 +270,10 @@ pub struct ProfileSettings {
     /// Button functions while G-Shift is held.
     pub gshift_buttons: Vec<ButtonAction>,
     pub leds: Vec<LedEffect>,
+    /// Polling rate in Hz, for formats whose rates are not a whole number of milliseconds (format 7
+    /// goes up to 8000 Hz). `report_rate_ms` is then 0 when the rate is above 1000 Hz.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub report_rate_hz: Option<u16>,
 }
 
 impl ProfileSettings {
@@ -289,6 +293,7 @@ impl ProfileSettings {
             buttons: (0..button_count).map(|i| button(OFF_BUTTONS, i)).collect(),
             gshift_buttons: (0..button_count).map(|i| button(OFF_GSHIFT_BUTTONS, i)).collect(),
             leds: (0..LED_SLOTS).map(|i| LedEffect::decode(&sector[OFF_LEDS + LED_LEN * i..])).collect(),
+            report_rate_hz: None,
         })
     }
 
@@ -372,6 +377,145 @@ fn put_button(slot: &mut [u8], action: &ButtonAction) -> Result<()> {
     }
     slot.copy_from_slice(&action.encode()?);
     Ok(())
+}
+
+/// Profile format 7 (PRO X 2 and PRO 2 mice), which PeriHub only reads. Offsets in bytes, from the
+/// layout libratbag's pull request #1676 (MIT) describes; see `docs/protocols/logitech-onboard-profiles.md`.
+mod format7 {
+    pub const FORMAT: u8 = 7;
+    pub const RATE_WIRELESS: usize = 0;
+    pub const RATE_WIRED: usize = 1;
+    pub const DEFAULT_DPI: usize = 2;
+    pub const SHIFT_DPI: usize = 3;
+    pub const DPI: usize = 4;
+    pub const DPI_LEN: usize = 5;
+    pub const BHOP: usize = 37;
+    pub const POWER_SAVE: usize = 44;
+    pub const POWER_OFF: usize = 46;
+    pub const BUTTONS: usize = 48;
+    pub const ALT_BUTTONS: usize = 112;
+    pub const ALT_BUTTON_SLOTS: usize = 12;
+    pub const NAME: usize = 160;
+    pub const NAME_LEN: usize = 48;
+    pub const LEDS: usize = 208;
+}
+
+/// One DPI level of a format 7 profile.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct DpiLevel {
+    pub x: u16,
+    pub y: u16,
+    /// Lift-off distance setting stored with the level.
+    pub lod: u8,
+}
+
+/// What a format 7 profile holds, read from its sector.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ExtendedProfile {
+    /// Polling rate indexes (0 = 125 Hz … 6 = 8000 Hz) for the receiver and for the cable.
+    pub rate_wireless: u8,
+    pub rate_wired: u8,
+    pub default_dpi_index: u8,
+    pub shift_dpi_index: u8,
+    pub dpi: Vec<DpiLevel>,
+    /// The BHOP field: 0 when off; libratbag reads 10 to 100 as 100 ms to 1000 ms.
+    pub bhop: u8,
+    pub power_save: u16,
+    pub power_off: u16,
+    pub name: String,
+    pub buttons: Vec<ButtonAction>,
+    /// The second button layer (12 slots, filled up with disabled ones to the mouse's button count).
+    pub alt_buttons: Vec<ButtonAction>,
+    pub leds: Vec<LedEffect>,
+}
+
+/// "1000 Hz", or the raw index when it is not one the specification lists.
+fn rate_text(index: u8) -> String {
+    match super::extended_rate_hz(index) {
+        Some(hz) => format!("{hz} Hz"),
+        None => format!("index {index}"),
+    }
+}
+
+impl ExtendedProfile {
+    /// Whether this is the memory format that goes with this layout.
+    pub fn is_format(profile_format: u8) -> bool {
+        profile_format == format7::FORMAT
+    }
+
+    pub fn parse(sector: &[u8], button_count: usize) -> Result<Self> {
+        use format7 as f;
+        check_layout(sector, button_count, f::LEDS + LED_LEN * LED_SLOTS + 2)?;
+        let byte = |at: usize| sector[at];
+        let word = |at: usize| u16::from_le_bytes([sector[at], sector[at + 1]]);
+        let dpi: Vec<DpiLevel> = (0..DPI_SLOTS)
+            .map(|i| f::DPI + f::DPI_LEN * i)
+            .map(|at| DpiLevel { x: word(at), y: word(at + 2), lod: byte(at + 4) })
+            .take_while(|level| level.x != 0 && level.x != 0xFFFF)
+            .collect();
+        let button = |at: usize| ButtonAction::decode(sector[at..at + 4].try_into().unwrap());
+        let name_units: Vec<u16> = sector[f::NAME..f::NAME + f::NAME_LEN]
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|u| u16::from_le_bytes(*u))
+            .take_while(|&u| u != 0 && u != 0xFFFF)
+            .collect();
+        let mut alt_buttons: Vec<ButtonAction> =
+            (0..button_count.min(f::ALT_BUTTON_SLOTS)).map(|i| button(f::ALT_BUTTONS + 4 * i)).collect();
+        alt_buttons.resize(button_count, ButtonAction::Disabled);
+        Ok(Self {
+            rate_wireless: byte(f::RATE_WIRELESS),
+            rate_wired: byte(f::RATE_WIRED),
+            default_dpi_index: byte(f::DEFAULT_DPI),
+            shift_dpi_index: byte(f::SHIFT_DPI),
+            dpi,
+            bhop: byte(f::BHOP),
+            power_save: word(f::POWER_SAVE),
+            power_off: word(f::POWER_OFF),
+            name: String::from_utf16_lossy(&name_units),
+            buttons: (0..button_count).map(|i| button(f::BUTTONS + 4 * i)).collect(),
+            alt_buttons,
+            leds: (0..LED_SLOTS).map(|i| LedEffect::decode(&sector[f::LEDS + LED_LEN * i..])).collect(),
+        })
+    }
+
+    /// The profile as the page shows it, for the connection the mouse is on. The levels are the X
+    /// axis; the polling rate goes in `report_rate_hz`.
+    pub fn settings(&self, wireless: bool) -> ProfileSettings {
+        let hz = super::extended_rate_hz(if wireless { self.rate_wireless } else { self.rate_wired });
+        ProfileSettings {
+            report_rate_ms: hz.filter(|&hz| hz <= 1000).map_or(0, |hz| (1000 / hz) as u8),
+            dpi_levels: self.dpi.iter().map(|level| level.x).collect(),
+            default_dpi_index: self.default_dpi_index,
+            shift_dpi_index: self.shift_dpi_index,
+            buttons: self.buttons.clone(),
+            gshift_buttons: self.alt_buttons.clone(),
+            leds: self.leds.clone(),
+            report_rate_hz: hz,
+        }
+    }
+
+    /// One line for the test report. Numbers PeriHub does not know the unit of are shown as stored.
+    pub fn summary(&self, number: u8) -> String {
+        let levels: Vec<String> =
+            self.dpi.iter().map(|l| if l.x == l.y { l.x.to_string() } else { format!("{}x{}", l.x, l.y) }).collect();
+        let lods: Vec<String> = self.dpi.iter().map(|l| l.lod.to_string()).collect();
+        let name = if self.name.is_empty() { String::new() } else { format!(" \"{}\"", self.name) };
+        format!(
+            "Profile {number}{name}: DPI {} (level {} default, {} shift; lift-off {}), polling {} wireless / {} cable, \
+             BHOP {}, timeouts {} / {}",
+            levels.join(" "),
+            self.default_dpi_index as u16 + 1,
+            self.shift_dpi_index as u16 + 1,
+            lods.join(" "),
+            rate_text(self.rate_wireless),
+            rate_text(self.rate_wired),
+            self.bhop,
+            self.power_save,
+            self.power_off,
+        )
+    }
 }
 
 fn check_layout(sector: &[u8], button_count: usize, min_size: usize) -> Result<()> {

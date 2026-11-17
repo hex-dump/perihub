@@ -41,6 +41,8 @@ pub struct CorsairInfo {
     pub dpi: Option<u16>,
     /// What could not be read, for test reports.
     pub read_errors: Vec<String>,
+    /// A keyboard's physical layout, read from it (property 0x41).
+    pub layout: Option<crate::kblayout::DeviceLayout>,
     /// The colour PeriHub shows on every LED, while experimental lighting is on.
     pub lighting: Option<Rgb>,
 }
@@ -70,6 +72,7 @@ fn polling_hz(value: u32) -> Option<u16> {
 impl CorsairTask {
     /// Reads what it can without changing anything. A device that answers nothing at all is an error.
     pub fn open(mut dev: BragiDevice, model: &'static CorsairModel) -> Result<Self> {
+        dev.set_label(format!("Corsair {}", model.name));
         let mut errors = Vec::new();
         let mut answered = false;
         let mut note = |what: &str, error: Error, answered: &mut bool| {
@@ -100,6 +103,12 @@ impl CorsairTask {
         // Keyboards have no DPI.
         let dpi =
             if model.kind == super::models::Kind::Mouse { read("DPI", property::DPI_X, &mut answered) } else { None };
+        // Mice have no layout.
+        let layout = if model.kind == super::models::Kind::Keyboard {
+            read("physical layout", property::PHYSICAL_LAYOUT, &mut answered).map(crate::kblayout::corsair)
+        } else {
+            None
+        };
         if !answered {
             return Err(Error::Protocol(format!("the device did not answer ({})", errors.join("; "))));
         }
@@ -115,6 +124,7 @@ impl CorsairTask {
             dpi: dpi.map(|v| v as u16),
             read_errors: errors,
             lighting: None,
+            layout,
         };
         log::info!(
             "Corsair {}: firmware {}, mode {:?}, {:?} Hz, {:?} DPI, unreadable: {:?}",
@@ -148,6 +158,7 @@ impl CorsairTask {
     /// Shows one colour on every LED (experimental). The first time it takes the device into
     /// software mode. If anything fails the device is given back at once.
     pub fn set_lighting(&mut self, color: Rgb) -> Result<CorsairInfo> {
+        crate::writes::refuse_if_read_only()?;
         if self.info.leds == 0 {
             return Err(Error::Invalid(format!("the {} has no lighting", self.info.model)));
         }
@@ -329,6 +340,8 @@ mod tests {
                     0x01 => [4, 0, 0, 0],
                     0x21 => [0x40, 0x06, 0, 0],
                     0x36 => [channels, 0, 0, 0],
+                    // A keyboard's physical layout: ISO.
+                    0x41 => [2, 0, 0, 0],
                     _ => [1, 2, 3, 0],
                 };
                 buf[3..7].copy_from_slice(&value);
@@ -348,6 +361,28 @@ mod tests {
     }
 
     #[test]
+    fn read_only_mode_keeps_the_lighting_off_and_sends_nothing_but_reads() {
+        let fake = FakeMouse::default();
+        let mut task = open(&fake);
+        let device = format!("Corsair {}", task.info.model);
+        let read_only = crate::writes::test::read_only_mode();
+        assert!(matches!(task.set_lighting(Rgb { r: 255, g: 0, b: 0 }), Err(Error::ReadOnly)));
+        assert!(task.info.lighting.is_none());
+        // Below the task, the connection itself refuses every change.
+        task.dev.set_lighting_allowed(true);
+        assert!(matches!(task.dev.set_mode(MODE_SOFTWARE), Err(Error::ReadOnly)));
+        assert!(matches!(task.dev.open_lighting(), Err(Error::ReadOnly)));
+        assert!(matches!(task.dev.write_lighting(&[Rgb { r: 1, g: 2, b: 3 }]), Err(Error::ReadOnly)));
+        assert!(matches!(task.dev.keep_alive(), Err(Error::ReadOnly)));
+        assert!(fake.commands().iter().all(|&(c, _)| c == 0x02), "{:?}", fake.commands());
+        let log = crate::writes::test::entries_of(&device);
+        let kinds: Vec<&str> = log.iter().map(|e| e.kind.as_str()).collect();
+        assert_eq!(kinds, ["set mode", "open lighting", "write lighting", "keep-alive"]);
+        drop(read_only);
+        task.dev.set_lighting_allowed(false);
+    }
+
+    #[test]
     fn opening_only_reads() {
         let fake = FakeMouse::default();
         let task = open(&fake);
@@ -356,6 +391,22 @@ mod tests {
         assert_eq!(task.info.mode, Some(1));
         assert_eq!(task.info.polling_hz, Some(1000));
         assert_eq!(task.info.dpi, Some(1600));
+    }
+
+    #[test]
+    fn a_keyboard_tells_its_layout_with_a_read() {
+        let fake = FakeMouse::default();
+        let keyboard = models::find(0x1B73).unwrap(); // K70 RGB TKL
+        let task = CorsairTask::open(BragiDevice::new(fake.clone(), 64), keyboard).unwrap();
+        assert!(fake.commands().iter().all(|&(c, _)| c == 0x02), "{:?}", fake.commands());
+        assert!(fake.commands().contains(&(0x02, 0x41)));
+        let layout = task.info.layout.clone().unwrap();
+        assert_eq!(layout.physical, Some(crate::kblayout::Physical::Iso));
+        assert_eq!(task.info.dpi, None);
+        // A mouse is not asked.
+        let mouse = FakeMouse::default();
+        assert_eq!(open(&mouse).info.layout, None);
+        assert!(!mouse.commands().contains(&(0x02, 0x41)));
     }
 
     #[test]

@@ -10,7 +10,7 @@ Only files built from this repository by the [release workflow](.github/workflow
 
 ## Linux
 
-The AppImage, `.deb` and `.rpm` packages are not signed with a distribution key. Every release lists the SHA-256 checksum of each file in `SHA256SUMS.txt`.
+The AppImage, `.deb` and `.rpm` packages are not signed with a distribution key. Every release lists the SHA-256 checksum of each file in `SHA256SUMS.txt`, and from the release that added build provenance, every release file has a GitHub attestation that it was built by the release workflow from this repository: `gh attestation verify FILE -R hex-dump/perihub`.
 
 ## Update files
 

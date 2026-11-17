@@ -74,7 +74,7 @@
 
 | Devices | Level and what PeriHub can do |
 |---|---|
-| <!-- generated: count logitech-onboard:by-memory-format -->26<!-- end generated --> more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
+| <!-- generated: count logitech-onboard:by-memory-format -->28<!-- end generated --> more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
 | Logitech devices on a **Logi Bolt** or **Unifying** receiver (MX Master, MX Anywhere, MX Keys…) | 🧪 Recognized by the features they report; the DPI of those without onboard memory can be changed, everything else is read |
 | **Logitech G600** | 🧪 Read; DPI, polling rate and lighting of the profile in use can be saved at your own risk |
 | **Logitech G500s, G700s** with a cable, whose software Logitech no longer offers | 🧪 Read the profile in use; the DPI in use can be changed, not saved; their memory is never written |
@@ -106,7 +106,7 @@ Not on the list? Open a [device request](https://github.com/hex-dump/perihub/iss
 |---|---|---|
 | Lighting | 8 zones: static, gradient, breathing, color cycle, wave, reactive (the zone of each key you press lights up), built-in rainbow, off | PC: PeriHub reapplies it when the keyboard is connected |
 | Brightness | 0–100% in 17 steps, in sync with SteelSeries + F11/F12 | PC |
-| Key remapping | Any key, on the normal layer and on the "SteelSeries key held" layer, with 10 keyboard layouts | **Keyboard**: works without PeriHub |
+| Key remapping | Any key, on the normal layer and on the "SteelSeries key held" layer, drawn in the layout PeriHub detects (ANSI, ISO, JIS or ABNT2; 12 sets of legends) | **Keyboard**: works without PeriHub |
 | Software macros | A key, such as SteelSeries + 1, starts a macro run by PeriHub | The key in the keyboard, the macro on the PC |
 
 ### Logitech G502 HERO
@@ -131,7 +131,7 @@ Not on the list? Open a [device request](https://github.com/hex-dump/perihub/iss
 
 ### Everything else
 
-- **App profiles**: while a game or an app is in focus, PeriHub can switch the keyboard lighting and the mouse profile, and switch back afterwards. On Windows and on Hyprland. PeriHub only reads the app's identifier (the executable name or window class), never window titles or contents.
+- **App profiles**: while a game or an app is in focus, PeriHub can switch the keyboard lighting and the mouse profile, and switch back afterwards. On Windows, and on Linux on Hyprland, KDE Plasma and GNOME (Wayland and X11; GNOME 45 or newer, through a small GNOME Shell extension that the App profiles page helps you install). PeriHub only reads the app's identifier (the executable name or window class), never window titles or contents.
 - **Backups**: before every write to a device, PeriHub saves its memory, and **Backups…** puts it back.
 - **Updates in one click** on Windows, signed, and only when you choose.
 
@@ -275,6 +275,8 @@ Once someone confirms a model, it becomes fully supported for everyone. For a Lo
 
 Get the file for your system from the [releases page](https://github.com/hex-dump/perihub/releases/latest).
 
+**Verify a download** (releases from the first one with build provenance on): `gh attestation verify FILE -R hex-dump/perihub` checks that GitHub Actions built the file from this repository. The release also has `SHA256SUMS.txt` (`sha256sum -c --ignore-missing SHA256SUMS.txt`), and `.sig` files that PeriHub's updater checks. See [code signing](CODE_SIGNING.md).
+
 ### Windows
 
 1. Download `PeriHub_…_x64-setup.exe` and run it.
@@ -314,7 +316,7 @@ makepkg -si
 flatpak install --user PeriHub_X.Y.Z_x86_64.flatpak
 ```
 
-PeriHub is not on Flathub, so the Flatpak does not update by itself: install the next release's file the same way. Like the AppImage, it needs the udev rule below. On desktops without the Background portal, such as Hyprland, add `flatpak run io.github.hex_dump.perihub --hidden` to the desktop's own autostart (an `exec-once` line on Hyprland): PeriHub says so when you tick **Start PeriHub when I log in** in **Settings**.
+PeriHub is not on Flathub, so the Flatpak does not update by itself: install the next release's file the same way. Like the AppImage, it needs the udev rule below. On desktops without the Background portal, such as Hyprland, add `flatpak run io.github.hex_dump.perihub --hidden` to the desktop's own autostart (an `exec-once` line on Hyprland): PeriHub says so when you tick **Start PeriHub when I log in** in **Settings**. On GNOME, the Flatpak may not install the small extension app profiles need: the App profiles page shows the one command to run in a terminal instead, then log out and back in.
 
 #### USB permissions
 
@@ -367,7 +369,7 @@ Software macros type and click through a virtual keyboard and mouse (`/dev/uinpu
 ## Using PeriHub
 
 - **Keyboard → Lighting**: pick an effect. It applies at once and is remembered.
-- **Keyboard → Keys**: pick your layout, click a key, choose its new function and press **Save to keyboard**. **With SteelSeries key** changes what keys do while the SteelSeries key is held.
+- **Keyboard → Keys**: click a key, choose its new function and press **Save to keyboard**. The layout under the keyboard's name is detected from the system; **Change** sets another one if it is wrong. **With SteelSeries key** changes what keys do while the SteelSeries key is held.
 - **Mouse**: pick a profile at the top, then change DPI, buttons and lighting. Nothing is written until you press **Save to mouse**. DPI and lighting are previewed live; leaving the page brings the saved settings back.
 - **G-Shift**: give "G-Shift" to a button. While you hold it, the other buttons do what the G-Shift tab says.
 
@@ -457,7 +459,7 @@ The interface is in English. More languages are planned.
 - **Logitech mice through a LIGHTSPEED receiver**: with a tested memory format PeriHub switches their profile and DPI level, and saving is experimental. A G903 HERO was read through a receiver on Linux ([issue #22](https://github.com/hex-dump/perihub/issues/22)), and a G502 HERO Wireless on a POWERPLAY mat on Windows was read and saved to ([issues #4](https://github.com/hex-dump/perihub/issues/4) and [#28](https://github.com/hex-dump/perihub/issues/28)): the only mouse saved to over the radio so far. Their buttons do not start software macros.
 - **Devices on a Logi Bolt or Unifying receiver**, such as the MX Master 3S, are experimental: nobody has tried PeriHub on one yet ([issue #17](https://github.com/hex-dump/perihub/issues/17)). Each one gets a page with what it can do, its battery and DPI, and a test report. Only the DPI can be changed, on devices without onboard memory: PeriHub sets it in the device's RAM, so the device forgets it when it is turned off or falls asleep, and PeriHub sets it again when it connects or wakes up (it checks every 10 seconds), while PeriHub is running. Other Logitech devices PeriHub does not know, also behind a LIGHTSPEED receiver, get a read-only page. Solaar and logiops may undo it: PeriHub says so when one of them runs. Bluetooth and the USB cable of these devices are not supported yet. On Linux the Unifying receivers need an [optional rule](#optional-unifying-receivers), because the typing of the keyboards paired with them goes through the same interface.
 - **Corsair devices** have not been tried on real hardware yet. With more than one device on the same receiver, only the first one is shown, and the Slipstream V2 receiver is not recognized.
-- **App profiles** work on Windows and Hyprland only. They switch lighting and mouse profiles, not key mappings.
+- **App profiles** work on Windows, and on Linux on Hyprland, KDE Plasma and GNOME only. They switch lighting and mouse profiles, not key mappings.
 - **Software macros** on Linux skip characters the keyboard layout cannot type. On Windows many games ignore typed text, but not keys.
 - **Not available yet**: GameSense. **Out of scope**: SteelSeries Sonar and Moments, G HUB Lua scripts.
 
@@ -466,7 +468,7 @@ The interface is in English. More languages are planned.
 - **Ideas and suggestions**: [Discussions → Ideas](https://github.com/hex-dump/perihub/discussions/categories/ideas), where others can vote for them and add to them.
 - **Questions**: [Discussions → Q&A](https://github.com/hex-dump/perihub/discussions/categories/q-a).
 - **Bugs**: a [bug report](https://github.com/hex-dump/perihub/issues/new?template=bug_report.yml) with your system, the device, what PeriHub showed and the log file.
-- **Test reports**: **Open test form** on the device's page in the app, or the forms for [Logitech mice](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml) and [every other device](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
+- **Test reports**: **Open test form** on the device's page in the app, or the [test report form](https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml).
 - **New devices**: a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml) with the model and USB ID.
 - **Code**: the rules are in [CONTRIBUTING.md](CONTRIBUTING.md); how to build, test and find your way around the code is in [docs/development.md](docs/development.md).
 

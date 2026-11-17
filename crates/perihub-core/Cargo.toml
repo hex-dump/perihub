@@ -11,10 +11,15 @@ serde_json.workspace = true
 thiserror.workspace = true
 log.workspace = true
 dirs.workspace = true
+# The token of quick actions (already in the build through Tauri).
+getrandom = "0.3"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 evdev = "0.13"
 xkbcommon = { version = "0.9", default-features = false }
+# App profiles on KDE Plasma (KWin's scripting interface) and on GNOME (the focus from PeriHub's
+# Shell extension). Already in the build through Tauri.
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Threading", "Win32_UI_Input", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }

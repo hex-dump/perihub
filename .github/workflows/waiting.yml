@@ -1,0 +1,25 @@
+name: Waiting for reporter
+
+# The maintainer asks something on an issue: it gets the label "waiting for reporter". The reporter
+# answers: the label goes (tools/notify.py). Pull requests and bots are left alone. The comment is only
+# read by the script, never put in a command.
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  label:
+    if: ${{ !github.event.issue.pull_request && github.event.comment.user.type != 'Bot' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: tools/notify.py
+          sparse-checkout-cone-mode: false
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/notify.py waiting "$GITHUB_EVENT_PATH" --apply

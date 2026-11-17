@@ -66,6 +66,10 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c086", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c091", TAG+="uaccess"
 # Logitech MX518
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c08e", TAG+="uaccess"
+# Logitech PRO 2 LIGHTSPEED
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c09a", TAG+="uaccess"
+# Logitech PRO X 2 DEX
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c0a0", TAG+="uaccess"
 
 # Logitech keyboards and headsets with HID++ on their own USB connection, without a receiver (read only,
 # untested): only the interface with their HID++ collections (usage page ff43). A keyboard whose HID++
@@ -209,6 +213,8 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bc6", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bd4", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair K70 PRO MINI WIRELESS
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb6", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair K70 PRO MINI WIRELESS
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bd3", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair K70 PRO TKL
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="2b14", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair K70 RGB TKL
@@ -565,6 +571,14 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d6", ENV{ID_USB
 # Razer Viper V3 Pro SE (Wired)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00de", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 
+# Razer keyboards (read only, untested; facts from OpenRazer): only interface 3, the one OpenRazer sends
+# to. Through the receiver it holds only the media keys. PeriHub also reads each keyboard node's report
+# descriptor and does not open one that carries typed keys. The receiver (02ba) belongs to this keyboard alone.
+# Razer BlackWidow V4 Mini HyperSpeed (read only)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="02b9", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+# Razer BlackWidow V4 Mini HyperSpeed (wireless) (read only)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="02ba", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
+
 # Glorious mice (experimental, untested; protocol from libratbag): only the ids that belong to
 # Glorious, not the generic SinoWealth ones, which other brands' devices share. No source names the
 # interface, so the whole mouse is opened, as for the ASUS mice above. Besides the configuration,
@@ -656,3 +670,13 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f50f", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="3842", ATTRS{idProduct}=="2422", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # EVGA X20 (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="3842", ATTRS{idProduct}=="2420", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+
+# Mice on the YJX platform (MAMBASNAKE, Rajin, K-Snake, EWEADN…; read only, untested): only interface 2,
+# which holds the vendor configuration collection and nothing else.
+# YJX mouse (YJX receiver) (read only)
+KERNEL=="hidraw*", ATTRS{idVendor}=="a8a5", ATTRS{idProduct}=="2255", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+# YJX mouse (YJX, on its cable) (read only)
+KERNEL=="hidraw*", ATTRS{idVendor}=="a8a4", ATTRS{idProduct}=="2255", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+
+# Wraith W60 (read only, untested): not opened on Linux. Its configuration collection can carry how far
+# each key is pressed, so it will need a rule the user turns on. Windows only for now.

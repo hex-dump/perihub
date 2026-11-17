@@ -424,6 +424,7 @@ impl G300Task {
     /// (see [`Self::keep_changes`]).
     pub fn save(&mut self, number: u8, settings: &G300Settings) -> Result<G300Info> {
         Self::check_number(number)?;
+        crate::writes::refuse_if_read_only()?;
         if !self.info.editable {
             return Err(Error::Invalid("this connection to the G300 is read-only".into()));
         }
@@ -454,7 +455,7 @@ impl G300Task {
         let Connection::Write(dev) = &self.dev else {
             return Err(Error::Invalid("this connection to the G300 is read-only".into()));
         };
-        dev.send_feature(data)?;
+        crate::writes::send("Logitech G300", &format!("profile {number}"), data, || dev.send_feature(data))?;
         std::thread::sleep(self.settle);
         let mut back = Vec::new();
         for attempt in 0..READ_BACK_TRIES {
@@ -533,7 +534,8 @@ impl G300Task {
             let _ = std::fs::remove_file(&path);
             return;
         }
-        if !self.info.editable {
+        // In read-only mode the undo waits, with its backup, for a connection that may send it.
+        if !self.info.editable || crate::writes::read_only() {
             self.info.pending_undo = true;
             return;
         }
@@ -797,6 +799,23 @@ mod tests {
         let mut odd = bytes(P1);
         odd[3] |= 0x10;
         assert!(encode_profile(1, &odd, &settings(1)).is_err(), "unknown bits in a DPI level");
+    }
+
+    #[test]
+    fn read_only_mode_refuses_saves_and_sends_nothing() {
+        let fake = Fake::new();
+        let mut task = editable(&fake, "read-only-mode");
+        let _read_only = crate::writes::test::read_only_mode();
+        let mut s = settings(1);
+        s.report_rate_hz = 500;
+        assert!(matches!(task.save(1, &s), Err(Error::ReadOnly)));
+        // Below the checks of the task too.
+        assert!(matches!(task.write_verified(1, &bytes(P1)), Err(Error::ReadOnly)));
+        assert!(fake.state().sent.is_empty());
+        assert!(task.info().is_ok(), "reads still work");
+        let log = crate::writes::test::entries_of("Logitech G300");
+        assert_eq!(log.iter().map(|e| e.kind.as_str()).collect::<Vec<_>>(), ["profile 1"]);
+        forget(&task.backups);
     }
 
     #[test]

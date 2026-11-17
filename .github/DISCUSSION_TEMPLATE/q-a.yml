@@ -1,0 +1,32 @@
+title: "[Question] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Questions about how PeriHub works. Something broken is a [bug report](https://github.com/hex-dump/perihub/issues/new?template=bug_report.yml), and a device PeriHub does not know yet is a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml).
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: The brand and model, if the question is about one.
+      placeholder: e.g. Logitech G502 X, Corsair K70
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Linux
+  - type: input
+    id: version
+    attributes:
+      label: PeriHub version
+      description: Shown in Settings → About.
+      placeholder: e.g. 0.8.5
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true

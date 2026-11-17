@@ -25,6 +25,7 @@ the same format.
 - [ASUS](#asus)
 - [SteelSeries mice](#steelseries-mice)
 - [Razer mice](#razer-mice)
+- [Razer keyboards](#razer-keyboards)
 - [Glorious mice](#glorious-mice)
 - [Logitech G600](#logitech-g600)
 - [Older Logitech mice: G9, G9x, G500, G500s, G700, G700s](#older-logitech-mice-g9-g9x-g500-g500s-g700-g700s)
@@ -33,6 +34,8 @@ the same format.
 - [Pulsar CrazyLight and Lamzu Atlantis](#pulsar-crazylight-and-lamzu-atlantis)
 - [Cooler Master mice](#cooler-master-mice)
 - [EVGA mice](#evga-mice)
+- [YJX mice](#yjx-mice)
+- [Wraith W60](#wraith-w60)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
 ## SteelSeries
@@ -75,6 +78,17 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   ([issue #22](https://github.com/hex-dump/perihub/issues/22)), and a G502 HERO Wireless through a
   POWERPLAY mat (`c53a`) on Windows was read and saved to ([issues #4](https://github.com/hex-dump/perihub/issues/4)
   and [#28](https://github.com/hex-dump/perihub/issues/28)): the only mouse saved to over the radio so far.
+- **PRO 2 LIGHTSPEED and PRO X 2 DEX** (profile format 7) are recognized, with a cable and through
+  their LIGHTSPEED receiver (`c543`, `c54d`), and only read. Format 7 is a layout PeriHub cannot
+  write yet, and these mice have neither the usual adjustable DPI (`0x2201`) nor the usual polling
+  rate (`0x8060`) feature: they use the extended ones (`0x2202`, `0x8061`), which PeriHub reads (DPI
+  ranges of both axes and lift-off distance, DPI in use, polling rates up to 8000 Hz and the one in
+  use) and shows in the test report, together with each profile as stored. PeriHub never switches
+  their onboard mode: another project found that a PRO X 2 loses its button assignments when it
+  does. Nothing is changed and nothing is saved until testers confirm the readings against G HUB
+  ([issues #32](https://github.com/hex-dump/perihub/issues/32) and
+  [#33](https://github.com/hex-dump/perihub/issues/33)). The lights of the PRO 2 LIGHTSPEED
+  (`0x8071`) are not read yet.
 - **The Logi Bolt receiver** (`046d:c548`) and **the Unifying receivers** (`046d:c52b`, `c532`)
   are recognized. Every device paired with them that answers, mouse or keyboard, gets a page of
   its own in the sidebar, built from the HID++ features it reports: what kind of device it is, what
@@ -129,7 +143,7 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
 | G102/G103/G203 | `046d:c084`, `046d:c092`, `046d:c09d` | whole mouse | depends on its memory format |  |
 | G302 | `046d:c07f` | whole mouse | depends on its memory format |  |
 | G303 | `046d:c080` | whole mouse | depends on its memory format |  |
-| G303 Shroud Edition | `046d:c097` | whole mouse | depends on its memory format |  |
+| G303 Shroud Edition | `046d:c097` | whole mouse | depends on its memory format | `409e` |
 | G402 | `046d:c07e` | whole mouse | depends on its memory format |  |
 | G403 | `046d:c083` | whole mouse | depends on its memory format |  |
 | G403 HERO | `046d:c08f` | whole mouse | depends on its memory format |  |
@@ -141,6 +155,8 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
 | G903 | `046d:c086` | whole mouse | depends on its memory format | `4067` |
 | G903 HERO | `046d:c091` | whole mouse | depends on its memory format | `4087` |
 | MX518 | `046d:c08e` | whole mouse | depends on its memory format |  |
+| PRO 2 LIGHTSPEED | `046d:c09a` | whole mouse | depends on its memory format | `40a8` |
+| PRO X 2 DEX | `046d:c0a0` | whole mouse | depends on its memory format | `40b8` |
 | G305 | wireless only | through a receiver | depends on its memory format | `4074` |
 | G603 | wireless only | through a receiver | depends on its memory format | `406c` |
 | G604 | wireless only | through a receiver | depends on its memory format | `4085` |
@@ -155,11 +171,14 @@ the format a mouse reports in PeriHub's test report is what counts.
 | G502 X Wireless | 3 | 255 bytes | PeriHub ([issue #15](https://github.com/hex-dump/perihub/issues/15)) |
 | G900 | 3 | | libratbag ([PR #1676](https://github.com/libratbag/libratbag/pull/1676)) |
 | G203 | 4 | | libratbag ([PR #1676](https://github.com/libratbag/libratbag/pull/1676)) |
+| G303 Shroud Edition | 3 | 255 bytes | PeriHub ([issue #34](https://github.com/hex-dump/perihub/issues/34)) |
 | G903 HERO | 4 | 255 bytes | PeriHub ([issue #22](https://github.com/hex-dump/perihub/issues/22)) |
 | G502 X PLUS | 5 | | libratbag ([issue #1344](https://github.com/libratbag/libratbag/issues/1344)) |
+| PRO 2 LIGHTSPEED | 7 | 255 bytes | PeriHub ([issue #33](https://github.com/hex-dump/perihub/issues/33)) |
+| PRO X 2 DEX | 7 | 255 bytes | PeriHub ([issue #32](https://github.com/hex-dump/perihub/issues/32)) |
 | G Pro X Superlight 2 (not recognized yet) | 6, then 7 after a firmware update | | libratbag ([issue #1572](https://github.com/libratbag/libratbag/issues/1572)) |
 
-Own one? Send a [mouse test report](https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml)
+Own one? Send a [test report](https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml)
 (**Open test form** on the mouse page fills it in).
 
 ## Logitech G300
@@ -183,7 +202,7 @@ experimental feature. It was confirmed on a real G300 in
 [issue #21](https://github.com/hex-dump/perihub/issues/21), on Windows: the changes took effect,
 they were still there after the mouse was unplugged and plugged back in, and a save that was not
 kept was undone. No G300 has been tried on Linux yet. Something does not work on yours? Send a
-[device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml).
+[test report](https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml).
 
 ## Logitech keyboards and headsets on their own USB connection
 
@@ -239,7 +258,7 @@ USB IDs, packet sizes and LED counts are in [protocols/corsair-bragi.md](protoco
 Older Corsair devices (K70 RGB MK.2, K95 RGB PLATINUM, M65 RGB ELITE and others) speak an older
 protocol and are not recognized.
 
-Own one? Send a [device test report](https://github.com/hex-dump/perihub/issues/new?template=device_test.yml)
+Own one? Send a [test report](https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml)
 (**Open test form** on the device page fills it in).
 
 ## ASUS
@@ -439,6 +458,27 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 | Basilisk Mobile (Wired) | `1532:00d3` | interface 0 | DPI up to 18000, polling rate |
 | Basilisk V3 Pro 35K Phantom Green Edition (Wired) | `1532:00d6` | interface 0 | DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved |
 | Viper V3 Pro SE (Wired) | `1532:00de` | interface 0 | DPI up to 35000, polling rate |
+<!-- end generated -->
+
+## Razer keyboards
+
+👁 Read-only: nobody has tried PeriHub on one yet. The protocol is the one of the Razer mice, from facts found in
+[OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0), described in
+[protocols/razer-keyboards.md](protocols/razer-keyboards.md): no code was copied.
+
+- **BlackWidow V4 Mini HyperSpeed**, on its cable and through its HyperSpeed receiver (the receiver belongs to this
+  keyboard alone): PeriHub reads the firmware, the battery and whether it is charging, the backlight brightness and
+  the game mode, and changes nothing.
+- Left out: lighting effects (OpenRazer stores them in the keyboard's memory and nothing reads them back, so one could
+  not be undone), changing the brightness and the game mode, macros, key remapping and profiles.
+- On Linux only interface 3 is opened, and PeriHub reads the report descriptor of a keyboard's node first: a node that
+  declares typed keys is never opened, whatever rule gave access to it.
+
+<!-- generated: table razer-keyboard -->
+| Keyboard | USB ID | Opened on Linux |
+|---|---|---|
+| BlackWidow V4 Mini HyperSpeed | `1532:02b9` | interface 3 |
+| BlackWidow V4 Mini HyperSpeed (wireless) | `1532:02ba` | interface 3 |
 <!-- end generated -->
 
 ## Glorious mice
@@ -649,6 +689,52 @@ drivers (no code copied), described in [protocols/evga-mice.md](protocols/evga-m
 |---|---|---|---|
 | X12 | `3842:2422` | interface 1 | 🧪 Experimental |
 | X20 | `3842:2420` | interface 2 | 👁 Read-only |
+<!-- end generated -->
+
+## YJX mice
+
+👁 Read-only: nobody has tried PeriHub on one yet. Many wireless mice (MAMBASNAKE M4, Rajin Blaze Claws, K-Snake X11,
+EWEADN GS02 Pro…) use a receiver with the id `a8a5:2255` (`a8a4:2255` on the cable), and the same id stands for
+mice that wrap their reports in different ways. The protocol is described in [protocols/yjx-mice.md](protocols/yjx-mice.md),
+from [claws-mouse-linux](https://github.com/naevui/claws-mouse-linux) and
+[EWEADN-GS02-Pro-Control](https://github.com/mimuruu/EWEADN-GS02-Pro-Control) (both MIT) and facts from
+[OpenMouse](https://github.com/OpenMouse-Project/mouse-protocol) (AGPL-3.0): no code was copied.
+
+- PeriHub first reads the report descriptor of the configuration collection, which asks the system and sends nothing to
+  the mouse, and sends its reads only when the descriptor has no report numbers, the format the two MIT sources tried
+  on real mice. Any other mouse is left alone and shown read-only, with the descriptor in its test report.
+- It reads the model name, the DPI levels and the one in use, the polling rate, the lighting mode and lift-off
+  distance (as numbers) and the battery. A mouse that is off or away from its receiver does not answer: PeriHub asks
+  again later.
+- Left out: changing any setting (a malformed settings write can stop the sensor until the mouse is turned off),
+  buttons, lighting and macros.
+- On Linux only interface 2, the vendor collection, is opened. The receiver's other interfaces carry the mouse and a
+  keyboard.
+
+<!-- generated: table yjx -->
+| Mouse | USB ID | Opened on Linux |
+|---|---|---|
+| mouse (YJX receiver) | `a8a5:2255` | interface 2 |
+| mouse (YJX, on its cable) | `a8a4:2255` | interface 2 |
+<!-- end generated -->
+
+## Wraith W60
+
+👁 Read-only, on Windows only for now: read on a real W60 (firmware V3.22.19, issue #35). It is a magnetic (Hall
+effect) keyboard on the platform of the AULA WIN60 HE, described in [protocols/wraith-he.md](protocols/wraith-he.md)
+from [AulaControl](https://github.com/sgtflixy/AulaControl) (Apache-2.0): no code was copied. PeriHub reads the model,
+the firmware version, the firmware date and the key and side lighting (mode as a number, speed, brightness, both
+colours, direction, full colour).
+
+- Left out: changing the lighting, per-key colours, actuation and rapid trigger, SOCD, key remapping and the polling rate.
+- Its configuration collection can also send how far each key is pressed (while the vendor's travel test runs). PeriHub
+  never asks for it and skips such reports, but on Linux any program that could open the collection could read it, so
+  PeriHub does not open this keyboard there yet: it will take a rule you turn on.
+
+<!-- generated: table wraith -->
+| Keyboard | USB ID | Opened on Linux |
+|---|---|---|
+| W60 | `2e3c:c368` | — |
 <!-- end generated -->
 
 ## Keyboards with QMK firmware (Vial, VIA)

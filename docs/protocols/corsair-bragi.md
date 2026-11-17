@@ -10,6 +10,8 @@ Sources studied (read only, for the protocol facts):
   are checked, how lighting is written, LED counts of the devices it supports.
 - [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub) (GPL-3.0): the HID interface the
   mice use, the keep-alive, LED counts of newer mice.
+- [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later): only the name and USB id of the white
+  K70 PRO MINI WIRELESS, from its device list (issue 37). Nothing else was read.
 
 Nothing here was verified on real hardware by PeriHub yet. Facts that both sources agree on are
 marked **(both)**; facts from one source only are marked with it.
@@ -71,6 +73,7 @@ Other commands exist (reading data, probing a handle). PeriHub does not use them
 | `0x14` | bootloader version | (ckb-next) |
 | `0x1e` | active DPI stage | (ckb-next) |
 | `0x21`, `0x22` | DPI on X and Y | (ckb-next) |
+| `0x41` | a keyboard's physical layout | 1 ANSI, 2 ISO, 3 ABNT (ckb-next and OpenRGB), 4 JIS (OpenRGB); see `keyboard-layouts.md` |
 
 ## Resources
 
@@ -182,6 +185,7 @@ K70 CORE). The 15-second confirmation gives the keyboard back without any key or
 | K70 PRO | `1bc6` | 1024 | 142 | OpenLinkHub |
 | K70 PRO | `1bd4` | 1024 | 142 | OpenLinkHub (ckb-next: 193) |
 | K70 PRO MINI WIRELESS | `1bb6` | 1024 | 130 | OpenLinkHub |
+| K70 PRO MINI WIRELESS | `1bd3` | 1024 | 130 | OpenRGB (name and id only); the white one, packet and LEDs as `1bb6`, not checked |
 | K70 PRO TKL | `2b14` | 256 | 139 | OpenLinkHub |
 | K70 RGB TKL | `1b73` | 1024 | 130 | OpenLinkHub (ckb-next: 193) |
 | K70 RGB TKL CS | `1bb9` | 1024 | 130 | OpenLinkHub (ckb-next: 193) |
@@ -224,8 +228,8 @@ endpoints.
 
 ## What PeriHub does with it
 
-- **Always (read-only):** get the firmware version, the mode, the polling rate and the DPI.
-  Nothing is set.
+- **Always (read-only):** get the firmware version, the mode, the polling rate and the DPI, and
+  on keyboards the physical layout (`0x41`). Nothing is set.
 - **Experimental lighting, off by default and only for the current session:** switch to software
   mode, open the lighting handle, write one colour to every LED, send the keep-alive every 20
   seconds; switch back to hardware mode when it is turned off, when PeriHub quits, or when any

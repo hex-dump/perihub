@@ -14,6 +14,7 @@ export default mergeConfig(
         { find: /^@tauri-apps\/api\/core$/, replacement: here("./preview/tauri/core.ts") },
         { find: /^@tauri-apps\/api\/event$/, replacement: here("./preview/tauri/event.ts") },
         { find: /^@tauri-apps\/api\/app$/, replacement: here("./preview/tauri/app.ts") },
+        { find: /^@tauri-apps\/api\/window$/, replacement: here("./preview/tauri/window.ts") },
       ],
     },
     server: { port: 1430, strictPort: true },

@@ -23,13 +23,13 @@ jobs:
         os: [ubuntu-22.04, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       # Ubuntu's mirror is sometimes very slow (55 MB in almost 3 minutes for 0.5.2): the packages
       # downloaded last time are kept. apt still checks them and downloads the ones that changed.
       - name: Downloaded system packages (Linux)
         if: runner.os == 'Linux'
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/apt-archives/*.deb
           key: apt-${{ matrix.os }}-${{ github.run_id }}
@@ -44,11 +44,13 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libudev-dev patchelf
           cp /var/cache/apt/archives/*.deb ~/apt-archives/
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 26
           cache: npm
@@ -65,7 +67,7 @@ jobs:
 
       # Besides the installers, tauri.updater.conf.json makes signed update files and latest.json,
       # which PeriHub on Windows downloads from the latest release (see app/src-tauri/src/updates.rs).
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -92,7 +94,7 @@ jobs:
       # flatpak-builder runs every build step in a bubblewrap sandbox.
       options: --privileged
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       # The image has the GNOME runtime in a read-only layer of the container: when Flathub has a newer
       # one, flatpak-builder updates it by renaming folders across layers, which fails with "Invalid
@@ -109,7 +111,7 @@ jobs:
             packaging/flatpak/build-local.sh --system
           }
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: flatpak
           path: packaging/flatpak/.build/*.flatpak
@@ -123,7 +125,7 @@ jobs:
     needs: [build, flatpak]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: flatpak
 
@@ -137,8 +139,14 @@ jobs:
     name: Checks, checksums and notes
     needs: [build, flatpak-release]
     runs-on: ubuntu-latest
+    # The job-level permissions replace the workflow's: contents for the uploads, the other two for
+    # the build provenance attestation.
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # The tags, for the notes' comparison with the previous release.
           fetch-depth: 0
@@ -151,6 +159,14 @@ jobs:
       # Each signature against the updater key in tauri.conf.json, latest.json against the files.
       - name: Signatures, latest.json and SHA256SUMS.txt
         run: python3 tools/release.py check "$RUNNER_TEMP/release" "${GITHUB_REF_NAME#v}"
+
+      # A signed statement from GitHub that each file was built by this workflow from this tag:
+      # `gh attestation verify FILE -R hex-dump/perihub`. It covers every file the draft will have,
+      # SHA256SUMS.txt included (made by the check above).
+      - name: Build provenance of every release file
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: ${{ runner.temp }}/release/*
 
       - name: Checksums, notes and title on the draft
         env:

@@ -3,9 +3,10 @@ import type {
 } from "./api";
 import type { Battery, HidppFeature, HidppLighting, LightsLook, MouseInfo, ReportDevice } from "./api";
 import { effectName, kindName, zoneName } from "./logitechFeatures";
+import { layoutReport } from "./keyboardLayout.svelte";
 
 const LOGITECH = "046d";
-const TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml";
+const TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml";
 
 /** "4-7,9,12" for [4, 5, 6, 7, 9, 12]: short enough for the test form's address. */
 function ranges(ids: number[]): string {
@@ -93,8 +94,40 @@ function featureList(features: HidppFeature[]): string {
     .join(", ");
 }
 
-function dpiRange({ dpi }: MouseInfo): string {
+type DpiRanges = { min: number; max: number; step: number; list: number[] };
+
+/** "100-25600, step 50", the values of a short list, or the span of a long one. */
+function rangeText(dpi: DpiRanges): string {
+  if (dpi.list.length > 12) return `${dpi.min}-${dpi.max}, ${dpi.list.length} values`;
   return dpi.list.length ? dpi.list.join(", ") : `${dpi.min}-${dpi.max}, step ${dpi.step}`;
+}
+
+function dpiRange({ dpi }: MouseInfo): string {
+  return rangeText(dpi);
+}
+
+const hzList = (rates: number[]) => (rates.length ? rates.join(" ") : "none");
+
+/** The lines for what a PRO X 2 style mouse reports through its extended features, short enough for the form's link. */
+function extendedLines(mouse: MouseInfo): string[] {
+  const e = mouse.extended;
+  if (!e) return [];
+  const lines: string[] = [];
+  if (e.dpi_y) lines.push(`DPI Y axis: ${rangeText(e.dpi_y)}`);
+  if (e.dpi_now) {
+    const { x, default_x, y, default_y, lod } = e.dpi_now;
+    const axes = y === null ? `${x} (default ${default_x})` : `X ${x} (default ${default_x}), Y ${y} (default ${default_y})`;
+    lines.push(`DPI now: ${axes}${lod === null ? "" : `, lift-off distance ${lod}`}`);
+  }
+  if (e.rates_wired_hz.length || e.rates_wireless_hz.length || e.rate_now_hz !== null) {
+    lines.push(
+      `Polling (Hz): cable ${hzList(e.rates_wired_hz)}; receiver ${hzList(e.rates_wireless_hz)}; in use ${e.rate_now_hz ?? "not read"}`,
+    );
+  }
+  if (e.raw.length) lines.push(`Polling answers: ${e.raw.join("; ")}`);
+  lines.push(...e.profiles);
+  if (e.errors.length) lines.push(`Could not read: ${e.errors.join("; ")}`);
+  return lines;
 }
 
 /** What a tester sends about a mouse: never key presses, macros, apps or log lines. */
@@ -114,28 +147,38 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
     `Profile list: ${PROFILE_LIST[mouse.profile_list]}`,
     `G-Shift: ${onboard.has_gshift ? "yes" : "no"}, DPI shift: ${onboard.has_dpi_shift ? "yes" : "no"}`,
     `DPI: ${dpiRange(mouse)}`,
-    `Polling (ms): ${mouse.report_rates_ms.join(", ") || "none reported"}`,
+    ...(mouse.report_rates_ms.length || !mouse.extended?.rates_wireless_hz.length
+      ? [`Polling (ms): ${mouse.report_rates_ms.join(", ") || "none reported"}`]
+      : []),
+    ...extendedLines(mouse),
     `LEDs: ${zones.join("; ") || "none reported"}`,
     `Features: ${featureList(mouse.features) || "not read"}`,
   ].join("\n");
 }
 
 /** The test form on GitHub with the fields filled in that PeriHub knows. */
-export function testFormUrl(mouse: MouseInfo, version: string, system: string): string {
+export function testFormUrl(
+  mouse: MouseInfo,
+  version: string,
+  system: string,
+  report = testReport(mouse, version, system),
+): string {
   const fields = {
     title: `${mouse.model} test report`,
+    "device-type": "Mouse",
+    brand: "Logitech",
     model: mouse.model,
     "usb-id": usbId(mouse),
     connection: mouse.receiver ? receiverName(mouse.link?.receiver_id) : "USB cable",
     version,
     os: system.toLowerCase().startsWith("windows") ? "Windows" : "Linux",
-    report: testReport(mouse, version, system),
+    report,
   };
   const query = Object.entries(fields).map(([name, value]) => `${name}=${encodeURIComponent(value)}`);
   return `${TEST_FORM}&${query.join("&")}`;
 }
 
-const DEVICE_TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=device_test.yml";
+const DEVICE_TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml";
 
 /** The fields of the device test form (Corsair devices and the G300). */
 export interface DeviceTestFields {
@@ -194,10 +237,10 @@ export function receiverTest(
       ];
   if (device) {
     const dpi = device.dpi
-      ? device.dpi.list.length
-        ? device.dpi.list.join(", ")
-        : `${device.dpi.min}-${device.dpi.max}, step ${device.dpi.step}`
-      : "no 0x2201";
+      ? rangeText(device.dpi)
+      : device.dpi_extended
+        ? `${rangeText(device.dpi_extended)} (0x2202)`
+        : "no 0x2201";
     const onboard = device.onboard
       ? `profile format ${device.onboard.profile_format}, ${device.onboard.sector_count} sectors of ${device.onboard.sector_size} bytes`
       : "none";
@@ -210,10 +253,14 @@ export function receiverTest(
       `Features: ${featureList(device.features) || "not read"}`,
       `DPI: ${dpi}`,
       `Polling (ms): ${device.report_rates_ms.join(", ") || "none reported"}`,
+    );
+    if (device.report_rates_hz?.length) lines.push(`Polling (Hz, 0x8061): ${device.report_rates_hz.join(" ")}`);
+    lines.push(
       `Onboard memory: ${onboard}`,
       `Battery: ${batteryText(device.battery)}${device.battery_reply ? ` (${device.battery_reply})` : ""}`,
       `LED zones (0x8070): ${zones.join("; ") || "none"}`,
     );
+    if (device.kind === 0 || device.layout) lines.push(layoutReport(null, device.layout));
     if (device.lighting) lines.push(...lightingLines(device.lighting, device.kind));
     if (live) {
       lines.push(
@@ -271,9 +318,12 @@ export function corsairTest(info: CorsairInfo, version: string, system: string):
       `Mode at connection: ${info.mode ?? "not read"}`,
       `Polling: ${info.polling_hz ?? "not read"} Hz${info.kind === "mouse" ? `, DPI: ${info.dpi ?? "not read"}` : ""}`,
       `LEDs: ${info.leds}`,
+      info.kind === "keyboard" ? layoutReport(`1b1c:${hex(info.product_id)}`, info.layout) : null,
       `Could not read: ${info.read_errors.join("; ") || "nothing"}`,
       `Experimental lighting: ${info.lighting ? "on" : "off"}`,
-    ].join("\n"),
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n"),
   };
 }
 
@@ -333,6 +383,7 @@ export function peripheralTest(info: PeripheralInfo, version: string, system: st
           : `LED ${i + 1}: mode ${l.mode}, brightness ${l.brightness ?? "-"}, ${l.color}`;
       }),
       ...(info.details ?? []).map(([label, value]) => `${label}: ${value}`),
+      info.kind === "keyboard" ? layoutReport(info.key, info.layout) : null,
       ...info.buttons.map((b) => `Button ${b.name}: ${b.action}`),
       `Changes: ${info.problem ? `off (${info.problem})` : info.editable ? "available (experimental)" : "off (read-only)"}`,
       "Requests and answers:",
