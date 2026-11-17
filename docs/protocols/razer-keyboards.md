@@ -33,6 +33,7 @@ The receiver belongs to this keyboard: OpenRazer gives it a product id of its ow
 | `07 84` | `02` | none | `01` while charging, in the second byte |
 | `0f 84` | `03` | `01` (stored), `05` (backlight) | storage, LED, brightness 0–255 |
 | `03 80` | `03` | `01` (stored), `08` (game mode light) | storage, LED, `01` on or `00` off |
+| `00 86` | `02` | none | the keyboard's region (`11` Italian, `06` UK…), with transaction id `ff`: see `keyboard-layouts.md` |
 
 Status `05` means the keyboard does not take the command: PeriHub then shows that value as not supported. Status
 `04` (timed out), which a receiver may give while its keyboard is off, makes PeriHub ask again later.

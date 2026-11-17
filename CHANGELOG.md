@@ -6,6 +6,9 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
+### Added
+- **Keyboard layouts are detected.** A keyboard's page shows its layout, such as "Layout: Italian (ISO), detected": the shape (ANSI, ISO, JIS or ABNT2) is read from Corsair keyboards (property `0x41`) and the Razer BlackWidow V4 Mini (command `00 86`) with a read already allowed for them, and otherwise follows the system's layout; the key legends follow the layout the system types with (Hyprland, Sway, GNOME, KDE Plasma, X11 or localectl on Linux, the active keyboard layout on Windows), without root and without sending anything to a keyboard. The Apex 3 TKL's Keys tab draws the right keys (ISO Enter and the key next to the left Shift, the JIS and ABNT2 keys) with Japanese and Brazilian legends too. **Change** sets the shape or the legends for that keyboard when detection is wrong; the layout chosen before on the Keys tab is kept. Test reports name the layout shown and where it came from, and for a Logitech keyboard paired with a receiver its HID++ `0x4540` layout code, whose meaning is not documented yet. Facts from ckb-next, OpenRGB, OpenRazer and Solaar (GPL; no code copied).
+
 ### Changed
 - Automatic issue comments are quieter. A test build comments only on issues named by a `Test: #N` line in a commit message, and later builds edit that comment instead of adding one. The release comment goes to open issues the CHANGELOG names, quotes the line, and is skipped when the maintainer already said the fix ships.
 

@@ -6,6 +6,7 @@
   import NoWarranty from "../components/NoWarranty.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import { corsairTest } from "../lib/testReport";
+  import KeyboardLayout from "../components/KeyboardLayout.svelte";
   import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
@@ -105,6 +106,9 @@
     </dl>
     {#if info.read_errors.length}
       <p class="small muted">Could not read: {info.read_errors.join("; ")}</p>
+    {/if}
+    {#if info.kind === "keyboard"}
+      <KeyboardLayout deviceKey={`1b1c:${info.product_id.toString(16).padStart(4, "0")}`} device={info.layout} />
     {/if}
   </section>
 

@@ -13,6 +13,7 @@ pub mod focus;
 pub mod g300;
 pub mod games;
 pub mod hidpp;
+pub mod kblayout;
 pub mod keyboard;
 pub mod logitech;
 pub mod manager;

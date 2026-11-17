@@ -73,6 +73,7 @@ Other commands exist (reading data, probing a handle). PeriHub does not use them
 | `0x14` | bootloader version | (ckb-next) |
 | `0x1e` | active DPI stage | (ckb-next) |
 | `0x21`, `0x22` | DPI on X and Y | (ckb-next) |
+| `0x41` | a keyboard's physical layout | 1 ANSI, 2 ISO, 3 ABNT (ckb-next and OpenRGB), 4 JIS (OpenRGB); see `keyboard-layouts.md` |
 
 ## Resources
 
@@ -227,8 +228,8 @@ endpoints.
 
 ## What PeriHub does with it
 
-- **Always (read-only):** get the firmware version, the mode, the polling rate and the DPI.
-  Nothing is set.
+- **Always (read-only):** get the firmware version, the mode, the polling rate and the DPI, and
+  on keyboards the physical layout (`0x41`). Nothing is set.
 - **Experimental lighting, off by default and only for the current session:** switch to software
   mode, open the lighting handle, write one colour to every LED, send the keep-alive every 20
   seconds; switch back to hardware mode when it is turned off, when PeriHub quits, or when any

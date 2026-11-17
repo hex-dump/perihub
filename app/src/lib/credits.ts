@@ -138,7 +138,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://gitlab.com/CalcProgrammer1/OpenRGB",
         license: "GPL-2.0-or-later",
         notes: [
-          "The Apex 8-zone lighting protocol, the interface and usage page of each ASUS mouse's configuration collection, and for the Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and that a reading right after a write is incomplete, and the interface and usage page of the Logitech G600's, and the name and USB id of a white Corsair K70 PRO MINI WIRELESS (docs/protocols/corsair-bragi.md). " + NO_CODE,
+          "The Apex 8-zone lighting protocol, the interface and usage page of each ASUS mouse's configuration collection, and for the Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and that a reading right after a write is incomplete, and the interface and usage page of the Logitech G600's, and the name and USB id of a white Corsair K70 PRO MINI WIRELESS (docs/protocols/corsair-bragi.md), and the values of the Corsair keyboards' physical layout property and how it reads a Logitech keyboard's layout code (docs/protocols/keyboard-layouts.md). " + NO_CODE,
         ],
       },
       {
@@ -170,7 +170,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://github.com/pwr-Solaar/Solaar",
         license: "GPL-2.0",
         notes: [
-          "The Logitech receiver ids, and how it reads and writes onboard profile lists and button entries, compared with libratbag's (docs/protocols/logitech-onboard-profiles.md); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (docs/protocols/logitech-hidpp10.md). " + NO_CODE,
+          "The Logitech receiver ids, and how it reads and writes onboard profile lists and button entries, compared with libratbag's (docs/protocols/logitech-onboard-profiles.md); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (docs/protocols/logitech-hidpp10.md); how it reads a Logitech keyboard's layout code, HID++ 0x4540 (docs/protocols/keyboard-layouts.md). " + NO_CODE,
         ],
       },
       {
@@ -184,7 +184,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://github.com/openrazer/openrazer",
         license: "GPL-2.0",
         notes: [
-          "The Razer report layout and commands, and per mouse its USB interface, transaction ids, maximum DPI, lights with a brightness and custom frame width, read as text by tools/openrazer_facts.py (docs/protocols/razer-mice.md); for the BlackWidow V4 Mini HyperSpeed, its interface, waits and transaction ids, and the battery, charging, brightness and game mode reads (docs/protocols/razer-keyboards.md). " + NO_CODE,
+          "The Razer report layout and commands, and per mouse its USB interface, transaction ids, maximum DPI, lights with a brightness and custom frame width, read as text by tools/openrazer_facts.py (docs/protocols/razer-mice.md); for the BlackWidow V4 Mini HyperSpeed, its interface, waits and transaction ids, and the battery, charging, brightness and game mode reads (docs/protocols/razer-keyboards.md); the keyboard layout read and its region codes (docs/protocols/keyboard-layouts.md). " + NO_CODE,
         ],
       },
       {
@@ -199,7 +199,7 @@ export const creditGroups: CreditGroup[] = [
         name: "ckb-next",
         link: "https://github.com/ckb-next/ckb-next",
         license: "GPL-2.0-only",
-        notes: ["Corsair's protocol. " + NO_CODE],
+        notes: ["Corsair's protocol, and the keyboards' physical layout property (docs/protocols/keyboard-layouts.md). " + NO_CODE],
       },
       {
         name: "OpenLinkHub",

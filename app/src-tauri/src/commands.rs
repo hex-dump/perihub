@@ -49,6 +49,13 @@ pub fn devices_for_report(state: State<'_, AppState>) -> Vec<perihub_core::repor
 
 // ---- Keyboard ----
 
+/// The layout the system types with, for the keys drawn on the keyboards' pages. Read as the user,
+/// without opening any device.
+#[tauri::command]
+pub async fn kb_system_layout() -> CmdResult<Option<perihub_core::kblayout::SystemLayout>> {
+    tauri::async_runtime::spawn_blocking(perihub_core::kblayout::system).await.map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn kb_get_config(state: State<'_, AppState>) -> KeyboardConfig {
     state.config.lock().unwrap().keyboard.clone()
@@ -781,6 +788,7 @@ mod tests {
         "kb_get_presets",
         "kb_save_preset",
         "kb_delete_preset",
+        "kb_system_layout",
         "mouse_get_state",
         "mouse_live",
         "logitech_live",

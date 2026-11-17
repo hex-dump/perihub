@@ -186,6 +186,7 @@ fn main() {
             commands::get_status,
             commands::devices_for_report,
             commands::kb_get_config,
+            commands::kb_system_layout,
             commands::kb_set_lighting,
             commands::kb_set_brightness,
             commands::kb_read_brightness,

@@ -39,6 +39,8 @@ pub mod property {
     pub const FIRMWARE: u8 = 0x13;
     pub const DPI_X: u8 = 0x21;
     pub const DPI_Y: u8 = 0x22;
+    /// On a keyboard: its physical layout (see [`crate::kblayout::corsair`]).
+    pub const PHYSICAL_LAYOUT: u8 = 0x41;
 }
 
 pub const MODE_HARDWARE: u8 = 1;

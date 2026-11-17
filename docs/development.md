@@ -71,6 +71,7 @@ crates/perihub-core     Rust library: protocols, effects, device detection, conf
                         (see docs/protocols/logitech-onboard-profiles.md)
   src/g300.rs           Logitech G300 (feature reports; see docs/protocols/logitech-g300.md)
   src/corsair/          Corsair mice, keyboards and receivers (see docs/protocols/corsair-bragi.md)
+  src/kblayout.rs       keyboard layouts: what keyboards report, and the system's (see docs/protocols/keyboard-layouts.md)
   src/effects.rs        lighting effects rendered on the PC
   src/manager.rs        device hotplug
   src/worker.rs         one thread per device, so requests never interleave

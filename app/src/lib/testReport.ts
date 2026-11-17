@@ -3,6 +3,7 @@ import type {
 } from "./api";
 import type { HidppFeature, MouseInfo, ReportDevice } from "./api";
 import { kindName } from "./logitechFeatures";
+import { layoutReport } from "./keyboardLayout.svelte";
 
 const LOGITECH = "046d";
 const TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml";
@@ -192,6 +193,7 @@ export function receiverTest(
     );
     if (device.report_rates_hz?.length) lines.push(`Polling (Hz, 0x8061): ${device.report_rates_hz.join(" ")}`);
     lines.push(`Onboard memory: ${onboard}`);
+    if (device.kind === 0 || device.layout) lines.push(layoutReport(null, device.layout));
     if (live) {
       lines.push(
         `DPI now: ${live.dpi ?? "not read"}`,
@@ -225,9 +227,12 @@ export function corsairTest(info: CorsairInfo, version: string, system: string):
       `Mode at connection: ${info.mode ?? "not read"}`,
       `Polling: ${info.polling_hz ?? "not read"} Hz${info.kind === "mouse" ? `, DPI: ${info.dpi ?? "not read"}` : ""}`,
       `LEDs: ${info.leds}`,
+      info.kind === "keyboard" ? layoutReport(`1b1c:${hex(info.product_id)}`, info.layout) : null,
       `Could not read: ${info.read_errors.join("; ") || "nothing"}`,
       `Experimental lighting: ${info.lighting ? "on" : "off"}`,
-    ].join("\n"),
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n"),
   };
 }
 
@@ -287,6 +292,7 @@ export function peripheralTest(info: PeripheralInfo, version: string, system: st
           : `LED ${i + 1}: mode ${l.mode}, brightness ${l.brightness ?? "-"}, ${l.color}`;
       }),
       ...(info.details ?? []).map(([label, value]) => `${label}: ${value}`),
+      info.kind === "keyboard" ? layoutReport(info.key, info.layout) : null,
       ...info.buttons.map((b) => `Button ${b.name}: ${b.action}`),
       `Changes: ${info.problem ? `off (${info.problem})` : info.editable ? "available (experimental)" : "off (read-only)"}`,
       "Requests and answers:",

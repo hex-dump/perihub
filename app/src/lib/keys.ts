@@ -1,5 +1,5 @@
 import type { KeyBinding, SpecialFunction } from "./api";
-import { prefs, type LayoutId } from "./prefs.svelte";
+import { systemLegends, type Legends, type Physical } from "./keyboardLayout.svelte";
 
 /** Key names that do not depend on the layout (HID usage → keycap label). */
 const NAMES: Record<number, string> = {
@@ -17,51 +17,62 @@ const NAMES: Record<number, string> = {
 const ISO = { 0x31: "ANSI \\", 0x64: "<", 0xe6: "Alt Gr" };
 
 /** Symbols that change with the layout, as printed on the keycaps (from the xkb layouts). */
-const LEGENDS: Record<LayoutId, Record<number, string>> = {
-  "ansi-us": {
+const LEGENDS: Record<Legends, Record<number, string>> = {
+  us: {
     0x2d: "-", 0x2e: "=", 0x2f: "[", 0x30: "]", 0x31: "\\", 0x32: "ISO #", 0x33: ";", 0x34: "'",
     0x35: "`", 0x36: ",", 0x37: ".", 0x38: "/", 0x64: "ISO \\", 0xe6: "R Alt",
   },
-  "iso-uk": {
+  uk: {
     0x2d: "-", 0x2e: "=", 0x2f: "[", 0x30: "]", 0x31: "ANSI \\", 0x32: "#", 0x33: ";", 0x34: "'",
     0x35: "`", 0x36: ",", 0x37: ".", 0x38: "/", 0x64: "\\", 0xe6: "Alt Gr",
   },
-  "iso-it": {
+  it: {
     0x2d: "'", 0x2e: "ì", 0x2f: "è", 0x30: "+", 0x31: "ANSI \\", 0x32: "ù", 0x33: "ò", 0x34: "à",
     0x35: "\\", 0x36: ",", 0x37: ".", 0x38: "-", 0x64: "<", 0xe6: "Alt Gr",
   },
-  "iso-de": {
+  de: {
     ...ISO, 0x1c: "Z", 0x1d: "Y", 0x2d: "ß", 0x2e: "´", 0x2f: "Ü", 0x30: "+", 0x32: "#", 0x33: "Ö", 0x34: "Ä",
     0x35: "^", 0x36: ",", 0x37: ".", 0x38: "-",
   },
-  "iso-fr": {
+  fr: {
     ...ISO, 0x04: "Q", 0x10: ",", 0x14: "A", 0x1a: "Z", 0x1d: "W", 0x2d: ")", 0x2e: "=", 0x2f: "^", 0x30: "$",
     0x32: "*", 0x33: "M", 0x34: "ù", 0x35: "²", 0x36: ";", 0x37: ":", 0x38: "!",
   },
-  "iso-es": {
+  es: {
     ...ISO, 0x2d: "'", 0x2e: "¡", 0x2f: "`", 0x30: "+", 0x32: "Ç", 0x33: "Ñ", 0x34: "´", 0x35: "º", 0x36: ",",
     0x37: ".", 0x38: "-",
   },
-  "iso-pt": {
+  pt: {
     ...ISO, 0x2d: "'", 0x2e: "«", 0x2f: "+", 0x30: "´", 0x32: "~", 0x33: "Ç", 0x34: "º", 0x35: "\\", 0x36: ",",
     0x37: ".", 0x38: "-",
   },
-  "iso-se": {
+  se: {
     ...ISO, 0x2d: "+", 0x2e: "´", 0x2f: "Å", 0x30: "¨", 0x32: "'", 0x33: "Ö", 0x34: "Ä", 0x35: "§", 0x36: ",",
     0x37: ".", 0x38: "-",
   },
-  "iso-no": {
+  no: {
     ...ISO, 0x2d: "+", 0x2e: "\\", 0x2f: "Å", 0x30: "¨", 0x32: "'", 0x33: "Ø", 0x34: "Æ", 0x35: "|", 0x36: ",",
     0x37: ".", 0x38: "-",
   },
-  "iso-dk": {
+  dk: {
     ...ISO, 0x2d: "+", 0x2e: "´", 0x2f: "Å", 0x30: "¨", 0x32: "'", 0x33: "Æ", 0x34: "Ø", 0x35: "½", 0x36: ",",
     0x37: ".", 0x38: "-",
   },
+  // JIS: the symbols of xkb's jp layout, and the names of the Japanese keys.
+  jp: {
+    0x2d: "-", 0x2e: "^", 0x2f: "@", 0x30: "[", 0x31: "ANSI \\", 0x32: "]", 0x33: ";", 0x34: ":",
+    0x35: "半角/全角", 0x36: ",", 0x37: ".", 0x38: "/", 0x39: "英数", 0x64: "ISO \\",
+    0x87: "\\ ろ", 0x88: "かな", 0x89: "¥", 0x8a: "変換", 0x8b: "無変換", 0xe6: "R Alt",
+  },
+  // ABNT2 (xkb's br): the extra key next to the right Shift types / and ?.
+  br: {
+    ...ISO, 0x2d: "-", 0x2e: "=", 0x2f: "´", 0x30: "[", 0x32: "]", 0x33: "Ç", 0x34: "~", 0x35: "'", 0x36: ",",
+    0x37: ".", 0x38: ";", 0x64: "\\", 0x87: "/",
+  },
 };
 
-export function keyLabel(usage: number, layout: LayoutId = prefs.layout): string {
-  const legend = LEGENDS[layout][usage] ?? NAMES[usage];
+export function keyLabel(usage: number, legends: Legends = systemLegends()): string {
+  const legend = LEGENDS[legends][usage] ?? NAMES[usage];
   if (legend) return legend;
   if (usage >= 0x04 && usage <= 0x1d) return String.fromCharCode(65 + usage - 0x04);
   if (usage >= 0x1e && usage <= 0x26) return String(usage - 0x1d);
@@ -71,6 +82,13 @@ export function keyLabel(usage: number, layout: LayoutId = prefs.layout): string
   if (usage >= 0x59 && usage <= 0x61) return `Num ${usage - 0x58}`;
   if (usage === 0x62) return "Num 0";
   return `0x${usage.toString(16).padStart(2, "0")}`;
+}
+
+/** The label of a key drawn on a board. An ANSI board's backslash key is the key next to Enter that
+ * every system types the same as ISO's (0x32): on a non-US layout it shows that key's symbol. */
+export function capLabel(usage: number, legends: Legends, physical: Physical): string {
+  if (usage === 0x31 && physical === "ansi" && legends !== "us") return keyLabel(0x32, legends);
+  return keyLabel(usage, legends);
 }
 
 /** Factory functions of the SteelSeries layer (1 and 2 confirmed by pressing them on a real keyboard). */
@@ -85,10 +103,10 @@ export function functionLabel(code: number): string {
   }
 }
 
-export function bindingLabel(binding: KeyBinding | undefined): string {
+export function bindingLabel(binding: KeyBinding | undefined, legends?: Legends): string {
   if (!binding) return "";
   switch (binding.type) {
-    case "key": return keyLabel(binding.usage);
+    case "key": return keyLabel(binding.usage, legends);
     case "function": return functionLabel(binding.code);
     case "none": return "";
     case "raw": return "?";
@@ -152,20 +170,52 @@ const TKL_ANSI: KeyCap[] = [
   ...BOTTOM_ROW,
 ];
 
+/** The two-row Enter of ISO, JIS and ABNT2. */
+const TALL_ENTER: KeyCap = { usage: 0x28, x: 13.75, y: 2.25, w: 1.25, h: 2 };
+
 /** TKL ISO: two-row Enter, extra key next to the left Shift. */
 const TKL_ISO: KeyCap[] = [
   ...FUNCTION_ROW,
   ...NUMBER_ROW,
   ...row(2.25, [[0x2b, 1.5], ...LETTERS_TOP]),
-  { usage: 0x28, x: 13.75, y: 2.25, w: 1.25, h: 2 },
+  TALL_ENTER,
   ...NAV_ROW,
   ...row(3.25, [[0x39, 1.75], ...LETTERS_HOME, 0x32]),
   ...row(4.25, [[0xe1, 1.25], 0x64, ...LETTERS_BOTTOM, [0xe5, 2.75], { gap: 1.25 }, 0x52]),
   ...BOTTOM_ROW,
 ];
 
-export function layoutCaps(layout: LayoutId): KeyCap[] {
-  return layout === "ansi-us" ? TKL_ANSI : TKL_ISO;
+/** TKL ABNT2: ISO with one more key (0x87) before a shorter right Shift. */
+const TKL_ABNT: KeyCap[] = [
+  ...FUNCTION_ROW,
+  ...NUMBER_ROW,
+  ...row(2.25, [[0x2b, 1.5], ...LETTERS_TOP]),
+  TALL_ENTER,
+  ...NAV_ROW,
+  ...row(3.25, [[0x39, 1.75], ...LETTERS_HOME, 0x32]),
+  ...row(4.25, [[0xe1, 1.25], 0x64, ...LETTERS_BOTTOM, 0x87, [0xe5, 1.75], { gap: 1.25 }, 0x52]),
+  ...BOTTOM_ROW,
+];
+
+/** TKL JIS: ¥ (0x89) before a short Backspace, two-row Enter, ろ (0x87) before a short right Shift, and
+ * a short Space between 無変換 (0x8b) on one side and 変換 (0x8a) and かな (0x88) on the other. */
+const TKL_JIS: KeyCap[] = [
+  ...FUNCTION_ROW,
+  ...row(1.25, [0x35, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x2d, 0x2e, 0x89, 0x2a,
+    { gap: 0.25 }, 0x49, 0x4a, 0x4b]),
+  ...row(2.25, [[0x2b, 1.5], ...LETTERS_TOP]),
+  TALL_ENTER,
+  ...NAV_ROW,
+  ...row(3.25, [[0x39, 1.75], ...LETTERS_HOME, 0x32]),
+  ...row(4.25, [[0xe1, 2.25], ...LETTERS_BOTTOM, 0x87, [0xe5, 1.75], { gap: 1.25 }, 0x52]),
+  ...row(5.25, [[0xe0, 1.25], [0xe3, 1.25], [0xe2, 1.25], 0x8b, [0x2c, 3.25], 0x8a, 0x88, [0xe6, 1.25],
+    [0xe7, 1.25], [0xf0, 1.25], [0xe4, 1.25], { gap: 0.25 }, 0x50, 0x51, 0x4f]),
+];
+
+const CAPS: Record<Physical, KeyCap[]> = { ansi: TKL_ANSI, iso: TKL_ISO, jis: TKL_JIS, abnt: TKL_ABNT };
+
+export function layoutCaps(physical: Physical): KeyCap[] {
+  return CAPS[physical];
 }
 
 export const LAYOUT_WIDTH = 18.25;

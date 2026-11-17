@@ -50,37 +50,13 @@ fn decompose(c: char) -> Option<(char, u32)> {
     })
 }
 
-/// Layout, variant and options in use: Hyprland's main keyboard, else the system's (localectl).
-fn names() -> (String, String, String) {
-    if let Some(found) = hyprland_names() {
-        return found;
-    }
-    let output = std::process::Command::new("localectl").arg("status").output().ok();
-    let text = output.map(|o| String::from_utf8_lossy(&o.stdout).into_owned()).unwrap_or_default();
-    let field = |name: &str| {
-        text.lines().find_map(|l| l.trim().strip_prefix(name)).map(|v| v.trim().to_string()).unwrap_or_default()
-    };
-    let layout = field("X11 Layout:");
-    let first = |list: String| list.split(',').next().unwrap_or("").to_string();
-    (if layout.is_empty() { "us".into() } else { first(layout) }, first(field("X11 Variant:")), field("X11 Options:"))
-}
-
-fn hyprland_names() -> Option<(String, String, String)> {
-    let dir = crate::focus::hyprland::socket_dir()?;
-    let devices = crate::focus::hyprland::request(&dir, "j/devices")?;
-    let keyboards = devices.get("keyboards")?.as_array()?;
-    let main = keyboards.iter().find(|k| k.get("main").and_then(|m| m.as_bool()) == Some(true)).or(keyboards.first())?;
-    let text = |name: &str| main.get(name).and_then(|v| v.as_str()).unwrap_or("").to_string();
-    // With several layouts ("us,it") the active one is chosen by its index.
-    let index = main.get("active_layout_index").and_then(|i| i.as_u64()).unwrap_or(0) as usize;
-    let pick = |list: String| list.split(',').nth(index).unwrap_or("").to_string();
-    Some((pick(text("layout")), pick(text("variant")), text("options")))
-}
-
 impl Layout {
+    /// The layout the desktop types with (see [`crate::kblayout::xkb_names`]), US if none is found.
     pub fn current() -> Option<Self> {
-        let (layout, variant, options) = names();
-        Self::new(&layout, &variant, &options)
+        match crate::kblayout::xkb_names() {
+            Some(names) => Self::new(&names.layout, &names.variant, &names.options),
+            None => Self::new("us", "", ""),
+        }
     }
 
     pub fn new(layout: &str, variant: &str, options: &str) -> Option<Self> {

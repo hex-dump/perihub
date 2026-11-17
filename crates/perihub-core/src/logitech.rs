@@ -277,6 +277,7 @@ mod tests {
             report_rates_hz: Vec::new(),
             onboard,
             read_errors: Vec::new(),
+            layout: None,
         };
         (LogitechTask::open(dev, device, saved), mouse)
     }
