@@ -6,6 +6,7 @@
   import { api, errorText, type LogitechLive, type ReceiverReport, type UnsupportedReceiverDevice } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
   import { capabilities, kindName } from "../lib/logitechFeatures";
+  import Status from "../components/Status.svelte";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import { receiverTest } from "../lib/testReport";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
@@ -163,7 +164,7 @@
 
   {#if changeable && device.dpi}
     <section class="card">
-      <h2>DPI <span class="chip test">Experimental</span></h2>
+      <h2>DPI <Status kind="experimental" label="Experimental" chip /></h2>
       {#if !open}
         <p class="muted">The {name} is asleep: move it or turn it on to change its DPI.</p>
       {:else}

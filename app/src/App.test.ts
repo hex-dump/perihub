@@ -147,6 +147,38 @@ describe("Sidebar", () => {
     expect(nav().textContent).toContain("Not opened");
   });
 
+  it("shows each device's state with an icon and a word, never the connected look for experimental support", async () => {
+    calls.status = vi.fn(async () => ({
+      ...empty(),
+      keyboard: { name: "SteelSeries Apex 3 TKL", firmware: "3.0.4" },
+      mouse_asleep: "G502 X PLUS",
+      corsair: [
+        {
+          product_id: 0x1b7a,
+          model: "M65 RGB ULTRA",
+          kind: "mouse" as const,
+          receiver: null,
+          leds: 3,
+          firmware: null,
+          mode: null,
+          polling_hz: null,
+          dpi: null,
+          read_errors: [],
+          lighting: null,
+        },
+      ],
+    }));
+    render(App);
+    await wait();
+    const states = [...nav().querySelectorAll(".status")].map((s) => [s.getAttribute("data-kind"), s.textContent?.trim()]);
+    expect(states).toEqual([
+      ["ok", "Connected"],
+      ["asleep", "Asleep"],
+      ["experimental", "Experimental"],
+    ]);
+    for (const s of nav().querySelectorAll(".status")) expect(s.querySelector("svg path")).toBeTruthy();
+  });
+
   // Issue #4: a POWERPLAY receiver whose mouse never answered left only "No device found".
   const receiver = {
     product_id: 0xc53a,

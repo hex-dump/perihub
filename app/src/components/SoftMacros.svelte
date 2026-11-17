@@ -4,6 +4,7 @@
   import { keyLabel } from "../lib/keys";
   import { softSummary } from "../lib/macros";
   import ConfirmButton from "./ConfirmButton.svelte";
+  import Status from "./Status.svelte";
   import KeyAccessPermission from "./KeyAccessPermission.svelte";
 
   interface Props {
@@ -107,7 +108,7 @@
             <strong>{m.name}</strong>
             <span class="small muted">{softSummary(m)}</span>
           </div>
-          {#if info.status.running.includes(m.key)}<span class="chip running">Running</span>{/if}
+          {#if info.status.running.includes(m.key)}<Status kind="ok" label="Running" chip />{/if}
           <ConfirmButton class="ghost" disabled={busy} onconfirm={() => run(() => api.deleteSoftMacro(m.key))} confirmLabel="Delete?">
             Delete
           </ConfirmButton>
@@ -151,11 +152,4 @@
 
   .item {
     gap: 12px;
-  }
-
-  .running {
-    color: var(--ok);
-    background: var(--ok-soft);
-    border-color: rgb(var(--ok-rgb) / 0.35);
-  }
-</style>
+  }</style>

@@ -7,6 +7,7 @@
   } from "../lib/api";
   import { BUTTON_NAMES, action, colorName, describe } from "../lib/g300";
   import { g300Test } from "../lib/testReport";
+  import Status from "../components/Status.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import G300ProfileEditor from "../components/G300ProfileEditor.svelte";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
@@ -88,7 +89,7 @@
 
 <header>
   <h1>Logitech G300</h1>
-  {#if info && !info.editable}<span class="chip test">Read-only</span>{/if}
+  {#if info && !info.editable}<Status kind="readonly" label="Read-only" chip />{/if}
 </header>
 
 {#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
@@ -129,7 +130,7 @@
       <section class="card" class:active>
         <h2>
           Profile {profile.number}
-          {#if active}<span class="chip ok">Active</span>{/if}
+          {#if active}<Status kind="ok" label="Active" chip title="The profile the mouse is using now" />{/if}
           {#if info.editable && editing === null}
             <button class="tiny edit" disabled={!!busy || confirmKeep || readOnly.on} onclick={() => (editing = profile.number)}>Edit</button>
           {/if}
@@ -206,7 +207,7 @@
   }
 
   .card.active {
-    border-color: var(--ok);
+    border-color: var(--line-strong);
   }
 
   dl {
@@ -241,8 +242,9 @@
     margin-right: 8px;
   }
 
+  /* The level in use is a value in use: the accent, as on the other mouse pages. */
   .level.current {
-    color: var(--ok);
+    color: var(--accent);
     font-weight: 700;
   }
 

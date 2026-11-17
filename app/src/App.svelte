@@ -18,6 +18,7 @@
   import TestWizard from "./pages/TestWizard.svelte";
   import MouseTester from "./pages/MouseTester.svelte";
   import Icon from "./components/Icon.svelte";
+  import Status from "./components/Status.svelte";
   import Support from "./components/Support.svelte";
   import logo from "../icon.svg";
 
@@ -196,7 +197,7 @@
         <Icon name="report" />
         <span class="col tight">
           <span class="name">Send a report</span>
-          <span class="state">No device found</span>
+          <Status kind="idle" label="No device found" />
         </span>
       </button>
     {/if}
@@ -205,9 +206,15 @@
         <Icon name="keyboard" />
         <span class="col tight">
           <span class="name">{!status.keyboard && status.unsupported_keyboard ? status.unsupported_keyboard : "Apex 3 TKL"}</span>
-          <span class="state" class:on={!!status.keyboard}>
-            {status.keyboard ? "Connected" : status.unsupported_keyboard ? "Not supported yet" : status.keyboard_error ? "Not opened" : "Not connected"}
-          </span>
+          {#if status.keyboard}
+            <Status kind="ok" label="Connected" />
+          {:else if status.unsupported_keyboard}
+            <Status kind="idle" label="Not supported yet" />
+          {:else if status.keyboard_error}
+            <Status kind="warn" label="Not opened" />
+          {:else}
+            <Status kind="idle" label="Not connected" />
+          {/if}
         </span>
       </button>
     {/if}
@@ -216,9 +223,15 @@
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">{status.mouse?.model ?? status.mouse_asleep ?? "Logitech mouse"}</span>
-          <span class="state" class:on={!!status.mouse}>
-            {status.mouse ? "Connected" : status.mouse_asleep ? "Asleep" : status.mouse_error ? "Not opened" : "Not connected"}
-          </span>
+          {#if status.mouse}
+            <Status kind="ok" label="Connected" />
+          {:else if status.mouse_asleep}
+            <Status kind="asleep" label="Asleep" />
+          {:else if status.mouse_error}
+            <Status kind="warn" label="Not opened" />
+          {:else}
+            <Status kind="idle" label="Not connected" />
+          {/if}
         </span>
       </button>
     {/if}
@@ -228,7 +241,7 @@
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Logitech G300</span>
-          <span class="state" class:on={!!status.g300}>{status.g300 ? "Connected" : "Not connected"}</span>
+          <Status kind={status.g300 ? "ok" : "idle"} label={status.g300 ? "Connected" : "Not connected"} />
         </span>
       </button>
     {/if}
@@ -241,11 +254,11 @@
         <span class="col tight">
           <span class="name">Logitech {device.name ?? kindName(device.kind)}</span>
           {#if !receiver.open_slots.includes(device.slot)}
-            <span class="state">Asleep</span>
+            <Status kind="asleep" label="Asleep" />
           {:else if device.dpi && !device.onboard}
-            <span class="state on">Experimental</span>
+            <Status kind="experimental" label="Experimental" />
           {:else}
-            <span class="state on">Read-only</span>
+            <Status kind="readonly" label="Read-only" />
           {/if}
         </span>
       </button>
@@ -258,7 +271,7 @@
         <Icon name={device.kind} />
         <span class="col tight">
           <span class="name">Corsair {device.model}</span>
-          <span class="state on">{device.receiver ? "Experimental · wireless" : "Experimental"}</span>
+          <Status kind="experimental" label={device.receiver ? "Experimental · wireless" : "Experimental"} />
         </span>
       </button>
     {/each}
@@ -270,7 +283,7 @@
         <Icon name={device.kind} />
         <span class="col tight">
           <span class="name">{device.brand} {device.model}</span>
-          <span class="state on">{device.editable ? "Experimental" : "Read-only"}</span>
+          <Status kind={device.editable ? "experimental" : "readonly"} label={device.editable ? "Experimental" : "Read-only"} />
         </span>
       </button>
     {/each}
@@ -279,7 +292,7 @@
         <Icon name="keyboard" />
         <span class="col tight">
           <span class="name">QMK keyboards</span>
-          <span class="state">{status.qmk.length} found</span>
+          <Status kind="ok" label={`${status.qmk.length} found`} />
         </span>
       </button>
     {/if}
@@ -288,7 +301,7 @@
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Other device</span>
-          <span class="state">Not opened</span>
+          <Status kind="warn" label="Not opened" />
         </span>
       </button>
     {/if}
@@ -297,7 +310,7 @@
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Corsair</span>
-          <span class="state">Not connected</span>
+          <Status kind="idle" label="Not connected" />
         </span>
       </button>
     {/if}
@@ -452,7 +465,8 @@
     color: var(--text);
   }
 
-  /* The page on screen: an orange edge and icon. */
+  /* The page on screen: an edge in the accent. The icon stays in the text color, so the accent next to a
+     device's state never reads as that state. */
   nav button.active::before {
     content: "";
     position: absolute;
@@ -462,10 +476,6 @@
     width: 3px;
     border-radius: 0 3px 3px 0;
     background: var(--accent);
-  }
-
-  nav button.active :global(svg) {
-    color: var(--accent);
   }
 
   nav button :global(svg) {
@@ -479,31 +489,6 @@
 
   .tight {
     gap: 1px;
-  }
-
-  .state {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--faint);
-  }
-
-  .state::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--idle);
-  }
-
-  .state.on {
-    color: var(--ok);
-  }
-
-  .state.on::before {
-    background: var(--ok);
-    box-shadow: 0 0 6px var(--ok);
   }
 
   .conflict {

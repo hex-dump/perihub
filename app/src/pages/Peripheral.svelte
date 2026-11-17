@@ -7,6 +7,7 @@
   import { api, errorText, type PeripheralInfo, type PeripheralSettings } from "../lib/api";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import { peripheralTest } from "../lib/testReport";
+  import Status from "../components/Status.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import PeripheralSaveDialog from "../components/PeripheralSaveDialog.svelte";
@@ -125,7 +126,7 @@
 
 <header>
   <h1>{info ? name : "Device"}</h1>
-  {#if info}<span class="chip test">{info.editable ? "Experimental" : "Read-only"}</span>{/if}
+  {#if info}<Status kind={info.editable ? "experimental" : "readonly"} label={info.editable ? "Experimental" : "Read-only"} chip />{/if}
 </header>
 
 {#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
@@ -378,8 +379,9 @@
     width: 90px;
   }
 
+  /* The level in use is a value in use: the accent, as on the other mouse pages. */
   .level.current {
-    color: var(--ok);
+    color: var(--accent);
     font-weight: 700;
   }
 

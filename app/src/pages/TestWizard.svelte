@@ -5,6 +5,8 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type DeviceStatus, type ReportDevice, type WriteEntry } from "../lib/api";
   import { userNames } from "../lib/redact";
+  import { stateStatus } from "../lib/status";
+  import Status from "../components/Status.svelte";
   import { readOnly, writeLogLines } from "../lib/readOnly.svelte";
   import {
     candidates, checklist, checklistText, formAddress, formUrl, needsPaste, prepareForm, readDevice, reportText,
@@ -214,7 +216,7 @@
 <ol class="steps">
   {#each steps as s, i (s)}
     <li class:current={s === step} class:done={steps.indexOf(step) > i}>
-      <span class="number">{i + 1}</span>
+      <span class="number">{steps.indexOf(step) > i ? "✓" : i + 1}</span>
       <span class="title">{TITLES[s]}</span>
     </li>
   {/each}
@@ -251,7 +253,7 @@
             <b>{c.name}</b>
             <span class="muted small">{c.kind === "other" ? "Other device" : c.kind === "mouse" ? "Mouse" : "Keyboard"}</span>
           </span>
-          <span class="chip" class:ok={c.state === "Supported"}>{c.state}</span>
+          <Status kind={stateStatus(c.state)} label={c.state} chip />
         </button>
       {/each}
     </div>
