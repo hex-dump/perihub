@@ -85,6 +85,7 @@
     receivers: [],
     logitech_programs: [],
     sandboxed: false,
+    scanned: false,
   });
 
   const hex = (id: number) => id.toString(16).padStart(4, "0");
@@ -136,7 +137,7 @@
       peripheralThere ||
       status.qmk.length > 0,
   );
-  /** Until the first status arrives, nothing is listed: no report offered for devices not looked at yet. */
+  /** Until the first detection pass is over, nothing is listed: no report offered for devices not looked at yet. */
   let loaded = $state(false);
 
   /** The page shown when none was asked for: the first device in the sidebar, or the report. */
@@ -153,8 +154,9 @@
 
   function received(next: DeviceStatus) {
     status = next;
-    loaded = true;
-    if (page === null) page = firstPage();
+    // The backend answers at once, with empty lists, before its first pass has looked at the devices.
+    loaded = next.scanned;
+    if (loaded && page === null) page = firstPage();
   }
 
   onMount(() => {
@@ -404,7 +406,8 @@
       {:else if page === "qmk"}
         <QmkKeyboards keyboards={status.qmk} onopen={(key) => go("peripheral", peripheralTab(key))} />
       {:else if page === "report"}
-        <DeviceReport alone={!anyDevice} shown={status.qmk.map((k) => k.key)} />
+        <!-- Until the devices were looked at, "no device found" would be a guess. -->
+        {#if loaded}<DeviceReport alone={!anyDevice} shown={status.qmk.map((k) => k.key)} />{/if}
       {:else if page === "wizard"}
         <TestWizard {status} />
       {:else if page === "tester"}
