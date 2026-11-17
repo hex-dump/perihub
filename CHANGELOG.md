@@ -7,6 +7,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ## Unreleased
 
 ### Fixed
+- Device detection tries again when the system's HID access is not ready yet (for example when PeriHub starts at login), every 2 seconds and then more slowly up to 30, instead of showing "HID unavailable" until PeriHub is restarted.
 - A settings file that cannot be read is no longer overwritten by the defaults at the next save, which also turned read-only mode off: PeriHub keeps it as `config.corrupt-<time>.json` in its settings folder, and uses `config.json.bak`, a copy of the last good save, if it is there.
 
 ## 0.9.2 — 2026-11-17
