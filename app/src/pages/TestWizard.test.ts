@@ -46,7 +46,7 @@ const peripheral = {
 } as unknown as PeripheralInfo;
 
 const status = (part: Partial<DeviceStatus> = {}) =>
-  ({ mouse: null, g300: null, corsair: [], peripherals: [peripheral], receivers: [], qmk: [], ...part }) as DeviceStatus;
+  ({ mouse: null, g300: null, corsair: [], peripherals: [peripheral], receivers: [], qmk: [], scanned: true, ...part }) as DeviceStatus;
 
 const clipboard = { writeText: vi.fn().mockResolvedValue(undefined) };
 

@@ -56,6 +56,7 @@ const status: DeviceStatus = {
   receivers: [],
   logitech_programs: [],
   sandboxed: false,
+  scanned: true,
 };
 
 const autostartBox = () => screen.getByRole("checkbox", { name: /Start PeriHub when I log in/ }) as HTMLInputElement;

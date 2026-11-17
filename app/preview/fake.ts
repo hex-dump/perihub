@@ -69,6 +69,7 @@ const status: DeviceStatus = {
   receivers: [],
   logitech_programs: [],
   sandboxed: false,
+  scanned: true,
 };
 
 const profiles = data.mouse_profiles as unknown as MouseProfile[];

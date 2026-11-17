@@ -298,6 +298,9 @@ pub struct DeviceStatus {
     /// PeriHub runs in a Flatpak sandbox and cannot see the other programs running (see
     /// [`conflicts::sandboxed`]).
     pub sandboxed: bool,
+    /// The first detection pass is over. Until then the lists above are empty because nothing was looked
+    /// at yet, not because nothing is connected: the interface must not offer a report for it.
+    pub scanned: bool,
 }
 
 /// A keyboard with QMK firmware: PeriHub reads Vial keyboards by itself, and other keyboards with a raw
@@ -380,6 +383,8 @@ struct Slots {
     key_interfaces: KeyInterfaces,
     /// The connected devices PeriHub does not know, for a device request.
     report_devices: Vec<ReportDevice>,
+    /// The first detection pass is over.
+    scanned: bool,
     /// Keys of the connected keyboard's map that start software macros, kept by its thread.
     keyboard_macro_keys: Option<Arc<Mutex<Vec<u8>>>>,
 }
@@ -434,6 +439,7 @@ impl Manager {
                 let mut slots = self.slots.lock().unwrap();
                 slots.keyboard_error = Some(format!("HID unavailable: {error}"));
                 slots.mouse_error = slots.keyboard_error.clone();
+                slots.scanned = true;
                 drop(slots);
                 listener(&self.status());
                 return;
@@ -448,7 +454,9 @@ impl Manager {
             if pass.is_multiple_of(CONFLICT_CHECK_EVERY) {
                 changed |= self.check_conflicts();
             }
-            if changed {
+            // The first pass is always announced, also when it finds nothing: that is the answer.
+            let first = !std::mem::replace(&mut self.slots.lock().unwrap().scanned, true);
+            if changed || first {
                 listener(&self.status());
             }
             pass = pass.wrapping_add(1);
@@ -965,6 +973,7 @@ impl Manager {
             receivers: slots.receivers.clone(),
             logitech_programs: slots.logitech_programs.iter().map(|name| name.to_string()).collect(),
             sandboxed: conflicts::sandboxed(),
+            scanned: slots.scanned,
         }
     }
 
