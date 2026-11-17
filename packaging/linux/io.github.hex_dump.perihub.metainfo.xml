@@ -428,7 +428,7 @@
   <releases>
     <release version="0.9.3" date="2026-11-17">
       <description>
-        <p>Test reports now record every request and answer in full, as a transcript that can become a replay test without the device. Keyboard layouts are detected and shown on the keyboard's page, a damaged config.json is no longer overwritten by the defaults, and the interface is easier to use with screen readers and to read.</p>
+        <p>A damaged config.json is no longer overwritten by the defaults: PeriHub keeps it and brings back the last good save. Device detection recovers on its own when HID access is not ready at start-up, errors are shown in plain words instead of being swallowed, and on Linux desktops without a system tray closing the window quits PeriHub instead of hiding it. Test reports now carry every request and answer in full, and the interface works better with screen readers.</p>
       </description>
     </release>
     <release version="0.9.2" date="2026-11-17">
