@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { api, type DeviceStatus } from "./lib/api";
+  import { api, errorText, type DeviceStatus } from "./lib/api";
   import { updates } from "./lib/updates.svelte";
   import { followReadOnly, readOnly, setReadOnly } from "./lib/readOnly.svelte";
   import Keyboard from "./pages/Keyboard.svelte";
@@ -55,6 +55,20 @@
   function fromHash(): [Page | null, string | undefined] {
     const [p, tab] = location.hash.slice(1).split(":");
     return [PAGES.includes(p as Page) ? (p as Page) : null, tab || undefined];
+  }
+
+  /** Why the settings file was not used at start-up, until the user closes the message. */
+  let configProblem = $state<string | null>(null);
+  /** Why read-only mode could not be turned off from the bar. */
+  let readOnlyError = $state<string | null>(null);
+
+  async function turnOffReadOnly() {
+    readOnlyError = null;
+    try {
+      await setReadOnly(false);
+    } catch (e) {
+      readOnlyError = errorText(e);
+    }
   }
 
   let [initialPage, initialTab] = fromHash();
@@ -161,6 +175,7 @@
 
   onMount(() => {
     api.status().then(received);
+    api.configProblem().then((p) => (configProblem = p), () => {});
     // PeriHub checks for updates in the background, also while this window is closed.
     api.updateAvailable().then((u) => u && (updates.available = u));
     api.updateJustInstalled().then((v) => v && (updates.installed = v));
@@ -185,7 +200,7 @@
 </script>
 
 <div class="shell">
-  <nav>
+  <nav aria-label="PeriHub pages">
     <div class="brand">
       <img class="logo" src={logo} alt="" />
       <span>PeriHub</span>
@@ -193,7 +208,7 @@
 
     <h3>Devices</h3>
     {#if loaded && !anyDevice}
-      <button class:active={page === "report"} onclick={() => go("report")}>
+      <button class:active={page === "report"} aria-current={page === "report" ? "page" : undefined} onclick={() => go("report")}>
         <Icon name="report" />
         <span class="col tight">
           <span class="name">Send a report</span>
@@ -202,7 +217,7 @@
       </button>
     {/if}
     {#if keyboardThere || page === "keyboard"}
-      <button class:active={page === "keyboard"} onclick={() => go("keyboard")}>
+      <button class:active={page === "keyboard"} aria-current={page === "keyboard" ? "page" : undefined} onclick={() => go("keyboard")}>
         <Icon name="keyboard" />
         <span class="col tight">
           <span class="name">{!status.keyboard && status.unsupported_keyboard ? status.unsupported_keyboard : "Apex 3 TKL"}</span>
@@ -219,7 +234,7 @@
       </button>
     {/if}
     {#if mouseThere || page === "mouse"}
-      <button class:active={page === "mouse"} onclick={() => go("mouse")}>
+      <button class:active={page === "mouse"} aria-current={page === "mouse" ? "page" : undefined} onclick={() => go("mouse")}>
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">{status.mouse?.model ?? status.mouse_asleep ?? "Logitech mouse"}</span>
@@ -237,7 +252,7 @@
     {/if}
 
     {#if status.g300 || status.g300_error || page === "g300"}
-      <button class:active={page === "g300"} onclick={() => go("g300")}>
+      <button class:active={page === "g300"} aria-current={page === "g300" ? "page" : undefined} onclick={() => go("g300")}>
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Logitech G300</span>
@@ -248,6 +263,7 @@
     {#each logitechDevices as { receiver, device } (logitechKey(receiver, device))}
       <button
         class:active={page === "logitech" && logitechShown?.device === device}
+        aria-current={page === "logitech" && logitechShown?.device === device ? "page" : undefined}
         onclick={() => go("logitech", logitechKey(receiver, device))}
       >
         <Icon name={kindIcon(device.kind)} />
@@ -266,6 +282,7 @@
     {#each status.corsair as device (device.product_id)}
       <button
         class:active={page === "corsair" && corsairShown?.product_id === device.product_id}
+        aria-current={page === "corsair" && corsairShown?.product_id === device.product_id ? "page" : undefined}
         onclick={() => go("corsair", hex(device.product_id))}
       >
         <Icon name={device.kind} />
@@ -278,6 +295,7 @@
     {#each status.peripherals as device (device.key)}
       <button
         class:active={page === "peripheral" && peripheralShown?.key === device.key}
+        aria-current={page === "peripheral" && peripheralShown?.key === device.key ? "page" : undefined}
         onclick={() => go("peripheral", peripheralTab(device.key))}
       >
         <Icon name={device.kind} />
@@ -288,7 +306,7 @@
       </button>
     {/each}
     {#if status.qmk.length > 0}
-      <button class:active={page === "qmk"} onclick={() => go("qmk")}>
+      <button class:active={page === "qmk"} aria-current={page === "qmk" ? "page" : undefined} onclick={() => go("qmk")}>
         <Icon name="keyboard" />
         <span class="col tight">
           <span class="name">QMK keyboards</span>
@@ -297,7 +315,7 @@
       </button>
     {/if}
     {#if status.peripherals.length === 0 && status.peripheral_error}
-      <button class:active={page === "peripheral"} onclick={() => go("peripheral")}>
+      <button class:active={page === "peripheral"} aria-current={page === "peripheral" ? "page" : undefined} onclick={() => go("peripheral")}>
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Other device</span>
@@ -306,7 +324,7 @@
       </button>
     {/if}
     {#if status.corsair.length === 0 && (status.corsair_error || page === "corsair")}
-      <button class:active={page === "corsair"} onclick={() => go("corsair")}>
+      <button class:active={page === "corsair"} aria-current={page === "corsair" ? "page" : undefined} onclick={() => go("corsair")}>
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Corsair</span>
@@ -316,7 +334,7 @@
     {/if}
 
     {#if anyDevice && page === "report"}
-      <button class="active">
+      <button class="active" aria-current="page">
         <Icon name="report" />
         <span class="name">Send a report</span>
       </button>
@@ -324,19 +342,19 @@
 
     <div class="grow"></div>
     <h3>Tools</h3>
-    <button class:active={page === "wizard"} onclick={() => go("wizard")}>
+    <button class:active={page === "wizard"} aria-current={page === "wizard" ? "page" : undefined} onclick={() => go("wizard")}>
       <Icon name="report" />
       <span class="name">Test my device</span>
     </button>
-    <button class:active={page === "tester"} onclick={() => go("tester")}>
+    <button class:active={page === "tester"} aria-current={page === "tester" ? "page" : undefined} onclick={() => go("tester")}>
       <Icon name="mouse" />
       <span class="name">Mouse tester</span>
     </button>
-    <button class:active={page === "profiles"} onclick={() => go("profiles")}>
+    <button class:active={page === "profiles"} aria-current={page === "profiles" ? "page" : undefined} onclick={() => go("profiles")}>
       <Icon name="profiles" />
       <span class="name">App profiles</span>
     </button>
-    <button class:active={page === "settings"} onclick={() => go("settings")}>
+    <button class:active={page === "settings"} aria-current={page === "settings" ? "page" : undefined} onclick={() => go("settings")}>
       <Icon name="settings" />
       <span class="name">Settings</span>
       {#if updates.available}<span class="chip accent update">Update</span>{/if}
@@ -352,11 +370,18 @@
           <button class="tiny" onclick={() => (updates.installed = null)}>Close</button>
         </div>
       {/if}
+      {#if configProblem}
+        <div class="notice warn row config-problem" role="alert">
+          <span>{configProblem}</span>
+          <button class="tiny" onclick={() => (configProblem = null)}>Close</button>
+        </div>
+      {/if}
       {#if readOnly.on}
         <div class="notice warn row read-only">
           <span><b>Read-only mode is on.</b> PeriHub reads your devices but sends them no changes.</span>
-          <button class="tiny" onclick={() => setReadOnly(false).catch(() => {})}>Turn off</button>
+          <button class="tiny" onclick={turnOffReadOnly}>Turn off</button>
         </div>
+        {#if readOnlyError}<div class="notice error" role="alert">Could not turn read-only mode off: {readOnlyError}</div>{/if}
       {/if}
       {#each status.conflicts as name (name)}
         <div class="notice error conflict">

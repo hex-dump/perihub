@@ -670,6 +670,12 @@ pub fn app_set_settings(app: AppHandle, state: State<'_, AppState>, settings: Ap
     Ok(app_get_settings(app, state))
 }
 
+/// Why the settings file was not used at start-up, if it was not (see `AppConfig::load_checked`).
+#[tauri::command]
+pub fn app_config_problem(state: State<'_, AppState>) -> Option<String> {
+    state.config_problem.clone()
+}
+
 #[tauri::command]
 pub fn app_read_only() -> bool {
     perihub_core::writes::read_only()
@@ -810,6 +816,7 @@ mod tests {
         "app_get_settings",
         "app_set_settings",
         "app_read_only",
+        "app_config_problem",
         "app_set_read_only",
         "app_write_log",
         "app_clear_write_log",

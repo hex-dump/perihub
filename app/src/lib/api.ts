@@ -891,6 +891,8 @@ export const api = {
   setAppSettings: (settings: AppSettings) =>
     invoke<AppSettings>("app_set_settings", { settings }),
   quit: () => invoke<void>("app_quit"),
+  /** Why the settings file was not used at start-up (it could not be read), or null. */
+  configProblem: () => invoke<string | null>("app_config_problem"),
   /** Read-only mode: nothing that changes a device is sent to it. */
   readOnly: () => invoke<boolean>("app_read_only"),
   setReadOnly: (on: boolean) => invoke<boolean>("app_set_read_only", { on }),
@@ -942,10 +944,35 @@ export function debounce<A extends unknown[]>(
   return call;
 }
 
-export function errorText(error: unknown): string {
+/** The error as the backend or the system said it, without any rewriting. */
+export function rawErrorText(error: unknown): string {
   return typeof error === "string"
     ? error
     : error instanceof Error
       ? error.message
       : JSON.stringify(error);
+}
+
+/** Causes people meet often, and what to do about them. The first match wins; a message that
+ * matches none is shown as it came. The raw text stays in brackets for reports and for the log. */
+const KNOWN_ERRORS: [RegExp, string][] = [
+  [/read-only mode is on/i, "Read-only mode is on, so nothing was sent to the device. Turn it off first if you want to change it."],
+  [/permission denied|access is denied|access denied/i, "PeriHub is not allowed to open this device. On Linux the udev rule is usually missing (see Settings); on Windows, close the maker's own software and try again."],
+  [/device or resource busy|resource busy|already in use|sharing violation/i, "Another program is using this device. Quit the maker's own software (G HUB, iCUE, Synapse...) and try again."],
+  [/turned off or asleep/i, "The device is turned off or asleep. Wake it by moving it, then try again."],
+  [/did not respond in time|timed out|timeout/i, "The device did not answer in time. If it is wireless, wake it by moving it, then try again."],
+  [/device not connected|no such device|not connected/i, "The device is not connected any more. Plug it back in and try again."],
+  [/different device answers/i, "A different device now answers in this receiver slot. Wait a moment, PeriHub looks again by itself."],
+  [/device busy/i, "The device is busy right now. Try again in a moment."],
+];
+
+/** An error from the backend as a sentence a person can act on. */
+export function errorText(error: unknown): string {
+  const raw = rawErrorText(error);
+  // PeriHub's own advice (the udev rule) says more than the general one.
+  if (/udev rule/i.test(raw)) return raw;
+  const known = KNOWN_ERRORS.find(([pattern]) => pattern.test(raw));
+  if (!known) return raw;
+  // The raw text is not repeated when it says the same (e.g. "Read-only mode is on").
+  return raw.length < 30 && known[1].toLowerCase().startsWith(raw.toLowerCase()) ? known[1] : `${known[1]} (${raw})`;
 }

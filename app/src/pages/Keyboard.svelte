@@ -29,7 +29,7 @@
 </header>
 
 {#if error && !info}
-  <div class="notice error">{error}</div>
+  <div class="notice error" role="alert">{error}</div>
 {/if}
 {#if unsupported && !info}
   <div class="notice info">

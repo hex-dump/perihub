@@ -28,9 +28,54 @@ use crate::peripheral::task::{Identity, PeripheralTask};
 use crate::peripheral::{self, PeripheralInfo, Protocol};
 use crate::report_devices::{self, ReportDevice};
 use crate::softmacro::KeyboardTriggers;
+use crate::sync::LockExt;
 use crate::worker::Worker;
 
 const POLL_INTERVAL: Duration = Duration::from_secs(2);
+/// Start of the error shown while the system's HID access cannot be opened.
+const HID_UNAVAILABLE: &str = "HID unavailable";
+/// The wait before the first new try to open the system's HID access, and the longest wait.
+const HID_RETRY_FIRST: Duration = Duration::from_secs(2);
+const HID_RETRY_MAX: Duration = Duration::from_secs(30);
+
+/// The wait after the `attempt`-th failure (1 for the first): 2 s, 4 s, 8 s, 16 s, then 30 s.
+fn retry_delay(attempt: u32) -> Duration {
+    HID_RETRY_FIRST.saturating_mul(1u32 << attempt.saturating_sub(1).min(5)).min(HID_RETRY_MAX)
+}
+
+/// Calls `attempt` until it works, waiting longer after each failure (see [`retry_delay`]).
+/// `failed` is told the number of the failure, the error and the wait that follows.
+fn retry_with_backoff<T, E>(
+    mut attempt: impl FnMut() -> std::result::Result<T, E>,
+    mut failed: impl FnMut(u32, &E, Duration),
+    mut sleep: impl FnMut(Duration),
+) -> T {
+    let mut failures = 0u32;
+    loop {
+        match attempt() {
+            Ok(value) => return value,
+            Err(error) => {
+                failures = failures.saturating_add(1);
+                let wait = retry_delay(failures);
+                failed(failures, &error, wait);
+                sleep(wait);
+            }
+        }
+    }
+}
+
+/// Runs one step of a detection pass; a panic in it is logged and counts as "nothing changed", so
+/// the other steps and the next passes still run. A mutex the step held is recovered by
+/// [`LockExt::lock_recover`].
+fn guarded(what: &str, step: impl FnOnce() -> bool) -> bool {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(step)) {
+        Ok(changed) => changed,
+        Err(_) => {
+            log::error!("detection of {what} panicked: skipped for this pass");
+            false
+        }
+    }
+}
 /// Conflicting programs are looked for every this many detection passes (10 seconds).
 /// How often a Corsair receiver without a connected device is asked again.
 const CORSAIR_RECEIVER_RETRY: Duration = Duration::from_secs(10);
@@ -433,29 +478,46 @@ impl Manager {
     }
 
     fn hotplug_loop(&self, listener: Listener) {
-        let mut api = match HidApi::new() {
-            Ok(api) => api,
-            Err(error) => {
-                let mut slots = self.slots.lock().unwrap();
-                slots.keyboard_error = Some(format!("HID unavailable: {error}"));
+        // At login (autostart) hidraw or its permissions may not be ready yet: try again, slowly,
+        // instead of leaving PeriHub without detection until it is restarted.
+        let mut api = retry_with_backoff(
+            HidApi::new,
+            |attempt, error, wait| {
+                log::warn!("HID unavailable (attempt {attempt}), trying again in {} s: {error}", wait.as_secs());
+                let mut slots = self.slots.lock_recover();
+                slots.keyboard_error = Some(format!("{HID_UNAVAILABLE}, trying again: {error}"));
                 slots.mouse_error = slots.keyboard_error.clone();
                 slots.scanned = true;
                 drop(slots);
                 listener(&self.status());
-                return;
+            },
+            thread::sleep,
+        );
+        {
+            // The message of the failed attempts goes away with the first success.
+            let mut guard = self.slots.lock_recover();
+            let slots = &mut *guard;
+            for error in [&mut slots.keyboard_error, &mut slots.mouse_error] {
+                if error.as_deref().is_some_and(|e| e.starts_with(HID_UNAVAILABLE)) {
+                    *error = None;
+                }
             }
-        };
+            drop(guard);
+            listener(&self.status());
+        }
         let mut pass = 0u32;
         loop {
-            let mut changed = self.poll(&mut api, pass.is_multiple_of(RECEIVER_SCAN_EVERY));
-            changed |= self.poll_corsair(&api);
-            changed |= self.poll_g300(&api);
-            changed |= self.poll_peripherals(&api);
+            // A panic in the code for one kind of device must not end the detection of all.
+            let mut changed =
+                guarded("receivers and Logitech", || self.poll(&mut api, pass.is_multiple_of(RECEIVER_SCAN_EVERY)));
+            changed |= guarded("Corsair", || self.poll_corsair(&api));
+            changed |= guarded("G300", || self.poll_g300(&api));
+            changed |= guarded("other brands", || self.poll_peripherals(&api));
             if pass.is_multiple_of(CONFLICT_CHECK_EVERY) {
-                changed |= self.check_conflicts();
+                changed |= guarded("conflicts", || self.check_conflicts());
             }
             // The first pass is always announced, also when it finds nothing: that is the answer.
-            let first = !std::mem::replace(&mut self.slots.lock().unwrap().scanned, true);
+            let first = !std::mem::replace(&mut self.slots.lock_recover().scanned, true);
             if changed || first {
                 listener(&self.status());
             }
@@ -472,7 +534,7 @@ impl Manager {
             return false;
         }
         let report = report_devices::unknown_devices(api.device_list().filter_map(report_devices::Entry::from_hid));
-        self.slots.lock().unwrap().report_devices = report;
+        self.slots.lock_recover().report_devices = report;
         let keyboard = api.device_list().find(|d| is_keyboard_config_interface(d)).cloned();
         let key_interface = |number| {
             api.device_list()
@@ -500,7 +562,7 @@ impl Manager {
             .then(|| "SteelSeries Apex 3".to_string());
         let mut changed = false;
         {
-            let mut slots = self.slots.lock().unwrap();
+            let mut slots = self.slots.lock_recover();
             if slots.unsupported_keyboard != unsupported_keyboard {
                 if let Some(name) = &unsupported_keyboard {
                     log::info!("{name} connected: not supported yet, so PeriHub does not open it");
@@ -511,7 +573,7 @@ impl Manager {
         }
 
         let keyboard_present = {
-            let mut slots = self.slots.lock().unwrap();
+            let mut slots = self.slots.lock_recover();
             if slots.keyboard.as_ref().is_some_and(|(w, _)| !w.is_alive() || keyboard.is_none()) {
                 slots.keyboard = None;
                 log::info!("keyboard disconnected");
@@ -522,12 +584,12 @@ impl Manager {
             slots.keyboard.is_some()
         };
         if let (false, Some(info)) = (keyboard_present, &keyboard) {
-            let config = self.keyboard_config.lock().unwrap().clone();
+            let config = self.keyboard_config.lock_recover().clone();
             let result = info
                 .open_device(api)
                 .map_err(Error::from)
                 .and_then(|dev| KeyboardTask::open(Apex3Tkl::new(dev), &config, key_interfaces.clone()));
-            let mut slots = self.slots.lock().unwrap();
+            let mut slots = self.slots.lock_recover();
             let error = match result {
                 Ok(task) => {
                     let info = task.info.clone();
@@ -551,7 +613,7 @@ impl Manager {
                 || receivers.iter().any(|(d, _)| Some(d.path()) == path.as_deref())
         };
         let candidate = {
-            let mut slots = self.slots.lock().unwrap();
+            let mut slots = self.slots.lock_recover();
             if slots.mouse.as_ref().is_some_and(|(w, _)| !w.is_alive()) || !connected(&slots.mouse_path) {
                 if slots.mouse.take().is_some() {
                     log::info!("mouse disconnected");
@@ -592,7 +654,7 @@ impl Manager {
             None => {}
         }
         {
-            let mut slots = self.slots.lock().unwrap();
+            let mut slots = self.slots.lock_recover();
             if slots.mouse.is_some() || receivers.is_empty() {
                 changed |= slots.mouse_asleep.take().is_some() | slots.receiver_note.take().is_some();
             }
@@ -600,7 +662,7 @@ impl Manager {
         changed |= self.poll_logitech(api, &receivers, scan);
         let reports = self.receiver_reports(api, &receivers);
         {
-            let mut slots = self.slots.lock().unwrap();
+            let mut slots = self.slots.lock_recover();
             if slots.receivers != reports {
                 for report in reports.iter().filter(|r| !r.reachable && !slots.receivers.contains(r)) {
                     log::info!(
@@ -615,7 +677,7 @@ impl Manager {
             }
         }
         // The mouse's thread notices when another program takes the mouse or gives it back.
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         let host_mode =
             slots.mouse.is_some() && slots.mouse_host_mode.as_ref().is_some_and(|f| f.load(Ordering::SeqCst));
         if host_mode != slots.reported_host_mode {
@@ -634,7 +696,7 @@ impl Manager {
         model: &'static MouseModel,
         via: Option<String>,
     ) -> bool {
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         let error = match result {
             Ok(task) => {
                 let mouse = task.info.clone();
@@ -679,7 +741,7 @@ impl Manager {
 
     /// The connected receivers, with the devices PeriHub found behind them and does not support.
     fn receiver_reports(&self, api: &HidApi, receivers: &[ReceiverPaths]) -> Vec<ReceiverReport> {
-        let slots = self.slots.lock().unwrap();
+        let slots = self.slots.lock_recover();
         receiver_collections(api)
             .into_iter()
             .map(|(product_id, collections)| {
@@ -724,7 +786,7 @@ impl Manager {
     /// Looks for a mouse behind the receivers and opens the first one that answers,
     /// read-only until its model has been tested. Returns `true` if the status changed.
     fn watch_receivers(&self, api: &HidApi, receivers: &[ReceiverPaths]) -> bool {
-        let failed = self.slots.lock().unwrap().mouse_failed.clone();
+        let failed = self.slots.lock_recover().mouse_failed.clone();
         let mut asleep = None;
         let mut note = None;
         for paths in receivers.iter().filter(|(long, _)| Some(long.path()) != failed.as_deref()) {
@@ -735,7 +797,7 @@ impl Manager {
                 Err(error) => vec![format!("could not ask: {error}")],
             };
             {
-                let mut slots = self.slots.lock().unwrap();
+                let mut slots = self.slots.lock_recover();
                 let online = found.as_ref().map(|f| f.online.clone()).unwrap_or_default();
                 let sleeping = found.as_ref().is_ok_and(|f| f.asleep);
                 // Once per change: what the slots of a receiver with nothing to open answered.
@@ -763,13 +825,13 @@ impl Manager {
             };
             let receiver = format!("{} {:04x}", receiver::name(paths.0.product_id()), paths.0.product_id());
             if found.asleep {
-                let seen = self.slots.lock().unwrap().receiver_models.get(&path).copied();
+                let seen = self.slots.lock_recover().receiver_models.get(&path).copied();
                 if asleep.is_none() {
                     asleep = Some((seen.unwrap_or(WIRELESS_MOUSE).to_string(), receiver.clone()));
                 }
             }
             for slot in found.online {
-                let known = self.slots.lock().unwrap().receiver_unsupported.get(&(path.clone(), slot)).cloned();
+                let known = self.slots.lock_recover().receiver_unsupported.get(&(path.clone(), slot)).cloned();
                 let identity = match known {
                     Some(device) => Ok(Err(device)),
                     None => identify(api, paths, slot),
@@ -778,7 +840,7 @@ impl Manager {
                     Ok(Ok(model)) => model,
                     Ok(Err(device)) => {
                         note = Some(format!("{receiver}, slot {slot}: {} is not supported yet", device.label()));
-                        self.slots.lock().unwrap().receiver_unsupported.insert((path.clone(), slot), device);
+                        self.slots.lock_recover().receiver_unsupported.insert((path.clone(), slot), device);
                         continue;
                     }
                     Err(Error::Unreachable) => continue,
@@ -800,7 +862,7 @@ impl Manager {
                 return self.install_mouse(result, &path, model, Some(via));
             }
         }
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         let mut changed = false;
         let asleep_name = asleep.as_ref().map(|(name, _)| name.clone());
         if slots.mouse_asleep != asleep_name {
@@ -829,7 +891,7 @@ impl Manager {
         let present = |path: &CStr| receivers.iter().any(|(d, _)| d.path() == path);
         let mut changed = false;
         let mouse_link = {
-            let mut slots = self.slots.lock().unwrap();
+            let mut slots = self.slots.lock_recover();
             slots.logitech.retain(|(path, _), (worker, _)| worker.is_alive() && present(path));
             slots.mouse.as_ref().map(|(_, info)| (slots.mouse_path.clone(), info.link.as_ref().map(|l| l.slot)))
         };
@@ -837,22 +899,22 @@ impl Manager {
             for paths in receivers {
                 let path = paths.0.path().to_owned();
                 let Ok(found) = probe(api, paths) else { continue };
-                self.slots.lock().unwrap().receiver_online.insert(path.clone(), found.online.clone());
+                self.slots.lock_recover().receiver_online.insert(path.clone(), found.online.clone());
                 for slot in found.online {
-                    let known = self.slots.lock().unwrap().receiver_unsupported.contains_key(&(path.clone(), slot));
+                    let known = self.slots.lock_recover().receiver_unsupported.contains_key(&(path.clone(), slot));
                     let the_mouse = mouse_path.as_deref() == Some(path.as_c_str()) && mouse_slot == Some(slot);
                     if known || the_mouse {
                         continue;
                     }
                     if let Ok(Err(device)) = identify(api, paths, slot) {
-                        self.slots.lock().unwrap().receiver_unsupported.insert((path.clone(), slot), device);
+                        self.slots.lock_recover().receiver_unsupported.insert((path.clone(), slot), device);
                         changed = true;
                     }
                 }
             }
         }
         let to_open: Vec<(ReceiverPaths, u8, UnsupportedDevice)> = {
-            let slots = self.slots.lock().unwrap();
+            let slots = self.slots.lock_recover();
             slots
                 .receiver_unsupported
                 .iter()
@@ -867,7 +929,7 @@ impl Manager {
                 .collect()
         };
         for (paths, slot, device) in to_open {
-            let saved = self.logitech_dpi.lock().unwrap().get(&device.settings_key()).copied();
+            let saved = self.logitech_dpi.lock_recover().get(&device.settings_key()).copied();
             let receiver_id = paths.0.product_id();
             match open_behind(api, &paths, slot, true).and_then(|dev| LogitechTask::open(dev, device, saved)) {
                 Ok(task) => {
@@ -877,18 +939,14 @@ impl Manager {
                         receiver::name(receiver_id)
                     );
                     let worker = Worker::spawn("perihub-logitech", task);
-                    self.slots
-                        .lock()
-                        .unwrap()
-                        .logitech
-                        .insert((paths.0.path().to_owned(), slot), (worker, receiver_id));
+                    self.slots.lock_recover().logitech.insert((paths.0.path().to_owned(), slot), (worker, receiver_id));
                 }
                 // Asleep again: opened when it answers.
                 Err(Error::Unreachable) => {}
                 // Another device was paired in that slot: read it again before anything is set on it.
                 Err(Error::OtherDevice) => {
                     log::info!("{}, slot {slot}: a different device answers now", receiver::name(receiver_id));
-                    self.slots.lock().unwrap().receiver_unsupported.remove(&(paths.0.path().to_owned(), slot));
+                    self.slots.lock_recover().receiver_unsupported.remove(&(paths.0.path().to_owned(), slot));
                     changed = true;
                 }
                 Err(error) => log::debug!("{}, slot {slot}: {error}", receiver::name(receiver_id)),
@@ -899,7 +957,7 @@ impl Manager {
 
     /// The device PeriHub knows by its features in `slot` of a connected receiver.
     pub fn logitech(&self, receiver_id: u16, slot: u8) -> Result<Worker<LogitechTask>> {
-        let slots = self.slots.lock().unwrap();
+        let slots = self.slots.lock_recover();
         slots
             .logitech
             .iter()
@@ -911,7 +969,7 @@ impl Manager {
     /// Keeps the DPI to set on a device every time it connects (`None`: none any more), by
     /// [`UnsupportedDevice::settings_key`].
     pub fn set_logitech_dpi(&self, key: String, dpi: Option<u16>) {
-        let mut saved = self.logitech_dpi.lock().unwrap();
+        let mut saved = self.logitech_dpi.lock_recover();
         match dpi {
             Some(dpi) => saved.insert(key, dpi),
             None => saved.remove(&key),
@@ -921,7 +979,7 @@ impl Manager {
     /// Turns a keyboard with a raw HID collection on or off as a VIA keyboard, by "vvvv:pppp". It is
     /// opened or closed at the next pass.
     pub fn set_qmk_enabled(&self, key: &str, on: bool) {
-        let mut enabled = self.qmk_enabled.lock().unwrap();
+        let mut enabled = self.qmk_enabled.lock_recover();
         if on {
             enabled.insert(key.to_string());
         } else {
@@ -932,7 +990,7 @@ impl Manager {
     /// Looks for running programs that take control of the devices. Returns `true` if the list changed.
     fn check_conflicts(&self) -> bool {
         let (running, logitech_programs) = conflicts::running_and_logitech_programs();
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         if slots.conflicts == running && slots.logitech_programs == logitech_programs {
             return false;
         }
@@ -947,11 +1005,11 @@ impl Manager {
 
     /// The connected USB and Bluetooth devices PeriHub does not know, as of the last pass.
     pub fn report_devices(&self) -> Vec<ReportDevice> {
-        self.slots.lock().unwrap().report_devices.clone()
+        self.slots.lock_recover().report_devices.clone()
     }
 
     pub fn status(&self) -> DeviceStatus {
-        let slots = self.slots.lock().unwrap();
+        let slots = self.slots.lock_recover();
         DeviceStatus {
             keyboard: slots.keyboard.as_ref().map(|(_, info)| info.clone()),
             mouse: slots
@@ -978,7 +1036,7 @@ impl Manager {
     }
 
     pub fn g300(&self) -> Result<Worker<G300Task>> {
-        self.slots.lock().unwrap().g300.as_ref().map(|(_, w, _)| w.clone()).ok_or(Error::NotConnected)
+        self.slots.lock_recover().g300.as_ref().map(|(_, w, _)| w.clone()).ok_or(Error::NotConnected)
     }
 
     /// Opens or forgets the Logitech G300. Returns `true` if the status changed.
@@ -994,7 +1052,7 @@ impl Manager {
         // On Windows the interface has a keyboard collection too: the reports are in the vendor one.
         let found = candidates.iter().find(|d| d.usage_page() == g300::USAGE_PAGE).or(candidates.first()).copied();
         let path = found.map(|d| d.path().to_owned());
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         let mut changed = false;
         if slots.g300.as_ref().is_some_and(|(p, w, _)| !w.is_alive() || Some(p) != path.as_ref()) {
             slots.g300 = None;
@@ -1012,7 +1070,7 @@ impl Manager {
         }
         drop(slots);
         let result = device.open_device(api).map_err(Error::from).and_then(G300Task::open);
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         match result {
             Ok(task) => {
                 let info = task.info.clone();
@@ -1038,7 +1096,7 @@ impl Manager {
 
     /// The open device of another brand with this key ("vvvv:pppp").
     pub fn peripheral(&self, key: &str) -> Result<Worker<PeripheralTask>> {
-        let slots = self.slots.lock().unwrap();
+        let slots = self.slots.lock_recover();
         slots
             .peripherals
             .iter()
@@ -1049,7 +1107,7 @@ impl Manager {
 
     /// Keeps the status in step with what a device of another brand shows after a change.
     pub fn peripheral_changed(&self, info: &PeripheralInfo) {
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         if let Some((_, _, current)) = slots.peripherals.iter_mut().find(|(_, _, i)| i.key == info.key) {
             *current = info.clone();
         }
@@ -1073,7 +1131,7 @@ impl Manager {
                 *d = long.clone();
             }
         }
-        let enabled = self.qmk_enabled.lock().unwrap().clone();
+        let enabled = self.qmk_enabled.lock_recover().clone();
         let mut keyboards: Vec<(CString, QmkKeyboard)> = Vec::new();
         for d in &devices {
             let model = match qmk_found(d) {
@@ -1128,7 +1186,7 @@ impl Manager {
         });
         let present = |path: &CStr| found.iter().any(|(d, _)| d.path() == path);
         let mut changed = false;
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         let before = slots.peripherals.len();
         slots.peripherals.retain(|(path, worker, info)| {
             let keep = worker.is_alive() && present(path);
@@ -1170,7 +1228,7 @@ impl Manager {
                 };
                 PeripheralTask::open(Box::new(dev), short, model, who, changes)
             });
-            let mut slots = self.slots.lock().unwrap();
+            let mut slots = self.slots.lock_recover();
             let path = device.path().to_owned();
             match result {
                 Ok(task) => {
@@ -1211,7 +1269,7 @@ impl Manager {
                 }
             }
         }
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         slots.qmk_denied.retain(|path| keyboards.iter().any(|(p, _)| p == path));
         let keyboards: Vec<QmkKeyboard> = keyboards
             .into_iter()
@@ -1230,7 +1288,7 @@ impl Manager {
 
     /// The open Corsair device with this USB product id.
     pub fn corsair(&self, product_id: u16) -> Result<Worker<CorsairTask>> {
-        let slots = self.slots.lock().unwrap();
+        let slots = self.slots.lock_recover();
         slots
             .corsair
             .iter()
@@ -1241,7 +1299,7 @@ impl Manager {
 
     /// Keeps the status in step with a Corsair device's lighting (it lasts for the session only).
     pub fn corsair_changed(&self, info: &CorsairInfo) {
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         if let Some((_, _, current)) = slots.corsair.iter_mut().find(|(_, _, i)| i.product_id == info.product_id) {
             *current = info.clone();
         }
@@ -1257,7 +1315,7 @@ impl Manager {
             found.iter().any(|(d, _)| d.path() == path) || receivers.iter().any(|(d, _)| d.path() == path)
         };
         let mut changed = false;
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         let before = slots.corsair.len();
         slots.corsair.retain(|(path, worker, info)| {
             let keep = worker.is_alive() && present(path);
@@ -1298,7 +1356,7 @@ impl Manager {
                 .open_device(api)
                 .map_err(Error::from)
                 .and_then(|dev| CorsairTask::open(BragiDevice::new(dev, model.packet), model));
-            let mut slots = self.slots.lock().unwrap();
+            let mut slots = self.slots.lock_recover();
             match result {
                 Ok(task) => {
                     let info = task.info();
@@ -1349,7 +1407,7 @@ impl Manager {
             }
             Ok(None)
         });
-        let mut slots = self.slots.lock().unwrap();
+        let mut slots = self.slots.lock_recover();
         match result {
             Ok(Some(task)) => {
                 let info = task.info();
@@ -1383,7 +1441,7 @@ impl Manager {
     /// Gives every Corsair device with experimental lighting back to its own settings (tray menu,
     /// quitting PeriHub, installing an update).
     pub fn release_corsair(&self) {
-        let workers: Vec<_> = self.slots.lock().unwrap().corsair.iter().map(|(_, w, _)| w.clone()).collect();
+        let workers: Vec<_> = self.slots.lock_recover().corsair.iter().map(|(_, w, _)| w.clone()).collect();
         for worker in workers {
             if let Ok(info) = worker.call(|m| m.turn_off_lighting()) {
                 self.corsair_changed(&info);
@@ -1392,48 +1450,48 @@ impl Manager {
     }
 
     pub fn keyboard(&self) -> Result<Worker<KeyboardTask>> {
-        self.slots.lock().unwrap().keyboard.as_ref().map(|(w, _)| w.clone()).ok_or(Error::NotConnected)
+        self.slots.lock_recover().keyboard.as_ref().map(|(w, _)| w.clone()).ok_or(Error::NotConnected)
     }
 
     /// The open mouse: path of its HID interface (the one that also carries its keyboard reports)
     /// and its USB product id. `None` for a mouse behind a receiver, whose keyboard reports arrive
     /// elsewhere: those mice are read-only, so no button of theirs starts a software macro.
     pub fn mouse_id(&self) -> Option<(CString, u16)> {
-        let slots = self.slots.lock().unwrap();
+        let slots = self.slots.lock_recover();
         let (_, info) = slots.mouse.as_ref().filter(|(_, info)| !info.receiver)?;
         Some((slots.mouse_path.clone()?, info.product_id))
     }
 
     /// The connected keyboard as a source of keys that start software macros.
     pub fn keyboard_triggers(&self) -> Option<KeyboardTriggers> {
-        let slots = self.slots.lock().unwrap();
+        let slots = self.slots.lock_recover();
         slots.keyboard.as_ref()?;
         Some(KeyboardTriggers {
             boot: slots.key_interfaces.boot.clone(),
             bitmap: slots.key_interfaces.bitmap.clone(),
-            keys: slots.keyboard_macro_keys.as_ref()?.lock().unwrap().clone(),
+            keys: slots.keyboard_macro_keys.as_ref()?.lock_recover().clone(),
         })
     }
 
     pub fn mouse(&self) -> Result<Worker<MouseTask>> {
-        self.slots.lock().unwrap().mouse.as_ref().map(|(w, _)| w.clone()).ok_or(Error::NotConnected)
+        self.slots.lock_recover().mouse.as_ref().map(|(w, _)| w.clone()).ok_or(Error::NotConnected)
     }
 
     /// Whether PeriHub may read the keyboard's key presses (for reactive lighting), or `None` if
     /// the keyboard is not connected. Only opens the interface for a moment; nothing is read.
     pub fn key_presses_readable(&self) -> Option<bool> {
-        let path = self.slots.lock().unwrap().key_interfaces.boot.clone()?;
+        let path = self.slots.lock_recover().key_interfaces.boot.clone()?;
         Some(HidApi::new().and_then(|api| api.open_path(&path)).is_ok())
     }
 
     /// Settings applied whenever the keyboard is connected.
     pub fn keyboard_config(&self) -> KeyboardConfig {
-        self.keyboard_config.lock().unwrap().clone()
+        self.keyboard_config.lock_recover().clone()
     }
 
     /// Updates the settings to reapply whenever the keyboard is reconnected.
     pub fn set_keyboard_config(&self, config: KeyboardConfig) {
-        *self.keyboard_config.lock().unwrap() = config;
+        *self.keyboard_config.lock_recover() = config;
     }
 }
 
@@ -1452,5 +1510,63 @@ fn open_error_message(error: Error) -> String {
         "permission denied: install the PeriHub udev rule (see the README)".into()
     } else {
         error.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_wait_between_tries_grows_to_30_seconds_and_stays_there() {
+        let waits: Vec<u64> = (1..=9).map(|n| retry_delay(n).as_secs()).collect();
+        assert_eq!(waits, [2, 4, 8, 16, 30, 30, 30, 30, 30]);
+        // Many failures in a row (a session left open for days) do not overflow.
+        assert_eq!(retry_delay(u32::MAX), HID_RETRY_MAX);
+    }
+
+    #[test]
+    fn detection_tries_again_until_the_hid_access_opens() {
+        let mut tries = 0;
+        let mut told = Vec::new();
+        let mut slept = Vec::new();
+        let value = retry_with_backoff(
+            || {
+                tries += 1;
+                if tries < 4 { Err(format!("not ready {tries}")) } else { Ok("opened") }
+            },
+            |n, error, wait| told.push((n, error.clone(), wait)),
+            |wait| slept.push(wait),
+        );
+        assert_eq!(value, "opened");
+        assert_eq!(tries, 4);
+        assert_eq!(slept, [2, 4, 8].map(Duration::from_secs));
+        assert_eq!(told[0], (1, "not ready 1".to_string(), Duration::from_secs(2)));
+        assert_eq!(told.len(), 3);
+    }
+
+    #[test]
+    fn a_first_success_does_not_wait_or_complain() {
+        let value = retry_with_backoff(|| Ok::<_, String>(7), |_, _, _| panic!("no failure"), |_| panic!("no wait"));
+        assert_eq!(value, 7);
+    }
+
+    #[test]
+    fn a_panic_in_one_step_is_skipped_and_the_next_steps_still_run() {
+        assert!(!guarded("test", || panic!("a probe went wrong")));
+        assert!(guarded("test", || true));
+    }
+
+    #[test]
+    fn the_slots_stay_usable_after_a_panic_with_them_held() {
+        let slots = Arc::new(Mutex::new(Slots::default()));
+        let held = slots.clone();
+        assert!(!guarded("test", move || {
+            let mut slots = held.lock_recover();
+            slots.scanned = true;
+            panic!("a probe went wrong while holding the slots");
+        }));
+        assert!(slots.lock().is_err(), "the panic poisoned the lock");
+        assert!(slots.lock_recover().scanned);
     }
 }

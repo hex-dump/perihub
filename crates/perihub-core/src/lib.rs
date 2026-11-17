@@ -24,6 +24,7 @@ pub mod quick;
 pub mod rawinput;
 pub mod report_devices;
 pub mod softmacro;
+pub mod sync;
 pub mod worker;
 pub mod writes;
 

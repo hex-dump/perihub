@@ -426,7 +426,7 @@
       <div class="notice info">Still pressed when the macro ends: {leftDown.join(", ")}. Add the release if it is not meant to stay down.</div>
     {/if}
 
-    {#if fileError}<div class="notice error">{fileError}</div>{/if}
+    {#if fileError}<div class="notice error" role="alert">{fileError}</div>{/if}
     {#if fileMessage}<div class="notice ok">{fileMessage}</div>{/if}
 
     <footer class="row">
