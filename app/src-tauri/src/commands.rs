@@ -584,7 +584,8 @@ pub fn profiles_get(app: AppHandle, state: State<'_, AppState>) -> ProfilesInfo 
     }
 }
 
-/// The games installed through Steam, Lutris and Heroic, for suggesting rules. Reads files only.
+/// The games installed through Steam, the Epic Games Launcher, Lutris and Heroic, for suggesting rules.
+/// Reads files only (and, on Windows, where Steam is installed from the registry).
 #[tauri::command]
 pub async fn games_installed() -> CmdResult<Vec<perihub_core::games::InstalledGame>> {
     blocking(|| Ok(perihub_core::games::installed_games())).await

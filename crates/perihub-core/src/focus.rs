@@ -169,7 +169,7 @@ mod windows {
     use std::thread;
     use std::time::Duration;
 
-    use windows_sys::Win32::Foundation::{CloseHandle, MAX_PATH};
+    use windows_sys::Win32::Foundation::CloseHandle;
     use windows_sys::Win32::System::Threading::{
         OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
     };
@@ -195,7 +195,8 @@ mod windows {
             if process.is_null() {
                 return None;
             }
-            let mut path = [0u16; MAX_PATH as usize];
+            // 32768 is the longest path Windows has: a game in a deep folder does not fit in MAX_PATH.
+            let mut path = vec![0u16; 32768];
             let mut len = path.len() as u32;
             let ok = QueryFullProcessImageNameW(process, PROCESS_NAME_WIN32, path.as_mut_ptr(), &mut len);
             CloseHandle(process);
