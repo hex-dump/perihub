@@ -58,6 +58,32 @@ fn starts_hidden(args: &[String], start_hidden_setting: bool) -> bool {
     start_hidden_setting || args.iter().any(|a| a == HIDDEN_ARG)
 }
 
+/// The first time the window is closed, a notification says that PeriHub is still running (the
+/// README says so, but few read it), and how to quit. Not repeated: the flag is saved.
+fn tell_it_keeps_running(app: &AppHandle) {
+    use tauri_plugin_notification::NotificationExt;
+    let state = app.state::<AppState>();
+    let mut config = state.config.lock().unwrap();
+    if config.close_hint_shown {
+        return;
+    }
+    let shown = app
+        .notification()
+        .builder()
+        .title("PeriHub is still running")
+        .body("It keeps your lighting and settings working from the system tray. To quit: Quit in the tray menu, or Settings > Quit PeriHub.")
+        .show();
+    match shown {
+        Ok(()) => {
+            config.close_hint_shown = true;
+            if let Err(error) = config.save() {
+                log::warn!("cannot save the settings: {error}");
+            }
+        }
+        Err(error) => log::warn!("cannot show a notification: {error}"),
+    }
+}
+
 fn main() {
     // PeriHub's own messages at info level, other libraries only when something goes wrong.
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn,perihub=info,perihub_core=info"))
@@ -171,6 +197,9 @@ fn main() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { .. } = event {
+                tell_it_keeps_running(window.app_handle());
+            }
             // Closing the window destroys it (see window.rs). A DPI or LED preview the interface
             // could not cancel goes back to the saved settings.
             if let WindowEvent::Destroyed = event {

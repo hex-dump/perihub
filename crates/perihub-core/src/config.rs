@@ -70,6 +70,8 @@ pub struct AppConfig {
     pub read_only: bool,
     /// Notifications about the battery of wireless devices.
     pub battery: crate::battery::BatteryAlerts,
+    /// PeriHub already said, the first time the window was closed, that it keeps running in the tray.
+    pub close_hint_shown: bool,
 }
 
 impl Default for AppConfig {
@@ -85,6 +87,7 @@ impl Default for AppConfig {
             qmk_keyboards: Vec::new(),
             read_only: false,
             battery: Default::default(),
+            close_hint_shown: false,
         }
     }
 }
