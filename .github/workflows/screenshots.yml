@@ -28,7 +28,7 @@ jobs:
       pull-requests: write  # open the pull request, ask for auto-merge
       actions: write        # dispatch ci.yml on the branch
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # A release runs on its tag: the pictures go to main.
           ref: ${{ github.event_name == 'release' && 'main' || github.ref }}
@@ -37,7 +37,7 @@ jobs:
       - name: Fonts
         run: sudo apt-get update && sudo apt-get install -y fonts-inter
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 26
           cache: npm
