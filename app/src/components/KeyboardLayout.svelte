@@ -32,12 +32,12 @@
   }
 </script>
 
-<div class="col layout">
-  <div class="row small">
+<div class="col tight layout">
+  <div class="row small muted">
     <span class="grow">
-      Layout: <b>{layoutName(layout)}</b>{drawn ? `, ${layoutCaps(layout.physical).length} keys` : ""}, {layoutStatus(layout)}
+      Layout: <b class="name">{layoutName(layout)}</b>{drawn ? `, ${layoutCaps(layout.physical).length} keys` : ""}, {layoutStatus(layout)}
     </span>
-    <button type="button" class="tiny" onclick={() => (editing = !editing)}>{editing ? "Done" : "Change"}</button>
+    <button type="button" class="ghost tiny" onclick={() => (editing = !editing)}>{editing ? "Done" : "Change"}</button>
   </div>
   {#if editing}
     <div class="row small wrap">
@@ -62,11 +62,16 @@
 
 <style>
   .layout {
-    gap: 6px;
+    gap: var(--space-2);
+  }
+
+  .name {
+    color: var(--text);
+    font-weight: 600;
   }
 
   .wrap {
     flex-wrap: wrap;
-    gap: 14px;
+    gap: var(--space-4);
   }
 </style>
