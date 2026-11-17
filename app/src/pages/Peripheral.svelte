@@ -101,8 +101,12 @@
 
   async function keep() {
     confirmKeep = false;
-    if (info) await api.peripheralKeepChanges(info.key).catch(() => {});
-    message = "Changes kept.";
+    try {
+      if (info) await api.peripheralKeepChanges(info.key);
+      message = "Changes kept.";
+    } catch (e) {
+      error = `The save could not be kept: ${errorText(e)} PeriHub puts the backup back when a change is not kept, so check the device's current settings.`;
+    }
   }
 
   function undo() {

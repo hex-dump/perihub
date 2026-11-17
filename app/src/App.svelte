@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { api, type DeviceStatus } from "./lib/api";
+  import { api, errorText, type DeviceStatus } from "./lib/api";
   import { updates } from "./lib/updates.svelte";
   import { followReadOnly, readOnly, setReadOnly } from "./lib/readOnly.svelte";
   import Keyboard from "./pages/Keyboard.svelte";
@@ -55,6 +55,20 @@
   function fromHash(): [Page | null, string | undefined] {
     const [p, tab] = location.hash.slice(1).split(":");
     return [PAGES.includes(p as Page) ? (p as Page) : null, tab || undefined];
+  }
+
+  /** Why the settings file was not used at start-up, until the user closes the message. */
+  let configProblem = $state<string | null>(null);
+  /** Why read-only mode could not be turned off from the bar. */
+  let readOnlyError = $state<string | null>(null);
+
+  async function turnOffReadOnly() {
+    readOnlyError = null;
+    try {
+      await setReadOnly(false);
+    } catch (e) {
+      readOnlyError = errorText(e);
+    }
   }
 
   let [initialPage, initialTab] = fromHash();
@@ -161,6 +175,7 @@
 
   onMount(() => {
     api.status().then(received);
+    api.configProblem().then((p) => (configProblem = p), () => {});
     // PeriHub checks for updates in the background, also while this window is closed.
     api.updateAvailable().then((u) => u && (updates.available = u));
     api.updateJustInstalled().then((v) => v && (updates.installed = v));
@@ -352,11 +367,18 @@
           <button class="tiny" onclick={() => (updates.installed = null)}>Close</button>
         </div>
       {/if}
+      {#if configProblem}
+        <div class="notice warn row config-problem" role="alert">
+          <span>{configProblem}</span>
+          <button class="tiny" onclick={() => (configProblem = null)}>Close</button>
+        </div>
+      {/if}
       {#if readOnly.on}
         <div class="notice warn row read-only">
           <span><b>Read-only mode is on.</b> PeriHub reads your devices but sends them no changes.</span>
-          <button class="tiny" onclick={() => setReadOnly(false).catch(() => {})}>Turn off</button>
+          <button class="tiny" onclick={turnOffReadOnly}>Turn off</button>
         </div>
+        {#if readOnlyError}<div class="notice error" role="alert">Could not turn read-only mode off: {readOnlyError}</div>{/if}
       {/if}
       {#each status.conflicts as name (name)}
         <div class="notice error conflict">

@@ -52,7 +52,11 @@
 
   async function keep() {
     confirmWorks = false;
-    await api.corsairKeepLighting(info!.product_id).catch(() => {});
+    try {
+      await api.corsairKeepLighting(info!.product_id);
+    } catch (e) {
+      error = `The lighting could not be kept: ${errorText(e)} The lighting goes back to the device's own settings when it is not kept.`;
+    }
   }
 
   async function turnOff() {

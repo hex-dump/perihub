@@ -95,7 +95,13 @@
 
   async function keep() {
     confirmKeep = false;
-    await api.keepChanges().catch(() => {});
+    try {
+      await api.keepChanges();
+    } catch (e) {
+      // Without this answer the backup is put back by itself: say so instead of letting the
+      // user believe the save stayed.
+      error = `The save could not be kept: ${errorText(e)} PeriHub puts the backup back when a change is not kept, so check the device's current settings.`;
+    }
   }
 
   async function undo() {

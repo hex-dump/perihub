@@ -74,8 +74,12 @@
 
   async function keep() {
     confirmKeep = false;
-    await api.g300KeepChanges().catch(() => {});
-    message = "Changes kept.";
+    try {
+      await api.g300KeepChanges();
+      message = "Changes kept.";
+    } catch (e) {
+      error = `The save could not be kept: ${errorText(e)} PeriHub puts the backup back when a change is not kept, so check the device's current settings.`;
+    }
   }
 
   function undo() {

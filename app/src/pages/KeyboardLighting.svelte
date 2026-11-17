@@ -249,7 +249,7 @@
       <!-- With the permission granted, the effect starts reading keys once it is applied again. -->
       <KeyAccessPermission
         title="Reactive lighting needs permission to read what you type on this keyboard."
-        ongranted={() => api.setLighting(lighting).catch(() => {})}
+        ongranted={() => api.setLighting(lighting).then(() => (error = null), (e) => (error = errorText(e)))}
       />
     {/if}
 
