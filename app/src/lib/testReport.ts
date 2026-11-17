@@ -226,6 +226,7 @@ export function corsairTest(info: CorsairInfo, version: string, system: string):
       `Firmware: ${info.firmware ?? "not read"}`,
       `Mode at connection: ${info.mode ?? "not read"}`,
       `Polling: ${info.polling_hz ?? "not read"} Hz${info.kind === "mouse" ? `, DPI: ${info.dpi ?? "not read"}` : ""}`,
+      info.receiver ? `Battery: ${info.battery ?? "not read"}%` : null,
       `LEDs: ${info.leds}`,
       info.kind === "keyboard" ? layoutReport(`1b1c:${hex(info.product_id)}`, info.layout) : null,
       `Could not read: ${info.read_errors.join("; ") || "nothing"}`,

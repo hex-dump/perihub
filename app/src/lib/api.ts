@@ -676,6 +676,8 @@ export interface CorsairInfo {
   mode: number | null;
   polling_hz: number | null;
   dpi: number | null;
+  /** Behind a receiver: the battery level in percent, as read at connection. */
+  battery?: number | null;
   /** What could not be read. */
   read_errors: string[];
   /** The colour shown on every LED while experimental lighting is on ("#rrggbb"). */

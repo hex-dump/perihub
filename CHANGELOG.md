@@ -4,6 +4,16 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+The Corsair KATAR PRO WIRELESS is recognized through its receiver, read only for now, and wireless Corsair devices show their battery.
+
+### New devices
+- **Corsair KATAR PRO WIRELESS** through its receiver (`1b1c:1b94`, [issue #57](https://github.com/hex-dump/perihub/issues/57)), read only: firmware, mode, polling rate, DPI and battery. The mouse has no USB data cable, so PeriHub finds it behind its receiver (channel 1) and names it after the receiver. Its lighting is left out until someone tests it. Nobody has tried it with PeriHub yet. Facts from OpenLinkHub (GPL-3.0; no code copied).
+
+### Added
+- Corsair mice and keyboards connected through a receiver show their battery level (property `0x0f`, a read), on their page and in test reports. A mouse that does not report its DPI on property `0x21` is asked on `0x20`, where OpenLinkHub sets it on some wireless mice.
+
 ## 0.9.2 — 2026-11-17
 
 A keyboard's page now shows its layout (ANSI, ISO, JIS or ABNT2, and the key legends) and lets you change it when detection is wrong, and the Apex 3 TKL's Keys tab draws the right keys for it. Also new: clearer status marks (an icon and a word, in colors that no longer look like the accent), a tidier look for every page, and a fix for the "Send a report" prompt that flashed at start-up. CI and release workflows are also safer. The layout read has not been tried on a real Corsair or Razer keyboard yet, and a Logitech keyboard's layout code is only written into test reports, not used, because what it means is not documented.

@@ -39,6 +39,8 @@ pub struct CorsairInfo {
     pub mode: Option<u8>,
     pub polling_hz: Option<u16>,
     pub dpi: Option<u16>,
+    /// Behind a receiver: the battery level in percent, as read at connection.
+    pub battery: Option<u8>,
     /// What could not be read, for test reports.
     pub read_errors: Vec<String>,
     /// A keyboard's physical layout, read from it (property 0x41).
@@ -100,9 +102,12 @@ impl CorsairTask {
         };
         let mode = read("mode", property::MODE, &mut answered).map(|v| v as u8);
         let polling = read("polling rate", property::POLLING, &mut answered);
-        // Keyboards have no DPI.
-        let dpi =
-            if model.kind == super::models::Kind::Mouse { read("DPI", property::DPI_X, &mut answered) } else { None };
+        // Keyboards have no DPI. Some mice have one DPI property for both axes instead.
+        let dpi = if model.kind == super::models::Kind::Mouse {
+            read("DPI", property::DPI_X, &mut answered).or_else(|| read("DPI (0x20)", property::DPI, &mut answered))
+        } else {
+            None
+        };
         // Mice have no layout.
         let layout = if model.kind == super::models::Kind::Keyboard {
             read("physical layout", property::PHYSICAL_LAYOUT, &mut answered).map(crate::kblayout::corsair)
@@ -122,6 +127,7 @@ impl CorsairTask {
             mode,
             polling_hz: polling.and_then(polling_hz),
             dpi: dpi.map(|v| v as u16),
+            battery: None,
             read_errors: errors,
             lighting: None,
             layout,
@@ -150,6 +156,14 @@ impl CorsairTask {
     pub fn open_behind(mut dev: BragiDevice, model: &'static CorsairModel, receiver: u16, channel: u8) -> Result<Self> {
         dev.set_channel(channel);
         let mut task = Self::open(dev, model)?;
+        task.info.battery = match task.dev.property(property::BATTERY) {
+            Ok(v) => Some((v / 10).min(100) as u8),
+            Err(e) => {
+                task.info.read_errors.push(format!("battery: {e}"));
+                None
+            }
+        };
+        log::info!("Corsair {}: battery {:?}%", task.info.model, task.info.battery);
         task.info.receiver = Some(receiver);
         task.channel = Some(channel);
         Ok(task)
@@ -339,6 +353,8 @@ mod tests {
                     0x03 => [1, 0, 0, 0],
                     0x01 => [4, 0, 0, 0],
                     0x21 => [0x40, 0x06, 0, 0],
+                    // 85.0 %
+                    0x0F => [0x52, 0x03, 0, 0],
                     0x36 => [channels, 0, 0, 0],
                     // A keyboard's physical layout: ISO.
                     0x41 => [2, 0, 0, 0],
@@ -470,6 +486,7 @@ mod tests {
         let model = models::find(0x1B4C).unwrap();
         let mut task = CorsairTask::open_behind(BragiDevice::new(fake.clone(), 64), model, 0x1BA6, 1).unwrap();
         assert_eq!(task.info.receiver, Some(0x1BA6));
+        assert_eq!(task.info.battery, Some(85));
         // Every request after opening went to channel 1.
         assert!(fake.sent.lock().unwrap().iter().all(|p| p[0] == 0x09));
         task.last_presence_check = Instant::now() - PRESENCE_CHECK;
@@ -479,6 +496,39 @@ mod tests {
         *fake.channels.lock().unwrap() = 0;
         task.last_presence_check = Instant::now() - PRESENCE_CHECK;
         assert!(matches!(task.tick(), Err(Error::Unreachable)));
+    }
+
+    #[test]
+    fn a_mouse_without_dpi_x_is_read_on_the_dpi_property() {
+        let fake = FakeMouse::default();
+        // Answers "not supported" to 0x21 only.
+        struct NoDpiX(FakeMouse);
+        impl Transport for NoDpiX {
+            fn write(&self, data: &[u8]) -> Result<()> {
+                self.0.write(data)
+            }
+            fn read_timeout(&self, buf: &mut [u8], millis: i32) -> Result<usize> {
+                let n = self.0.read_timeout(buf, millis)?;
+                let last = self.0.sent.lock().unwrap().last().unwrap().clone();
+                if last[1] == 0x02 && last[2] == 0x21 {
+                    buf[2] = 0x05;
+                }
+                if last[1] == 0x02 && last[2] == 0x20 {
+                    buf[3..6].copy_from_slice(&[0x20, 0x03, 0]);
+                }
+                Ok(n)
+            }
+        }
+        let model = models::behind_own_receiver(0x1B94).unwrap();
+        let mut dev = BragiDevice::new(NoDpiX(fake.clone()), 64);
+        dev.set_channel(1);
+        let mut task = CorsairTask::open_behind(dev, model, 0x1B94, 1).unwrap();
+        assert_eq!(task.info.dpi, Some(800));
+        assert!(task.set_lighting(Rgb { r: 1, g: 2, b: 3 }).is_err(), "no lighting on it yet");
+        assert_eq!(task.info.battery, Some(85));
+        assert_eq!(task.info.leds, 0);
+        assert!(fake.commands().iter().all(|&(c, _)| c == 0x02), "{:?}", fake.commands());
+        assert!(fake.sent.lock().unwrap().iter().all(|p| p[0] == 0x09), "channel 1 only");
     }
 
     #[test]
