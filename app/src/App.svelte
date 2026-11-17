@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { api, type DeviceStatus } from "./lib/api";
+  import { api, errorText, type DeviceStatus } from "./lib/api";
   import { updates } from "./lib/updates.svelte";
   import { followReadOnly, readOnly, setReadOnly } from "./lib/readOnly.svelte";
   import Keyboard from "./pages/Keyboard.svelte";
@@ -139,6 +139,12 @@
   );
   /** Until the first detection pass is over, nothing is listed: no report offered for devices not looked at yet. */
   let loaded = $state(false);
+  let readOnlyError = $state<string | null>(null);
+  const turnOffReadOnly = () =>
+    setReadOnly(false).then(
+      () => (readOnlyError = null),
+      (e) => (readOnlyError = `Could not turn read-only mode off: ${errorText(e)}`),
+    );
 
   /** The page shown when none was asked for: the first device in the sidebar, or the report. */
   function firstPage(): Page {
@@ -355,8 +361,9 @@
       {#if readOnly.on}
         <div class="notice warn row read-only">
           <span><b>Read-only mode is on.</b> PeriHub reads your devices but sends them no changes.</span>
-          <button class="tiny" onclick={() => setReadOnly(false).catch(() => {})}>Turn off</button>
+          <button class="tiny" onclick={turnOffReadOnly}>Turn off</button>
         </div>
+        {#if readOnlyError}<div class="notice error">{readOnlyError}</div>{/if}
       {/if}
       {#each status.conflicts as name (name)}
         <div class="notice error conflict">

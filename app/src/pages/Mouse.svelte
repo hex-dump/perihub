@@ -95,7 +95,11 @@
 
   async function keep() {
     confirmKeep = false;
-    await api.keepChanges().catch(() => {});
+    try {
+      await api.keepChanges();
+    } catch (e) {
+      error = `Could not confirm the changes, so they may be undone: ${errorText(e)}`;
+    }
   }
 
   async function undo() {
