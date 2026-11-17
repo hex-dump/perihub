@@ -7,16 +7,20 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ## Unreleased
 
 ### Added
+- The first time you close the window, a notification says that PeriHub keeps running in the system tray and how to quit it (Quit in the tray menu, or Settings → Quit PeriHub). It is shown once.
+- On a Linux desktop with no system tray (GNOME without the AppIndicator extension, for one), closing the window quits PeriHub instead of hiding it where it cannot be brought back, "Always start hidden" and autostart open the window, the notification above is not shown, and Settings says why. PeriHub looks for the tray once at start-up (a StatusNotifierWatcher with a host on the session bus), waiting at most half a second. Windows and macOS are unchanged.
 - A message at the top of the window when PeriHub could not read its settings file at start-up, saying where the old file was kept, and the same line on stderr from `perihub-cli`.
 - Errors the interface shows are now rewritten in plain words for the causes people meet most (permission denied, device busy or used by the maker's software, asleep, timeout, not connected, read-only mode), with the original text in brackets.
 
 ### Changed
 - `config.json` now has a `version` field (files without it count as version 1), so a future format change can convert old settings instead of resetting them. After every save PeriHub also keeps the last good copy as `config.json.bak` (saves were already atomic).
 - Device detection no longer gives up when the system's HID access is not ready yet (for example at login with autostart): it tries again after 2 seconds, then 4, 8 and so on up to 30 seconds, and says "HID unavailable, trying again" meanwhile. A panic while one kind of device is being looked for no longer stops detection of the others.
-
 - For screen readers: error messages are announced (`role="alert"`), the sidebar is a labelled navigation, and the page in use is marked as the current one, also for devices listed one per line.
 
 ### Fixed
+- The udev rule command for the AppImage and the Flatpak in the README downloads the rule of the release (`v0.9.2`) instead of the one on `main`, which can be newer than the installed version and open devices an older PeriHub does not filter; `tools/release.py bump` updates the version in that command.
+- Settings → Devices lists the devices that are connected, whatever their brand (Logitech, Corsair, Razer and other keyboards and mice, the G300, QMK keyboards, receivers), instead of always saying "Apex 3 TKL: not connected" for a keyboard you may not have.
+- The dialogs that ask before a write to a device's memory (backups, the first save to an untested mouse or other brand, the macro editor, "Keep these changes?") now keep the keyboard inside them: Tab no longer reaches the page behind, the focus starts on the safe button (Cancel, Undo or Close), so Enter never confirms a write, and it goes back to where you were when the dialog closes.
 - **A damaged `config.json` is no longer overwritten by the defaults.** PeriHub keeps a copy next to it (`config.json.bad-<time>`) before it starts with the default settings, and if `config.json.bak` (the last good save) is valid it is loaded and the window says so; otherwise read-only mode stays on, since the lost file may have had it on; turn it off in the bar when you are ready. Before, the next save replaced your settings (app profiles, macros, lighting presets, battery limits, read-only mode) and read-only mode went off without a word.
 - Device detection no longer stops for good after one thread panicked while holding its state: that state is recovered, as the write log already did.
 - "Keep changes" on a mouse, a G300, other-brand devices and Corsair lighting, and "Turn off" for read-only mode, no longer hide a failure: the error is shown (G300 and other-brand pages no longer say "Changes kept" after it failed), and the keyboard's reactive lighting shows an error too instead of waiting in silence.

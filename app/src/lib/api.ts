@@ -710,6 +710,8 @@ export interface AppSettings {
   config_dir: string;
   /** Operating system and architecture, for test reports. */
   system: string;
+  /** Why closing the window cannot keep PeriHub in the tray (no tray on this desktop); null when it can. */
+  no_tray_reason: string | null;
 }
 
 /** A write PeriHub sent to a device in this session, or refused in read-only mode. */

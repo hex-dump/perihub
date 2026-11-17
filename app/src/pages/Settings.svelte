@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { deviceLines } from "../lib/deviceLines";
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type AppSettings, type BatteryAlerts, type DeviceStatus, type WriteEntry } from "../lib/api";
@@ -14,6 +15,7 @@
   }
 
   let { status }: Props = $props();
+  const lines = $derived(deviceLines(status));
   let settings = $state<AppSettings | null>(null);
   let error = $state<string | null>(null);
   let version = $state("");
@@ -114,10 +116,14 @@
         Always start hidden
       </label>
     {/if}
-    <p class="muted small">
-      Closing the window does not quit PeriHub: it keeps running to animate the keyboard lighting and to
-      reapply colors when the keyboard is plugged back in. Reopen it from the tray icon or by launching it again.
-    </p>
+    {#if settings?.no_tray_reason}
+      <p class="notice">Close to tray is unavailable. {settings.no_tray_reason}</p>
+    {:else}
+      <p class="muted small">
+        Closing the window does not quit PeriHub: it keeps running to animate the keyboard lighting and to
+        reapply colors when the keyboard is plugged back in. Reopen it from the tray icon or by launching it again.
+      </p>
+    {/if}
   </div>
 
   <div class="card col">
@@ -292,8 +298,9 @@
   <div class="card col">
     <h2>Devices</h2>
     <div class="small">
-      <div>Apex 3 TKL: {status.keyboard ? `firmware ${status.keyboard.firmware}` : status.keyboard_error ?? "not connected"}</div>
-      <div>{status.mouse?.model ?? "Mouse"}: {status.mouse ? status.mouse.firmware.map((f) => `${f.name} ${f.version}`).join(", ") : status.mouse_error ?? (status.mouse_asleep ? "asleep" : "not connected")}</div>
+      {#each lines as line (line)}
+        <div>{line}</div>
+      {/each}
     </div>
     <SupportedDevices />
     <p class="small">Is your mouse or keyboard missing? <a href="#report">Send a report for it</a>.</p>
