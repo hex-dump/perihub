@@ -209,7 +209,7 @@
   {/if}
 {/snippet}
 
-<header>
+<header class="page-head">
   <h1>Test my device</h1>
 </header>
 
@@ -225,12 +225,12 @@
 {#if error}<div class="notice error">{error}</div>{/if}
 
 {#if step === "pick"}
-  <div class="notice info">
+  <p class="lead">
     Pick the mouse, keyboard or receiver you want to test. PeriHub reads it, shows you what the report holds, and
     opens a form on GitHub (a free account is needed to submit it). Nothing is sent before you press Submit there.
-  </div>
+  </p>
   {#if !status.scanned || (unknown === null && list.length === 0)}
-    <p class="muted">Looking for devices…</p>
+    <p class="loading">Looking for devices…</p>
   {:else if list.length === 0}
     <div class="card col">
       <p>

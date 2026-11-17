@@ -323,6 +323,7 @@
     {/if}
 
     <div class="grow"></div>
+    <h3>Tools</h3>
     <button class:active={page === "wizard"} onclick={() => go("wizard")}>
       <Icon name="report" />
       <span class="name">Test my device</span>

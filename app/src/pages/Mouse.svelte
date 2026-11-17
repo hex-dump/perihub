@@ -295,7 +295,7 @@
   });
 </script>
 
-<header class="row">
+<header class="page-head">
   <div class="col tight grow">
     <h1>Logitech {info?.model ?? asleep ?? "mouse"}</h1>
     <span class="muted small">
@@ -484,7 +484,7 @@
           title={profile.number === selected ? "Shown below" : "Show and edit this profile"}>
           <span class="title">
             <strong>Profile {profile.number}</strong>
-            {#if active}<Status kind="ok" label="Active" chip title="The profile the mouse is using now" />{/if}
+            {#if active}<Status kind="ok" label="Active" title="The profile the mouse is using now" />{/if}
           </span>
           <span class="small muted">{profile.settings.dpi_levels.join(" / ")} DPI</span>
           <span class="small muted">{profile.settings.report_rate_hz ? `${profile.settings.report_rate_hz} Hz` : reportRateLabel(profile.settings.report_rate_ms)}</span>
@@ -558,7 +558,8 @@
       <span class="unsaved">Unsaved changes</span>
     {/if}
     <button disabled={!dirty || !!busy} onclick={discard}>Discard</button>
-    <button class="primary" disabled={!dirty || !!busy || leftClickMissing || !writable} onclick={save}>
+    <button class="primary" disabled={!dirty || !!busy || leftClickMissing || !writable} onclick={save}
+      title="Writes the profile to the mouse's onboard memory: it then works on any computer, even without PeriHub">
       Save to mouse
     </button>
   </footer>
@@ -573,12 +574,11 @@
     {/await}
   {/if}
 {:else if info}
-  {#if error}<div class="notice error">{error}</div>{:else}<div class="notice info">{busy ?? "Loading…"}</div>{/if}
+  {#if error}<div class="notice error">{error}</div>{:else}<p class="loading">{busy ?? "Loading…"}</p>{/if}
 {/if}
 
 <style>
   header {
-    margin-bottom: 20px;
     align-items: flex-start;
   }
 

@@ -7,6 +7,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ## Unreleased
 
 ### Changed
+- **A tidier, easier interface**: every page starts the same way (title, then a line saying what it is for, as text rather than a box), with one spacing scale and a slightly smaller page title. Pages that wait for a device or the system show a small turning ring and what they are doing (App profiles showed nothing while it loaded), and an empty list says what to do. DPI, polling rate, the sniper level and G-Shift explain themselves on hover, and the Save to mouse and Save to keyboard buttons say that they write to the device's own memory. A danger button such as Factory settings keeps its red text but turns red all over only on hover, so the main action is the one strong color in a footer. The sidebar labels its tools, and the active profile on the mouse page fits on one line. Nothing changes in what is sent to devices, in read-only mode or in the confirmations.
 - Automatic issue comments are quieter. A test build comments only on issues named by a `Test: #N` line in a commit message, and later builds edit that comment instead of adding one. The release comment goes to open issues the CHANGELOG names, quotes the line, and is skipped when the maintainer already said the fix ships.
 
 ### Fixed

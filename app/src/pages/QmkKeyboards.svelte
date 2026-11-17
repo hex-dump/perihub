@@ -67,7 +67,7 @@
   const manualInstall = (key: string) => access?.manual_install.find(([k]) => k === key)?.[1] ?? null;
 </script>
 
-<header>
+<header class="page-head">
   <h1>QMK keyboards</h1>
   <Status kind="experimental" label="Experimental" chip />
 </header>
@@ -173,16 +173,6 @@
 {#if error && error.key === ""}<div class="notice error">{error.text}</div>{/if}
 
 <style>
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    margin: 0;
-  }
 
   section {
     gap: 10px;
