@@ -222,7 +222,7 @@
   {/each}
 </ol>
 
-{#if error}<div class="notice error">{error}</div>{/if}
+{#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
 {#if step === "pick"}
   <p class="lead">
@@ -281,7 +281,7 @@
     {#if readings.length === 0}<p class="muted">Starting…</p>{/if}
   </div>
   {#if !reading && !probed}
-    <div class="notice error">PeriHub cannot report this device now. Go back, check that it is connected, and try again.</div>
+    <div class="notice error" role="alert">PeriHub cannot report this device now. Go back, check that it is connected, and try again.</div>
   {:else if !reading && readings.some((r) => r.state === "fail" || r.state === "skip")}
     <div class="notice warn">
       Something could not be read. You can go on: the report then says what PeriHub could not read, which helps too.

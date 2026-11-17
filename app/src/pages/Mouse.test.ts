@@ -558,6 +558,17 @@ describe("a memory format nobody has tested", () => {
       expect(api.keepChanges).toHaveBeenCalledOnce();
       expect(api.undoLastWrite).not.toHaveBeenCalled();
     });
+
+    it("says so when keeping the save fails, instead of staying silent", async () => {
+      api.keepChanges.mockRejectedValue("the device did not respond in time");
+      await open(experimental);
+      await changeFirstLevel(1000);
+      await clickSave();
+      await fireEvent.click(screen.getByRole("button", { name: "Keep changes" }));
+      await wait(0);
+      expect(screen.getByText(/The save could not be kept: The device did not answer in time/)).toBeTruthy();
+      expect(screen.getByText(/PeriHub puts the backup back/)).toBeTruthy();
+    });
   });
 
   it("is read-only through a receiver, and says to use the cable", async () => {

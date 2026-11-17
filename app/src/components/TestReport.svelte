@@ -81,4 +81,4 @@
 {#if pasted}
   <div class="notice info">The report is too long for a link: PeriHub copied it. Paste it into the Test report box of the form.</div>
 {/if}
-{#if error}<div class="notice error">{error}</div>{/if}
+{#if error}<div class="notice error" role="alert">{error}</div>{/if}

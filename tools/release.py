@@ -151,8 +151,13 @@ def bump(version: str, day: str) -> None:
 
     # Every file is changed in memory first: nothing is written if one of them does not look as expected.
     files = {name: (ROOT / name).read_text(encoding="utf-8") for name in (
-        "Cargo.toml", "Cargo.lock", "app/package.json", "app/src-tauri/tauri.conf.json", "CHANGELOG.md", str(METAINFO.relative_to(ROOT)),
+        "Cargo.toml", "Cargo.lock", "app/package.json", "app/src-tauri/tauri.conf.json", "CHANGELOG.md", "README.md", str(METAINFO.relative_to(ROOT)),
     )}
+    # The udev rule in the README is fetched from the release tag, so it matches the version installed.
+    files["README.md"] = replace_once(
+        files["README.md"], "README.md", r"(perihub/)v\d+\.\d+\.\d+(/packaging/linux/70-perihub\.rules)", rf"\g<1>v{version}\g<2>"
+    )
+    files["README.md"] = replace_once(files["README.md"], "README.md", r"rule of release \d+\.\d+\.\d+", f"rule of release {version}")
     files["Cargo.toml"] = replace_once(files["Cargo.toml"], "Cargo.toml", r'(\[workspace\.package\]\nversion = )"[^"]+"', rf'\g<1>"{version}"')
     for crate in ("perihub-app", "perihub-core", "perihub-cli", "xtask"):
         files["Cargo.lock"] = replace_once(files["Cargo.lock"], "Cargo.lock", rf'(name = "{crate}"\nversion = )"[^"]+"', rf'\g<1>"{version}"')
@@ -170,7 +175,7 @@ def bump(version: str, day: str) -> None:
     files[meta] = replace_once(files[meta], meta, r"(  <releases>\n)", lambda m: m.group(1) + release)
     for name, text in files.items():
         (ROOT / name).write_text(text, encoding="utf-8")
-    print(f"Version {version} ({day}): Cargo.toml, Cargo.lock, package.json, package-lock.json, tauri.conf.json, CHANGELOG.md, metainfo")
+    print(f"Version {version} ({day}): Cargo.toml, Cargo.lock, package.json, package-lock.json, tauri.conf.json, CHANGELOG.md, README.md, metainfo")
 
 
 def entry(text: str) -> str:

@@ -110,6 +110,7 @@ const settings: AppSettings = {
   log_dir: "~/.local/state/perihub",
   config_dir: "~/.config/perihub",
   system: "linux x86_64",
+  no_tray_reason: null,
 };
 
 /** Answers by command name. A command that is not here never answers, as in the tests: the page waits. */

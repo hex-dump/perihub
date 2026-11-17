@@ -83,7 +83,7 @@
   shows, so its support can be looked into. No serial number is included, and nothing is sent until you submit the
   form, which needs a GitHub account.
 </p>
-{#if error}<div class="notice error">{error}</div>{/if}
+{#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
 {#if devices === null}
   <p class="loading">Looking for devices…</p>

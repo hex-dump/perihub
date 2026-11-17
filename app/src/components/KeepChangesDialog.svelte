@@ -2,6 +2,7 @@
   // After a save to an untested mouse: keep the changes, or the backup goes back by itself, like a
   // screen resolution change. The countdown needs no click, in case the mouse stopped clicking.
   import { onDestroy, onMount } from "svelte";
+  import { trapFocus } from "../lib/focusTrap";
 
   interface Props {
     model: string;
@@ -58,14 +59,14 @@
 <svelte:window onkeydown={keydown} />
 
 <div class="backdrop">
-  <div class="dialog col" role="alertdialog" aria-modal="true" aria-labelledby="keep-title" aria-describedby="keep-text">
+  <div class="dialog col" role="alertdialog" aria-modal="true" aria-labelledby="keep-title" aria-describedby="keep-text" use:trapFocus>
     <h2 id="keep-title">Keep these changes?</h2>
     <p id="keep-text">
       Check that the {model} works as expected: {checkText}. Without an answer, PeriHub
       {undoText} in <b>{left}</b> seconds.
     </p>
     <div class="row end">
-      <button bind:this={undoButton} onclick={() => finish(false)}>Undo now</button>
+      <button data-autofocus bind:this={undoButton} onclick={() => finish(false)}>Undo now</button>
       <button class="primary" onclick={() => finish(true)}>Keep changes</button>
     </div>
   </div>

@@ -5,6 +5,7 @@
   import { describeBackup } from "../lib/backups";
   import ConfirmButton from "./ConfirmButton.svelte";
   import { readOnly } from "../lib/readOnly.svelte";
+  import { trapFocus } from "../lib/focusTrap";
 
   interface Props {
     /** The device, e.g. "G502 HERO". */
@@ -60,14 +61,14 @@
 <svelte:window onkeydown={keydown} />
 
 <div class="backdrop">
-  <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="backups-title">
+  <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="backups-title" use:trapFocus>
     <h2 id="backups-title">Backups of the {device}</h2>
     <p class="muted small">
       Each backup is the device's memory just before PeriHub wrote to it. To undo your last save, restore the newest
       one. The current state is backed up first, so a restore can be undone too.
     </p>
 
-    {#if error}<div class="notice error">{error}</div>{/if}
+    {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
     {#if backups === null}
       <p class="loading">Loading…</p>
@@ -93,7 +94,7 @@
     {/if}
 
     <div class="row end">
-      <button disabled={!!restoring} onclick={onclose}>Close</button>
+      <button data-autofocus disabled={!!restoring} onclick={onclose}>Close</button>
     </div>
   </div>
 </div>

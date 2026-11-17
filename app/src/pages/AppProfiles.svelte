@@ -135,7 +135,7 @@
 
 <div class="col gap">
 
-  {#if error}<div class="notice error">{error}</div>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
   {#if info}
     {#if setupMessage}<div class="notice info">{setupMessage}</div>{/if}
