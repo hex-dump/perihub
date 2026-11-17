@@ -66,6 +66,8 @@ impl LogitechTask {
     /// checked first, and a different device gives [`Error::OtherDevice`] with nothing sent to it but
     /// reads.
     pub fn open(mut dev: HidppDevice, device: UnsupportedDevice, saved_dpi: Option<u16>) -> Result<Self> {
+        // Its test report carries the transcript of the reading in `device`.
+        dev.stop_recording();
         if let Some(unit) = device.unit_id {
             let info = dev.device_info()?;
             if info[1..5] != unit {
@@ -278,6 +280,7 @@ mod tests {
             onboard,
             read_errors: Vec::new(),
             layout: None,
+            transcript: String::new(),
         };
         (LogitechTask::open(dev, device, saved), mouse)
     }

@@ -291,6 +291,14 @@ describe("a mouse of another brand", () => {
     expect(report).toContain("Button response: 8 ms, Angle snapping: Off");
     expect(report).toContain("  12 04 00 00 → 12 04 00 00 03 00");
   });
+
+  it("puts the whole transcript in the test report instead of the short list, when the core gives one", () => {
+    const transcript = '{\n  "format": "perihub-transcript",\n  "version": 1,\n  "events": [\n    {"op":"write","data":"12 04"}\n  ]\n}\n';
+    const report = peripheralTest({ ...info, transcript }, "0.9.3", "Linux").report;
+    expect(report).toContain('Transcript (every request and answer, for a replay test):\n{\n  "format": "perihub-transcript"');
+    expect(report).not.toContain("Requests and answers");
+    expect(report).not.toContain("12 04 00 00 → 12 04 00 00 03 00");
+  });
 });
 
 const rival3: PeripheralInfo = {

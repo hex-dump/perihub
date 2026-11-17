@@ -171,9 +171,25 @@ pub struct UnsupportedDevice {
     pub read_errors: Vec<String>,
     /// A keyboard's layout code (0x4540), if it has that feature.
     pub layout: Option<crate::kblayout::DeviceLayout>,
+    /// Every request and answer of the reading, in full, as a transcript (`crate::replay`) in
+    /// JSON, for test reports: set by whoever knows the receiver's USB ids. The unit id is left out.
+    pub transcript: String,
 }
 
 impl UnsupportedDevice {
+    /// [`Self::read`], with the transcript of every request and answer since `dev` was opened, for
+    /// the test report. `receiver_id`: the receiver's USB product id.
+    pub fn read_recorded(dev: &mut HidppDevice, slot: u8, receiver_id: u16) -> Result<Self> {
+        let mut device = Self::read(dev, slot)?;
+        let ids = crate::replay::Device {
+            vendor_id: "046d".into(),
+            product_id: format!("{receiver_id:04x}"),
+            name: format!("Logitech {} through a {}", device.label(), name(receiver_id)),
+        };
+        device.transcript = dev.transcript(ids, crate::replay::Family::HidppReceiver).to_json();
+        Ok(device)
+    }
+
     /// Reads the device in `slot` with read commands only. A device that falls asleep meanwhile
     /// gives [`Error::Unreachable`], to be read again when it wakes up.
     pub fn read(dev: &mut HidppDevice, slot: u8) -> Result<Self> {
@@ -195,6 +211,7 @@ impl UnsupportedDevice {
             onboard: None,
             read_errors: Vec::new(),
             layout: None,
+            transcript: String::new(),
         };
         let mut failed = |what: &str, error: Error| match error {
             Error::Unreachable => Err(Error::Unreachable),
@@ -516,6 +533,20 @@ mod tests {
             let (index, function) = (request[2], request[3] >> 4);
             assert!(index <= 3 || (index, function) == (4, 1), "feature index {index}, function {function}");
         }
+    }
+
+    #[test]
+    fn the_reading_of_an_unsupported_device_is_recorded_without_its_unit_id_and_replays() {
+        let mut dev = HidppDevice::behind_receiver(bolt_device(), None, 2, true).unwrap();
+        let device = UnsupportedDevice::read_recorded(&mut dev, 2, BOLT).unwrap();
+        let t = crate::replay::Transcript::from_json(&device.transcript).unwrap();
+        assert_eq!((t.device.product_id.as_str(), t.slot), ("c548", Some(2)));
+        assert_eq!((t.family, t.access), (crate::replay::Family::HidppReceiver, crate::replay::Access::ReadOnly));
+        assert!(!device.transcript.contains("a1 b2 c3 d4"), "unit id in the transcript");
+        let (read, replay) = crate::replay::tests::replay(&t, "bolt");
+        assert_eq!(read["name"], "Office mouse with a long name");
+        assert_eq!(read["device_info"], serde_json::to_value(&device.device_info).unwrap());
+        assert!(replay.unused().is_empty(), "{:?}", replay.unused());
     }
 
     #[test]

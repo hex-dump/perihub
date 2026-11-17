@@ -1,0 +1,50 @@
+{
+  "format": "perihub-transcript",
+  "version": 1,
+  "device": {
+    "vendor_id": "2e3c",
+    "product_id": "c368",
+    "name": "Wraith W60"
+  },
+  "family": "peripheral",
+  "access": "read-only",
+  "recorded_by": "PeriHub 0.8.4 on windows x86_64",
+  "source": "issue #35, test report of a W60 with firmware V3.22.19",
+  "notes": [
+    "The answers and the descriptor are the bytes of the report. PeriHub 0.8.4 showed only the first 6 bytes of each request: the rest of the 64 are zeros, as the driver sends them (docs/protocols/wraith-he.md)."
+  ],
+  "expect": {
+    "firmware": "V3.22.19",
+    "readable": true,
+    "editable": false,
+    "problem": null,
+    "details": [
+      [
+        "Model",
+        "W669,34,KB,ML,AP61HEARGB,V3.22.19"
+      ],
+      [
+        "Firmware date",
+        "Aug  6 2026,13:31:21"
+      ],
+      [
+        "Key lighting",
+        "mode 16, speed 4/4, brightness 4/4, colour #ffffff, second colour #00ffff, direction 0, full colour off, last byte 0"
+      ],
+      [
+        "Side lighting",
+        "mode 5, speed 4/4, brightness 3/4, colour #ff0000, second colour #00ff00, direction 0, full colour on (rainbow), last byte 1"
+      ]
+    ]
+  },
+  "events": [
+    {"op":"descriptor","data":"06 1b ff 09 91 a1 01 85 01 19 00 29 3e 15 00 26 ff 00 75 08 95 3f 81 02 19 00 29 3e 15 00 26 ff 00 75 08 95 3f 91 02 c0"},
+    {"op":"write","data":"01 0d","len":64},
+    {"op":"read","data":"01 0d 00 00 00 32 57 36 36 39 2c 33 34 2c 4b 42 2c 4d 4c 2c 41 50 36 31 48 45 41 52 47 42 2c 56 33 2e 32 32 2e 31 39","len":64},
+    {"op":"read","data":"01 0d 00 00 01 32 41 75 67 20 20 36 20 32 30 32 36 2c 31 33 3a 33 31 3a 32 31","len":64},
+    {"op":"write","data":"01 07 01","len":64},
+    {"op":"read","data":"01 07 00 00 00 0c 10 04 04 ff ff ff 00 ff ff","len":64},
+    {"op":"write","data":"01 08 01","len":64},
+    {"op":"read","data":"01 08 00 00 00 0c 05 04 03 ff 00 00 00 ff 00 00 01 01","len":64}
+  ]
+}

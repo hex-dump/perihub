@@ -22,6 +22,7 @@ pub mod peripheral;
 pub mod quick;
 #[cfg(windows)]
 pub mod rawinput;
+pub mod replay;
 pub mod report_devices;
 pub mod softmacro;
 pub mod sync;

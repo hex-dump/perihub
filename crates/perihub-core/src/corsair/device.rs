@@ -45,6 +45,9 @@ pub struct CorsairInfo {
     pub layout: Option<crate::kblayout::DeviceLayout>,
     /// The colour PeriHub shows on every LED, while experimental lighting is on.
     pub lighting: Option<Rgb>,
+    /// Every request and answer of the reading when PeriHub connected, in full, as a transcript
+    /// (`crate::replay`) in JSON, for test reports.
+    pub transcript: String,
 }
 
 pub struct CorsairTask {
@@ -112,7 +115,7 @@ impl CorsairTask {
         if !answered {
             return Err(Error::Protocol(format!("the device did not answer ({})", errors.join("; "))));
         }
-        let info = CorsairInfo {
+        let mut info = CorsairInfo {
             product_id: model.product_id,
             model: model.name.into(),
             kind: model.kind,
@@ -125,6 +128,7 @@ impl CorsairTask {
             read_errors: errors,
             lighting: None,
             layout,
+            transcript: String::new(),
         };
         log::info!(
             "Corsair {}: firmware {}, mode {:?}, {:?} Hz, {:?} DPI, unreadable: {:?}",
@@ -135,6 +139,13 @@ impl CorsairTask {
             info.dpi,
             info.read_errors
         );
+        let device = crate::replay::Device {
+            vendor_id: format!("{:04x}", super::CORSAIR),
+            product_id: format!("{:04x}", model.product_id),
+            name: format!("Corsair {}", model.name),
+        };
+        info.transcript = dev.transcript(device).to_json();
+        dev.stop_recording();
         Ok(Self {
             dev,
             info,

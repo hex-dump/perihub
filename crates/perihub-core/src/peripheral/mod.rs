@@ -310,6 +310,9 @@ pub struct PeripheralInfo {
     pub pending_undo: bool,
     /// Every request and answer of the last reading, for test reports.
     pub raw: Vec<String>,
+    /// Every request and answer in full, as a transcript (`crate::replay`) in JSON: the first
+    /// reading, and the latest one when it differs. Nothing in it tells the unit apart.
+    pub transcript: String,
     /// A keyboard's physical layout, when its protocol has a read for it.
     pub layout: Option<crate::kblayout::DeviceLayout>,
 }
@@ -377,11 +380,15 @@ pub struct Io {
     raw: Vec<String>,
     /// The device's name in the write log.
     device: String,
+    /// Every call to the device in full, for the transcript of a test report.
+    tape: crate::replay::Recording,
 }
 
 impl Io {
     pub fn new(hid: Box<dyn Hid>, commands: Vec<Command>, changes: bool) -> Self {
-        Self { hid, short: None, commands, changes, granted: changes, raw: Vec::new(), device: String::new() }
+        let tape = crate::replay::Recording::default();
+        let hid = tape.wrap(hid, crate::replay::MAIN);
+        Self { hid, short: None, commands, changes, granted: changes, raw: Vec::new(), device: String::new(), tape }
     }
 
     /// Names the device in the write log.
@@ -392,7 +399,7 @@ impl Io {
 
     /// Adds the short HID++ collection, when it has a path of its own (Windows).
     pub fn with_short(mut self, short: Option<Box<dyn Hid>>) -> Self {
-        self.short = short;
+        self.short = short.map(|s| self.tape.wrap(s, "short"));
         self
     }
 
@@ -449,6 +456,11 @@ impl Io {
     /// The requests and answers since the last call, for test reports.
     pub fn take_raw(&mut self) -> Vec<String> {
         std::mem::take(&mut self.raw)
+    }
+
+    /// Every call to the device since the last call, in full, as transcript events.
+    pub fn take_transcript(&mut self) -> Vec<crate::replay::Event> {
+        self.tape.take()
     }
 
     fn note(&mut self, line: String) {

@@ -260,7 +260,7 @@ fn identify(
     };
     match model {
         Some(model) => Ok(Ok(model)),
-        None => Ok(Err(UnsupportedDevice::read(&mut dev, slot)?)),
+        None => Ok(Err(UnsupportedDevice::read_recorded(&mut dev, slot, paths.0.product_id())?)),
     }
 }
 
