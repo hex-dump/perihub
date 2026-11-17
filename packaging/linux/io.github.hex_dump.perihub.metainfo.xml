@@ -426,6 +426,11 @@
   </provides>
 
   <releases>
+    <release version="0.9.3" date="2026-11-17">
+      <description>
+        <p>A damaged config.json is no longer overwritten by the defaults: PeriHub keeps it and brings back the last good save. Device detection recovers on its own when HID access is not ready at start-up, errors are shown in plain words instead of being swallowed, and on Linux desktops without a system tray closing the window quits PeriHub instead of hiding it. Test reports now carry every request and answer in full, and the interface works better with screen readers.</p>
+      </description>
+    </release>
     <release version="0.9.2" date="2026-11-17">
       <description>
         <p>A keyboard's page now shows its layout (ANSI, ISO, JIS or ABNT2, and the key legends) and lets you change it when detection is wrong, and the Apex 3 TKL's Keys tab draws the right keys for it. Also new: clearer status marks (an icon and a word, in colors that no longer look like the accent), a tidier look for every page, and a fix for the "Send a report" prompt that flashed at start-up. CI and release workflows are also safer. The layout read has not been tried on a real Corsair or Razer keyboard yet, and a Logitech keyboard's layout code is only written into test reports, not used, because what it means is not documented.</p>
