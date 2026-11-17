@@ -25,7 +25,7 @@
   <a href="https://github.com/hex-dump/perihub/discussions">💬 Discussions</a>
 </p>
 
-![Keyboard lighting](docs/screenshots/keyboard-lighting.png)
+![Keyboard lighting](https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/keyboard-lighting.png)
 
 ## Highlights
 
@@ -137,12 +137,12 @@ Not on the list? Open a [device request](https://github.com/hex-dump/perihub/iss
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/keyboard-keys.png" alt="Key remapping"><br><sub><b>Key remapping</b> on both layers of the Apex 3 TKL</sub></td>
-    <td width="50%"><img src="docs/screenshots/mouse-dpi.png" alt="Mouse DPI and polling rate"><br><sub><b>DPI and polling rate</b>, previewed live on the mouse</sub></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/keyboard-keys.png" alt="Key remapping"><br><sub><b>Key remapping</b> on both layers of the Apex 3 TKL</sub></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/mouse-dpi.png" alt="Mouse DPI and polling rate"><br><sub><b>DPI and polling rate</b>, previewed live on the mouse</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/mouse-buttons.png" alt="Mouse buttons"><br><sub><b>Buttons and G-Shift</b>, saved in the mouse</sub></td>
-    <td><img src="docs/screenshots/mouse-lighting.png" alt="Mouse lighting"><br><sub><b>Lighting</b> of each zone</sub></td>
+    <td><img src="https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/mouse-buttons.png" alt="Mouse buttons"><br><sub><b>Buttons and G-Shift</b>, saved in the mouse</sub></td>
+    <td><img src="https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/mouse-lighting.png" alt="Mouse lighting"><br><sub><b>Lighting</b> of each zone</sub></td>
   </tr>
 </table>
 
@@ -302,11 +302,11 @@ scoop install perihub-scoop/perihub
 | Any, with Flatpak | `PeriHub_…_x86_64.flatpak` (below) |
 | Any other | `PeriHub_…_amd64.AppImage`: `chmod +x` it and run it |
 
-On Arch-based distributions, until `perihub-bin` is on the AUR:
+On Arch-based distributions, until `perihub-bin` is on the AUR (the `aur` branch holds the PKGBUILD of the latest release):
 
 ```sh
-git clone https://github.com/hex-dump/perihub.git
-cd perihub/packaging/aur/perihub-bin
+git clone --branch aur --single-branch https://github.com/hex-dump/perihub.git perihub-aur
+cd perihub-aur
 makepkg -si
 ```
 

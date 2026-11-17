@@ -20,7 +20,7 @@ A keyboard's page now shows its layout (ANSI, ISO, JIS or ABNT2, and the key leg
 - **The accent color no longer looks like a device's state**: with the green or teal accent, "Connected" in the sidebar looked like the accent, and experimental and read-only devices were shown in the same green as connected ones. A state is now always an icon and a word (a check for connected, a moon for asleep, a lab flask for experimental, an eye for read-only, a triangle for something to look at), in status colors each theme sets itself and that never follow the accent; the accent stays for the selection, the main button, focus and the value in use. Support levels in Settings, the test page and the device headings use the same marks, the "level in use" of the G300 and other-brand pages is in the accent like on the Logitech mouse page, and a low mouse battery says "Battery low" in the warning color. The green accent now leans to lime and the teal accent to cyan, so neither looks like "connected" on the dark theme. A test checks that the accent blocks set nothing else and lists which accents are close to a status color.
 
 ### Security
-- The AUR and screenshots workflows no longer push to main: they open a pull request from a bot/ branch, run the required checks on it and ask for auto-merge.
+- The AUR and screenshots workflows no longer push to main or open pull requests: they commit the PKGBUILD and .SRCINFO to the `aur` branch and the screenshots to the `assets` branch, which main's rules do not cover, with the workflow's own token.
 - The CI and test-build workflows now give their GitHub token read-only access by default, and only the job that comments on issues can write to them.
 
 ## 0.9.1 — 2026-11-16
