@@ -433,29 +433,16 @@ impl Manager {
     }
 
     fn hotplug_loop(&self, listener: Listener) {
-        // At login the device nodes or their permissions may not be ready yet: try again, slowly.
-        let mut wait = Duration::from_secs(2);
-        let mut api = loop {
-            match HidApi::new() {
-                Ok(api) => {
-                    let mut slots = self.slots.lock().unwrap();
-                    if slots.keyboard_error.as_deref().is_some_and(|e| e.starts_with("HID unavailable")) {
-                        slots.keyboard_error = None;
-                        slots.mouse_error = None;
-                        slots.scanned = false; // announce the first real pass
-                    }
-                    break api;
-                }
-                Err(error) => {
-                    let mut slots = self.slots.lock().unwrap();
-                    slots.keyboard_error = Some(format!("HID unavailable: {error} (trying again)"));
-                    slots.mouse_error = slots.keyboard_error.clone();
-                    slots.scanned = true;
-                    drop(slots);
-                    listener(&self.status());
-                    thread::sleep(wait);
-                    wait = (wait * 2).min(Duration::from_secs(30));
-                }
+        let mut api = match HidApi::new() {
+            Ok(api) => api,
+            Err(error) => {
+                let mut slots = self.slots.lock().unwrap();
+                slots.keyboard_error = Some(format!("HID unavailable: {error}"));
+                slots.mouse_error = slots.keyboard_error.clone();
+                slots.scanned = true;
+                drop(slots);
+                listener(&self.status());
+                return;
             }
         };
         let mut pass = 0u32;
