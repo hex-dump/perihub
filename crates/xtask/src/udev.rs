@@ -64,9 +64,11 @@ on some newer mice). Interface 0 also carries the mouse's movements and clicks, 
 above. Receivers and docks are left out: some can be shared with a keyboard."#
         }
         "razer-keyboard" => {
-            r#"Razer keyboards (read only, untested; facts from OpenRazer): only interface 3, the one OpenRazer sends
-to. Through the receiver it holds only the media keys. PeriHub also reads each keyboard node's report
-descriptor and does not open one that carries typed keys. The receiver (02ba) belongs to this keyboard alone."#
+            r#"Razer keyboards (read only, untested; facts from OpenRazer): only the BlackWidow V4 Mini HyperSpeed's
+interface 3, the one OpenRazer sends to. Through the receiver it holds only the media keys. PeriHub also
+reads each keyboard node's report descriptor and does not open one that carries typed keys. The receiver
+(02ba) belongs to this keyboard alone. The other Razer keyboards PeriHub reads are left out on Linux for
+now: on most of them the interface OpenRazer sends to also carries typed keys."#
         }
         "yjx" => {
             r#"Mice on the YJX platform (MAMBASNAKE, Rajin, K-Snake, EWEADN…; read only, untested): only interface 2,

@@ -1171,9 +1171,10 @@ impl Manager {
         // A keyboard of another brand is opened only where nothing typed arrives (Linux; elsewhere the
         // system keeps typed keys away from programs). QMK keyboards were checked above, more strictly.
         found.retain(|(d, model)| {
-            // On Linux the Wraith's collection is opened only by a rule the user turns on: it can carry
-            // how far each key is pressed. That rule is not there yet.
-            if cfg!(target_os = "linux") && matches!(model.protocol, Protocol::Wraith(_)) {
+            // On Linux a model 70-perihub.rules does not open is not opened at all: the Wraith's collection
+            // can carry how far each key is pressed (it will need a rule the user turns on), and most Razer
+            // keyboards' interface also carries typed keys.
+            if cfg!(target_os = "linux") && !peripheral::opened_on_linux(model) {
                 return false;
             }
             let typing = model.kind == peripheral::Kind::Keyboard

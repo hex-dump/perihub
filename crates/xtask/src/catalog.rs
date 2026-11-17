@@ -250,10 +250,14 @@ pub fn devices() -> Vec<Device> {
             PeripheralKind::Mouse => Kind::Mouse,
             PeripheralKind::Keyboard => Kind::Keyboard,
         };
-        // The Wraith W60's configuration collection can carry how far each key is pressed: on Linux it
-        // is opened only by a rule the user turns on (perihub-core/src/manager.rs), never by 70-perihub.rules.
-        let access =
-            if family == "wraith" { Access::Closed } else { m.interface.map_or(Access::Whole, Access::Interface) };
+        // Not opened by 70-perihub.rules: the Wraith W60, whose configuration collection can carry how far
+        // each key is pressed, and the Razer keyboards whose interface may carry typed keys
+        // (perihub-core/src/peripheral/mod.rs).
+        let access = if !peripheral::opened_on_linux(m) {
+            Access::Closed
+        } else {
+            m.interface.map_or(Access::Whole, Access::Interface)
+        };
         list.push(device(
             family,
             m.brand,

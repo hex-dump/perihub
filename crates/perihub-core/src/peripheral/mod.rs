@@ -20,6 +20,8 @@ pub mod qmk;
 pub mod razer;
 pub mod razer_keyboard;
 #[rustfmt::skip]
+pub mod razer_keyboard_models;
+#[rustfmt::skip]
 pub mod razer_models;
 pub mod roccat;
 pub mod sinowealth;
@@ -110,7 +112,7 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
         .iter()
         .chain(steelseries_models::MODELS)
         .chain(razer_models::MODELS)
-        .chain(razer_keyboard::MODELS)
+        .chain(razer_keyboard_models::MODELS)
         .chain(sinowealth::MODELS)
         .chain(logitech_g600::MODELS)
         .chain(logitech_hidpp10::MODELS)
@@ -125,6 +127,17 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
 
 pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {
     models().find(|m| m.vendor_id == vendor_id && m.product_ids.contains(&product_id))
+}
+
+/// Whether 70-perihub.rules opens the model's configuration interface on Linux. Where it does not,
+/// PeriHub does not open the model there either: the Wraith W60, whose collection can carry how far
+/// each key is pressed, and the Razer keyboards whose interface may also carry typed keys.
+pub fn opened_on_linux(model: &Model) -> bool {
+    match model.protocol {
+        Protocol::Wraith(_) => false,
+        Protocol::RazerKeyboard(p) => p.linux,
+        _ => true,
+    }
 }
 
 /// The vendors with a driver: only their devices are looked at.
