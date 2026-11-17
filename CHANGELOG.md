@@ -4,6 +4,23 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+### Added
+- A message at the top of the window when PeriHub could not read its settings file at start-up, saying where the old file was kept, and the same line on stderr from `perihub-cli`.
+- Errors the interface shows are now rewritten in plain words for the causes people meet most (permission denied, device busy or used by the maker's software, asleep, timeout, not connected, read-only mode), with the original text in brackets.
+
+### Changed
+- `config.json` now has a `version` field (files without it count as version 1), so a future format change can convert old settings instead of resetting them. After every save PeriHub also keeps the last good copy as `config.json.bak` (saves were already atomic).
+- Device detection no longer gives up when the system's HID access is not ready yet (for example at login with autostart): it tries again after 2 seconds, then 4, 8 and so on up to 30 seconds, and says "HID unavailable, trying again" meanwhile. A panic while one kind of device is being looked for no longer stops detection of the others.
+
+- For screen readers: error messages are announced (`role="alert"`), the sidebar is a labelled navigation, and the page in use is marked as the current one, also for devices listed one per line.
+
+### Fixed
+- **A damaged `config.json` is no longer overwritten by the defaults.** PeriHub keeps a copy next to it (`config.json.bad-<time>`) before it starts with the default settings, and if `config.json.bak` (the last good save) is valid it is loaded and the window says so; otherwise read-only mode stays on, since the lost file may have had it on; turn it off in the bar when you are ready. Before, the next save replaced your settings (app profiles, macros, lighting presets, battery limits, read-only mode) and read-only mode went off without a word.
+- Device detection no longer stops for good after one thread panicked while holding its state: that state is recovered, as the write log already did.
+- "Keep changes" on a mouse, a G300, other-brand devices and Corsair lighting, and "Turn off" for read-only mode, no longer hide a failure: the error is shown (G300 and other-brand pages no longer say "Changes kept" after it failed), and the keyboard's reactive lighting shows an error too instead of waiting in silence.
+
 ## 0.9.2 — 2026-11-17
 
 A keyboard's page now shows its layout (ANSI, ISO, JIS or ABNT2, and the key legends) and lets you change it when detection is wrong, and the Apex 3 TKL's Keys tab draws the right keys for it. Also new: clearer status marks (an icon and a word, in colors that no longer look like the accent), a tidier look for every page, and a fix for the "Send a report" prompt that flashed at start-up. CI and release workflows are also safer. The layout read has not been tried on a real Corsair or Razer keyboard yet, and a Logitech keyboard's layout code is only written into test reports, not used, because what it means is not documented.

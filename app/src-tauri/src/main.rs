@@ -29,6 +29,8 @@ use tauri::{AppHandle, Emitter, Manager as _, RunEvent, WindowEvent};
 pub struct AppState {
     pub manager: Manager,
     pub config: Mutex<AppConfig>,
+    /// Set when config.json could not be read: shown to the user (see `app_config_problem`).
+    pub config_problem: Option<String>,
     pub profiles: Arc<AppProfileEngine>,
     pub soft: Arc<SoftMacroEngine>,
     /// Keeps perihub-cli away from the devices while the app runs.
@@ -92,7 +94,9 @@ fn main() {
             // Autostart: the HKLM entry goes to HKCU, old entries get quoted (see autostart.rs).
             autostart::startup(app.handle());
             autostart::restart_hidden();
-            let config = AppConfig::load();
+            let loaded = AppConfig::load_checked();
+            let config_problem = loaded.problem.map(|p| p.message());
+            let config = loaded.config;
             let devices = match config::try_lock_devices() {
                 Ok(Some(lock)) => Some(lock),
                 // perihub-cli is running: its commands take a few seconds.
@@ -144,7 +148,14 @@ fn main() {
                 watch_focus(app.handle(), &profiles);
             }
             let start_hidden = starts_hidden(&args, config.start_hidden);
-            app.manage(AppState { manager, config: Mutex::new(config), profiles, soft, _devices: devices });
+            app.manage(AppState {
+                manager,
+                config: Mutex::new(config),
+                config_problem,
+                profiles,
+                soft,
+                _devices: devices,
+            });
 
             app.manage(updates::Available::default());
             if args.iter().any(|a| a == AFTER_UPDATE_ARG) {
@@ -245,6 +256,7 @@ fn main() {
             commands::app_set_settings,
             commands::app_quit,
             commands::app_read_only,
+            commands::app_config_problem,
             commands::app_set_read_only,
             commands::app_write_log,
             commands::app_clear_write_log,

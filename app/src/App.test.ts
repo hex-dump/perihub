@@ -258,3 +258,37 @@ describe("Device request", () => {
     expect(new URL(deviceRequestUrl(device, "0.8.0", "linux")).searchParams.get("model")).toBe("Logitech G Pro");
   });
 });
+
+describe("Problems at start-up", () => {
+  it("tells the user when the settings file could not be read, until it is closed", async () => {
+    calls.status = vi.fn(async () => empty());
+    calls.configProblem = vi.fn(async () => "PeriHub could not read its settings file. The old file was kept as /x/config.json.bad-1.");
+    render(App);
+    await wait();
+    expect(screen.getByText(/The old file was kept as \/x\/config.json.bad-1/)).toBeTruthy();
+    (screen.getByRole("button", { name: "Close" }) as HTMLButtonElement).click();
+    await wait();
+    expect(screen.queryByText(/The old file was kept/)).toBeNull();
+  });
+
+  it("says nothing about the settings when they were read", async () => {
+    calls.status = vi.fn(async () => empty());
+    calls.configProblem = vi.fn(async () => null);
+    render(App);
+    await wait();
+    expect(document.querySelector(".config-problem")).toBeNull();
+  });
+
+  it("shows why read-only mode could not be turned off", async () => {
+    calls.status = vi.fn(async () => empty());
+    calls.readOnly = vi.fn(async () => true);
+    calls.setReadOnly = vi.fn(async () => {
+      throw "file error: disk full";
+    });
+    render(App);
+    await wait();
+    (screen.getByRole("button", { name: "Turn off" }) as HTMLButtonElement).click();
+    await wait();
+    expect(screen.getByText(/Could not turn read-only mode off: file error: disk full/)).toBeTruthy();
+  });
+});

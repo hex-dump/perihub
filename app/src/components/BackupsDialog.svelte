@@ -67,7 +67,7 @@
       one. The current state is backed up first, so a restore can be undone too.
     </p>
 
-    {#if error}<div class="notice error">{error}</div>{/if}
+    {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
     {#if backups === null}
       <p class="loading">Loading…</p>

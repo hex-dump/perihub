@@ -171,7 +171,7 @@
       </span>
     </label>
   {/if}
-  {#if error}<div class="notice error">{error}</div>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
   {#each cards as { zone, title, subtitle, modes } (synced ? "all" : zone.index)}
     {@const effect = settings.leds[zone.index]}

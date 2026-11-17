@@ -90,7 +90,11 @@ fn run(args: &[&str]) -> Result<()> {
             "PeriHub is open: quit it from the tray first, since both would talk to the same devices (perihub-cli app ... works while it is open)",
         ));
     };
-    let config = AppConfig::load();
+    let loaded = AppConfig::load_checked();
+    if let Some(problem) = &loaded.problem {
+        eprintln!("{}", problem.message());
+    }
+    let config = loaded.config;
     // The core refuses every change in read-only mode; a command that only changes things is
     // refused here already, before the devices are opened.
     perihub_core::writes::set_read_only(config.read_only);
