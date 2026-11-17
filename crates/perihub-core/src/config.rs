@@ -51,6 +51,8 @@ pub struct AppProfiles {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AppConfig {
+    /// Schema version of the file (see [`migrate`]). Files without it are version 1.
+    pub version: u32,
     pub keyboard: KeyboardConfig,
     /// Start hidden in the system tray.
     pub start_hidden: bool,
@@ -75,6 +77,7 @@ pub struct AppConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
+            version: CONFIG_VERSION,
             keyboard: KeyboardConfig::default(),
             start_hidden: false,
             lighting_presets: Vec::new(),
@@ -87,6 +90,27 @@ impl Default for AppConfig {
             battery: Default::default(),
         }
     }
+}
+
+/// The schema version PeriHub writes. Raise it, and add a step to [`migrate`], when the format
+/// changes in a way that old files cannot be read as they are.
+pub const CONFIG_VERSION: u32 = 1;
+
+/// Brings a parsed settings file up to [`CONFIG_VERSION`], so a format change can convert old
+/// files instead of resetting them. No step exists yet: version 1 is the only format.
+fn migrate(value: serde_json::Value) -> serde_json::Value {
+    // Files from before the field existed are version 1.
+    let _version = value.get("version").and_then(|v| v.as_u64()).unwrap_or(1);
+    // Future: if _version < 2 { ...convert...; set "version": 2 }
+    value
+}
+
+/// Parses and migrates the text of a settings file.
+fn parse_config(bytes: &[u8]) -> std::result::Result<AppConfig, String> {
+    let value: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+    let mut config: AppConfig = serde_json::from_value(migrate(value)).map_err(|e| e.to_string())?;
+    config.version = CONFIG_VERSION;
+    Ok(config)
 }
 
 #[cfg(not(test))]
@@ -113,6 +137,8 @@ pub struct ConfigProblem {
     pub error: String,
     /// Where a copy of the unreadable file was kept, when one could be made.
     pub backup: Option<PathBuf>,
+    /// The last good save (`config.json.bak`) was valid and is in use instead.
+    pub restored: bool,
 }
 
 impl ConfigProblem {
@@ -122,6 +148,12 @@ impl ConfigProblem {
             Some(path) => format!(" The old file was kept as {}.", path.display()),
             None => String::new(),
         };
+        if self.restored {
+            return format!(
+                "PeriHub could not read its settings file, so it restored the last good save (config.json.bak).{kept} Check that your settings are as you expect ({}).",
+                self.error
+            );
+        }
         format!(
             "PeriHub could not read its settings file, so it started with the default settings and read-only mode on, to be safe.{kept} Turn read-only mode off when you are ready to change your devices ({}).",
             self.error
@@ -159,12 +191,42 @@ impl AppConfig {
     pub fn save(&self) -> Result<()> {
         let path = config_path();
         fs::create_dir_all(path.parent().unwrap())?;
-        // Atomic write: a crash halfway through does not leave a truncated file.
-        let temp = path.with_extension("json.tmp");
-        fs::write(&temp, serde_json::to_string_pretty(self)?)?;
-        fs::rename(temp, path)?;
+        let text = serde_json::to_string_pretty(self)?;
+        write_atomic(&path, text.as_bytes())?;
+        // The last good config, for when config.json is damaged later. Failing here does not fail
+        // the save: the settings themselves are already on disk.
+        if let Err(e) = write_atomic(&bak_path(&path), text.as_bytes()) {
+            log::warn!("could not update config.json.bak: {e}");
+        }
         Ok(())
     }
+}
+
+/// Atomic write: a temporary file, then a rename, so a crash halfway through does not leave a
+/// truncated file.
+fn write_atomic(path: &Path, content: &[u8]) -> std::io::Result<()> {
+    let mut temp = path.as_os_str().to_owned();
+    temp.push(".tmp");
+    let temp = PathBuf::from(temp);
+    fs::write(&temp, content)?;
+    fs::rename(&temp, path)
+}
+
+fn bak_path(path: &Path) -> PathBuf {
+    let mut bak = path.as_os_str().to_owned();
+    bak.push(".bak");
+    PathBuf::from(bak)
+}
+
+/// The settings could not be used: the last good save if it is valid, else the safe defaults.
+fn recover(path: &Path, error: String, backup: Option<PathBuf>) -> LoadedConfig {
+    if let Ok(bytes) = fs::read(bak_path(path))
+        && let Ok(config) = parse_config(&bytes)
+    {
+        log::warn!("using config.json.bak, the last good save");
+        return LoadedConfig { config, problem: Some(ConfigProblem { error, backup, restored: true }) };
+    }
+    LoadedConfig { config: AppConfig::safe_defaults(), problem: Some(ConfigProblem { error, backup, restored: false }) }
 }
 
 fn load_from(path: &Path) -> LoadedConfig {
@@ -175,19 +237,15 @@ fn load_from(path: &Path) -> LoadedConfig {
         }
         Err(e) => {
             log::warn!("cannot read config.json, using safe defaults: {e}");
-            let problem = ConfigProblem { error: e.to_string(), backup: None };
-            return LoadedConfig { config: AppConfig::safe_defaults(), problem: Some(problem) };
+            return recover(path, e.to_string(), None);
         }
     };
-    match serde_json::from_slice::<AppConfig>(&text) {
+    match parse_config(&text) {
         Ok(config) => LoadedConfig { config, problem: None },
         Err(error) => {
-            log::warn!("invalid config.json, using safe defaults: {error}");
+            log::warn!("invalid config.json: {error}");
             let backup = keep_bad_copy(path, &text);
-            LoadedConfig {
-                config: AppConfig::safe_defaults(),
-                problem: Some(ConfigProblem { error: error.to_string(), backup }),
-            }
+            recover(path, error, backup)
         }
     }
 }
@@ -375,6 +433,61 @@ mod tests {
         // Starting again with the same file does not pile up copies.
         assert_eq!(load_from(&path).problem.unwrap().backup, Some(backup));
         assert_eq!(fs::read_dir(&root).unwrap().count(), 2);
+    }
+
+    #[test]
+    fn a_corrupt_config_is_replaced_by_the_last_good_save() {
+        let root = temp_root("config-bak-good");
+        let path = root.join("config.json");
+        fs::write(&path, r#"{"read_only": false, "start_hidden": tr"#).unwrap();
+        fs::write(root.join("config.json.bak"), r#"{"read_only": false, "start_hidden": true}"#).unwrap();
+        let loaded = load_from(&path);
+        assert!(loaded.config.start_hidden && !loaded.config.read_only);
+        let problem = loaded.problem.expect("the interface must be told");
+        assert!(problem.restored && problem.backup.is_some());
+        assert!(problem.message().contains("last good save"));
+    }
+
+    #[test]
+    fn a_corrupt_config_and_a_corrupt_bak_mean_safe_defaults() {
+        let root = temp_root("config-bak-bad");
+        let path = root.join("config.json");
+        fs::write(&path, "{").unwrap();
+        fs::write(root.join("config.json.bak"), "[").unwrap();
+        let loaded = load_from(&path);
+        assert!(loaded.config.read_only && !loaded.config.start_hidden);
+        assert!(!loaded.problem.unwrap().restored);
+    }
+
+    #[test]
+    fn a_corrupt_config_without_a_bak_means_safe_defaults() {
+        let root = temp_root("config-bak-missing");
+        let path = root.join("config.json");
+        fs::write(&path, "{").unwrap();
+        let loaded = load_from(&path);
+        assert!(loaded.config.read_only);
+        assert!(!loaded.problem.unwrap().restored);
+    }
+
+    #[test]
+    fn saving_keeps_the_last_good_copy_and_the_version() {
+        let config = AppConfig { start_hidden: true, ..AppConfig::default() };
+        config.save().unwrap();
+        let dir = config_dir();
+        let saved = fs::read(dir.join("config.json")).unwrap();
+        assert_eq!(saved, fs::read(dir.join("config.json.bak")).unwrap());
+        assert!(!dir.join("config.json.tmp").exists());
+        let value: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+        assert_eq!(value["version"], CONFIG_VERSION);
+        assert_eq!(load_from(&dir.join("config.json")).config, config);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_file_without_a_version_is_version_one() {
+        let config = parse_config(br#"{"start_hidden": true}"#).unwrap();
+        assert_eq!(config.version, 1);
+        assert!(config.start_hidden);
     }
 
     #[test]

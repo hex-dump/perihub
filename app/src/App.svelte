@@ -263,6 +263,7 @@
     {#each logitechDevices as { receiver, device } (logitechKey(receiver, device))}
       <button
         class:active={page === "logitech" && logitechShown?.device === device}
+        aria-current={page === "logitech" && logitechShown?.device === device ? "page" : undefined}
         onclick={() => go("logitech", logitechKey(receiver, device))}
       >
         <Icon name={kindIcon(device.kind)} />
@@ -281,6 +282,7 @@
     {#each status.corsair as device (device.product_id)}
       <button
         class:active={page === "corsair" && corsairShown?.product_id === device.product_id}
+        aria-current={page === "corsair" && corsairShown?.product_id === device.product_id ? "page" : undefined}
         onclick={() => go("corsair", hex(device.product_id))}
       >
         <Icon name={device.kind} />
@@ -293,6 +295,7 @@
     {#each status.peripherals as device (device.key)}
       <button
         class:active={page === "peripheral" && peripheralShown?.key === device.key}
+        aria-current={page === "peripheral" && peripheralShown?.key === device.key ? "page" : undefined}
         onclick={() => go("peripheral", peripheralTab(device.key))}
       >
         <Icon name={device.kind} />
@@ -331,7 +334,7 @@
     {/if}
 
     {#if anyDevice && page === "report"}
-      <button class="active">
+      <button class="active" aria-current="page">
         <Icon name="report" />
         <span class="name">Send a report</span>
       </button>
