@@ -32,7 +32,7 @@
   }
 </script>
 
-<div class="col tight layout">
+<div class="col layout">
   <div class="row small muted">
     <span class="grow">
       Layout: <b class="name">{layoutName(layout)}</b>{drawn ? `, ${layoutCaps(layout.physical).length} keys` : ""}, {layoutStatus(layout)}
@@ -62,7 +62,7 @@
 
 <style>
   .layout {
-    gap: var(--space-2);
+    gap: var(--space-1);
   }
 
   .name {
