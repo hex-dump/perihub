@@ -2,10 +2,13 @@
   // A Corsair mouse or keyboard: what PeriHub reads from it, and experimental lighting for this session.
   import { onDestroy } from "svelte";
   import { api, debounce, errorText, type CorsairInfo } from "../lib/api";
+  import Status from "../components/Status.svelte";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import NoWarranty from "../components/NoWarranty.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import { corsairTest } from "../lib/testReport";
+  import KeyboardLayout from "../components/KeyboardLayout.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     info: CorsairInfo | null;
@@ -69,9 +72,9 @@
 
 </script>
 
-<header>
+<header class="page-head">
   <h1>{info ? `Corsair ${info.model}` : "Corsair device"}</h1>
-  <span class="chip test">Experimental</span>
+  <Status kind="experimental" label="Experimental" chip />
 </header>
 
 {#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
@@ -104,6 +107,9 @@
     </dl>
     {#if info.read_errors.length}
       <p class="small muted">Could not read: {info.read_errors.join("; ")}</p>
+    {/if}
+    {#if info.kind === "keyboard"}
+      <KeyboardLayout deviceKey={`1b1c:${info.product_id.toString(16).padStart(4, "0")}`} device={info.layout} />
     {/if}
   </section>
 
@@ -145,7 +151,7 @@
         <NoWarranty device={`Corsair ${info.model}`} bind:accepted={understood} />
         <div class="row end">
           <button onclick={() => (asking = false)}>Cancel</button>
-          <button class="primary" disabled={!understood || !!busy} onclick={turnOn}>Turn on for this session</button>
+          <button class="primary" disabled={!understood || !!busy || readOnly.on} onclick={turnOn}>Turn on for this session</button>
         </div>
       </div>
     {:else}
@@ -153,7 +159,7 @@
       <div class="row">
         <label class="row color">Colour <input type="color" value={color} oninput={(e) => pick((e.target as HTMLInputElement).value)} /></label>
         <div class="grow"></div>
-        <button disabled={!!busy} onclick={() => (asking = true)}>Try experimental lighting…</button>
+        <button disabled={!!busy || readOnly.on} onclick={() => (asking = true)}>Try experimental lighting…</button>
       </div>
     {/if}
     {#if busy}<p class="small muted" role="status">{busy}</p>{/if}
@@ -176,16 +182,6 @@
 {/if}
 
 <style>
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    margin: 0;
-  }
 
   h2 {
     margin: 0 0 12px;

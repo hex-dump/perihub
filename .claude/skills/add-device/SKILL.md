@@ -59,8 +59,10 @@ devices.md and the website, a generated block where the family is described:
 Write the text around it by hand: level, what PeriHub reads and changes, what is left out.
 udev files that use `uaccess` must sort before `73-seat-late.rules`.
 
-Also by hand: the brand in `.github/ISSUE_TEMPLATE/device_test.yml` (description and checkboxes), and
-README.md where it lists brands.
+Also by hand: the brand in `.github/ISSUE_TEMPLATE/01_test_report.yml` (description and checkboxes; the brand dropdown there and in `device_request.yml` has the five named brands and Other, add a brand to it, and to `tools/labels-migrate.sh`, only when it has a label of its own), and
+README.md where it lists brands. `mouse_test.yml` and `device_test.yml` are near-copies of the test report form
+for installed PeriHub 0.9.0 and older (their links open those files): change the three together, and delete the
+two once those versions are no longer in use.
 
 ## 5. Checks
 
@@ -77,4 +79,7 @@ python3 tools/release.py lint
 - Commit on a local branch. With the user's OK: push it as `test/<name>`, run
   `gh workflow run test-build.yml --ref test/<name>`, and once it is green answer the issue with the
   link to the run (artifacts need a GitHub account; the build still says the previous version).
+- To have the build announced on the device request, put a line `Test: #N` (or `Tests: #N, #M`) in the
+  body of a commit. A plain `#N` does nothing. The first build comments on the open issue, later
+  pushes edit that comment.
 - No release until the tester confirms, or the user asks for one.

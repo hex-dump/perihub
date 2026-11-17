@@ -118,15 +118,83 @@ describe("testReport", () => {
   });
 });
 
+// Issues #32 and #33: PRO X 2 style mice report 0x2202 and 0x8061 instead of 0x2201 and 0x8060, and format 7.
+describe("a mouse with the extended DPI and polling rate features", () => {
+  const pro: MouseInfo = {
+    ...wireless,
+    model: "PRO X 2 DEX",
+    name: "PRO X 2 DEX",
+    verified: false,
+    writable_format: false,
+    link: { receiver_id: 0xc54d, slot: 1, wireless_id: 0x40b8 },
+    firmware: [
+      { kind: 0, name: "BL2", version: "38.01.0005" },
+      { kind: 3, name: "MPM", version: "37.03.0007" },
+    ],
+    report_rates_ms: [],
+    led_zones: [],
+    // The feature list of the PRO X 2 DEX in issue #32, hidden features included.
+    features: [0x0001, 0x0003, 0x0005, 0x1d4b, 0x0020, 0x1004, 0x2250, 0x2251, 0x2202, 0x8090, 0x80e0, 0x8061, 0x8100]
+      .concat([0x8110, 0x1500, 0x1801, 0x1802, 0x1803, 0x1806, 0x1817, 0x1805, 0x1830, 0x1875, 0x1861, 0x1890])
+      .concat([0x18a1, 0x1e00, 0x1e02, 0x1e22, 0x1602, 0x1eb0, 0x18b1])
+      .map((id) => ({ id, kind: id >= 0x1800 && id < 0x1900 ? 0x70 : 0, version: 0 })),
+    onboard: { ...wireless.onboard, profile_format: 7, profile_count: 5, button_count: 16, sector_size: 255 },
+    extended: {
+      dpi_y: { min: 100, max: 44000, step: 50, list: [] },
+      dpi_now: { x: 1200, default_x: 800, y: 1200, default_y: 800, lod: 2 },
+      rates_wired_hz: [125, 250, 500, 1000],
+      rates_wireless_hz: [125, 250, 500, 1000, 2000, 4000, 8000],
+      rate_now_hz: 2000,
+      raw: ["rates cable: 00 0f", "rates receiver: 00 7f", "rate in use: index 4"],
+      profiles: [1, 2, 3, 4, 5].map(
+        (n) =>
+          `Profile ${n} "Profile ${n}": DPI 400 800 1600 3200 6400 (level 2 default, 1 shift; lift-off 2 2 2 2 2), polling 2000 Hz wireless / 1000 Hz cable, BHOP 0, timeouts 120 / 900`,
+      ),
+      errors: [],
+    },
+    dpi: { min: 100, max: 44000, step: 50, list: [] },
+  };
+
+  it("shows the DPI, the polling rates and each profile, for the tester to compare with G HUB", () => {
+    const lines = testReport(pro, "0.8.5", "windows x86_64").split("\n");
+    expect(lines).toContain("DPI: 100-44000, step 50");
+    expect(lines).toContain("DPI Y axis: 100-44000, step 50");
+    expect(lines).toContain("DPI now: X 1200 (default 800), Y 1200 (default 800), lift-off distance 2");
+    expect(lines).toContain("Polling (Hz): cable 125 250 500 1000; receiver 125 250 500 1000 2000 4000 8000; in use 2000");
+    expect(lines).toContain("Polling answers: rates cable: 00 0f; rates receiver: 00 7f; rate in use: index 4");
+    expect(lines.filter((l) => /^Profile \d/.test(l))).toHaveLength(5);
+    expect(lines).toContain("Memory: model 1, profile format 7, macro format 1, 16 sectors of 255 bytes, 5 factory profiles");
+    expect(lines.some((l) => l.startsWith("Polling (ms)"))).toBe(false);
+    expect(lines).toContain("Support: read-only (memory format PeriHub cannot write)");
+  });
+
+  it("says what could not be read, and leaves the lines out of a mouse that has none", () => {
+    const report = testReport({ ...pro, extended: { ...pro.extended!, errors: ["DPI now: HID++ error 2"] } }, "0.8.5", "linux x86_64");
+    expect(report).toContain("Could not read: DPI now: HID++ error 2");
+    expect(testReport({ ...pro, extended: null, report_rates_ms: [1, 2] }, "0.8.5", "linux x86_64")).toContain("Polling (ms): 1, 2");
+    expect(testReport(cable, "0.8.5", "linux x86_64")).not.toContain("Polling (Hz)");
+  });
+
+  // GitHub refuses a very long link: the whole form link, with every character of the report
+  // escaped, has to stay under about 8 kB.
+  it("keeps the test form link short enough", () => {
+    const url = testFormUrl(pro, "0.8.5", "windows x86_64");
+    expect(url.length).toBeLessThan(5000);
+    expect(new URL(url).searchParams.get("report")).toBe(testReport(pro, "0.8.5", "windows x86_64"));
+  });
+});
+
 describe("testFormUrl", () => {
   const fields = (url: string) => new URL(url).searchParams;
 
-  it("opens the mouse test form with the fields filled in", () => {
+  it("opens the test report form with the fields filled in", () => {
     const url = testFormUrl(wireless, "0.5.2", "windows x86_64");
-    expect(url.startsWith("https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml&")).toBe(true);
+    expect(url.startsWith("https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml&")).toBe(true);
     const query = fields(url);
     // GitHub wants a title before the report can be sent.
     expect(query.get("title")).toBe("G502 X Lightspeed test report");
+    expect(query.get("device-type")).toBe("Mouse");
+    expect(query.get("brand")).toBe("Logitech");
     expect(query.get("model")).toBe("G502 X Lightspeed");
     expect(query.get("usb-id")).toBe("046d:c547");
     expect(query.get("connection")).toBe("LIGHTSPEED receiver");
@@ -204,6 +272,14 @@ describe("receiverTest", () => {
     ]);
     const query = new URL(deviceTestFormUrl(fields, "0.6.6", "windows x86_64")).searchParams;
     expect(query.get("title")).toBe("Logitech MX Master 3S test report");
+  });
+
+  it("names the extended DPI and polling rate features of a device that PeriHub does not support yet", () => {
+    const device = { ...bolt.unsupported[0], dpi: null, dpi_extended: { min: 100, max: 25600, step: 50, list: [] }, report_rates_hz: [125, 8000] };
+    const report = receiverTest(bolt, device, "0.8.5", "linux x86_64").report.split("\n");
+    expect(report).toContain("DPI: 100-25600, step 50 (0x2202)");
+    expect(report).toContain("Polling (Hz, 0x8061): 125 8000");
+    expect(report.indexOf("Polling (Hz, 0x8061): 125 8000")).toBe(report.indexOf("Onboard memory: none") - 1);
   });
 
   it("still describes a receiver PeriHub cannot reach", () => {

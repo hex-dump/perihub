@@ -13,6 +13,26 @@ body:
       placeholder: e.g. Logitech G305 LIGHTSPEED
     validations:
       required: true
+  - type: dropdown
+    id: device-type
+    attributes:
+      label: Device type
+      options:
+        - Mouse
+        - Keyboard
+        - Receiver
+  - type: dropdown
+    id: brand
+    attributes:
+      label: Brand
+      description: "Pick Other for a brand that is not listed."
+      options:
+        - Logitech
+        - SteelSeries
+        - Corsair
+        - Razer
+        - ASUS
+        - Other
   - type: input
     id: usb-id
     attributes:

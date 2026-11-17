@@ -15,6 +15,8 @@ contributions are the ones that need a real device, which the maintainer does no
   the device, what PeriHub showed and the log file.
 - **Code.** Pull requests are welcome. For anything larger than a fix, open an issue or an idea first,
   so we can agree on the approach before you spend time on it.
+  Commits on a `test/*` branch can name the issue they are for with a `Test: #N` (or `Tests: #N, #M`)
+  line; the test build then comments on it, and later builds edit that comment. A plain `#N` does nothing.
 
 ## Rules for code
 

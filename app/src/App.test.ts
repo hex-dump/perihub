@@ -36,6 +36,7 @@ const empty = (): DeviceStatus => ({
   receivers: [],
   logitech_programs: [],
   sandboxed: false,
+  scanned: true,
 });
 
 const ite: ReportDevice = {
@@ -95,6 +96,27 @@ describe("Sidebar", () => {
     expect(nav().textContent).not.toContain("Apex 3 TKL");
   });
 
+  // The backend answers get_status at once, with empty lists, before its first pass has looked at devices.
+  it("offers no report for the empty status sent before the first scan, then lists the device", async () => {
+    const early = { ...empty(), scanned: false };
+    let send: (s: DeviceStatus) => void = () => {};
+    calls.status = vi.fn(async () => early);
+    calls.onStatus = vi.fn(async (handler: (s: DeviceStatus) => void) => {
+      send = handler;
+      return () => {};
+    });
+    location.hash = "#report";
+    render(App);
+    await wait();
+    expect(nav().textContent).not.toContain("Send a report");
+    expect(screen.queryByRole("heading", { name: "Send a report for your device" })).toBeNull();
+    expect(document.body.textContent).not.toContain("found no mouse or keyboard");
+    send({ ...empty(), mouse_asleep: "G502 X PLUS" });
+    await wait();
+    expect(nav().textContent).toContain("G502 X PLUS");
+    location.hash = "";
+  });
+
   it("with no device, offers only the report, and opens it", async () => {
     calls.status = vi.fn(async () => empty());
     render(App);
@@ -123,6 +145,38 @@ describe("Sidebar", () => {
     await wait();
     expect(nav().textContent).toContain("Apex 3 TKL");
     expect(nav().textContent).toContain("Not opened");
+  });
+
+  it("shows each device's state with an icon and a word, never the connected look for experimental support", async () => {
+    calls.status = vi.fn(async () => ({
+      ...empty(),
+      keyboard: { name: "SteelSeries Apex 3 TKL", firmware: "3.0.4" },
+      mouse_asleep: "G502 X PLUS",
+      corsair: [
+        {
+          product_id: 0x1b7a,
+          model: "M65 RGB ULTRA",
+          kind: "mouse" as const,
+          receiver: null,
+          leds: 3,
+          firmware: null,
+          mode: null,
+          polling_hz: null,
+          dpi: null,
+          read_errors: [],
+          lighting: null,
+        },
+      ],
+    }));
+    render(App);
+    await wait();
+    const states = [...nav().querySelectorAll(".status")].map((s) => [s.getAttribute("data-kind"), s.textContent?.trim()]);
+    expect(states).toEqual([
+      ["ok", "Connected"],
+      ["asleep", "Asleep"],
+      ["experimental", "Experimental"],
+    ]);
+    for (const s of nav().querySelectorAll(".status")) expect(s.querySelector("svg path")).toBeTruthy();
   });
 
   // Issue #4: a POWERPLAY receiver whose mouse never answered left only "No device found".

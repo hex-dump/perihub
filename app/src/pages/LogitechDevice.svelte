@@ -6,12 +6,14 @@
   import { api, errorText, type LogitechLive, type ReceiverReport, type UnsupportedReceiverDevice } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
   import { capabilities, effectName, kindName, layoutName, lightsDrivable, zoneName } from "../lib/logitechFeatures";
+  import Status from "../components/Status.svelte";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import { receiverTest } from "../lib/testReport";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import LogitechLights from "../components/LogitechLights.svelte";
   import NoWarranty from "../components/NoWarranty.svelte";
   import UnifyingPermission from "../components/UnifyingPermission.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     receiver: ReceiverReport | null;
@@ -129,7 +131,7 @@
   }
 </script>
 
-<header>
+<header class="page-head">
   <div class="col tight grow">
     <h1>Logitech {name}</h1>
     <span class="muted small">
@@ -182,7 +184,7 @@
 
   {#if changeable && device.dpi}
     <section class="card">
-      <h2>DPI <span class="chip test">Experimental</span></h2>
+      <h2>DPI <Status kind="experimental" label="Experimental" chip /></h2>
       {#if !open}
         <p class="muted">The {name} is asleep: move it or turn it on to change its DPI.</p>
       {:else}
@@ -207,9 +209,9 @@
               disabled={!!busy}
             />
           {/if}
-          <button class="primary" disabled={!!busy || dpi === null || dpi === live?.dpi} onclick={apply}>Set DPI</button>
+          <button class="primary" disabled={!!busy || dpi === null || dpi === live?.dpi || readOnly.on} onclick={apply}>Set DPI</button>
           {#if live?.saved_dpi}
-            <button disabled={!!busy} onclick={reset}>Back to the device's own DPI</button>
+            <button disabled={!!busy || readOnly.on} onclick={reset}>Back to the device's own DPI</button>
           {/if}
           <span class="grow"></span>
           {#if busy}
@@ -237,7 +239,7 @@
             <NoWarranty device={`Logitech ${name}`} bind:accepted={understood} />
             <div class="row end">
               <button onclick={() => ((asking = false), (understood = false))}>Cancel</button>
-              <button class="primary" disabled={!understood} onclick={confirm}>Set DPI</button>
+              <button class="primary" disabled={!understood || readOnly.on} onclick={confirm}>Set DPI</button>
             </div>
           </div>
         {/if}
@@ -251,9 +253,9 @@
     {@const now = live?.lighting}
     <section class="card">
       {#if drivable}
-        <h2>Lighting <span class="chip test">Experimental</span></h2>
+        <h2>Lighting <Status kind="experimental" label="Experimental" chip /></h2>
       {:else}
-        <h2>Lighting <span class="chip">Read only</span></h2>
+        <h2>Lighting <Status kind="readonly" label="Read-only" chip /></h2>
         <p class="small muted">
           PeriHub reads the {kind}'s lighting and does not change it yet. Your test report tells how to change it safely.
         </p>
@@ -355,14 +357,7 @@
 
 <style>
   header {
-    display: flex;
     align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    margin: 0;
   }
 
   .tight {

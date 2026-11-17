@@ -39,7 +39,10 @@ impl<T: DeviceTask> Worker<T> {
             .spawn(move || {
                 let mut wait = Duration::ZERO;
                 loop {
-                    match rx.recv_timeout(wait) {
+                    let received = rx.recv_timeout(wait);
+                    // Read-only mode does not change while a request runs (see writes::operation).
+                    let _operation = crate::writes::operation();
+                    match received {
                         Ok(job) => job(&mut task),
                         Err(RecvTimeoutError::Timeout) => {}
                         Err(RecvTimeoutError::Disconnected) => break,

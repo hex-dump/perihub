@@ -250,6 +250,7 @@
       "usb_ids": [
         "046d:c097"
       ],
+      "wireless_id": "409e",
       "linux": {
         "kind": "whole"
       }
@@ -400,6 +401,34 @@
       "usb_ids": [
         "046d:c08e"
       ],
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "PRO 2 LIGHTSPEED",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c09a"
+      ],
+      "wireless_id": "40a8",
+      "linux": {
+        "kind": "whole"
+      }
+    },
+    {
+      "family": "logitech-onboard",
+      "brand": "Logitech",
+      "name": "PRO X 2 DEX",
+      "kind": "mouse",
+      "level": "by_memory_format",
+      "usb_ids": [
+        "046d:c0a0"
+      ],
+      "wireless_id": "40b8",
       "linux": {
         "kind": "whole"
       }
@@ -1360,6 +1389,20 @@
       "level": "experimental",
       "usb_ids": [
         "1b1c:1bb6"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "corsair-keyboard",
+      "brand": "Corsair",
+      "name": "K70 PRO MINI WIRELESS",
+      "kind": "keyboard",
+      "level": "experimental",
+      "usb_ids": [
+        "1b1c:1bd3"
       ],
       "linux": {
         "kind": "interface",
@@ -3442,6 +3485,34 @@
       }
     },
     {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 Mini HyperSpeed",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02b9"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 Mini HyperSpeed (wireless)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02ba"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 3
+      }
+    },
+    {
       "family": "glorious",
       "brand": "Glorious",
       "name": "Model O/O-",
@@ -3857,6 +3928,47 @@
       "linux": {
         "kind": "interface",
         "interface": 2
+      }
+    },
+    {
+      "family": "yjx",
+      "brand": "YJX",
+      "name": "mouse (YJX receiver)",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "a8a5:2255"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
+      "family": "yjx",
+      "brand": "YJX",
+      "name": "mouse (YJX, on its cable)",
+      "kind": "mouse",
+      "level": "read_only",
+      "usb_ids": [
+        "a8a4:2255"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
+      "family": "wraith",
+      "brand": "Wraith",
+      "name": "W60",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "2e3c:c368"
+      ],
+      "linux": {
+        "kind": "closed"
       }
     }
   ]

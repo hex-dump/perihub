@@ -160,14 +160,20 @@ pub struct UnsupportedDevice {
     pub features: Vec<FeatureEntry>,
     /// The DPI it accepts (0x2201), if it has that feature.
     pub dpi: Option<DpiCapabilities>,
+    /// The DPI it accepts on the X axis (0x2202), if it has that feature instead of 0x2201.
+    pub dpi_extended: Option<DpiCapabilities>,
     /// The polling rates it offers, in milliseconds (0x8060), if it has that feature.
     pub report_rates_ms: Vec<u8>,
+    /// The polling rates it offers through the receiver, in Hz (0x8061), if it has that feature.
+    pub report_rates_hz: Vec<u16>,
     /// Its onboard profile memory (0x8100), if it has one.
     pub onboard: Option<OnboardInfo>,
     /// Its lighting (0x8040, 0x8071, 0x8081, 0x4540), if it has one of those features.
     pub lighting: Option<Lighting>,
     /// What could not be read.
     pub read_errors: Vec<String>,
+    /// A keyboard's layout code (0x4540), if it has that feature.
+    pub layout: Option<crate::kblayout::DeviceLayout>,
 }
 
 impl UnsupportedDevice {
@@ -186,10 +192,13 @@ impl UnsupportedDevice {
             firmware: Vec::new(),
             features: Vec::new(),
             dpi: None,
+            dpi_extended: None,
             report_rates_ms: Vec::new(),
+            report_rates_hz: Vec::new(),
             onboard: None,
             lighting: None,
             read_errors: Vec::new(),
+            layout: None,
         };
         let mut failed = |what: &str, error: Error| match error {
             Error::Unreachable => Err(Error::Unreachable),
@@ -228,6 +237,7 @@ impl UnsupportedDevice {
             has(feature::REPORT_RATE),
             has(feature::ONBOARD_PROFILES),
         );
+        let (dpi_extended, rates_extended) = (has(feature::EXTENDED_DPI), has(feature::EXTENDED_REPORT_RATE));
         if kind {
             match dev.device_type() {
                 Ok(kind) => device.kind = Some(kind),
@@ -238,6 +248,18 @@ impl UnsupportedDevice {
             match dev.dpi_capabilities(0) {
                 Ok(dpi) => device.dpi = Some(dpi),
                 Err(error) => failed("DPI", error)?,
+            }
+        }
+        if dpi_extended {
+            match dev.extended_dpi(0) {
+                Ok(dpi) => device.dpi_extended = Some(dpi.x),
+                Err(error) => failed("DPI (0x2202)", error)?,
+            }
+        }
+        if rates_extended {
+            match dev.extended_report_rates(true) {
+                Ok((rates, _)) => device.report_rates_hz = rates,
+                Err(error) => failed("polling rates (0x8061)", error)?,
             }
         }
         if rates {
@@ -252,12 +274,14 @@ impl UnsupportedDevice {
                 Err(error) => failed("onboard memory", error)?,
             }
         }
-        let lighting = [
-            feature::BRIGHTNESS_CONTROL,
-            feature::RGB_EFFECTS,
-            feature::PER_KEY_LIGHTING_V2,
-            feature::KEYBOARD_LAYOUT_2,
-        ];
+        if has(feature::KEYBOARD_LAYOUT) {
+            match dev.keyboard_layout_code() {
+                Ok(code) => device.layout = Some(crate::kblayout::logitech(code)),
+                Err(error) => failed("keyboard layout (0x4540)", error)?,
+            }
+        }
+        let lighting =
+            [feature::BRIGHTNESS_CONTROL, feature::RGB_EFFECTS, feature::PER_KEY_LIGHTING_V2, feature::KEYBOARD_LAYOUT];
         if lighting.iter().any(|&id| has(id)) {
             let ids: Vec<u16> = device.features.iter().map(|f| f.id).collect();
             device.lighting = Some(Lighting::read(dev, |id| ids.contains(&id))?);
@@ -501,6 +525,49 @@ mod tests {
             assert_eq!(request[1], 2);
             let (index, function) = (request[2], request[3] >> 4);
             assert!(index <= 3 || (index, function) == (4, 1), "feature index {index}, function {function}");
+        }
+    }
+
+    #[test]
+    fn a_keyboard_gives_its_layout_code_with_a_read() {
+        use super::super::feature;
+        const FEATURES: &[u16] = &[feature::ROOT, feature::FEATURE_SET, feature::DEVICE_NAME, feature::KEYBOARD_LAYOUT];
+        let fake = FakeDevice::new(|request| {
+            let index = request[2] as usize;
+            let (function, param) = (request[3] >> 4, request[4] as usize);
+            let payload: Vec<u8> = match (FEATURES.get(index).copied(), function) {
+                (Some(feature::ROOT), 1) => vec![4, 5, request[6]],
+                (Some(feature::ROOT), 0) => {
+                    let id = u16::from_be_bytes([request[4], request[5]]);
+                    vec![FEATURES.iter().position(|&f| f == id).unwrap_or(0) as u8]
+                }
+                (Some(feature::FEATURE_SET), 0) => vec![FEATURES.len() as u8 - 1],
+                (Some(feature::FEATURE_SET), 1) => {
+                    let [high, low] = FEATURES[param].to_be_bytes();
+                    vec![high, low, 0, 0]
+                }
+                (Some(feature::DEVICE_NAME), 0) => vec![0],
+                // A keyboard.
+                (Some(feature::DEVICE_NAME), 2) => vec![0],
+                (Some(feature::KEYBOARD_LAYOUT), 0) => vec![0x1A],
+                _ => {
+                    let mut error = vec![0u8; 20];
+                    error[..6].copy_from_slice(&[REPORT_LONG, 2, 0xFF, request[2], request[3], 0x02]);
+                    return vec![error];
+                }
+            };
+            vec![reply(request, &payload)]
+        });
+        let written = fake.written.clone();
+        let mut dev = HidppDevice::behind_receiver(fake, None, 2, true).unwrap();
+        let device = UnsupportedDevice::read(&mut dev, 2).unwrap();
+        assert_eq!(device.kind, Some(0));
+        assert_eq!(device.layout.as_ref().map(|l| l.read.as_str()), Some("Logitech HID++ 0x4540 = 1a"));
+        assert_eq!(device.layout.unwrap().physical, None, "the codes are not documented");
+        // Of 0x4540 (index 3), only function 0.
+        for request in written.lock().unwrap().iter() {
+            let (index, function) = (request[2], request[3] >> 4);
+            assert!(index != 3 || function == 0, "function {function} of 0x4540");
         }
     }
 

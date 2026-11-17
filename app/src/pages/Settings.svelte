@@ -1,9 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
-  import { api, errorText, type AppSettings, type DeviceStatus } from "../lib/api";
+  import { api, errorText, type AppSettings, type BatteryAlerts, type DeviceStatus, type WriteEntry } from "../lib/api";
+  import { readOnly, setReadOnly, writeTime } from "../lib/readOnly.svelte";
   import { INSTALL_NOTE, checkForUpdate, installUpdate, installingText, updates } from "../lib/updates.svelte";
   import TestReport from "../components/TestReport.svelte";
+  import SupportedDevices from "../components/SupportedDevices.svelte";
+  import { ACCENTS, THEMES } from "../lib/theme";
+  import { prefs, setAccent, setTheme } from "../lib/prefs.svelte";
 
   interface Props {
     status: DeviceStatus;
@@ -13,6 +17,7 @@
   let settings = $state<AppSettings | null>(null);
   let error = $state<string | null>(null);
   let version = $state("");
+  let showCredits = $state(false);
 
   // Autostart can also change outside PeriHub, for example in Task Manager.
   async function refresh() {
@@ -25,6 +30,55 @@
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
   });
+
+  /** The writes of this session, newest first, read when the list is opened. */
+  let writes = $state<WriteEntry[]>([]);
+  let switching = $state(false);
+
+  async function loadWrites() {
+    try {
+      writes = (await api.writeLog()).reverse();
+    } catch (e) {
+      error = errorText(e);
+    }
+  }
+
+  async function clearWrites() {
+    await api.clearWriteLog().catch((e) => (error = errorText(e)));
+    await loadWrites();
+  }
+
+  async function toggleReadOnly(box: HTMLInputElement) {
+    switching = true;
+    try {
+      await setReadOnly(box.checked);
+      error = null;
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      box.checked = readOnly.on;
+      switching = false;
+    }
+  }
+
+  const LOW_LEVELS = [5, 10, 15, 20, 25, 30, 40, 50];
+
+  /** The levels to choose from, with the one in use if it came from the settings file. */
+  const lowLevels = (current: number) => (LOW_LEVELS.includes(current) ? LOW_LEVELS : [...LOW_LEVELS, current].sort((a, b) => a - b));
+
+  async function updateBattery(change: Partial<BatteryAlerts>, input: HTMLInputElement | HTMLSelectElement) {
+    if (!settings) return;
+    const before = settings.battery;
+    try {
+      settings = await api.setAppSettings({ ...settings, battery: { ...before, ...change } });
+      error = null;
+    } catch (e) {
+      error = errorText(e);
+      // Nothing changed, so the control goes back.
+      if (input instanceof HTMLInputElement) input.checked = !input.checked;
+      else input.value = String(before.low_percent);
+    }
+  }
 
   async function update(change: Partial<AppSettings>, box: HTMLInputElement) {
     if (!settings) return;
@@ -39,7 +93,9 @@
   }
 </script>
 
-<h1>Settings</h1>
+<header class="page-head">
+  <h1>Settings</h1>
+</header>
 
 <div class="col gap">
   {#if error}<div class="notice error">{error}</div>{/if}
@@ -61,6 +117,103 @@
     <p class="muted small">
       Closing the window does not quit PeriHub: it keeps running to animate the keyboard lighting and to
       reapply colors when the keyboard is plugged back in. Reopen it from the tray icon or by launching it again.
+    </p>
+  </div>
+
+  <div class="card col">
+    <h2>Read-only mode</h2>
+    <label class="row">
+      <input type="checkbox" checked={readOnly.on} disabled={switching}
+        onchange={(e) => toggleReadOnly(e.currentTarget)} />
+      Read-only mode: PeriHub reads your devices but sends them no changes
+    </label>
+    <p class="muted small">
+      Use it to look at a device without any risk, for example one PeriHub has not been tested with. It takes effect at
+      once, also from the tray menu, and stays on until you turn it off. Saving, lighting, DPI previews, undo and app
+      profiles wait until then. Software macros still run: they type on your computer and send nothing to the devices.
+    </p>
+    <details ontoggle={(e) => e.currentTarget.open && loadWrites()}>
+      <summary class="small">Writes sent this session</summary>
+      <div class="col writes">
+        <p class="muted small">
+          Every change PeriHub sent to a device since it started, and every one read-only mode refused. Kept in memory
+          only, and added to test reports without the bytes.
+        </p>
+        {#if writes.length}
+          <ol class="small">
+            {#each writes as w, i (i)}
+              <li>
+                <span class="muted">{writeTime(w.time)}</span> {w.device}: {w.kind}
+                <code>{w.data}</code>
+                <span class:refused={w.result !== "ok"}>{w.result}</span>
+              </li>
+            {/each}
+          </ol>
+        {:else}
+          <p class="small">Nothing was sent to a device yet.</p>
+        {/if}
+        <div class="row">
+          <button class="tiny" onclick={loadWrites}>Refresh</button>
+          <button class="tiny" disabled={!writes.length} onclick={clearWrites}>Clear</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="card col">
+    <h2>Battery</h2>
+    {#if settings}
+      <label class="row">
+        <input type="checkbox" checked={settings.battery.enabled}
+          onchange={(e) => updateBattery({ enabled: e.currentTarget.checked }, e.currentTarget)} />
+        Tell me when the battery of a wireless device is low
+      </label>
+      <label class="row wrap">
+        <span class="label">Low below</span>
+        <select value={settings.battery.low_percent} disabled={!settings.battery.enabled}
+          onchange={(e) => updateBattery({ low_percent: Number(e.currentTarget.value) }, e.currentTarget)}>
+          {#each lowLevels(settings.battery.low_percent) as level (level)}
+            <option value={level}>{level}%</option>
+          {/each}
+        </select>
+      </label>
+      <label class="row">
+        <input type="checkbox" checked={settings.battery.full} disabled={!settings.battery.enabled}
+          onchange={(e) => updateBattery({ full: e.currentTarget.checked }, e.currentTarget)} />
+        Also tell me when it is fully charged
+      </label>
+    {/if}
+    <p class="muted small">
+      You get one notification each time a battery goes below the limit, and another only after it was charged.
+      The tray icon shows the battery of each wireless device. PeriHub reads Razer and SteelSeries batteries
+      along with its usual checks, and Logitech batteries every 5 minutes.
+    </p>
+  </div>
+
+  <div class="card col">
+    <h2>Appearance</h2>
+    <div class="row wrap">
+      <span class="label" id="theme-label">Theme</span>
+      <div class="segmented" role="group" aria-labelledby="theme-label">
+        {#each THEMES as theme (theme.id)}
+          <button class:active={prefs.theme === theme.id} aria-pressed={prefs.theme === theme.id}
+            onclick={() => setTheme(theme.id)}>{theme.label}</button>
+        {/each}
+      </div>
+    </div>
+    <div class="row wrap">
+      <span class="label" id="accent-label">Accent color</span>
+      <div class="row swatches" role="radiogroup" aria-labelledby="accent-label">
+        {#each ACCENTS as accent (accent.id)}
+          <input type="radio" name="accent" class="swatch" style:--swatch={accent.swatch} value={accent.id}
+            aria-label={accent.label} title={accent.label} checked={prefs.accent === accent.id}
+            onchange={() => setAccent(accent.id)} />
+        {/each}
+      </div>
+    </div>
+    <p class="muted small">
+      System follows the light or dark setting of your computer and changes with it. The accent color is used for
+      the main buttons, the selection and the value in use.
     </p>
   </div>
 
@@ -103,9 +256,36 @@
   <div class="card col">
     <h2>Where settings are stored</h2>
     <ul class="small">
-      <li><b>Mouse</b>: DPI, polling, buttons and lighting are stored in the mouse's memory and work without PeriHub.</li>
-      <li><b>Keyboard</b>: the key mapping is stored in the Apex's memory. Lighting is not kept by the keyboard, so PeriHub reapplies it.</li>
-      <li>Before every write to a device, a backup is saved in the <code>perihub/backups</code> folder of your user configuration.</li>
+      <li><b>In the device</b>: a mouse keeps its DPI, polling, buttons, macros and lighting in its own memory, and the Apex keeps its key mapping. They work without PeriHub. The Apex does not keep its lighting: PeriHub reapplies it.</li>
+      <li>
+        <b>PeriHub's settings</b>: <code>config.json</code> in the settings folder. It holds the keyboard lighting, saved lighting, app profiles, macros run by PeriHub and the options on this page.
+        {#if settings}<br /><code>{settings.config_dir}</code>{/if}
+      </li>
+      <li>
+        <b>Backups</b>: before every write to a device, PeriHub saves what it is about to replace in the <code>backups</code> folder inside the settings folder, one folder per device. They are never deleted. While an experimental save is neither kept nor undone, a <code>pending-undo</code> file in the same folder lets PeriHub undo it after a restart.
+      </li>
+      <li>
+        <b>Log</b>: <code>perihub.log</code>, and <code>perihub.old.log</code> once it passes 1 MB, in the log folder (see Problems below).
+      </li>
+      <li><b>Macro files</b>: only where you choose, when you export a macro. PeriHub keeps no other copy.</li>
+      <li>
+        <b>Start with the system</b>:
+        {#if status.sandboxed}
+          the desktop's background permission, asked through the Flatpak portal. PeriHub also keeps an <code>autostart-requested</code> file in the settings folder.
+        {:else if settings?.system.startsWith("windows")}
+          a PeriHub value under <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code> in the registry. Task Manager can turn it off.
+        {:else}
+          an entry in <code>~/.config/autostart</code>.
+        {/if}
+      </li>
+      {#if settings?.system.startsWith("windows")}
+        <li><b>Updates</b>: a downloaded update waits in PeriHub's cache folder until you install it.</li>
+      {:else}
+        <li>
+          <b>Linux permissions</b>: the udev rules, in <code>/etc/udev/rules.d</code> (<code>70-perihub.rules</code> comes with the package).
+          The optional ones, <code>71</code> to <code>73</code>, are added only when you allow them in PeriHub{#if status.sandboxed}; in a Flatpak you run the commands PeriHub shows{/if}.
+        </li>
+      {/if}
     </ul>
   </div>
 
@@ -115,6 +295,7 @@
       <div>Apex 3 TKL: {status.keyboard ? `firmware ${status.keyboard.firmware}` : status.keyboard_error ?? "not connected"}</div>
       <div>{status.mouse?.model ?? "Mouse"}: {status.mouse ? status.mouse.firmware.map((f) => `${f.name} ${f.version}`).join(", ") : status.mouse_error ?? (status.mouse_asleep ? "asleep" : "not connected")}</div>
     </div>
+    <SupportedDevices />
     <p class="small">Is your mouse or keyboard missing? <a href="#report">Send a report for it</a>.</p>
     <p class="muted small">
       Quit SteelSeries GG, Logitech G HUB and Logitech Gaming Software while using PeriHub: two programs talking to the same device get in each other's way.
@@ -142,17 +323,14 @@
   </div>
 
   <div class="card col">
-    <h2>Credits</h2>
-    <p class="small">PeriHub {version}</p>
-    <p class="muted small">
-      Protocols reconstructed thanks to the work of OpenRGB (Apex lighting), libratbag (Logitech HID++, G600, the older
-      Logitech G mice, ASUS, Glorious and Roccat mice), gorkemgun/apex-3-tkl (Apex key mapping), ckb-next and OpenLinkHub (Corsair, no code
-      copied), OpenRazer (Razer mice, no code copied), rivalcfg (SteelSeries mice), QMK and Vial (QMK keyboards, no
-      code copied), pulsar-mouse-linux and Pulsar-X3-Web-Config (Pulsar mice), lamzu-cfg (Lamzu), the captures of
-      Cooler Master's app shared on OpenRGB (Cooler Master mice, no code copied) and OpenRGB's EVGA drivers (EVGA mice,
-      no code copied). PeriHub is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat,
-      Pulsar, Lamzu, Cooler Master or EVGA.
-    </p>
+    <h2>About</h2>
+    <div class="row wrap about">
+      <div class="col about-text">
+        <span>PeriHub {version}</span>
+        <span class="small muted">Free and open source (MIT). It builds on the work of other projects: Credits lists every one, with its license.</span>
+      </div>
+      <button onclick={() => (showCredits = true)}>Credits</button>
+    </div>
   </div>
 
   <div>
@@ -160,18 +338,63 @@
   </div>
 </div>
 
-<style>
-  h1 {
-    margin-bottom: 18px;
-  }
+<!-- Loaded when first opened: most people never open the credits. -->
+{#if showCredits}
+  {#await import("../components/CreditsDialog.svelte") then { default: CreditsDialog }}
+    <CreditsDialog onclose={() => (showCredits = false)} />
+  {/await}
+{/if}
 
+<style>
+  .about { justify-content: space-between; align-items: center; }
+  .about-text { gap: 2px; flex: 1 1 260px; }
   .gap {
     gap: 16px;
+  }
+
+  .label {
+    min-width: 110px;
+  }
+
+  .swatches {
+    gap: 12px;
+  }
+
+  /* A round swatch of the accent; the ring says which one is in use, and the keyboard focus has its own. */
+  .swatch {
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--swatch);
+    cursor: pointer;
+    box-shadow: 0 0 0 1px var(--line-strong);
+  }
+
+  .swatch:checked {
+    box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--text);
   }
 
   ul {
     margin: 0;
     padding-left: 18px;
     line-height: 1.7;
+  }
+
+  .writes {
+    margin-top: 10px;
+  }
+
+  .writes ol {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    max-height: 260px;
+    overflow: auto;
+    line-height: 1.7;
+  }
+
+  .refused {
+    color: var(--warn);
   }
 </style>

@@ -14,6 +14,7 @@ use perihub_core::keyboard::{Keymap, KeymapRestore};
 use perihub_core::logitech::LogitechLive;
 use perihub_core::mouse::{MouseLive, MouseRestore, MouseState};
 use perihub_core::peripheral::{BlindValue, PeripheralInfo, Settings};
+use perihub_core::writes::WriteEntry;
 use perihub_core::{DeviceStatus, Error};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -22,13 +23,15 @@ use crate::AppState;
 
 type CmdResult<T> = Result<T, String>;
 
-/// The test forms on GitHub (Logitech mice, and Corsair devices and the G300); the interface adds
-/// the fields it fills in.
+/// The forms on GitHub (the test report and the device request); the interface adds the fields it
+/// fills in.
 const TEST_FORM_URLS: &[&str] = &[
-    "https://github.com/hex-dump/perihub/issues/new?template=mouse_test.yml&",
-    "https://github.com/hex-dump/perihub/issues/new?template=device_test.yml&",
+    "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml&",
     "https://github.com/hex-dump/perihub/issues/new?template=device_request.yml&",
 ];
+
+/// The links of the Support entry in the sidebar.
+const SUPPORT_URLS: &[&str] = &["https://buymeacoffee.com/hexdump1", "https://github.com/hex-dump/perihub"];
 
 async fn blocking<T: Send + 'static>(f: impl FnOnce() -> perihub_core::Result<T> + Send + 'static) -> CmdResult<T> {
     tauri::async_runtime::spawn_blocking(f).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())
@@ -47,17 +50,30 @@ pub fn devices_for_report(state: State<'_, AppState>) -> Vec<perihub_core::repor
 
 // ---- Keyboard ----
 
+/// The layout the system types with, for the keys drawn on the keyboards' pages. Read as the user,
+/// without opening any device.
+#[tauri::command]
+pub async fn kb_system_layout() -> CmdResult<Option<perihub_core::kblayout::SystemLayout>> {
+    tauri::async_runtime::spawn_blocking(perihub_core::kblayout::system).await.map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn kb_get_config(state: State<'_, AppState>) -> KeyboardConfig {
     state.config.lock().unwrap().keyboard.clone()
 }
 
 /// Saves the keyboard settings (also while it is unplugged: they are applied when it is connected).
-fn update_keyboard_config(state: &AppState, change: impl FnOnce(&mut KeyboardConfig)) -> CmdResult<()> {
+pub(crate) fn update_keyboard_config(state: &AppState, change: impl FnOnce(&mut KeyboardConfig)) -> CmdResult<()> {
     let mut config = state.config.lock().unwrap();
     change(&mut config.keyboard);
     state.manager.set_keyboard_config(config.keyboard.clone());
     config.save().map_err(|e| e.to_string())
+}
+
+/// Every command that changes a device starts here: in read-only mode it is refused before
+/// anything is saved or sent. The core refuses the writes too, under every command.
+fn writes_allowed() -> CmdResult<()> {
+    perihub_core::writes::refuse_if_read_only().map_err(|e| e.to_string())
 }
 
 fn ignore_disconnected(result: perihub_core::Result<()>) -> perihub_core::Result<()> {
@@ -69,6 +85,7 @@ fn ignore_disconnected(result: perihub_core::Result<()>) -> perihub_core::Result
 
 #[tauri::command]
 pub async fn kb_set_lighting(state: State<'_, AppState>, lighting: KeyboardLighting) -> CmdResult<()> {
+    writes_allowed()?;
     update_keyboard_config(&state, |c| c.lighting = lighting.clone())?;
     let manager = state.manager.clone();
     blocking(move || ignore_disconnected(manager.keyboard().and_then(|k| k.call(move |k| k.set_lighting(lighting)))))
@@ -79,6 +96,7 @@ pub async fn kb_set_lighting(state: State<'_, AppState>, lighting: KeyboardLight
 
 #[tauri::command]
 pub async fn kb_set_brightness(state: State<'_, AppState>, level: u8) -> CmdResult<()> {
+    writes_allowed()?;
     update_keyboard_config(&state, |c| c.brightness = level)?;
     let manager = state.manager.clone();
     blocking(move || ignore_disconnected(manager.keyboard().and_then(|k| k.call(move |k| k.set_brightness(level)))))
@@ -112,6 +130,7 @@ pub struct KeyChange {
 
 #[tauri::command]
 pub async fn kb_apply_keymap(state: State<'_, AppState>, changes: Vec<KeyChange>) -> CmdResult<Keymap> {
+    writes_allowed()?;
     let changes: Vec<_> = changes.into_iter().map(|c| (c.layer, c.source, c.binding)).collect();
     let manager = state.manager.clone();
     let keymap = blocking(move || manager.keyboard()?.call(move |k| k.apply_keymap(&changes))).await;
@@ -122,6 +141,7 @@ pub async fn kb_apply_keymap(state: State<'_, AppState>, changes: Vec<KeyChange>
 
 #[tauri::command]
 pub async fn kb_reset_keymap(state: State<'_, AppState>) -> CmdResult<Keymap> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     let keymap = blocking(move || manager.keyboard()?.call(|k| k.reset_keymap())).await;
     state.soft.watch_keyboard(state.manager.keyboard_triggers());
@@ -136,6 +156,7 @@ pub async fn kb_backups(state: State<'_, AppState>) -> CmdResult<Vec<BackupEntry
 
 #[tauri::command]
 pub async fn kb_restore_backup(state: State<'_, AppState>, id: String) -> CmdResult<KeymapRestore> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     let restored = blocking(move || manager.keyboard()?.call(move |k| k.restore_backup(&id))).await;
     state.soft.watch_keyboard(state.manager.keyboard_triggers());
@@ -227,6 +248,7 @@ pub async fn logitech_live(state: State<'_, AppState>, receiver_id: u16, slot: u
 /// again every time the device connects.
 #[tauri::command]
 pub async fn logitech_set_dpi(state: State<'_, AppState>, receiver_id: u16, slot: u8, dpi: u16) -> CmdResult<()> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     let key = blocking(move || manager.logitech(receiver_id, slot)?.call(move |d| d.set_dpi(dpi))).await?;
     save_logitech_dpi(&state, key, Some(dpi))
@@ -235,6 +257,7 @@ pub async fn logitech_set_dpi(state: State<'_, AppState>, receiver_id: u16, slot
 /// Puts the device's own default DPI back, and stops setting one.
 #[tauri::command]
 pub async fn logitech_reset_dpi(state: State<'_, AppState>, receiver_id: u16, slot: u8) -> CmdResult<()> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     let key = blocking(move || manager.logitech(receiver_id, slot)?.call(|d| d.reset_dpi())).await?;
     save_logitech_dpi(&state, key, None)
@@ -252,6 +275,7 @@ pub async fn logitech_drive_lights(
     slot: u8,
     look: Look,
 ) -> CmdResult<()> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     let kept = look.clone();
     let key = blocking(move || manager.logitech(receiver_id, slot)?.call(move |d| d.drive_lights(look))).await?;
@@ -290,6 +314,7 @@ pub async fn logitech_set_brightness(
     slot: u8,
     value: u16,
 ) -> CmdResult<()> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || manager.logitech(receiver_id, slot)?.call(move |d| d.set_brightness(value))).await
 }
@@ -323,12 +348,14 @@ pub async fn mouse_save_profile(
     number: u8,
     settings: ProfileSettings,
 ) -> CmdResult<MouseState> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || manager.mouse()?.call(move |m| m.save_profile(number, &settings))).await
 }
 
 #[tauri::command]
 pub async fn mouse_restore_factory(state: State<'_, AppState>, number: u8) -> CmdResult<MouseState> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || manager.mouse()?.call(move |m| m.restore_factory_profile(number))).await
 }
@@ -341,18 +368,21 @@ pub async fn mouse_backups(state: State<'_, AppState>) -> CmdResult<Vec<BackupEn
 
 #[tauri::command]
 pub async fn mouse_restore_backup(state: State<'_, AppState>, id: String) -> CmdResult<MouseRestore> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || manager.mouse()?.call(move |m| m.restore_backup(&id))).await
 }
 
 #[tauri::command]
 pub async fn mouse_set_profile_enabled(state: State<'_, AppState>, number: u8, enabled: bool) -> CmdResult<MouseState> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || manager.mouse()?.call(move |m| m.set_profile_enabled(number, enabled))).await
 }
 
 #[tauri::command]
 pub async fn mouse_set_active_profile(state: State<'_, AppState>, number: u8) -> CmdResult<MouseState> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || {
         manager.mouse()?.call(move |m| {
@@ -365,12 +395,14 @@ pub async fn mouse_set_active_profile(state: State<'_, AppState>, number: u8) ->
 
 #[tauri::command]
 pub async fn mouse_preview_dpi(state: State<'_, AppState>, dpi: u16) -> CmdResult<()> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || manager.mouse()?.call(move |m| m.preview_dpi(dpi))).await
 }
 
 #[tauri::command]
 pub async fn mouse_preview_led(state: State<'_, AppState>, zone: u8, effect: LedEffect) -> CmdResult<()> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || manager.mouse()?.call(move |m| m.preview_led(zone, &effect))).await
 }
@@ -408,6 +440,7 @@ pub async fn g300_info(state: State<'_, AppState>) -> CmdResult<G300Info> {
 /// Saves a G300 profile. Undone unless kept.
 #[tauri::command]
 pub async fn g300_save(state: State<'_, AppState>, number: u8, settings: G300Settings) -> CmdResult<G300Info> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || manager.g300()?.call(move |g| g.save(number, &settings))).await
 }
@@ -428,6 +461,7 @@ pub async fn g300_keep_changes(state: State<'_, AppState>) -> CmdResult<()> {
 /// Puts back the G300 profiles saved before the last save.
 #[tauri::command]
 pub async fn g300_undo_last_write(state: State<'_, AppState>) -> CmdResult<G300Info> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || manager.g300()?.call(|g| g.undo_last_write())).await
 }
@@ -460,6 +494,7 @@ pub async fn peripheral_change(
     save: bool,
     profile: Option<u8>,
 ) -> CmdResult<PeripheralInfo> {
+    writes_allowed()?;
     let manager = app.state::<AppState>().manager.clone();
     let worker = manager.peripheral(&key).map_err(|e| e.to_string())?;
     let result = blocking(move || worker.call(move |p| p.change(&settings, save, profile))).await;
@@ -480,6 +515,7 @@ pub async fn peripheral_set_blind(
     id: String,
     value: BlindValue,
 ) -> CmdResult<PeripheralInfo> {
+    writes_allowed()?;
     let manager = app.state::<AppState>().manager.clone();
     let info = blocking(move || manager.peripheral(&key)?.call(move |p| p.set_blind(&id, &value))).await?;
     peripheral_changed(&app, &info);
@@ -502,6 +538,7 @@ pub async fn peripheral_keep_changes(state: State<'_, AppState>, key: String) ->
 /// Puts back the settings from before the last change to a device of another brand.
 #[tauri::command]
 pub async fn peripheral_undo(app: AppHandle, key: String) -> CmdResult<PeripheralInfo> {
+    writes_allowed()?;
     let manager = app.state::<AppState>().manager.clone();
     let info = blocking(move || manager.peripheral(&key)?.call(|p| p.undo_last_change())).await?;
     peripheral_changed(&app, &info);
@@ -518,6 +555,7 @@ fn corsair_changed(app: &AppHandle) {
 
 #[tauri::command]
 pub async fn corsair_set_lighting(app: AppHandle, product_id: u16, color: Rgb) -> CmdResult<CorsairInfo> {
+    writes_allowed()?;
     let manager = app.state::<AppState>().manager.clone();
     let result = blocking({
         let manager = manager.clone();
@@ -549,6 +587,7 @@ pub async fn corsair_keep_lighting(state: State<'_, AppState>, product_id: u16) 
 
 #[tauri::command]
 pub async fn corsair_lighting_off(app: AppHandle, product_id: u16) -> CmdResult<()> {
+    writes_allowed()?;
     let manager = app.state::<AppState>().manager.clone();
     blocking(move || {
         let info = manager.corsair(product_id)?.call(|m| m.turn_off_lighting())?;
@@ -576,12 +615,14 @@ pub async fn mouse_keep_changes(state: State<'_, AppState>) -> CmdResult<()> {
 /// Puts back the mouse memory saved before the last write (the "Keep these changes?" countdown).
 #[tauri::command]
 pub async fn mouse_undo_last_write(state: State<'_, AppState>) -> CmdResult<MouseRestore> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || manager.mouse()?.call(|m| m.undo_last_write())).await
 }
 
 #[tauri::command]
 pub async fn mouse_revert_preview(state: State<'_, AppState>) -> CmdResult<()> {
+    writes_allowed()?;
     let manager = state.manager.clone();
     blocking(move || ignore_disconnected(manager.mouse().and_then(|m| m.call(|m| m.revert_preview())))).await
 }
@@ -612,6 +653,23 @@ pub fn profiles_get(app: AppHandle, state: State<'_, AppState>) -> ProfilesInfo 
     }
 }
 
+/// The games installed through Steam, Lutris and Heroic, for suggesting rules. Reads files only.
+#[tauri::command]
+pub async fn games_installed() -> CmdResult<Vec<perihub_core::games::InstalledGame>> {
+    blocking(|| Ok(perihub_core::games::installed_games())).await
+}
+
+/// The one-time step that makes detecting the focused app possible (on GNOME: installing and
+/// enabling PeriHub's Shell extension). Returns what to tell the user.
+#[tauri::command]
+pub async fn profiles_setup_focus(app: AppHandle) -> CmdResult<String> {
+    let message = tauri::async_runtime::spawn_blocking(focus::setup).await.map_err(|e| e.to_string())??;
+    if let Some(state) = app.try_state::<AppState>() {
+        crate::watch_focus(&app, &state.profiles);
+    }
+    Ok(message)
+}
+
 #[tauri::command]
 pub fn profiles_set(app: AppHandle, state: State<'_, AppState>, profiles: AppProfiles) -> CmdResult<()> {
     save_profiles(&state, |_, current| *current = profiles)?;
@@ -626,6 +684,9 @@ pub struct AppSettings {
     start_hidden: bool,
     autostart: bool,
     check_updates: bool,
+    /// Notifications about the battery of wireless devices.
+    #[serde(default)]
+    battery: perihub_core::battery::BatteryAlerts,
     /// This build can update itself (Windows): read only.
     #[serde(default)]
     updates_supported: bool,
@@ -635,6 +696,9 @@ pub struct AppSettings {
     /// Folder of the log file: read only.
     #[serde(default)]
     log_dir: String,
+    /// Folder of the settings and backups: read only.
+    #[serde(default)]
+    config_dir: String,
     /// Operating system and architecture, for test reports: read only.
     #[serde(default)]
     system: String,
@@ -647,9 +711,11 @@ pub fn app_get_settings(app: AppHandle, state: State<'_, AppState>) -> AppSettin
         start_hidden: config.start_hidden,
         autostart: crate::autostart::is_enabled(&app),
         check_updates: config.check_updates,
+        battery: config.battery,
         updates_supported: crate::updates::supported(),
         package_manager: crate::updates::package_manager().map(String::from),
         log_dir: crate::logfile::dir().display().to_string(),
+        config_dir: perihub_core::config::config_dir().display().to_string(),
         system: format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
     }
 }
@@ -660,9 +726,58 @@ pub fn app_set_settings(app: AppHandle, state: State<'_, AppState>, settings: Ap
     let mut config = state.config.lock().unwrap();
     config.start_hidden = settings.start_hidden;
     config.check_updates = settings.check_updates;
+    config.battery = perihub_core::battery::BatteryAlerts {
+        low_percent: settings.battery.low_percent.clamp(1, 100),
+        ..settings.battery
+    };
     config.save().map_err(|e| e.to_string())?;
     drop(config);
     Ok(app_get_settings(app, state))
+}
+
+#[tauri::command]
+pub fn app_read_only() -> bool {
+    perihub_core::writes::read_only()
+}
+
+/// Turns read-only mode on or off, from the settings or the tray, at once for every device, and
+/// keeps it for the next start. Before it goes on, Corsair devices with experimental lighting are
+/// given back to their own settings, and Logitech keyboards their own lights: afterwards nothing
+/// could be sent to do it.
+pub fn set_read_only(app: &AppHandle, on: bool) -> CmdResult<()> {
+    let state = app.state::<AppState>();
+    if on && !perihub_core::writes::read_only() {
+        state.manager.release_corsair();
+        state.manager.release_logitech_for_read_only();
+    }
+    perihub_core::writes::set_read_only(on);
+    let saved = {
+        let mut config = state.config.lock().unwrap();
+        config.read_only = on;
+        config.save().map_err(|e| e.to_string())
+    };
+    crate::window::refresh_menu(app);
+    let _ = app.emit("read-only-changed", on);
+    let _ = app.emit("devices-changed", state.manager.status());
+    saved
+}
+
+#[tauri::command]
+pub async fn app_set_read_only(app: AppHandle, on: bool) -> CmdResult<bool> {
+    let handle = app.clone();
+    tauri::async_runtime::spawn_blocking(move || set_read_only(&handle, on)).await.map_err(|e| e.to_string())??;
+    Ok(perihub_core::writes::read_only())
+}
+
+/// The writes sent to the devices in this session, and those refused, oldest first.
+#[tauri::command]
+pub fn app_write_log() -> Vec<WriteEntry> {
+    perihub_core::writes::entries()
+}
+
+#[tauri::command]
+pub fn app_clear_write_log() {
+    perihub_core::writes::clear();
 }
 
 /// Opens the folder of the log file in the file manager, to attach it to a bug report.
@@ -687,7 +802,135 @@ pub fn app_open_test_form(url: String) -> CmdResult<()> {
     perihub_core::softmacro::inject::open_target(&url).map_err(|e| e.to_string())
 }
 
+/// Opens one of the two links of the Support entry in the browser. Those exact addresses only.
+#[tauri::command]
+pub fn app_open_support_link(url: String) -> CmdResult<()> {
+    if !SUPPORT_URLS.contains(&url.as_str()) {
+        return Err("not a PeriHub support link".to_string());
+    }
+    perihub_core::softmacro::inject::open_target(&url).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn app_quit(app: AppHandle) {
     crate::window::quit(&app);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The commands that send changes to a device.
+    const WRITES: &[&str] = &[
+        "kb_set_lighting",
+        "kb_set_brightness",
+        "kb_apply_keymap",
+        "kb_reset_keymap",
+        "kb_restore_backup",
+        "logitech_set_dpi",
+        "logitech_reset_dpi",
+        "logitech_drive_lights",
+        "logitech_set_brightness",
+        "mouse_save_profile",
+        "mouse_restore_factory",
+        "mouse_restore_backup",
+        "mouse_set_profile_enabled",
+        "mouse_set_active_profile",
+        "mouse_preview_dpi",
+        "mouse_preview_led",
+        "g300_save",
+        "g300_undo_last_write",
+        "peripheral_change",
+        "peripheral_set_blind",
+        "peripheral_undo",
+        "corsair_set_lighting",
+        "corsair_lighting_off",
+        "mouse_undo_last_write",
+        "mouse_revert_preview",
+    ];
+    /// The commands that only read the devices, or change PeriHub's own settings (an app profile
+    /// does not apply in read-only mode, see `AppProfileEngine`).
+    const OTHERS: &[&str] = &[
+        "get_status",
+        "devices_for_report",
+        "kb_get_config",
+        "kb_read_brightness",
+        "kb_get_keymap",
+        "kb_backups",
+        "kb_key_catalog",
+        "kb_get_presets",
+        "kb_save_preset",
+        "kb_delete_preset",
+        "kb_system_layout",
+        "mouse_get_state",
+        "mouse_live",
+        "logitech_live",
+        // Without host mode it only stops PeriHub taking the lights; giving them back is refused by
+        // the core in read-only mode, and the app gives them back before read-only mode goes on.
+        "logitech_give_back_lights",
+        "qmk_set_enabled",
+        "mouse_backups",
+        "g300_info",
+        "g300_keep_changes",
+        "peripheral_info",
+        "peripheral_keep_changes",
+        "corsair_keep_lighting",
+        "mouse_keep_changes",
+        "profiles_get",
+        "profiles_setup_focus",
+        "profiles_set",
+        "app_get_settings",
+        "app_set_settings",
+        "app_read_only",
+        "app_set_read_only",
+        "app_write_log",
+        "app_clear_write_log",
+        "app_open_log_folder",
+        "app_open_test_form",
+        "app_open_support_link",
+        "app_quit",
+        "games_installed",
+    ];
+
+    /// The commands of this file, with their bodies.
+    fn commands() -> Vec<(String, String)> {
+        // Windows checkouts may have CRLF line endings.
+        let source = include_str!("commands.rs").replace("\r\n", "\n");
+        let source = &source[..source.find(concat!("#[cfg(test)]\nmod ", "tests")).unwrap()];
+        source
+            .split(concat!("#[tauri", "::command]"))
+            .skip(1)
+            .map(|chunk| {
+                let name = chunk[chunk.find("fn ").unwrap() + 3..].split('(').next().unwrap().to_string();
+                (name, chunk[chunk.find('{').unwrap() + 1..].to_string())
+            })
+            .collect()
+    }
+
+    #[test]
+    fn every_command_that_changes_a_device_is_refused_first_in_read_only_mode() {
+        let commands = commands();
+        assert!(commands.len() >= WRITES.len() + OTHERS.len());
+        for (name, body) in &commands {
+            if WRITES.contains(&name.as_str()) {
+                assert!(
+                    body.trim_start().starts_with("writes_allowed()?;"),
+                    "{name} must start with writes_allowed()?"
+                );
+            } else {
+                assert!(
+                    OTHERS.contains(&name.as_str()),
+                    "{name} is new: add it to WRITES (and start it with writes_allowed()?) if it changes a device, or to OTHERS"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn writes_are_refused_with_a_clear_message_in_read_only_mode() {
+        perihub_core::writes::set_read_only(true);
+        assert_eq!(writes_allowed(), Err("Read-only mode is on".to_string()));
+        perihub_core::writes::set_read_only(false);
+        assert_eq!(writes_allowed(), Ok(()));
+    }
 }

@@ -2,6 +2,7 @@
   import { onDestroy } from "svelte";
   import { api, debounce, type MouseInfo, type ProfileSettings } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
+  import Term from "../components/Term.svelte";
 
   interface Props {
     info: MouseInfo;
@@ -54,7 +55,7 @@
 <div class="col gap">
   <div class="card col">
     <div class="row">
-      <h2 class="grow">DPI levels</h2>
+      <h2 class="grow"><Term term="dpi">DPI</Term> levels</h2>
       <span class="muted small">{caps.min}–{caps.max} DPI, step {caps.step}</span>
     </div>
     <p class="muted small">
@@ -67,7 +68,7 @@
       <span class="small muted">DPI</span>
       <span class="small muted"></span>
       <span class="small muted center">Default</span>
-      <span class="small muted center">Sniper</span>
+      <span class="small muted center"><Term term="sniper">Sniper</Term></span>
       <span></span>
       {#each settings.dpi_levels as dpi, i (i)}
         <span class="level" class:current={i === activeLevel}>
@@ -103,7 +104,7 @@
   </div>
 
   <div class="card col">
-    <h2>Polling rate</h2>
+    <h2><Term term="polling">Polling rate</Term></h2>
     <p class="muted small">How many times per second the mouse reports its position. 1000 Hz is recommended for gaming.</p>
     {#if info.report_rates_ms.length > 0}
       <div class="segmented">
@@ -114,7 +115,10 @@
         {/each}
       </div>
     {:else}
-      <div class="notice info">PeriHub cannot change the polling rate of this mouse yet.</div>
+      <div class="notice info">
+        PeriHub cannot change the polling rate of this mouse yet.
+        {#if settings.report_rate_hz}This profile uses {settings.report_rate_hz} Hz.{/if}
+      </div>
     {/if}
   </div>
 </div>

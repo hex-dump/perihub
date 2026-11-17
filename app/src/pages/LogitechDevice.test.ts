@@ -16,6 +16,7 @@ vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.6.7" }));
 
 import type { LogitechLive, ReceiverReport, UnsupportedReceiverDevice } from "../lib/api";
 import { acceptNoWarranty } from "../lib/noWarranty";
+import { readOnly } from "../lib/readOnly.svelte";
 import LogitechDevice from "./LogitechDevice.svelte";
 
 const device: UnsupportedReceiverDevice = {
@@ -108,7 +109,7 @@ describe("a Logitech keyboard's lighting", () => {
     live = { battery: null, dpi: null, saved_dpi: null, lighting: { brightness: 50, on: true, control: 0 }, host: null, gave_back: null, saved_look: null, host_log: null, drive_at_start: false, waiting: null };
     await open({ device: keyboard, receiver: { ...receiver, unsupported: [keyboard] } });
     const card = screen.getByRole("heading", { name: /Lighting/ }).closest("section")!;
-    expect(card.textContent).toContain("Read only");
+    expect(card.textContent).toContain("Read-only");
     expect(card.textContent).toContain("50 of 100");
     expect(card.textContent).toContain("The keyboard itself, with its own effects");
     expect(card.textContent).toContain("Off, Fixed colour, Colour cycle");
@@ -195,6 +196,21 @@ describe("a Logitech keyboard whose lights PeriHub can drive", () => {
   function select(name: string) {
     return screen.getByRole("combobox", { name }) as HTMLSelectElement;
   }
+
+  it("offers nothing that changes the lights in read-only mode", async () => {
+    readOnly.on = true;
+    try {
+      await open(props);
+      expect(screen.getByText(/Read-only mode is on/)).toBeTruthy();
+      const drive = screen.getByRole("button", { name: "Drive the lights" }) as HTMLButtonElement;
+      expect(drive.disabled).toBe(true);
+      expect((screen.getByRole("button", { name: "Set brightness" }) as HTMLButtonElement).disabled).toBe(true);
+      await fireEvent.click(drive);
+      expect(api.logitechDriveLights).not.toHaveBeenCalled();
+    } finally {
+      readOnly.on = false;
+    }
+  });
 
   it("takes the lights over after the No warranty box, with a fixed colour on each zone", async () => {
     await open(props);

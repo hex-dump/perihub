@@ -30,7 +30,7 @@
     padding: 12px 14px;
     border-radius: 10px;
     border: 1px solid var(--warn);
-    background: var(--warn-soft, rgba(255, 170, 0, 0.08));
+    background: var(--warn-soft);
   }
 
   .warranty p {

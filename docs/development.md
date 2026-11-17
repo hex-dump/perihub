@@ -56,6 +56,9 @@ cargo run -p perihub-cli -- mouse backups
 cargo run -p perihub-cli -- keyboard light '{"type":"wave","period_ms":3000,"reverse":false}' 10
 ```
 
+While the app is open, `perihub-cli app ...` asks it to switch a profile, a DPI level or a lighting
+preset (see [quick-actions.md](quick-actions.md)).
+
 The command-line tool never saves to a mouse whose memory format is untested, and never uses
 experimental lighting.
 
@@ -68,6 +71,7 @@ crates/perihub-core     Rust library: protocols, effects, device detection, conf
                         (see docs/protocols/logitech-onboard-profiles.md)
   src/g300.rs           Logitech G300 (feature reports; see docs/protocols/logitech-g300.md)
   src/corsair/          Corsair mice, keyboards and receivers (see docs/protocols/corsair-bragi.md)
+  src/kblayout.rs       keyboard layouts: what keyboards report, and the system's (see docs/protocols/keyboard-layouts.md)
   src/effects.rs        lighting effects rendered on the PC
   src/manager.rs        device hotplug
   src/worker.rs         one thread per device, so requests never interleave
@@ -107,6 +111,7 @@ cargo xtask check   # fails if one is out of date (cargo test runs it too, so CI
 | `site/index.html` | the same, and the `data-models` the search uses after each `data-catalog` |
 | `packaging/linux/…metainfo.xml` | `<modalias>` entries, so software centres suggest PeriHub for a supported device |
 | `site/devices.json` | every device, its level and USB ids, published with the website |
+| `app/src/lib/devices.generated.json` | the brands and models Settings lists, imported by the app at build time |
 
 The text around the generated blocks is written by hand. What a block lists is a selector, described in
 `crates/xtask/src/select.rs`: a family (`razer`), a brand (`Cooler Master`), a level
@@ -139,13 +144,15 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 |---|---|---|
 | CI | every push and pull request | tests, formatting, clippy, generated files, CHANGELOG sections; dependency licenses and advisories (`deny.toml`, `tools/check_npm_licenses.py`) |
 | Changelog | pull requests | a change to what PeriHub does needs a CHANGELOG line, or the `no changelog` label |
-| Test build | every push to `test/…`, or by hand | Windows installer, AppImage, .deb and Flatpak as run artifacts |
+| Test build | every push to `test/…`, or by hand | Windows installer, AppImage, .deb and Flatpak as run artifacts (the Flatpak build tries twice); then one comment with the run link on each open issue the branch's commits name (`#30`), unless one already has it |
 | Tag a release | by hand, on main | tags the version once CI is green, starts Release |
 | Release | the tag | draft release, signature and `latest.json` checks, `SHA256SUMS.txt`, notes from CHANGELOG.md; publishing opens an Announcements discussion |
+| Release comment | a release is published | one comment on each open issue the notes or commits name, saying the version is out; nothing is closed |
 | AUR package | a release is published | `packaging/aur/perihub-bin` for it, committed to main |
 | Website | main, a published release | builds and publishes `site/` |
 | Triage | a new issue | answers requests for devices PeriHub knows, asks old test reports to retry, labels brand and kind |
-| Reminders | every day | one reminder when an author has not answered for 14 days |
+| Reminders | every day | one reminder when an author has not answered a question for 14 days (device requests, test reports and unlabeled issues) |
+| Waiting for reporter | a new comment on an issue | the label `waiting for reporter` when the maintainer asks something, removed when the reporter answers |
 | Upstream device ids | Mondays | ids other projects know and PeriHub has not looked at, in one issue |
 | Links | Mondays | broken links in the README, docs and website, in one issue |
 | Security advisories | Mondays | known vulnerabilities in the Rust crates and npm packages |

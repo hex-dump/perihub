@@ -66,7 +66,7 @@
     gap: 6px;
     padding: 14px;
     border-radius: var(--radius);
-    background: #08090c;
+    background: var(--stage);
     border: 1px solid var(--line);
   }
 

@@ -11,8 +11,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::{
     BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
-    check_settings, coolermaster, evga, logitech_g600, logitech_hidpp10, nordic, pulsar, qmk, razer, roccat,
-    sinowealth, steelseries,
+    check_settings, coolermaster, evga, logitech_g600, logitech_hidpp10, nordic, pulsar, qmk, razer, razer_keyboard,
+    roccat, sinowealth, steelseries, wraith, yjx,
 };
 use crate::config;
 use crate::error::{Error, Result};
@@ -60,6 +60,7 @@ pub fn driver(model: &'static Model) -> Box<dyn Driver> {
         Protocol::Asus(params) => Box::new(asus::Asus::new(params)),
         Protocol::SteelSeries(params) => Box::new(steelseries::SteelSeries::new(params)),
         Protocol::Razer(params) => Box::new(razer::Razer::new(params)),
+        Protocol::RazerKeyboard(params) => Box::new(razer_keyboard::RazerKeyboard::new(params)),
         Protocol::Sinowealth(params) => Box::new(sinowealth::Sinowealth::new(params)),
         Protocol::Qmk(params) => Box::new(qmk::Qmk::new(params)),
         Protocol::LogitechG600 => Box::new(logitech_g600::G600::new()),
@@ -69,6 +70,8 @@ pub fn driver(model: &'static Model) -> Box<dyn Driver> {
         Protocol::CoolerMaster(params) => Box::new(coolermaster::CoolerMaster::new(params)),
         Protocol::Nordic(params) => Box::new(nordic::Nordic::new(params)),
         Protocol::Evga(params) => Box::new(evga::Evga::new(params)),
+        Protocol::Yjx(params) => Box::new(yjx::Yjx::new(params)),
+        Protocol::Wraith(params) => Box::new(wraith::Wraith::new(params)),
     }
 }
 
@@ -139,6 +142,12 @@ pub struct PeripheralTask {
     in_memory: Option<Settings>,
 }
 
+impl Drop for PeripheralTask {
+    fn drop(&mut self) {
+        crate::battery::forget(&format!("peripheral:{}", self.info.key));
+    }
+}
+
 impl PeripheralTask {
     /// `changes`: changes may be tried (PeriHub's app; never the command line).
     /// `short`: the short HID++ collection of a Logitech HID++ 1.0 mouse, when it has a path of its
@@ -163,7 +172,9 @@ impl PeripheralTask {
         changes: bool,
         backups: PathBuf,
     ) -> Result<Self> {
-        let mut io = Io::new(hid, driver.commands(), changes).with_short(short);
+        let mut io = Io::new(hid, driver.commands(), changes)
+            .with_short(short)
+            .with_device(format!("{} {}", who.brand, who.name));
         let reading = driver.read(&mut io)?;
         let info = PeripheralInfo {
             key: format!("{:04x}:{:04x}", who.vendor_id, who.product_id),
@@ -190,6 +201,7 @@ impl PeripheralTask {
             problem: None,
             pending_undo: false,
             raw: Vec::new(),
+            layout: None,
         };
         let mut task = Self {
             io,
@@ -231,12 +243,18 @@ impl PeripheralTask {
         }
         self.info.firmware = reading.firmware;
         self.info.battery = reading.battery.map(|(level, charging)| super::Battery { level, charging });
+        crate::battery::report(
+            &format!("peripheral:{}", self.info.key),
+            &format!("{} {}", self.info.brand, self.info.model),
+            self.info.battery.map(|b| (b.level, b.charging, b.charging && b.level >= 100)),
+        );
         self.info.active_profile = reading.active_profile;
         self.info.active_dpi = reading.active_dpi;
         self.info.settings = reading.settings;
         self.info.limits = reading.limits;
         self.info.buttons = reading.buttons;
         self.info.details = reading.details;
+        self.info.layout = reading.layout;
         self.info.problem = reading.problem.or(self.info.problem.take());
         self.info.editable = self.io.changes_allowed();
         self.info.raw = self.io.take_raw();
@@ -259,6 +277,7 @@ impl PeripheralTask {
     /// memory, and nothing can be read back or undone: unplugging the device brings back what it
     /// has saved.
     pub fn set_blind(&mut self, id: &str, value: &BlindValue) -> Result<PeripheralInfo> {
+        crate::writes::refuse_if_read_only()?;
         if !self.info.editable {
             return Err(Error::Invalid("this connection may not change anything".into()));
         }
@@ -278,6 +297,7 @@ impl PeripheralTask {
     /// kept (see [`Self::keep_changes`]). `profile`: the active profile the settings were edited on;
     /// if the device switched profile since, nothing is changed.
     pub fn change(&mut self, wanted: &Settings, save: bool, profile: Option<u8>) -> Result<PeripheralInfo> {
+        crate::writes::refuse_if_read_only()?;
         if !self.info.editable {
             return Err(Error::Invalid(match &self.info.problem {
                 Some(problem) => format!("nothing is changed on this device: {problem}"),
@@ -434,7 +454,8 @@ impl PeripheralTask {
             let _ = std::fs::remove_file(&path);
             return;
         }
-        if !self.io.granted() {
+        // In read-only mode the undo waits, with its backup, for a connection that may send it.
+        if !self.io.granted() || crate::writes::read_only() {
             self.info.pending_undo = true;
             return;
         }

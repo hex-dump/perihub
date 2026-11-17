@@ -16,6 +16,7 @@
     zoneName,
   } from "../lib/logitechFeatures";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
+  import { readOnly } from "../lib/readOnly.svelte";
   import NoWarranty from "./NoWarranty.svelte";
 
   interface Props {
@@ -183,6 +184,9 @@
 </script>
 
 <div class="col lights">
+  {#if readOnly.on}
+    <div class="notice info">Read-only mode is on: PeriHub only reads the {name}'s lights. Turn it off in Settings or the tray to drive them.</div>
+  {/if}
   {#if live?.gave_back}
     <div class="notice info">PeriHub gave the {name} its own lights back: {live.gave_back}.</div>
   {/if}
@@ -273,9 +277,9 @@
   {/each}
 
   <div class="row actions">
-    <button class="primary" disabled={!!busy} onclick={show}>{host ? "Show on the keyboard" : "Drive the lights"}</button>
+    <button class="primary" disabled={!!busy || readOnly.on} onclick={show}>{host ? "Show on the keyboard" : "Drive the lights"}</button>
     {#if host}
-      <button disabled={!!busy} onclick={giveBack}>Give the lights back</button>
+      <button disabled={!!busy || readOnly.on} onclick={giveBack}>Give the lights back</button>
     {:else if live?.drive_at_start}
       <button disabled={!!busy} onclick={giveBack}>Stop driving them</button>
     {/if}
@@ -295,7 +299,7 @@
         <input type="range" min={b.min} max={b.max} step="1" bind:value={brightness} disabled={!!busy} aria-label="Brightness" />
         <span class="value">{brightness}</span>
       </label>
-      <button disabled={!!busy || brightness === live?.lighting?.brightness} onclick={setBrightness}>Set brightness</button>
+      <button disabled={!!busy || readOnly.on || brightness === live?.lighting?.brightness} onclick={setBrightness}>Set brightness</button>
     </div>
     <p class="small muted">The {name} keeps the brightness, as it does with its own brightness key.</p>
   {/if}
@@ -310,7 +314,7 @@
       <NoWarranty device={`Logitech ${name}`} bind:accepted={understood} />
       <div class="row end">
         <button onclick={() => ((waiting = null), (understood = false))}>Cancel</button>
-        <button class="primary" disabled={!understood} onclick={confirm}>Continue</button>
+        <button class="primary" disabled={!understood || readOnly.on} onclick={confirm}>Continue</button>
       </div>
     </div>
   {/if}

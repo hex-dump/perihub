@@ -4,6 +4,7 @@
   import { errorText, type BackupEntry } from "../lib/api";
   import { describeBackup } from "../lib/backups";
   import ConfirmButton from "./ConfirmButton.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     /** The device, e.g. "G502 HERO". */
@@ -69,7 +70,7 @@
     {#if error}<div class="notice error">{error}</div>{/if}
 
     {#if backups === null}
-      <p class="muted">Loading…</p>
+      <p class="loading">Loading…</p>
     {:else if backups.length === 0}
       <p class="muted">No backups yet: PeriHub saves one the first time it writes to the {device}.</p>
     {:else}
@@ -80,7 +81,7 @@
               <span>{describeBackup(backup.label)}</span>
               <span class="muted small">{when(backup.created)}</span>
             </div>
-            <ConfirmButton disabled={!!restoring} onconfirm={() => run(backup.id)} confirmLabel="Restore this backup?">
+            <ConfirmButton disabled={!!restoring || readOnly.on} onconfirm={() => run(backup.id)} confirmLabel="Restore this backup?">
               {restoring === backup.id ? "Restoring…" : "Restore"}
             </ConfirmButton>
           </li>
@@ -105,7 +106,7 @@
     display: grid;
     place-items: center;
     padding: 24px;
-    background: rgb(0 0 0 / 0.6);
+    background: var(--scrim);
     backdrop-filter: blur(3px);
   }
 
@@ -118,7 +119,7 @@
     border-radius: 14px;
     background: var(--panel);
     border: 1px solid var(--line-strong);
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-modal);
   }
 
   h2 {

@@ -39,6 +39,8 @@ pub mod property {
     pub const FIRMWARE: u8 = 0x13;
     pub const DPI_X: u8 = 0x21;
     pub const DPI_Y: u8 = 0x22;
+    /// On a keyboard: its physical layout (see [`crate::kblayout::corsair`]).
+    pub const PHYSICAL_LAYOUT: u8 = 0x41;
 }
 
 pub const MODE_HARDWARE: u8 = 1;
@@ -127,12 +129,31 @@ pub struct BragiDevice {
     channel: u8,
     /// Experimental lighting is on: the commands it needs may be sent (see [`allowed`]).
     lighting: bool,
+    /// The device's name in the write log.
+    label: String,
+}
+
+/// What a command that changes the device does, for the write log.
+fn command_name(command: u8) -> &'static str {
+    match command {
+        command::SET => "set mode",
+        command::OPEN => "open lighting",
+        command::CLOSE => "close lighting",
+        command::WRITE | command::CONTINUE => "write lighting",
+        command::KEEP_ALIVE => "keep-alive",
+        _ => "other",
+    }
 }
 
 impl BragiDevice {
     /// `size`: the packet size of the model, 64 or 128 bytes.
     pub fn new(dev: impl Transport + 'static, size: usize) -> Self {
-        Self { dev: Box::new(dev), size, channel: 0, lighting: false }
+        Self { dev: Box::new(dev), size, channel: 0, lighting: false, label: "Corsair device".into() }
+    }
+
+    /// Names the device in the write log.
+    pub fn set_label(&mut self, label: String) {
+        self.label = label;
     }
 
     pub fn set_lighting_allowed(&mut self, on: bool) {
@@ -158,11 +179,28 @@ impl BragiDevice {
         if id == 0xFFFF { Err(Error::Unreachable) } else { Ok(id) }
     }
 
-    /// Sends a packet and returns the reply to it, whatever its status.
+    /// Sends a packet and returns the reply to it, whatever its status. Anything but a read is
+    /// refused in read-only mode, and kept in the write log.
     fn exchange(&mut self, packet: &[u8]) -> Result<Vec<u8>> {
         if !allowed(packet, self.lighting) {
             return Err(Error::Invalid(format!("command {:#04x} is not allowed on this mouse", packet[1])));
         }
+        if packet[1] == command::GET {
+            return self.transfer(packet);
+        }
+        let kind = command_name(packet[1]);
+        crate::writes::allow(&self.label, kind, packet)?;
+        let result = self.transfer(packet);
+        let outcome = match &result {
+            Ok(reply) if reply[2] == STATUS_OK => "ok".to_string(),
+            Ok(reply) => format!("status {:#04x}", reply[2]),
+            Err(error) => error.to_string(),
+        };
+        crate::writes::note(&self.label, kind, packet, &outcome);
+        result
+    }
+
+    fn transfer(&mut self, packet: &[u8]) -> Result<Vec<u8>> {
         let mut out = vec![0u8; self.size + 1];
         out[1..=packet.len()].copy_from_slice(packet);
         self.dev.write(&out)?;

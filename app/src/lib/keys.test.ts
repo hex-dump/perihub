@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { G502_HERO, G502_HERO_WIRELESS, G502_X_WIRELESS, isG502, ledZoneName, mouseButtonName } from "./keys";
+import {
+  G502_HERO, G502_HERO_WIRELESS, G502_X_WIRELESS, LAYOUT_HEIGHT, LAYOUT_WIDTH, bindingLabel, capLabel, isG502, keyLabel,
+  layoutCaps, ledZoneName, mouseButtonName,
+} from "./keys";
+import { PHYSICALS, type Physical } from "./keyboardLayout.svelte";
 
 describe("mouseButtonName", () => {
   it("recognizes G502 family members", () => {
@@ -29,5 +33,49 @@ describe("ledZoneName", () => {
     expect(ledZoneName(0xc08f, 1)).toBe("Main lighting");
     expect(ledZoneName(0xc08f, 2)).toBe("Logo");
     expect(ledZoneName(0xc08f, 5)).toBe("Zone 5");
+  });
+});
+
+describe("keyboard drawings", () => {
+  const usages = (physical: Physical) => layoutCaps(physical).map((c) => c.usage);
+
+  it("draw the keys of each shape", () => {
+    expect(usages("ansi")).toContain(0x31);
+    expect(usages("ansi")).not.toContain(0x64);
+    expect(usages("ansi")).not.toContain(0x32);
+    expect(usages("iso")).toEqual(expect.arrayContaining([0x32, 0x64]));
+    expect(usages("iso")).not.toContain(0x31);
+    expect(layoutCaps("iso").find((c) => c.usage === 0x28)!.h).toBe(2);
+    expect(usages("abnt")).toEqual(expect.arrayContaining([0x32, 0x64, 0x87]));
+    expect(usages("jis")).toEqual(expect.arrayContaining([0x32, 0x87, 0x88, 0x89, 0x8a, 0x8b]));
+    expect(usages("jis")).not.toContain(0x64);
+    expect(PHYSICALS.map((p) => layoutCaps(p.id).length)).toEqual([84, 85, 89, 86]);
+  });
+
+  it("never overlap and stay on the board", () => {
+    for (const { id } of PHYSICALS) {
+      const caps = layoutCaps(id);
+      expect(new Set(caps.map((c) => c.usage)).size).toBe(caps.length);
+      for (const [i, a] of caps.entries()) {
+        expect(a.x + a.w).toBeLessThanOrEqual(LAYOUT_WIDTH);
+        expect(a.y + a.h).toBeLessThanOrEqual(LAYOUT_HEIGHT);
+        for (const b of caps.slice(i + 1)) {
+          const apart = a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
+          expect(apart, `${id}: ${a.usage.toString(16)} and ${b.usage.toString(16)}`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("label the keys with the legends of the layout", () => {
+    expect(keyLabel(0x33, "it")).toBe("ò");
+    expect(keyLabel(0x1c, "de")).toBe("Z");
+    expect(keyLabel(0x89, "jp")).toBe("¥");
+    expect(keyLabel(0x87, "br")).toBe("/");
+    expect(capLabel(0x64, "it", "iso")).toBe("<");
+    // An ANSI board's backslash key types what the ISO key next to Enter types.
+    expect(capLabel(0x31, "it", "ansi")).toBe("ù");
+    expect(capLabel(0x31, "us", "ansi")).toBe("\\");
+    expect(bindingLabel({ type: "key", usage: 0x2f }, "de")).toBe("Ü");
   });
 });

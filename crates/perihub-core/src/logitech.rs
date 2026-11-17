@@ -143,6 +143,9 @@ pub struct LogitechTask {
     auto_paused: bool,
     /// Finds the Logitech programs running now (see [`other_programs`]); tests replace it.
     programs: fn() -> Vec<&'static str>,
+    battery: crate::battery::Schedule,
+    /// The device answered and has no battery feature: it is not asked again.
+    no_battery: bool,
 }
 
 /// PeriHub can drive the device's lights in host mode (see [`host::can_drive`]).
@@ -209,6 +212,7 @@ impl LogitechTask {
         } else if lights_drivable(&device) {
             dev.grant(Access::Host);
         }
+        dev.set_label(device.label());
         let mut task = Self {
             dev,
             device,
@@ -223,6 +227,8 @@ impl LogitechTask {
             auto_paused: false,
             // Tests never look at the programs running on the machine that runs them.
             programs: if cfg!(test) { Vec::new } else { other_programs },
+            battery: crate::battery::Schedule::new(Instant::now()),
+            no_battery: false,
         };
         if let Some(dpi) = saved_dpi {
             match task.apply_dpi(dpi) {
@@ -247,6 +253,11 @@ impl LogitechTask {
         else {
             return Ok(());
         };
+        // Read-only mode: nothing is sent; taken again once it is off.
+        if crate::writes::read_only() {
+            self.waiting = Some("read-only mode is on".into());
+            return Ok(());
+        }
         let again = self.lights.ours.load(Ordering::SeqCst);
         match self.drive(look, again) {
             Ok(_) => {
@@ -289,6 +300,7 @@ impl LogitechTask {
     /// `again`: PeriHub drove the lights before the keyboard went away, so a program driving them
     /// (mode 3) is PeriHub itself, unless G HUB or Solaar runs.
     fn drive(&mut self, look: Look, again: bool) -> Result<String> {
+        crate::writes::refuse_if_read_only()?;
         let lighting = self.device.lighting.clone().filter(|_| lights_drivable(&self.device));
         let lighting =
             lighting.ok_or_else(|| Error::Invalid("PeriHub cannot drive the lights of this device".into()))?;
@@ -366,6 +378,13 @@ impl LogitechTask {
     pub fn give_back_for_now(&mut self) -> Result<()> {
         self.auto_paused = true;
         self.release("PeriHub quits", false);
+        Ok(())
+    }
+
+    /// Gives the lights back because read-only mode goes on: afterwards nothing could be sent to dim
+    /// them or give them back. They are taken again once read-only mode is off.
+    pub fn give_back_for_read_only(&mut self) -> Result<()> {
+        self.release("read-only mode went on", false);
         Ok(())
     }
 
@@ -496,7 +515,29 @@ impl LogitechTask {
         host.animate(&mut self.dev, lighting)
     }
 
+    fn battery_id(&self) -> String {
+        format!("logitech:{}", self.device.settings_key())
+    }
+
+    /// The slow read that keeps the warnings and the tray going while the window is closed. Any
+    /// error, a sleeping device included, only waits for the next time: the check in `tick`
+    /// decides whether the device is still there.
+    fn read_battery_quietly(&mut self) {
+        match self.dev.battery() {
+            Ok(Some(battery)) => {
+                crate::battery::report(
+                    &self.battery_id(),
+                    self.device.name.as_deref().unwrap_or("Logitech device"),
+                    Some(battery.reading()),
+                );
+            }
+            Ok(None) => self.no_battery = true,
+            Err(e) => log::debug!("{} battery: {e}", self.device.label()),
+        }
+    }
+
     pub fn live(&mut self) -> Result<LogitechLive> {
+        self.battery.read(Instant::now());
         let battery = match self.dev.battery() {
             Ok(battery) => battery,
             Err(e @ (Error::Hid(_) | Error::Unreachable)) => return Err(e),
@@ -505,6 +546,11 @@ impl LogitechTask {
                 None
             }
         };
+        crate::battery::report(
+            &self.battery_id(),
+            self.device.name.as_deref().unwrap_or("Logitech device"),
+            battery.map(|b| b.reading()),
+        );
         let dpi = if self.device.dpi.is_some() { Some(self.dev.sensor_dpi(0)?.0) } else { None };
         let lighting = match &self.device.lighting {
             Some(lighting) => {
@@ -582,11 +628,18 @@ impl LogitechTask {
 impl Drop for LogitechTask {
     fn drop(&mut self) {
         self.release("PeriHub stopped driving them", false);
+        crate::battery::forget(&self.battery_id());
     }
 }
 
 impl DeviceTask for LogitechTask {
     fn tick(&mut self) -> Result<Duration> {
+        // Read-only mode went on some other way while PeriHub drove the lights: nothing can be sent
+        // any more, not even to give them back (the app gives them back before it turns it on).
+        if self.host.is_some() && crate::writes::read_only() {
+            log::info!("{}: read-only mode is on: PeriHub no longer drives the lights", self.device.label());
+            self.end_host();
+        }
         if self.host.is_some() {
             self.drive_tick()?;
             return Ok(self.drive_every());
@@ -611,8 +664,17 @@ impl DeviceTask for LogitechTask {
                 Ok(_) => {}
             }
         }
-        let next = CHECK_EVERY.saturating_sub(self.last_check.elapsed());
-        Ok(if auto { next.min(HOST_CHECK_EVERY.saturating_sub(self.last_host_check.elapsed())) } else { next })
+        if !self.no_battery && self.battery.due(Instant::now()) {
+            self.read_battery_quietly();
+        }
+        let mut next = CHECK_EVERY.saturating_sub(self.last_check.elapsed());
+        if auto {
+            next = next.min(HOST_CHECK_EVERY.saturating_sub(self.last_host_check.elapsed()));
+        }
+        if !self.no_battery {
+            next = next.min(self.battery.wait(Instant::now()));
+        }
+        Ok(next)
     }
 }
 
@@ -700,10 +762,13 @@ mod tests {
             firmware: Vec::new(),
             features: Vec::new(),
             dpi: dpi_feature.then(|| DpiCapabilities { min: 200, max: 8000, step: 50, list: Vec::new() }),
+            dpi_extended: None,
             report_rates_ms: Vec::new(),
+            report_rates_hz: Vec::new(),
             onboard,
             lighting: None,
             read_errors: Vec::new(),
+            layout: None,
         };
         (LogitechTask::open(dev, device, saved, LightsMemory::default()), mouse)
     }
@@ -784,6 +849,7 @@ mod tests {
         use crate::hidpp::FeatureEntry;
         use crate::hidpp::host::tests::{Pending, RED, calls, g915x, idle_event, keyboard_read_only, look, zone};
         use crate::hidpp::host::{Power, effect};
+        use crate::hidpp::is_read_call;
 
         fn device() -> UnsupportedDevice {
             let ids = [
@@ -803,9 +869,12 @@ mod tests {
                 firmware: Vec::new(),
                 features: ids.iter().map(|&id| FeatureEntry { id, kind: 0, version: 0 }).collect(),
                 dpi: None,
+                dpi_extended: None,
                 report_rates_ms: Vec::new(),
+                report_rates_hz: Vec::new(),
                 onboard: None,
                 lighting: Some(g915x()),
+                layout: None,
                 read_errors: Vec::new(),
             }
         }
@@ -920,6 +989,40 @@ mod tests {
             task.tick().unwrap();
             assert!(calls(&state).is_empty());
             assert!(task.live().unwrap().waiting.unwrap().contains("G HUB"));
+        }
+
+        #[test]
+        fn read_only_mode_gives_the_lights_back_first_then_sends_nothing_until_it_is_off() {
+            let (mut task, state, _) = open_with(None, wanted());
+            assert!(took(&state));
+            // The app gives the lights back before it turns read-only mode on.
+            task.give_back_for_read_only().unwrap();
+            assert!(calls(&state).iter().any(|c| *c == (feature::PROFILE_MANAGEMENT, 6, vec![3])));
+            let read_only = crate::writes::test::read_only_mode();
+            task.last_host_check = Instant::now() - HOST_CHECK_EVERY;
+            task.tick().unwrap();
+            assert!(calls(&state).iter().all(|c| is_read_call(c.0, c.1, &c.2)), "nothing but reads");
+            let live = task.live().unwrap();
+            assert!(live.host.is_none() && live.drive_at_start);
+            assert_eq!(live.waiting.as_deref(), Some("read-only mode is on"));
+            assert!(matches!(task.drive_lights(look()), Err(Error::ReadOnly)));
+            assert!(matches!(task.set_brightness(50), Err(Error::ReadOnly)));
+            assert!(calls(&state).iter().all(|c| is_read_call(c.0, c.1, &c.2)), "nothing but reads");
+            // Off again: the lights are taken with the saved look at the next check.
+            drop(read_only);
+            task.last_host_check = Instant::now() - HOST_CHECK_EVERY;
+            task.tick().unwrap();
+            assert!(took(&state) && task.live().unwrap().host.is_some());
+        }
+
+        #[test]
+        fn read_only_mode_turned_on_while_driving_stops_sending_at_once() {
+            let (mut task, state, _) = open_with(Some(look()), LightsMemory::default());
+            calls(&state);
+            let _read_only = crate::writes::test::read_only_mode();
+            task.tick().unwrap();
+            assert!(task.live().unwrap().host.is_none());
+            assert!(calls(&state).iter().all(|c| is_read_call(c.0, c.1, &c.2)), "nothing but reads");
         }
 
         #[test]

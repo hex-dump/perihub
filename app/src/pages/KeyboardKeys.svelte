@@ -4,15 +4,18 @@
     api, errorText, type KeyBinding, type KeyCatalog, type KeyChange, type Keymap, type Macro, type SoftMacrosInfo,
     type SoftwareMacro,
   } from "../lib/api";
-  import { bindingLabel, keyLabel, LAYOUT_HEIGHT, LAYOUT_WIDTH, layoutCaps, type KeyCap } from "../lib/keys";
+  import { bindingLabel, capLabel, keyLabel, LAYOUT_HEIGHT, LAYOUT_WIDTH, layoutCaps, type KeyCap } from "../lib/keys";
   import { softSummary } from "../lib/macros";
-  import { LAYOUTS, prefs, setLayout, type LayoutId } from "../lib/prefs.svelte";
-  import BackupsDialog from "../components/BackupsDialog.svelte";
+  import { APEX_3_TKL, keyboardLayout } from "../lib/keyboardLayout.svelte";
   import ConfirmButton from "../components/ConfirmButton.svelte";
   import { keymapRestoreMessage } from "../lib/backups";
   import KeyAccessPermission from "../components/KeyAccessPermission.svelte";
-  import MacroEditor from "../components/MacroEditor.svelte";
   import SoftMacros from "../components/SoftMacros.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
+
+  /** The shape and legends shown (Keyboard.svelte shows where they come from, and lets the user change them). */
+  const layout = $derived(keyboardLayout(APEX_3_TKL, null));
+  const keyText = (usage: number) => keyLabel(usage, layout.legends);
 
   const UNIT = 46;
   // The board shrinks to fit narrow windows.
@@ -68,10 +71,10 @@
 
   function label(binding: KeyBinding | undefined): string {
     const m = macroOf(binding);
-    return m ? `Macro: ${m.name}` : bindingLabel(binding);
+    return m ? `Macro: ${m.name}` : bindingLabel(binding, layout.legends);
   }
 
-  const keyName = (l: number, usage: number) => `${keyLabel(usage)}${l === 1 ? " with SteelSeries" : ""}`;
+  const keyName = (l: number, usage: number) => `${keyText(usage)}${l === 1 ? " with SteelSeries" : ""}`;
 
   function factory(l: number, usage: number): KeyBinding {
     if (l === 0) return { type: "key", usage };
@@ -195,7 +198,7 @@
     ];
     return ranges.map(([name, test]) => ({
       name,
-      keys: catalog!.targets.filter((k) => test(k.usage)).map((k) => ({ usage: k.usage, label: keyLabel(k.usage) })),
+      keys: catalog!.targets.filter((k) => test(k.usage)).map((k) => ({ usage: k.usage, label: keyText(k.usage) })),
     }));
   });
 
@@ -231,24 +234,16 @@
         ? "What each key does when you press it."
         : "What each key does while you hold the SteelSeries key."}
     </span>
-    <label class="row small muted">
-      Layout
-      <select value={prefs.layout} onchange={(e) => setLayout((e.target as HTMLSelectElement).value as LayoutId)}>
-        {#each LAYOUTS as l (l.id)}
-          <option value={l.id}>{l.label}</option>
-        {/each}
-      </select>
-    </label>
   </div>
 
   {#if error}<div class="notice error">{error}</div>{/if}
   {#if message}<div class="notice ok">{message}</div>{/if}
-  {#if busy}<div class="notice info">{busy}</div>{/if}
+  {#if busy}<p class="loading">{busy}</p>{/if}
 
   {#if keymap}
     <div class="fit" bind:clientWidth={fitWidth}>
       <div class="board" style:width="{LAYOUT_WIDTH * unit}px" style:height="{LAYOUT_HEIGHT * unit}px">
-        {#each layoutCaps(prefs.layout) as cap (cap.usage)}
+        {#each layoutCaps(layout.physical) as cap (cap.usage)}
           <button
             class="cap {capClass(cap)}"
             class:selected={selected === cap.usage}
@@ -257,10 +252,10 @@
             style:top="{cap.y * unit}px"
             style:width="{cap.w * unit - 4}px"
             style:height="{cap.h * unit - 4}px"
-            title={cap.locked ? "The firmware cannot remap this key" : keyLabel(cap.usage)}
+            title={cap.locked ? "The firmware cannot remap this key" : capLabel(cap.usage, layout.legends, layout.physical)}
             onclick={() => (selected = cap.usage)}
           >
-            <span>{keyLabel(cap.usage)}</span>
+            <span>{capLabel(cap.usage, layout.legends, layout.physical)}</span>
             {#if capSub(cap)}<span class="sub">{capSub(cap)}</span>{/if}
           </button>
         {/each}
@@ -279,12 +274,12 @@
       {:else}
         <div class="col tight">
           <span class="small muted">Key</span>
-          <strong>{keyLabel(selected)}{layer === 1 ? " (with SteelSeries)" : ""}</strong>
+          <strong>{capLabel(selected, layout.legends, layout.physical)}{layer === 1 ? " (with SteelSeries)" : ""}</strong>
         </div>
         <div class="col tight">
           <span class="small muted">Function</span>
           <strong>{selectedBinding?.type === "none" ? "Same as without SteelSeries" : label(selectedBinding) || "No effect"}</strong>
-          {#if selectedMacro}<span class="small muted">{softSummary(selectedMacro)} · sends {keyLabel(selectedMacro.key)}</span>{/if}
+          {#if selectedMacro}<span class="small muted">{softSummary(selectedMacro)} · sends {keyText(selectedMacro.key)}</span>{/if}
         </div>
         <label class="field grow">
           New function
@@ -323,7 +318,7 @@
     {#if selectedMacro && selected !== null}
       {#if layer === 0}
         <div class="notice info">
-          This key no longer types “{keyLabel(selected)}”. To keep it, start the macro from the SteelSeries layer instead
+          This key no longer types “{capLabel(selected, layout.legends, layout.physical)}”. To keep it, start the macro from the SteelSeries layer instead
           (“With SteelSeries key” above).
         </div>
       {/if}
@@ -334,7 +329,7 @@
     {/if}
 
     <div class="row">
-      <ConfirmButton class="danger" disabled={!!busy} onconfirm={resetAll} confirmLabel="Reset all keys?">
+      <ConfirmButton class="danger" disabled={!!busy || readOnly.on} onconfirm={resetAll} confirmLabel="Reset all keys?">
         Reset all to factory
       </ConfirmButton>
       <button disabled={!!busy} onclick={() => (showBackups = true)}>Backups…</button>
@@ -343,7 +338,8 @@
         <span class="muted small">{pending.length} unsaved {pending.length === 1 ? "change" : "changes"}</span>
         <button disabled={!!busy} onclick={() => (drafts = [{}, {}])}>Discard</button>
       {/if}
-      <button class="primary" disabled={!pending.length || !!busy} onclick={save}>Save to keyboard</button>
+      <button class="primary" disabled={!pending.length || !!busy || readOnly.on} onclick={save}
+        title="Writes the key mapping to the keyboard's onboard memory: it then works on any computer, even without PeriHub">Save to keyboard</button>
     </div>
     <p class="muted small">
       The mapping is stored in the keyboard's memory and works without PeriHub, on any computer, except keys that start
@@ -354,13 +350,18 @@
   {/if}
 </div>
 
+<!-- The dialogs are loaded when first opened. -->
 {#if showBackups}
-  <BackupsDialog device="Apex 3 TKL" load={api.keyboardBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
+  {#await import("../components/BackupsDialog.svelte") then { default: BackupsDialog }}
+    <BackupsDialog device="Apex 3 TKL" load={api.keyboardBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
+  {/await}
 {/if}
 
 {#if editingSoft}
-  <MacroEditor content={EMPTY_MACRO} soft={editingSoft.macro} onsavesoft={saveSoft} keys={catalog?.targets ?? []}
-    button={keyName(editingSoft.layer, editingSoft.usage)} keyboard onsave={() => {}} oncancel={() => (editingSoft = null)} />
+  {#await import("../components/MacroEditor.svelte") then { default: MacroEditor }}
+    <MacroEditor content={EMPTY_MACRO} soft={editingSoft.macro} onsavesoft={saveSoft} keys={catalog?.targets ?? []}
+      button={keyName(editingSoft.layer, editingSoft.usage)} keyboard onsave={() => {}} oncancel={() => (editingSoft = null)} />
+  {/await}
 {/if}
 
 <style>
@@ -381,7 +382,7 @@
     padding: 12px;
     box-sizing: content-box;
     border-radius: var(--radius);
-    background: #0b0c10;
+    background: var(--board);
     border: 1px solid var(--line);
   }
 

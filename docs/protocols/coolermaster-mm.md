@@ -20,6 +20,8 @@ Sources, facts only (OpenRGB is GPL-2.0-or-later: no code was copied or translat
 | `2516:0141` | MM720 | `2B` |
 | `2516:0165` | MM730 | `2B` |
 
+Keyboards are left out too: this page describes mice only, and no capture of the CK721 or MK721 protocol (`2516:016d`, `0183`, `01ee`, `01f2`, `016f`, `01c3` in OpenRGB's device list) is known to us.
+
 Left out: the MM531 (`0097`), which OpenRGB lists but keeps disabled, and the MM712 (`0169`), which speaks another
 protocol on another interface.
 

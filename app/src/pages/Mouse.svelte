@@ -10,16 +10,16 @@
     type ReceiverReport,
   } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
-  import BackupsDialog from "../components/BackupsDialog.svelte";
+  import Status from "../components/Status.svelte";
   import ConfirmButton from "../components/ConfirmButton.svelte";
   import { mouseRestoreMessage } from "../lib/backups";
   import TestReport from "../components/TestReport.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import UnifyingPermission from "../components/UnifyingPermission.svelte";
   import { receiverName, receiverTest } from "../lib/testReport";
-  import ExperimentalDialog from "../components/ExperimentalDialog.svelte";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
   import MousePerformance from "./MousePerformance.svelte";
   import MouseButtons from "./MouseButtons.svelte";
   import MouseLighting from "./MouseLighting.svelte";
@@ -46,6 +46,13 @@
   type Tab = "performance" | "buttons" | "lighting";
   const startTab = untrack(() => initialTab);
   let tab = $state<Tab>(startTab === "buttons" || startTab === "lighting" ? startTab : "performance");
+  /**
+   * The Lighting tab needs LED zones. They come from the mouse's color LED effects feature (0x8070 or
+   * 0x8071), the only way PeriHub finds them, so a mouse that lists none has no lights PeriHub can drive.
+   */
+  const hasLights = $derived(!!info && info.led_zones.length > 0);
+  /** The tab on show: Lighting falls back to the first tab on a mouse without lights. */
+  const shownTab = $derived<Tab>(tab === "lighting" && !hasLights ? "performance" : tab);
   let busy = $state<string | null>(null);
   let error = $state<string | null>(null);
   let message = $state<string | null>(null);
@@ -59,8 +66,10 @@
   let pendingWrite = $state<{ action: string; write: () => Promise<void> } | null>(null);
   /** An experimental save waits to be kept or undone. */
   let confirmKeep = $state(false);
-  /** A tested mouse, or one with experimental saves: the controls are enabled. */
-  const editable = $derived(!!info && (info.verified || info.experimental));
+  /** A tested mouse, or one with experimental saves: the controls are enabled, but not in read-only mode. */
+  const editable = $derived(!!info && (info.verified || info.experimental) && !readOnly.on);
+  /** Saves are possible on this connection, and read-only mode is off. */
+  const writable = $derived(!!info?.writable && !readOnly.on);
 
   /** Saves over the radio are accepted apart from saves with the cable. */
   const warrantyKey = $derived(info ? (info.receiver ? `${info.product_id}-radio` : info.product_id) : 0);
@@ -286,7 +295,7 @@
   });
 </script>
 
-<header class="row">
+<header class="page-head">
   <div class="col tight grow">
     <h1>Logitech {info?.model ?? asleep ?? "mouse"}</h1>
     <span class="muted small">
@@ -301,9 +310,14 @@
     </span>
   </div>
   {#if info && mouse && battery}
-    <div class="now battery" class:low={battery.percent <= 15 && battery.state === "discharging"} title="The mouse's battery">
+    {@const low = battery.percent <= 15 && battery.state === "discharging"}
+    <div class="now battery" class:low title="The mouse's battery">
       <strong>{batteryText(battery)}</strong>
-      <span class="small muted">{battery.state === "charging" ? "Battery, charging" : "Battery"}</span>
+      {#if low}
+        <Status kind="warn" label="Battery low" />
+      {:else}
+        <span class="small muted">{battery.state === "charging" ? "Battery, charging" : "Battery"}</span>
+      {/if}
     </div>
   {/if}
   {#if info && mouse}
@@ -416,15 +430,17 @@
   </div>
 {/if}
 {#if info && pendingWrite}
-  <ExperimentalDialog
-    model={info.model}
-    profileFormat={info.onboard.profile_format}
-    sectorSize={info.onboard.sector_size}
-    action={pendingWrite.action}
-    receiver={info.receiver}
-    onconfirm={confirmWrite}
-    onclose={() => (pendingWrite = null)}
-  />
+  {#await import("../components/ExperimentalDialog.svelte") then { default: ExperimentalDialog }}
+    <ExperimentalDialog
+      model={info.model}
+      profileFormat={info.onboard.profile_format}
+      sectorSize={info.onboard.sector_size}
+      action={pendingWrite.action}
+      receiver={info.receiver}
+      onconfirm={confirmWrite}
+      onclose={() => (pendingWrite = null)}
+    />
+  {/await}
 {/if}
 {#if info?.host_mode}
   <div class="notice" class:error={editable} class:info={!editable}>
@@ -468,10 +484,10 @@
           title={profile.number === selected ? "Shown below" : "Show and edit this profile"}>
           <span class="title">
             <strong>Profile {profile.number}</strong>
-            {#if active}<span class="chip ok">Active</span>{/if}
+            {#if active}<Status kind="ok" label="Active" title="The profile the mouse is using now" />{/if}
           </span>
           <span class="small muted">{profile.settings.dpi_levels.join(" / ")} DPI</span>
-          <span class="small muted">{reportRateLabel(profile.settings.report_rate_ms)}</span>
+          <span class="small muted">{profile.settings.report_rate_hz ? `${profile.settings.report_rate_hz} Hz` : reportRateLabel(profile.settings.report_rate_ms)}</span>
         </button>
         <div class="actions">
           {#if !active}
@@ -483,7 +499,7 @@
             <input
               type="checkbox"
               checked={profile.enabled}
-              disabled={!!busy || !info.writable || !info.verified || info.experimental}
+              disabled={!!busy || !writable || !info.verified || info.experimental}
               title={!info.verified
                 ? "Needs a tested memory format"
                 : info.experimental
@@ -501,21 +517,24 @@
   {#if error}<div class="notice error">{error}</div>{/if}
 
   <div class="tabs">
-    <button class:active={tab === "performance"} onclick={() => changeTab("performance")}>DPI and polling</button>
-    <button class:active={tab === "buttons"} onclick={() => changeTab("buttons")}>Buttons</button>
-    <button class:active={tab === "lighting"} onclick={() => changeTab("lighting")}>Lighting</button>
+    <button class:active={shownTab === "performance"} onclick={() => changeTab("performance")}>DPI and polling</button>
+    <button class:active={shownTab === "buttons"} onclick={() => changeTab("buttons")}>Buttons</button>
+    {#if hasLights}
+      <button class:active={shownTab === "lighting"} onclick={() => changeTab("lighting")}>Lighting</button>
+    {/if}
   </div>
 
   <!-- A read-only mouse (memory format PeriHub cannot write): every control in the editor is disabled. -->
-  <fieldset disabled={!editable}>
-    {#if tab === "performance"}
+  <!-- The buttons tab disables its own editors, so that its Normal / G-Shift switch still works. -->
+  <fieldset disabled={!editable && shownTab !== "buttons"}>
+    {#if shownTab === "performance"}
       {#key previewEpoch}
         <MousePerformance {info} bind:settings={draft} onpreview={() => (previewing = true)}
           activeLevel={selected === mouse.active_profile ? mouse.active_dpi_index : null} />
       {/key}
-    {:else if tab === "buttons"}
+    {:else if shownTab === "buttons"}
       <MouseButtons {info} bind:settings={draft} profiles={mouse.profiles} profileNumber={selected}
-        macroSpace={mouse.macro_space} />
+        macroSpace={mouse.macro_space} readOnly={!editable} />
     {:else}
       {#key previewEpoch}
         <MouseLighting {info} bind:settings={draft} onpreview={() => (previewing = true)} />
@@ -524,10 +543,10 @@
   </fieldset>
 
   <footer class="row">
-    <ConfirmButton class="danger" disabled={!!busy || !info.writable} onconfirm={factory} confirmLabel="Reset this profile?">
+    <ConfirmButton class="danger" disabled={!!busy || !writable} onconfirm={factory} confirmLabel="Reset this profile?">
       Factory settings
     </ConfirmButton>
-    <button disabled={!!busy || !info.writable} onclick={() => (showBackups = true)}>Backups…</button>
+    <button disabled={!!busy || !writable} onclick={() => (showBackups = true)}>Backups…</button>
     <div class="grow"></div>
     {#if busy}
       <span class="muted small" role="status">{busy}</span>
@@ -539,7 +558,8 @@
       <span class="unsaved">Unsaved changes</span>
     {/if}
     <button disabled={!dirty || !!busy} onclick={discard}>Discard</button>
-    <button class="primary" disabled={!dirty || !!busy || leftClickMissing || !info.writable} onclick={save}>
+    <button class="primary" disabled={!dirty || !!busy || leftClickMissing || !writable} onclick={save}
+      title="Writes the profile to the mouse's onboard memory: it then works on any computer, even without PeriHub">
       Save to mouse
     </button>
   </footer>
@@ -549,15 +569,16 @@
   {/if}
 
   {#if showBackups}
-    <BackupsDialog device={info.model} load={api.mouseBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
+    {#await import("../components/BackupsDialog.svelte") then { default: BackupsDialog }}
+      <BackupsDialog device={info.model} load={api.mouseBackups} restore={restoreBackup} onclose={() => (showBackups = false)} />
+    {/await}
   {/if}
 {:else if info}
-  {#if error}<div class="notice error">{error}</div>{:else}<div class="notice info">{busy ?? "Loading…"}</div>{/if}
+  {#if error}<div class="notice error">{error}</div>{:else}<p class="loading">{busy ?? "Loading…"}</p>{/if}
 {/if}
 
 <style>
   header {
-    margin-bottom: 20px;
     align-items: flex-start;
   }
 
@@ -586,13 +607,13 @@
     margin-left: 10px;
   }
 
-  /* Orange stays for the DPI in use; the battery turns red only when it is low. */
+  /* The accent stays for the DPI in use; the battery takes the warning color, and says so, only when it is low. */
   .now.battery strong {
     color: var(--text);
   }
 
   .now.battery.low strong {
-    color: var(--bad);
+    color: var(--warn);
   }
 
   .profiles {
@@ -689,7 +710,7 @@
     padding: 14px var(--pad-x);
     background: var(--panel);
     border-top: 1px solid var(--line);
-    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-bar);
   }
 
   .warn {

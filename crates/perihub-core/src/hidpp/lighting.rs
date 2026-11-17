@@ -135,8 +135,8 @@ impl Lighting {
             }
             out.keys = keys_from_pages(&pages);
         }
-        if has(feature::KEYBOARD_LAYOUT_2) {
-            out.layout = out.call(dev, feature::KEYBOARD_LAYOUT_2, 0, &[])?.map(|r| r[0]);
+        if has(feature::KEYBOARD_LAYOUT) {
+            out.layout = out.call(dev, feature::KEYBOARD_LAYOUT, 0, &[])?.map(|r| r[0]);
         }
         // Features of the newer keyboards that no public document describes: what function 0 answers,
         // and the mode 0x8101 function 6 reads (0 asks), kept in `raw` for test reports. Not 0x4523
@@ -240,7 +240,7 @@ mod tests {
         feature::BRIGHTNESS_CONTROL,
         feature::RGB_EFFECTS,
         feature::PER_KEY_LIGHTING_V2,
-        feature::KEYBOARD_LAYOUT_2,
+        feature::KEYBOARD_LAYOUT,
         feature::PROFILE_MANAGEMENT,
     ];
 
@@ -285,7 +285,7 @@ mod tests {
                     1 => vec![0, 1, 0x01],
                     _ => vec![0, 2],
                 },
-                (Some(feature::KEYBOARD_LAYOUT_2), 0) => vec![1],
+                (Some(feature::KEYBOARD_LAYOUT), 0) => vec![1],
                 (Some(feature::PROFILE_MANAGEMENT), 0) => vec![1, 1, 0, 0x80],
                 (Some(feature::PROFILE_MANAGEMENT), 6) => vec![1, 0, 1],
                 _ => return vec![error(request, 7)],

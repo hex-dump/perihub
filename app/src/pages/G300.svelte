@@ -3,13 +3,15 @@
   // the save is undone unless it is kept.
   import { onDestroy } from "svelte";
   import {
-    api, errorText, type G300Button, type G300Info, type G300Profile, type G300Settings, type KeyInfo,
+    api, errorText, type G300Info, type G300Settings, type KeyInfo,
   } from "../lib/api";
-  import { keyLabel } from "../lib/keys";
+  import { BUTTON_NAMES, action, colorName, describe } from "../lib/g300";
   import { g300Test } from "../lib/testReport";
+  import Status from "../components/Status.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
   import G300ProfileEditor from "../components/G300ProfileEditor.svelte";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
+  import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
     info: G300Info | null;
@@ -34,7 +36,7 @@
   });
 
   const timer = setInterval(() => {
-    if (!initial) return;
+    if (!initial || document.hidden) return;
     api.g300Info().then((i) => (live = i)).catch(() => {});
   }, LIVE_MS);
   onDestroy(() => clearInterval(timer));
@@ -83,70 +85,11 @@
       message = "Changes undone: the backup is back on the mouse.";
     });
   }
-
-  /** G4 to G9 are printed on the mouse; 1 to 3 are the clicks. */
-  const BUTTON_NAMES = ["Left button", "Right button", "Wheel button", "G4", "G5", "G6", "G7", "G8", "G9"];
-  const MODIFIER_NAMES = ["Ctrl", "Shift", "Alt", "Win", "Right Ctrl", "Right Shift", "Right Alt", "Right Win"];
-  const MOUSE_NAMES: Record<number, string> = {
-    1: "Left click",
-    2: "Right click",
-    3: "Middle click",
-    4: "Back",
-    5: "Forward",
-  };
-
-  function action(b: G300Button): string {
-    switch (b.type) {
-      case "none":
-        return "Nothing";
-      case "mouse":
-        return MOUSE_NAMES[b.button] ?? `Mouse button ${b.button}`;
-      case "dpi_up":
-        return "DPI +";
-      case "dpi_down":
-        return "DPI –";
-      case "dpi_cycle":
-        return "Cycle DPI";
-      case "profile_cycle":
-        return "Next profile";
-      case "dpi_shift":
-        return "DPI shift (hold)";
-      case "dpi_default":
-        return "Default DPI";
-      case "key": {
-        const mods = MODIFIER_NAMES.filter((_, i) => b.modifiers & (1 << i));
-        return [...mods, ...(b.key ? [keyLabel(b.key)] : [])].join(" + ");
-      }
-      case "unknown":
-        return `Unknown (${b.code.toString(16)})`;
-    }
-  }
-
-  function colorName(color: string): string {
-    const names: Record<string, string> = {
-      "#ffffff": "White",
-      "#ff0000": "Red",
-      "#00ff00": "Green",
-      "#0000ff": "Blue",
-      "#ffff00": "Yellow",
-      "#00ffff": "Cyan",
-      "#ff00ff": "Magenta",
-      "#000000": "Off",
-    };
-    return names[color.toLowerCase()] ?? color;
-  }
-
-  function describe(p: G300Profile): string {
-    const levels = p.dpi_levels.map((d, i) => (i === p.default_level ? `${d}*` : `${d}`)).join(" / ");
-    const buttons = p.buttons.map((b, i) => `${BUTTON_NAMES[i]}: ${action(b)}`).join("; ");
-    const shift = p.shift_dpi ? `, shift ${p.shift_dpi}` : "";
-    return `${colorName(p.color)}, ${p.report_rate_hz ?? "?"} Hz, DPI ${levels}${shift}, ${buttons}`;
-  }
 </script>
 
-<header>
+<header class="page-head">
   <h1>Logitech G300</h1>
-  {#if info && !info.editable}<span class="chip test">Read-only</span>{/if}
+  {#if info && !info.editable}<Status kind="readonly" label="Read-only" chip />{/if}
 </header>
 
 {#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
@@ -187,9 +130,9 @@
       <section class="card" class:active>
         <h2>
           Profile {profile.number}
-          {#if active}<span class="chip ok">Active</span>{/if}
+          {#if active}<Status kind="ok" label="Active" chip title="The profile the mouse is using now" />{/if}
           {#if info.editable && editing === null}
-            <button class="tiny edit" disabled={!!busy || confirmKeep} onclick={() => (editing = profile.number)}>Edit</button>
+            <button class="tiny edit" disabled={!!busy || confirmKeep || readOnly.on} onclick={() => (editing = profile.number)}>Edit</button>
           {/if}
         </h2>
         {#if editing === profile.number}
@@ -229,16 +172,6 @@
 {/if}
 
 <style>
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    margin: 0;
-  }
 
   .edit {
     margin-left: auto;
@@ -264,7 +197,7 @@
   }
 
   .card.active {
-    border-color: var(--ok);
+    border-color: var(--line-strong);
   }
 
   dl {
@@ -299,8 +232,9 @@
     margin-right: 8px;
   }
 
+  /* The level in use is a value in use: the accent, as on the other mouse pages. */
   .level.current {
-    color: var(--ok);
+    color: var(--accent);
     font-weight: 700;
   }
 

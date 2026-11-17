@@ -2,14 +2,19 @@ name: Screenshots
 
 # The README's and website's screenshots (docs/screenshots) and the social preview, made from the
 # interface with simulated devices (app/preview, npm run screenshots): by hand on any branch, and on
-# main when a release is published. Changed pictures are committed to the branch.
+# main when a release is published. Changed pictures go to a bot/screenshots-* branch and a pull
+# request into the branch they were taken on (main does not take pushes; the required checks are run
+# on the bot branch by dispatching ci.yml, and auto-merge is asked for).
 on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag or label for the branch name, such as v0.9.1 (optional)
+        required: false
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
   group: screenshots-${{ github.event_name == 'release' && 'main' || github.ref }}
@@ -18,8 +23,12 @@ concurrency:
 jobs:
   shots:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write       # push the bot/ branch
+      pull-requests: write  # open the pull request, ask for auto-merge
+      actions: write        # dispatch ci.yml on the branch
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # A release runs on its tag: the pictures go to main.
           ref: ${{ github.event_name == 'release' && 'main' || github.ref }}
@@ -28,7 +37,7 @@ jobs:
       - name: Fonts
         run: sudo apt-get update && sudo apt-get install -y fonts-inter
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 26
           cache: npm
@@ -43,6 +52,10 @@ jobs:
           npm run screenshots
 
       - name: Commit what changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event_name == 'release' && 'main' || github.ref_name }}
+          LABEL: ${{ github.event.release.tag_name || inputs.tag || github.run_id }}
         run: |
           if git diff --quiet -- docs/screenshots docs/social-preview.png; then
             echo "The screenshots have not changed."
@@ -51,4 +64,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Screenshots" -- docs/screenshots docs/social-preview.png
-          git push origin "HEAD:${{ github.event_name == 'release' && 'main' || github.ref_name }}"
+          branch="bot/screenshots-$LABEL"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            branch="$branch-$GITHUB_RUN_ID"
+          fi
+          git push origin "HEAD:refs/heads/$branch"
+          gh pr create --base "$BASE" --head "$branch" --title "Screenshots ($LABEL)" \
+            --body "Screenshots and social preview, made by the Screenshots workflow."
+          # A pull request made with GITHUB_TOKEN starts no pull_request run: run the required
+          # checks (ci.yml, workflow_dispatch) on the branch, they report on the PR's head commit.
+          gh workflow run ci.yml --ref "$branch"
+          if ! gh pr merge "$branch" --auto --merge; then
+            echo "::notice::Auto-merge is not available: merge the pull request once its checks pass."
+          fi

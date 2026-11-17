@@ -22,6 +22,14 @@ finish-args:
   - --talk-name=org.kde.StatusNotifierWatcher
   # App profiles on Hyprland: the window in focus, from Hyprland's event socket.
   - --filesystem=xdg-run/hypr:ro
+  # App profiles on KDE Plasma: PeriHub loads a small KWin script, which calls it back on
+  # io.github.hex_dump.perihub.Focus (a Flatpak may own names under its app id without asking).
+  - --talk-name=org.kde.KWin
+  # App profiles on GNOME: the window in focus, from PeriHub's own GNOME Shell extension (its bus
+  # name). The sandbox is deliberately not widened to install the extension (no access to the
+  # extensions folder or to org.gnome.Shell.Extensions): the App profiles page shows the one command
+  # that installs it from the host.
+  - --talk-name=io.github.hex_dump.perihub.GnomeFocus
 
 modules:
   # Tauri's tray icon loads libayatana-appindicator, which the GNOME runtime does not have. From

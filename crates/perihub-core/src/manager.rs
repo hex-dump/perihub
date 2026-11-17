@@ -300,6 +300,9 @@ pub struct DeviceStatus {
     /// PeriHub runs in a Flatpak sandbox and cannot see the other programs running (see
     /// [`conflicts::sandboxed`]).
     pub sandboxed: bool,
+    /// The first detection pass is over. Until then the lists above are empty because nothing was looked
+    /// at yet, not because nothing is connected: the interface must not offer a report for it.
+    pub scanned: bool,
 }
 
 /// A keyboard with QMK firmware: PeriHub reads Vial keyboards by itself, and other keyboards with a raw
@@ -382,6 +385,8 @@ struct Slots {
     key_interfaces: KeyInterfaces,
     /// The connected devices PeriHub does not know, for a device request.
     report_devices: Vec<ReportDevice>,
+    /// The first detection pass is over.
+    scanned: bool,
     /// Keys of the connected keyboard's map that start software macros, kept by its thread.
     keyboard_macro_keys: Option<Arc<Mutex<Vec<u8>>>>,
 }
@@ -455,6 +460,7 @@ impl Manager {
                 let mut slots = self.slots.lock().unwrap();
                 slots.keyboard_error = Some(format!("HID unavailable: {error}"));
                 slots.mouse_error = slots.keyboard_error.clone();
+                slots.scanned = true;
                 drop(slots);
                 listener(&self.status());
                 return;
@@ -469,7 +475,9 @@ impl Manager {
             if pass.is_multiple_of(CONFLICT_CHECK_EVERY) {
                 changed |= self.check_conflicts();
             }
-            if changed {
+            // The first pass is always announced, also when it finds nothing: that is the answer.
+            let first = !std::mem::replace(&mut self.slots.lock().unwrap().scanned, true);
+            if changed || first {
                 listener(&self.status());
             }
             pass = pass.wrapping_add(1);
@@ -975,6 +983,15 @@ impl Manager {
         }
     }
 
+    /// Gives the lights of every keyboard PeriHub drives back before read-only mode goes on. PeriHub
+    /// takes them again once it is off.
+    pub fn release_logitech_for_read_only(&self) {
+        let workers: Vec<_> = self.slots.lock().unwrap().logitech.values().map(|(w, _)| w.clone()).collect();
+        for worker in workers {
+            let _ = worker.call(|d| d.give_back_for_read_only());
+        }
+    }
+
     /// Turns a keyboard with a raw HID collection on or off as a VIA keyboard, by "vvvv:pppp". It is
     /// opened or closed at the next pass.
     pub fn set_qmk_enabled(&self, key: &str, on: bool) {
@@ -988,8 +1005,7 @@ impl Manager {
 
     /// Looks for running programs that take control of the devices. Returns `true` if the list changed.
     fn check_conflicts(&self) -> bool {
-        let running = conflicts::running();
-        let logitech_programs = conflicts::logitech_programs_running();
+        let (running, logitech_programs) = conflicts::running_and_logitech_programs();
         let mut slots = self.slots.lock().unwrap();
         if slots.conflicts == running && slots.logitech_programs == logitech_programs {
             return false;
@@ -1031,6 +1047,7 @@ impl Manager {
             receivers: slots.receivers.clone(),
             logitech_programs: slots.logitech_programs.iter().map(|name| name.to_string()).collect(),
             sandboxed: conflicts::sandboxed(),
+            scanned: slots.scanned,
         }
     }
 
@@ -1167,6 +1184,22 @@ impl Manager {
                 found.push((d.clone(), model));
             }
         }
+        // A keyboard of another brand is opened only where nothing typed arrives (Linux; elsewhere the
+        // system keeps typed keys away from programs). QMK keyboards were checked above, more strictly.
+        found.retain(|(d, model)| {
+            // On Linux the Wraith's collection is opened only by a rule the user turns on: it can carry
+            // how far each key is pressed. That rule is not there yet.
+            if cfg!(target_os = "linux") && matches!(model.protocol, Protocol::Wraith(_)) {
+                return false;
+            }
+            let typing = model.kind == peripheral::Kind::Keyboard
+                && !matches!(model.protocol, Protocol::Qmk(_))
+                && peripheral::node_carries_typing(&d.path().to_string_lossy());
+            if typing {
+                log::debug!("{} {}: its node also carries typed keys, not opened", model.brand, model.name);
+            }
+            !typing
+        });
         let present = |path: &CStr| found.iter().any(|(d, _)| d.path() == path);
         let mut changed = false;
         let mut slots = self.slots.lock().unwrap();
