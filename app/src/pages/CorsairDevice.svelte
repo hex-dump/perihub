@@ -71,7 +71,7 @@
 
 </script>
 
-<header>
+<header class="page-head">
   <h1>{info ? `Corsair ${info.model}` : "Corsair device"}</h1>
   <Status kind="experimental" label="Experimental" chip />
 </header>
@@ -178,16 +178,6 @@
 {/if}
 
 <style>
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    margin: 0;
-  }
 
   h2 {
     margin: 0 0 12px;

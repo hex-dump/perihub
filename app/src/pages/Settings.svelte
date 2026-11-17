@@ -93,7 +93,9 @@
   }
 </script>
 
-<h1>Settings</h1>
+<header class="page-head">
+  <h1>Settings</h1>
+</header>
 
 <div class="col gap">
   {#if error}<div class="notice error">{error}</div>{/if}
@@ -346,10 +348,6 @@
 <style>
   .about { justify-content: space-between; align-items: center; }
   .about-text { gap: 2px; flex: 1 1 260px; }
-  h1 {
-    margin-bottom: 18px;
-  }
-
   .gap {
     gap: 16px;
   }

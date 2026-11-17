@@ -87,7 +87,7 @@
   }
 </script>
 
-<header>
+<header class="page-head">
   <h1>Logitech G300</h1>
   {#if info && !info.editable}<Status kind="readonly" label="Read-only" chip />{/if}
 </header>
@@ -172,16 +172,6 @@
 {/if}
 
 <style>
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    margin: 0;
-  }
 
   .edit {
     margin-left: auto;

@@ -124,7 +124,7 @@
   }
 </script>
 
-<header>
+<header class="page-head">
   <h1>{info ? name : "Device"}</h1>
   {#if info}<Status kind={info.editable ? "experimental" : "readonly"} label={info.editable ? "Experimental" : "Read-only"} chip />{/if}
 </header>
@@ -325,16 +325,6 @@
 {/if}
 
 <style>
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    margin: 0;
-  }
 
   h2 {
     margin: 16px 0 8px;

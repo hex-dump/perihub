@@ -115,7 +115,7 @@
   }
 </script>
 
-<header>
+<header class="page-head">
   <div class="col tight grow">
     <h1>Logitech {name}</h1>
     <span class="muted small">
@@ -278,14 +278,7 @@
 
 <style>
   header {
-    display: flex;
     align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    margin: 0;
   }
 
   .tight {

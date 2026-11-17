@@ -124,13 +124,16 @@
   const value = (e: Event) => (e.target as HTMLInputElement | HTMLSelectElement).value;
 </script>
 
-<h1>App profiles</h1>
+<header class="page-head">
+  <h1>App profiles</h1>
+</header>
+
+<p class="lead">
+  Change the keyboard lighting and the mouse profile automatically while an app or a game is in focus.
+  When you switch to an app without a rule, both go back to how they were.
+</p>
 
 <div class="col gap">
-  <p class="muted">
-    Change the keyboard lighting and the mouse profile automatically while an app or a game is in focus.
-    When you switch to an app without a rule, both go back to how they were.
-  </p>
 
   {#if error}<div class="notice error">{error}</div>{/if}
 
@@ -197,7 +200,7 @@
             {#each recentApps as app (app)}<option value={app}></option>{/each}
           </datalist>
         {:else}
-          <p class="muted small">No rules yet.</p>
+          <p class="empty">No rules yet. Add one for an app or a game, or pick from your installed games.</p>
         {/if}
         <div class="row">
           <button onclick={addRule}>Add rule</button>
@@ -209,7 +212,7 @@
             <input type="search" placeholder="Search games" aria-label="Search games" bind:value={gameSearch} />
             {#if gameMessage}<div class="notice info">{gameMessage}</div>{/if}
             {#if !games}
-              <p class="muted small">Looking for games...</p>
+              <p class="loading">Looking for games…</p>
             {:else if !games.length}
               <p class="muted small">No games found. PeriHub looks at Steam, Lutris and Heroic.</p>
             {:else if !shownGames.length}
@@ -240,14 +243,12 @@
         {/if}
       </div>
     {/if}
+  {:else if !error}
+    <p class="loading">Reading app profiles…</p>
   {/if}
 </div>
 
 <style>
-  h1 {
-    margin-bottom: 10px;
-  }
-
   .gap {
     gap: 16px;
   }
