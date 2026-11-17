@@ -1,0 +1,39 @@
+{
+  "format": "perihub-transcript",
+  "version": 1,
+  "device": {
+    "vendor_id": "1b1c",
+    "product_id": "1b93",
+    "name": "Corsair KATAR PRO"
+  },
+  "family": "corsair-bragi",
+  "access": "read-only",
+  "source": "synthetic: docs/protocols/corsair-bragi.md",
+  "notes": [
+    "Not from a device: no Corsair device has sent a report yet (issue #18). The packets are laid out as docs/protocols/corsair-bragi.md describes them, and the values (firmware 5.2.65, hardware mode, 1000 Hz, 800 DPI) are examples. Replace it with a real transcript when one comes."
+  ],
+  "expect": {
+    "product_id": 7059,
+    "model": "KATAR PRO",
+    "kind": "mouse",
+    "receiver": null,
+    "leds": 1,
+    "firmware": "5.2.65",
+    "mode": 1,
+    "polling_hz": 1000,
+    "dpi": 800,
+    "read_errors": [],
+    "layout": null,
+    "lighting": null
+  },
+  "events": [
+    {"op":"write","data":"00 08 02 13","len":65},
+    {"op":"read","data":"00 02 00 05 02 41","len":64},
+    {"op":"write","data":"00 08 02 03","len":65},
+    {"op":"read","data":"00 02 00 01","len":64},
+    {"op":"write","data":"00 08 02 01","len":65},
+    {"op":"read","data":"00 02 00 04","len":64},
+    {"op":"write","data":"00 08 02 21","len":65},
+    {"op":"read","data":"00 02 00 20 03","len":64}
+  ]
+}

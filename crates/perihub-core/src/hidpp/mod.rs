@@ -119,6 +119,11 @@ fn is_read_call(feature: u16, function: u8) -> bool {
     READ_ONLY_CALLS.contains(&(feature, function))
 }
 
+/// Whether a call of a feature only reads ([`READ_ONLY_CALLS`]): for the replay tests.
+pub(crate) fn is_read_request(feature: u16, function: u8) -> bool {
+    is_read_call(feature, function)
+}
+
 /// Mouse memory sectors reserved for the factory profiles (read-only).
 pub const ROM_SECTOR_BASE: u16 = 0x0100;
 

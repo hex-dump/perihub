@@ -43,6 +43,10 @@ cd app && npm run check         # frontend type check
 cd app && npx vitest run        # frontend tests
 ```
 
+`cargo test` also replays the transcripts in `crates/perihub-core/tests/fixtures/transcripts`:
+what real devices answered, played back to the drivers without the device. A test report of a
+device of another brand ends with one; [replay.md](replay.md) says how to turn it into a test.
+
 ## Command-line tool
 
 Useful for diagnostics and scripting. It refuses to start while the app is open, since both would

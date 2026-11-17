@@ -4,6 +4,11 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+### Added
+- **Test reports of devices of other brands now carry every request and answer in full**, as a transcript (JSON) instead of the short "Requests and answers" list that cut requests and answers short. It holds only the bytes and the USB ids, nothing that tells your unit apart, and recording it sends nothing extra to the device: it only writes down what PeriHub already asks. A report too long for the form's link is copied for you to paste. Each transcript can become a test that plays the device's answers back to its driver without the device ([docs/replay.md](docs/replay.md)); the first ones, for the Wraith W60 (issue #35), the G303 Shroud Edition through its receiver (issue #34) and a Corsair KATAR PRO laid out from the protocol page, run in CI, and fail on any request the device never answered and on any command that changes something when the device was only read.
+
 ## 0.9.2 — 2026-11-17
 
 A keyboard's page now shows its layout (ANSI, ISO, JIS or ABNT2, and the key legends) and lets you change it when detection is wrong, and the Apex 3 TKL's Keys tab draws the right keys for it. Also new: clearer status marks (an icon and a word, in colors that no longer look like the accent), a tidier look for every page, and a fix for the "Send a report" prompt that flashed at start-up. CI and release workflows are also safer. The layout read has not been tried on a real Corsair or Razer keyboard yet, and a Logitech keyboard's layout code is only written into test reports, not used, because what it means is not documented.

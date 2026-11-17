@@ -257,8 +257,8 @@ export function g300Test(
   };
 }
 
-/** What a tester sends about a device of another brand, with every request and answer of the last
- * reading. */
+/** What a tester sends about a device of another brand, with every request and answer in full (the
+ * transcript a replay test is made from, docs/replay.md), or the short list of an older core. */
 export function peripheralTest(info: PeripheralInfo, version: string, system: string): DeviceTestFields {
   const usbId = info.key;
   const set = info.settings;
@@ -295,8 +295,9 @@ export function peripheralTest(info: PeripheralInfo, version: string, system: st
       info.kind === "keyboard" ? layoutReport(info.key, info.layout) : null,
       ...info.buttons.map((b) => `Button ${b.name}: ${b.action}`),
       `Changes: ${info.problem ? `off (${info.problem})` : info.editable ? "available (experimental)" : "off (read-only)"}`,
-      "Requests and answers:",
-      ...info.raw.map((line) => `  ${line}`),
+      ...(info.transcript
+        ? ["Transcript (every request and answer, for a replay test):", info.transcript.trimEnd()]
+        : ["Requests and answers:", ...info.raw.map((line) => `  ${line}`)]),
     ]
       .filter((line): line is string => line !== null)
       .join("\n"),

@@ -658,8 +658,11 @@ export interface PeripheralInfo {
   problem: string | null;
   /** A change was neither kept nor undone, and could not be undone on this connection. */
   pending_undo: boolean;
-  /** Requests and answers of the last reading, for test reports. */
+  /** Requests and answers of the last reading, cut short, for the backups. */
   raw: string[];
+  /** Every request and answer in full, as a transcript in JSON (docs/replay.md), for test reports:
+   * the first reading and the latest one. Nothing in it tells the unit apart. */
+  transcript?: string;
   /** A keyboard's physical layout, when its protocol has a read for it. */
   layout?: DeviceLayout | null;
 }
