@@ -48,12 +48,14 @@ jobs:
         working-directory: app
         env:
           CHROME: google-chrome
+          SHOTS_DIR: ${{ runner.temp }}/shots
         run: |
           npm ci
           npm run screenshots
 
       - name: Commit what changed
         env:
+          SHOTS_DIR: ${{ runner.temp }}/shots
           GH_TOKEN: ${{ github.token }}
           LABEL: ${{ github.event.release.tag_name || inputs.tag || github.run_id }}
         run: |
@@ -66,8 +68,8 @@ jobs:
           fi
           rm -rf "$RUNNER_TEMP/assets/screenshots"
           mkdir "$RUNNER_TEMP/assets/screenshots"
-          cp docs/screenshots/*.png "$RUNNER_TEMP/assets/screenshots/"
-          cp docs/social-preview.png "$RUNNER_TEMP/assets/"
+          cp "$SHOTS_DIR"/screenshots/*.png "$RUNNER_TEMP/assets/screenshots/"
+          cp "$SHOTS_DIR/social-preview.png" "$RUNNER_TEMP/assets/"
           cd "$RUNNER_TEMP/assets"
           git add -A
           if git diff --cached --quiet; then
