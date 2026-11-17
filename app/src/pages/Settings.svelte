@@ -116,10 +116,14 @@
         Always start hidden
       </label>
     {/if}
-    <p class="muted small">
-      Closing the window does not quit PeriHub: it keeps running to animate the keyboard lighting and to
-      reapply colors when the keyboard is plugged back in. Reopen it from the tray icon or by launching it again.
-    </p>
+    {#if settings?.no_tray_reason}
+      <p class="notice">Close to tray is unavailable. {settings.no_tray_reason}</p>
+    {:else}
+      <p class="muted small">
+        Closing the window does not quit PeriHub: it keeps running to animate the keyboard lighting and to
+        reapply colors when the keyboard is plugged back in. Reopen it from the tray icon or by launching it again.
+      </p>
+    {/if}
   </div>
 
   <div class="card col">

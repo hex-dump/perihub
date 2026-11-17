@@ -8,6 +8,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ### Added
 - The first time you close the window, a notification says that PeriHub keeps running in the system tray and how to quit it (Quit in the tray menu, or Settings → Quit PeriHub). It is shown once.
+- On a Linux desktop with no system tray (GNOME without the AppIndicator extension, for one), closing the window quits PeriHub instead of hiding it where it cannot be brought back, "Always start hidden" and autostart open the window, the notification above is not shown, and Settings says why. PeriHub looks for the tray once at start-up (a StatusNotifierWatcher with a host on the session bus), waiting at most half a second. Windows and macOS are unchanged.
 
 ### Fixed
 - The udev rule command for the AppImage and the Flatpak in the README downloads the rule of the release (`v0.9.2`) instead of the one on `main`, which can be newer than the installed version and open devices an older PeriHub does not filter; `tools/release.py bump` updates the version in that command.

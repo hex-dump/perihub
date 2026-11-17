@@ -633,6 +633,9 @@ pub struct AppSettings {
     /// Operating system and architecture, for test reports: read only.
     #[serde(default)]
     system: String,
+    /// Why "close to tray" is unavailable (the desktop has no tray), `None` when it works: read only.
+    #[serde(default)]
+    no_tray_reason: Option<String>,
 }
 
 #[tauri::command]
@@ -648,6 +651,7 @@ pub fn app_get_settings(app: AppHandle, state: State<'_, AppState>) -> AppSettin
         log_dir: crate::logfile::dir().display().to_string(),
         config_dir: perihub_core::config::config_dir().display().to_string(),
         system: format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
+        no_tray_reason: crate::tray_support::unavailable_reason(),
     }
 }
 

@@ -14,6 +14,7 @@ mod quick;
 mod soft_macros;
 #[cfg(target_os = "linux")]
 mod system_theme;
+mod tray_support;
 mod unifying_access;
 mod updates;
 mod window;
@@ -176,6 +177,7 @@ fn main() {
             if args.iter().any(|a| a == AFTER_UPDATE_ARG) {
                 app.state::<updates::Available>().started_by_update();
             }
+            tray_support::detect();
             window::build_tray(app.handle())?;
             battery::start(app.handle().clone());
             updates::watch(app.handle().clone());
@@ -191,14 +193,21 @@ fn main() {
             system_theme::watch(app.handle().clone());
 
             // Started hidden (autostart), PeriHub creates no window until it is opened.
-            if !start_hidden {
+            // Without a tray a hidden PeriHub could not be brought back.
+            if !start_hidden || !tray_support::available() {
                 window::show(app.handle(), None);
             }
             Ok(())
         })
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { .. } = event {
-                tell_it_keeps_running(window.app_handle());
+                if tray_support::available() {
+                    tell_it_keeps_running(window.app_handle());
+                } else {
+                    // No tray to come back from: closing the window quits (on its own thread, as quitting waits for macros).
+                    let app = window.app_handle().clone();
+                    std::thread::spawn(move || window::quit(&app));
+                }
             }
             // Closing the window destroys it (see window.rs). A DPI or LED preview the interface
             // could not cancel goes back to the saved settings.
