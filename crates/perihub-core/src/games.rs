@@ -292,7 +292,7 @@ fn registry_string(root: windows_sys::Win32::System::Registry::HKEY, key: &str, 
             std::ptr::null_mut(),
             &mut bytes,
         );
-        if status != 0 || bytes < 2 || bytes > 64 * 1024 {
+        if status != 0 || !(2..=64 * 1024).contains(&bytes) {
             return None;
         }
         let mut buf = vec![0u16; (bytes as usize).div_ceil(2)];
