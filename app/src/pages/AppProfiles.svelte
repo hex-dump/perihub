@@ -214,7 +214,7 @@
             {#if !games}
               <p class="loading">Looking for games…</p>
             {:else if !games.length}
-              <p class="muted small">No games found. PeriHub looks at Steam, Lutris and Heroic.</p>
+              <p class="muted small">No games found. PeriHub looks at Steam, the Epic Games Launcher, Lutris and Heroic.</p>
             {:else if !shownGames.length}
               <p class="muted small">No game matches.</p>
             {:else}
