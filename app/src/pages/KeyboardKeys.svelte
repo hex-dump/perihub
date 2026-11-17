@@ -238,7 +238,7 @@
 
   {#if error}<div class="notice error">{error}</div>{/if}
   {#if message}<div class="notice ok">{message}</div>{/if}
-  {#if busy}<div class="notice info">{busy}</div>{/if}
+  {#if busy}<p class="loading">{busy}</p>{/if}
 
   {#if keymap}
     <div class="fit" bind:clientWidth={fitWidth}>
@@ -338,7 +338,8 @@
         <span class="muted small">{pending.length} unsaved {pending.length === 1 ? "change" : "changes"}</span>
         <button disabled={!!busy} onclick={() => (drafts = [{}, {}])}>Discard</button>
       {/if}
-      <button class="primary" disabled={!pending.length || !!busy || readOnly.on} onclick={save}>Save to keyboard</button>
+      <button class="primary" disabled={!pending.length || !!busy || readOnly.on} onclick={save}
+        title="Writes the key mapping to the keyboard's onboard memory: it then works on any computer, even without PeriHub">Save to keyboard</button>
     </div>
     <p class="muted small">
       The mapping is stored in the keyboard's memory and works without PeriHub, on any computer, except keys that start

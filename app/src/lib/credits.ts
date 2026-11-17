@@ -71,6 +71,13 @@ export const creditGroups: CreditGroup[] = [
         notes: ["(commit ed9e0e9) How the mice on the YJX receiver take their reports, the version and settings commands and the layout of the settings (docs/protocols/yjx-mice.md)."],
       },
       {
+        name: "Phosphor Icons",
+        link: "https://github.com/phosphor-icons/core",
+        license: "MIT license",
+        copyright: ["Copyright (c) 2023 Phosphor Icons"],
+        notes: ["The \"Flask\" icon (regular weight, @phosphor-icons/core 2.1.1), unaltered, for the experimental state."],
+      },
+      {
         name: "EWEADN-GS02-Pro-Control",
         link: "https://github.com/mimuruu/EWEADN-GS02-Pro-Control",
         license: "MIT license",

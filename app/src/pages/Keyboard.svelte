@@ -18,7 +18,7 @@
   let tab = $state<"lighting" | "keys">(untrack(() => initialTab) === "keys" ? "keys" : "lighting");
 </script>
 
-<header class="row">
+<header class="page-head">
   <div class="col tight grow">
     <h1>SteelSeries Apex 3 TKL</h1>
     <span class="muted small">
@@ -54,10 +54,6 @@
 </section>
 
 <style>
-  header {
-    margin-bottom: 20px;
-  }
-
   .tight {
     gap: 4px;
   }

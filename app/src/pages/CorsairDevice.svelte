@@ -2,6 +2,7 @@
   // A Corsair mouse or keyboard: what PeriHub reads from it, and experimental lighting for this session.
   import { onDestroy } from "svelte";
   import { api, debounce, errorText, type CorsairInfo } from "../lib/api";
+  import Status from "../components/Status.svelte";
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import NoWarranty from "../components/NoWarranty.svelte";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
@@ -71,9 +72,9 @@
 
 </script>
 
-<header>
+<header class="page-head">
   <h1>{info ? `Corsair ${info.model}` : "Corsair device"}</h1>
-  <span class="chip test">Experimental</span>
+  <Status kind="experimental" label="Experimental" chip />
 </header>
 
 {#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
@@ -181,16 +182,6 @@
 {/if}
 
 <style>
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    margin: 0;
-  }
 
   h2 {
     margin: 0 0 12px;

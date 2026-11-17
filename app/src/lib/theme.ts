@@ -15,10 +15,10 @@ export const THEMES: { id: ThemeChoice; label: string }[] = [
 export const ACCENTS: { id: AccentId; label: string; swatch: string }[] = [
   { id: "orange", label: "Orange", swatch: "#ff6a2b" },
   { id: "blue", label: "Blue", swatch: "#4f9dff" },
-  { id: "green", label: "Green", swatch: "#46c76b" },
+  { id: "green", label: "Green", swatch: "#9ccf3a" },
   { id: "purple", label: "Purple", swatch: "#ac8aff" },
   { id: "pink", label: "Pink", swatch: "#ff5fa2" },
-  { id: "teal", label: "Teal", swatch: "#2cc6c0" },
+  { id: "teal", label: "Teal", swatch: "#22c8e4" },
 ];
 
 export const THEME_KEY = "perihub.theme";

@@ -5,6 +5,7 @@
   } from "../lib/api";
   import { mouseButtonName } from "../lib/keys";
   import { macroLibrary } from "../lib/macros";
+  import { GLOSSARY } from "../lib/glossary";
   import ButtonActionEditor from "../components/ButtonActionEditor.svelte";
   import SoftMacros from "../components/SoftMacros.svelte";
 
@@ -59,7 +60,7 @@
     <div class="row">
       <div class="segmented">
         <button class:active={layer === "normal"} onclick={() => (layer = "normal")}>Normal</button>
-        <button class:active={layer === "gshift"} onclick={() => (layer = "gshift")}>G-Shift</button>
+        <button class:active={layer === "gshift"} onclick={() => (layer = "gshift")} title={GLOSSARY.gshift}>G-Shift</button>
       </div>
       <span class="muted small">
         {#if layer === "gshift"}

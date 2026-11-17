@@ -1,6 +1,8 @@
 <script lang="ts">
   // Which brands and models PeriHub knows, and how far: counts per level, a brand opens to its models.
   import { brands as all, byLevel, type DeviceBrand } from "../lib/devices";
+  import { levelStatus } from "../lib/status";
+  import Status from "./Status.svelte";
 
   interface Props {
     brands?: DeviceBrand[];
@@ -23,9 +25,7 @@
           <span class="name">{brand.brand}</span>
           <span class="counts">
             {#each byLevel(brand.models) as l (l.level)}
-              <span class="chip" class:ok={l.level === "supported"} class:accent={l.level === "experimental"}>
-                {l.models.length} {l.label.toLowerCase()}
-              </span>
+              <Status kind={levelStatus(l.level)} label={`${l.models.length} ${l.label.toLowerCase()}`} chip />
             {/each}
           </span>
         </summary>

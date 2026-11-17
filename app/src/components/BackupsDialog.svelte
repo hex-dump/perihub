@@ -70,7 +70,7 @@
     {#if error}<div class="notice error">{error}</div>{/if}
 
     {#if backups === null}
-      <p class="muted">Loading…</p>
+      <p class="loading">Loading…</p>
     {:else if backups.length === 0}
       <p class="muted">No backups yet: PeriHub saves one the first time it writes to the {device}.</p>
     {:else}

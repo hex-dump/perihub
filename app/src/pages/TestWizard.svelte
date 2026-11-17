@@ -5,6 +5,8 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type DeviceStatus, type ReportDevice, type WriteEntry } from "../lib/api";
   import { userNames } from "../lib/redact";
+  import { stateStatus } from "../lib/status";
+  import Status from "../components/Status.svelte";
   import { readOnly, writeLogLines } from "../lib/readOnly.svelte";
   import {
     candidates, checklist, checklistText, formAddress, formUrl, needsPaste, prepareForm, readDevice, reportText,
@@ -43,7 +45,7 @@
 
   let { status }: Props = $props();
   let step = $state<Step>("pick");
-  let unknown = $state<ReportDevice[]>([]);
+  let unknown = $state<ReportDevice[] | null>(null);
   let pickedId = $state<string | null>(null);
   let version = $state("");
   let system = $state("");
@@ -60,7 +62,7 @@
   /** Only the latest reading counts: the user may go back and pick another device. */
   let readId = 0;
 
-  const list = $derived(candidates(status, unknown));
+  const list = $derived(candidates(status, unknown ?? []));
   const picked = $derived(list.find((c) => c.id === pickedId) ?? null);
   const items = $derived(probed ? checklist(probed.candidate) : []);
   /** Nothing to tick for a device PeriHub does not know: that step is left out. */
@@ -207,14 +209,14 @@
   {/if}
 {/snippet}
 
-<header>
+<header class="page-head">
   <h1>Test my device</h1>
 </header>
 
 <ol class="steps">
   {#each steps as s, i (s)}
     <li class:current={s === step} class:done={steps.indexOf(step) > i}>
-      <span class="number">{i + 1}</span>
+      <span class="number">{steps.indexOf(step) > i ? "✓" : i + 1}</span>
       <span class="title">{TITLES[s]}</span>
     </li>
   {/each}
@@ -223,11 +225,13 @@
 {#if error}<div class="notice error">{error}</div>{/if}
 
 {#if step === "pick"}
-  <div class="notice info">
+  <p class="lead">
     Pick the mouse, keyboard or receiver you want to test. PeriHub reads it, shows you what the report holds, and
     opens a form on GitHub (a free account is needed to submit it). Nothing is sent before you press Submit there.
-  </div>
-  {#if list.length === 0}
+  </p>
+  {#if !status.scanned || (unknown === null && list.length === 0)}
+    <p class="loading">Looking for devices…</p>
+  {:else if list.length === 0}
     <div class="card col">
       <p>
         PeriHub found no device. If yours is connected, plug it straight into the computer (not through a hub or a
@@ -249,7 +253,7 @@
             <b>{c.name}</b>
             <span class="muted small">{c.kind === "other" ? "Other device" : c.kind === "mouse" ? "Mouse" : "Keyboard"}</span>
           </span>
-          <span class="chip" class:ok={c.state === "Supported"}>{c.state}</span>
+          <Status kind={stateStatus(c.state)} label={c.state} chip />
         </button>
       {/each}
     </div>

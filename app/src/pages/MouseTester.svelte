@@ -2,6 +2,7 @@
   // Tests of the mouse in this window: polling rate, DPI and clicks. Read-only: nothing is sent to the
   // mouse, the page only looks at the events the window receives.
   import { onMount } from "svelte";
+  import Term from "../components/Term.svelte";
   import {
     BUTTON_NAMES,
     CHATTER_MS,
@@ -170,19 +171,19 @@
   });
 </script>
 
-<header>
+<header class="page-head">
   <h1>Mouse tester</h1>
 </header>
 
-<div class="notice info">
+<p class="lead">
   These tests only watch what this window receives from your mouse. Nothing is sent to the mouse, and it works with
   any mouse, including ones PeriHub does not support.
-</div>
+</p>
 
 <div class="col gap">
   <section class="card col">
     <div class="row">
-      <h2 class="grow">Polling rate</h2>
+      <h2 class="grow"><Term term="polling">Polling rate</Term></h2>
       <button type="button" class="tiny" onclick={resetPolling}>Reset</button>
     </div>
     <p class="muted small">

@@ -73,20 +73,20 @@
   }
 </script>
 
-<header>
+<header class="page-head">
   <h1>Send a report for your device</h1>
 </header>
 
-<div class="notice info">
+<p class="lead">
   {#if alone}<b>PeriHub found no mouse or keyboard it supports.</b>{/if}
   Pick yours below: PeriHub opens a device request on GitHub with its name, its USB id and the HID collections it
   shows, so its support can be looked into. No serial number is included, and nothing is sent until you submit the
   form, which needs a GitHub account.
-</div>
+</p>
 {#if error}<div class="notice error">{error}</div>{/if}
 
 {#if devices === null}
-  <p class="muted">Looking for devices…</p>
+  <p class="loading">Looking for devices…</p>
 {:else if listed.length === 0}
   <div class="card col">
     <p>No other USB or Bluetooth device found. If yours is connected, plug it straight into the computer (not through a

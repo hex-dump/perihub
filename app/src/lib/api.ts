@@ -397,6 +397,8 @@ export interface DeviceStatus {
   logitech_programs: string[];
   /** PeriHub runs as a Flatpak and cannot see the other programs running. */
   sandboxed: boolean;
+  /** The first detection pass is over: until then empty lists mean "not looked at yet", not "nothing there". */
+  scanned: boolean;
 }
 
 /** A device paired with a receiver that PeriHub does not support yet, as far as it could be read. */

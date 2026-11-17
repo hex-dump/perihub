@@ -10,6 +10,7 @@
     type ReceiverReport,
   } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
+  import Status from "../components/Status.svelte";
   import ConfirmButton from "../components/ConfirmButton.svelte";
   import { mouseRestoreMessage } from "../lib/backups";
   import TestReport from "../components/TestReport.svelte";
@@ -294,7 +295,7 @@
   });
 </script>
 
-<header class="row">
+<header class="page-head">
   <div class="col tight grow">
     <h1>Logitech {info?.model ?? asleep ?? "mouse"}</h1>
     <span class="muted small">
@@ -309,9 +310,14 @@
     </span>
   </div>
   {#if info && mouse && battery}
-    <div class="now battery" class:low={battery.percent <= 15 && battery.state === "discharging"} title="The mouse's battery">
+    {@const low = battery.percent <= 15 && battery.state === "discharging"}
+    <div class="now battery" class:low title="The mouse's battery">
       <strong>{batteryText(battery)}</strong>
-      <span class="small muted">{battery.state === "charging" ? "Battery, charging" : "Battery"}</span>
+      {#if low}
+        <Status kind="warn" label="Battery low" />
+      {:else}
+        <span class="small muted">{battery.state === "charging" ? "Battery, charging" : "Battery"}</span>
+      {/if}
     </div>
   {/if}
   {#if info && mouse}
@@ -478,7 +484,7 @@
           title={profile.number === selected ? "Shown below" : "Show and edit this profile"}>
           <span class="title">
             <strong>Profile {profile.number}</strong>
-            {#if active}<span class="chip ok">Active</span>{/if}
+            {#if active}<Status kind="ok" label="Active" title="The profile the mouse is using now" />{/if}
           </span>
           <span class="small muted">{profile.settings.dpi_levels.join(" / ")} DPI</span>
           <span class="small muted">{profile.settings.report_rate_hz ? `${profile.settings.report_rate_hz} Hz` : reportRateLabel(profile.settings.report_rate_ms)}</span>
@@ -552,7 +558,8 @@
       <span class="unsaved">Unsaved changes</span>
     {/if}
     <button disabled={!dirty || !!busy} onclick={discard}>Discard</button>
-    <button class="primary" disabled={!dirty || !!busy || leftClickMissing || !writable} onclick={save}>
+    <button class="primary" disabled={!dirty || !!busy || leftClickMissing || !writable} onclick={save}
+      title="Writes the profile to the mouse's onboard memory: it then works on any computer, even without PeriHub">
       Save to mouse
     </button>
   </footer>
@@ -567,12 +574,11 @@
     {/await}
   {/if}
 {:else if info}
-  {#if error}<div class="notice error">{error}</div>{:else}<div class="notice info">{busy ?? "Loading…"}</div>{/if}
+  {#if error}<div class="notice error">{error}</div>{:else}<p class="loading">{busy ?? "Loading…"}</p>{/if}
 {/if}
 
 <style>
   header {
-    margin-bottom: 20px;
     align-items: flex-start;
   }
 
@@ -601,13 +607,13 @@
     margin-left: 10px;
   }
 
-  /* Orange stays for the DPI in use; the battery turns red only when it is low. */
+  /* The accent stays for the DPI in use; the battery takes the warning color, and says so, only when it is low. */
   .now.battery strong {
     color: var(--text);
   }
 
   .now.battery.low strong {
-    color: var(--bad);
+    color: var(--warn);
   }
 
   .profiles {
