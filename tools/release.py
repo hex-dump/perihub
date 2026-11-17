@@ -5,7 +5,7 @@
   release.py bump VERSION [DATE]   new version everywhere; "## Unreleased" becomes "## VERSION — DATE"
   release.py notes VERSION         the release notes on GitHub, from that version's CHANGELOG section
   release.py check DIR VERSION     signatures, latest.json and SHA256SUMS.txt of the files in DIR
-  release.py aur VERSION DEB       packaging/aur/perihub-bin for that version, from its .deb
+  release.py aur VERSION DEB DIR   PKGBUILD and .SRCINFO in DIR (a checkout of the aur branch) for that version, from its .deb
 
 A version's section in CHANGELOG.md starts with a summary paragraph, then has some of these
 sections, in this order. The release notes show each with its title.
@@ -316,9 +316,9 @@ def check(directory: str, version: str) -> None:
     print(f"SHA256SUMS.txt: {len(files)} files")
 
 
-def aur(version: str, deb: str) -> None:
+def aur(version: str, deb: str, folder: str) -> None:
     check_version(version)
-    folder = ROOT / "packaging/aur/perihub-bin"
+    folder = Path(folder)
     deb_sum = hashlib.sha256(Path(deb).read_bytes()).hexdigest()
     # The LICENSE the PKGBUILD downloads is the one at the tag, the same as in the repository.
     if git("tag", "--list", f"v{version}"):
@@ -356,8 +356,8 @@ def main() -> None:
         sys.stdout.write(notes(args[1]))
     elif len(args) == 3 and args[0] == "check":
         check(args[1], args[2])
-    elif len(args) == 3 and args[0] == "aur":
-        aur(args[1], args[2])
+    elif len(args) == 4 and args[0] == "aur":
+        aur(args[1], args[2], args[3])
     else:
         sys.exit(__doc__)
 
