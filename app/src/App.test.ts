@@ -36,6 +36,7 @@ const empty = (): DeviceStatus => ({
   receivers: [],
   logitech_programs: [],
   sandboxed: false,
+  scanned: true,
 });
 
 const ite: ReportDevice = {
@@ -93,6 +94,27 @@ describe("Sidebar", () => {
     await wait();
     expect(nav().textContent).not.toContain("Send a report");
     expect(nav().textContent).not.toContain("Apex 3 TKL");
+  });
+
+  // The backend answers get_status at once, with empty lists, before its first pass has looked at devices.
+  it("offers no report for the empty status sent before the first scan, then lists the device", async () => {
+    const early = { ...empty(), scanned: false };
+    let send: (s: DeviceStatus) => void = () => {};
+    calls.status = vi.fn(async () => early);
+    calls.onStatus = vi.fn(async (handler: (s: DeviceStatus) => void) => {
+      send = handler;
+      return () => {};
+    });
+    location.hash = "#report";
+    render(App);
+    await wait();
+    expect(nav().textContent).not.toContain("Send a report");
+    expect(screen.queryByRole("heading", { name: "Send a report for your device" })).toBeNull();
+    expect(document.body.textContent).not.toContain("found no mouse or keyboard");
+    send({ ...empty(), mouse_asleep: "G502 X PLUS" });
+    await wait();
+    expect(nav().textContent).toContain("G502 X PLUS");
+    location.hash = "";
   });
 
   it("with no device, offers only the report, and opens it", async () => {

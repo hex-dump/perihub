@@ -10,6 +10,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 - Automatic issue comments are quieter. A test build comments only on issues named by a `Test: #N` line in a commit message, and later builds edit that comment instead of adding one. The release comment goes to open issues the CHANGELOG names, quotes the line, and is skipped when the maintainer already said the fix ships.
 
 ### Fixed
+- The "Send a report" prompt no longer flashes for a second at start-up while PeriHub is still looking for your devices.
 - **The accent color no longer looks like a device's state**: with the green or teal accent, "Connected" in the sidebar looked like the accent, and experimental and read-only devices were shown in the same green as connected ones. A state is now always an icon and a word (a check for connected, a moon for asleep, a beaker for experimental, an eye for read-only, a triangle for something to look at), in status colors each theme sets itself and that never follow the accent; the accent stays for the selection, the main button, focus and the value in use. Support levels in Settings, the test page and the device headings use the same marks, the "level in use" of the G300 and other-brand pages is in the accent like on the Logitech mouse page, and a low mouse battery says "Battery low" in the warning color. A test checks that the accent blocks set nothing else and lists which accents are close to a status color.
 
 ### Security

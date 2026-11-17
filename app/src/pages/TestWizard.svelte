@@ -45,7 +45,7 @@
 
   let { status }: Props = $props();
   let step = $state<Step>("pick");
-  let unknown = $state<ReportDevice[]>([]);
+  let unknown = $state<ReportDevice[] | null>(null);
   let pickedId = $state<string | null>(null);
   let version = $state("");
   let system = $state("");
@@ -62,7 +62,7 @@
   /** Only the latest reading counts: the user may go back and pick another device. */
   let readId = 0;
 
-  const list = $derived(candidates(status, unknown));
+  const list = $derived(candidates(status, unknown ?? []));
   const picked = $derived(list.find((c) => c.id === pickedId) ?? null);
   const items = $derived(probed ? checklist(probed.candidate) : []);
   /** Nothing to tick for a device PeriHub does not know: that step is left out. */
@@ -229,7 +229,9 @@
     Pick the mouse, keyboard or receiver you want to test. PeriHub reads it, shows you what the report holds, and
     opens a form on GitHub (a free account is needed to submit it). Nothing is sent before you press Submit there.
   </div>
-  {#if list.length === 0}
+  {#if !status.scanned || (unknown === null && list.length === 0)}
+    <p class="muted">Looking for devices…</p>
+  {:else if list.length === 0}
     <div class="card col">
       <p>
         PeriHub found no device. If yours is connected, plug it straight into the computer (not through a hub or a
