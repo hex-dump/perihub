@@ -59,4 +59,4 @@
   </button>
   <button type="button" disabled={!version} onclick={openForm}>Open test form</button>
 </div>
-{#if error}<div class="notice error">{error}</div>{/if}
+{#if error}<div class="notice error" role="alert">{error}</div>{/if}

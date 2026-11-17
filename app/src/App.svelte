@@ -200,7 +200,7 @@
 </script>
 
 <div class="shell">
-  <nav>
+  <nav aria-label="PeriHub pages">
     <div class="brand">
       <img class="logo" src={logo} alt="" />
       <span>PeriHub</span>
@@ -208,7 +208,7 @@
 
     <h3>Devices</h3>
     {#if loaded && !anyDevice}
-      <button class:active={page === "report"} onclick={() => go("report")}>
+      <button class:active={page === "report"} aria-current={page === "report" ? "page" : undefined} onclick={() => go("report")}>
         <Icon name="report" />
         <span class="col tight">
           <span class="name">Send a report</span>
@@ -217,7 +217,7 @@
       </button>
     {/if}
     {#if keyboardThere || page === "keyboard"}
-      <button class:active={page === "keyboard"} onclick={() => go("keyboard")}>
+      <button class:active={page === "keyboard"} aria-current={page === "keyboard" ? "page" : undefined} onclick={() => go("keyboard")}>
         <Icon name="keyboard" />
         <span class="col tight">
           <span class="name">{!status.keyboard && status.unsupported_keyboard ? status.unsupported_keyboard : "Apex 3 TKL"}</span>
@@ -234,7 +234,7 @@
       </button>
     {/if}
     {#if mouseThere || page === "mouse"}
-      <button class:active={page === "mouse"} onclick={() => go("mouse")}>
+      <button class:active={page === "mouse"} aria-current={page === "mouse" ? "page" : undefined} onclick={() => go("mouse")}>
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">{status.mouse?.model ?? status.mouse_asleep ?? "Logitech mouse"}</span>
@@ -252,7 +252,7 @@
     {/if}
 
     {#if status.g300 || status.g300_error || page === "g300"}
-      <button class:active={page === "g300"} onclick={() => go("g300")}>
+      <button class:active={page === "g300"} aria-current={page === "g300" ? "page" : undefined} onclick={() => go("g300")}>
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Logitech G300</span>
@@ -303,7 +303,7 @@
       </button>
     {/each}
     {#if status.qmk.length > 0}
-      <button class:active={page === "qmk"} onclick={() => go("qmk")}>
+      <button class:active={page === "qmk"} aria-current={page === "qmk" ? "page" : undefined} onclick={() => go("qmk")}>
         <Icon name="keyboard" />
         <span class="col tight">
           <span class="name">QMK keyboards</span>
@@ -312,7 +312,7 @@
       </button>
     {/if}
     {#if status.peripherals.length === 0 && status.peripheral_error}
-      <button class:active={page === "peripheral"} onclick={() => go("peripheral")}>
+      <button class:active={page === "peripheral"} aria-current={page === "peripheral" ? "page" : undefined} onclick={() => go("peripheral")}>
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Other device</span>
@@ -321,7 +321,7 @@
       </button>
     {/if}
     {#if status.corsair.length === 0 && (status.corsair_error || page === "corsair")}
-      <button class:active={page === "corsair"} onclick={() => go("corsair")}>
+      <button class:active={page === "corsair"} aria-current={page === "corsair" ? "page" : undefined} onclick={() => go("corsair")}>
         <Icon name="mouse" />
         <span class="col tight">
           <span class="name">Corsair</span>
@@ -339,19 +339,19 @@
 
     <div class="grow"></div>
     <h3>Tools</h3>
-    <button class:active={page === "wizard"} onclick={() => go("wizard")}>
+    <button class:active={page === "wizard"} aria-current={page === "wizard" ? "page" : undefined} onclick={() => go("wizard")}>
       <Icon name="report" />
       <span class="name">Test my device</span>
     </button>
-    <button class:active={page === "tester"} onclick={() => go("tester")}>
+    <button class:active={page === "tester"} aria-current={page === "tester" ? "page" : undefined} onclick={() => go("tester")}>
       <Icon name="mouse" />
       <span class="name">Mouse tester</span>
     </button>
-    <button class:active={page === "profiles"} onclick={() => go("profiles")}>
+    <button class:active={page === "profiles"} aria-current={page === "profiles" ? "page" : undefined} onclick={() => go("profiles")}>
       <Icon name="profiles" />
       <span class="name">App profiles</span>
     </button>
-    <button class:active={page === "settings"} onclick={() => go("settings")}>
+    <button class:active={page === "settings"} aria-current={page === "settings" ? "page" : undefined} onclick={() => go("settings")}>
       <Icon name="settings" />
       <span class="name">Settings</span>
       {#if updates.available}<span class="chip accent update">Update</span>{/if}

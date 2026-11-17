@@ -13,6 +13,8 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ### Changed
 - Device detection no longer gives up when the system's HID access is not ready yet (for example at login with autostart): it tries again after 2 seconds, then 4, 8 and so on up to 30 seconds, and says "HID unavailable, trying again" meanwhile. A panic while one kind of device is being looked for no longer stops detection of the others.
 
+- For screen readers: error messages are announced (`role="alert"`), the sidebar is a labelled navigation, and the page in use is marked as the current one.
+
 ### Fixed
 - **A damaged `config.json` is no longer overwritten by the defaults.** PeriHub keeps a copy next to it (`config.json.bad-<time>`) before it starts with the default settings, and read-only mode stays on in that case, since the lost file may have had it on; turn it off in the bar when you are ready. Before, the next save replaced your settings (app profiles, macros, lighting presets, battery limits, read-only mode) and read-only mode went off without a word.
 - Device detection no longer stops for good after one thread panicked while holding its state: that state is recovered, as the write log already did.

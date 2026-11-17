@@ -98,7 +98,7 @@
 </header>
 
 <div class="col gap">
-  {#if error}<div class="notice error">{error}</div>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
   <div class="card col">
     <h2>Startup</h2>
@@ -244,7 +244,7 @@
         {/if}
       </div>
       {#if updates.installing}<p class="muted small">{INSTALL_NOTE}</p>{/if}
-      {#if updates.error}<div class="notice error">{updates.error}</div>{/if}
+      {#if updates.error}<div class="notice error" role="alert">{updates.error}</div>{/if}
       <p class="muted small">
         PeriHub asks GitHub for the latest release: nothing else is sent. When it finds a new version it downloads it
         right away, so the update starts at once, but installs it only when you click “Update and restart”, after its

@@ -81,7 +81,7 @@
   <Status kind="experimental" label="Experimental" chip />
 </header>
 
-{#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
+{#if connectError && !info}<div class="notice error" role="alert">{connectError}</div>{/if}
 
 {#if info}
   <div class="notice info">
@@ -167,7 +167,7 @@
       </div>
     {/if}
     {#if busy}<p class="small muted" role="status">{busy}</p>{/if}
-    {#if error}<div class="notice error">{error}</div>{/if}
+    {#if error}<div class="notice error" role="alert">{error}</div>{/if}
   </section>
 
   {#if confirmWorks && on}

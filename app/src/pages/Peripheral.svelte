@@ -134,11 +134,11 @@
   {#if info}<Status kind={info.editable ? "experimental" : "readonly"} label={info.editable ? "Experimental" : "Read-only"} chip />{/if}
 </header>
 
-{#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
+{#if connectError && !info}<div class="notice error" role="alert">{connectError}</div>{/if}
 
 {#if info}
   {#if info.problem}
-    <div class="notice error">
+    <div class="notice error" role="alert">
       <b>PeriHub read something it did not expect from the {name}:</b> {info.problem}. It changes nothing on it. A test
       report would help support it.
     </div>
@@ -169,7 +169,7 @@
       }} />
   {/if}
   {#if busy}<div class="notice info">{busy}</div>{/if}
-  {#if error}<div class="notice error">{error}</div>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{/if}
   {#if message}<div class="notice ok">{message}</div>{/if}
 
   {#if info.kind === "keyboard"}

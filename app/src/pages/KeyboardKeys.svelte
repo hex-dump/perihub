@@ -236,7 +236,7 @@
     </span>
   </div>
 
-  {#if error}<div class="notice error">{error}</div>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{/if}
   {#if message}<div class="notice ok">{message}</div>{/if}
   {#if busy}<p class="loading">{busy}</p>{/if}
 

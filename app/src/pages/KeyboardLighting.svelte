@@ -185,7 +185,7 @@
 <div class="col gap">
   <ZoneStrip {lighting} brightness={brightnessShown.current} />
 
-  {#if error}<div class="notice error">{error}</div>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
   <!-- Read-only mode: the lighting is shown, nothing can be changed. -->
   <fieldset class="guard" disabled={readOnly.on}>

@@ -150,7 +150,7 @@
   {/if}
 </div>
 
-{#if softError}<div class="notice error">{softError}</div>{/if}
+{#if softError}<div class="notice error" role="alert">{softError}</div>{/if}
 
 <!-- The macro editor is loaded when first opened. -->
 {#if editing}

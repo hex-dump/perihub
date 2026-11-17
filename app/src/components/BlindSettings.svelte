@@ -106,7 +106,7 @@
     saved in the mouse, unplug it and plug it back in.
   </div>
 {/if}
-{#if error}<div class="notice error">{error}</div>{/if}
+{#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
 <table>
   <tbody>
