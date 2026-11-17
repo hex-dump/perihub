@@ -204,15 +204,14 @@ describe("status colors and the accent", () => {
         }
       }
     }
+    // Green leans to lime and teal to cyan so that, on the dark theme, neither is close to "connected"; on the
+    // light theme every dark enough green stays close to it.
     expect(close).toEqual([
       "dark orange ~ bad",
-      "dark green ~ ok",
       "dark pink ~ bad",
-      "dark teal ~ ok",
       "light orange ~ bad",
       "light green ~ ok",
       "light pink ~ bad",
-      "light teal ~ ok",
     ]);
   });
 });

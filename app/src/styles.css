@@ -96,15 +96,15 @@
    light enough to read on it with dark text on top, and one for the light theme, dark enough to read on it
    with white text on top. These blocks set the accent and nothing else (tested in theme.test.ts). */
 :root[data-accent="blue"] { --accent-rgb: 79 157 255; --accent-2-rgb: 122 182 255; --on-accent: #04101f; }
-:root[data-accent="green"] { --accent-rgb: 70 199 107; --accent-2-rgb: 111 219 140; --on-accent: #04140a; }
+:root[data-accent="green"] { --accent-rgb: 156 207 58; --accent-2-rgb: 181 219 107; --on-accent: #0d1403; }
 :root[data-accent="purple"] { --accent-rgb: 172 138 255; --accent-2-rgb: 190 165 255; --on-accent: #0f0720; }
 :root[data-accent="pink"] { --accent-rgb: 255 95 162; --accent-2-rgb: 255 134 187; --on-accent: #200612; }
-:root[data-accent="teal"] { --accent-rgb: 44 198 192; --accent-2-rgb: 93 217 212; --on-accent: #031615; }
+:root[data-accent="teal"] { --accent-rgb: 34 200 228; --accent-2-rgb: 100 217 236; --on-accent: #031417; }
 :root[data-theme="light"][data-accent="blue"] { --accent-rgb: 29 78 216; --accent-2-rgb: 30 64 175; --on-accent: #ffffff; }
-:root[data-theme="light"][data-accent="green"] { --accent-rgb: 20 108 50; --accent-2-rgb: 21 90 44; --on-accent: #ffffff; }
+:root[data-theme="light"][data-accent="green"] { --accent-rgb: 63 98 18; --accent-2-rgb: 54 83 20; --on-accent: #ffffff; }
 :root[data-theme="light"][data-accent="purple"] { --accent-rgb: 109 40 217; --accent-2-rgb: 91 33 182; --on-accent: #ffffff; }
 :root[data-theme="light"][data-accent="pink"] { --accent-rgb: 176 20 86; --accent-2-rgb: 145 18 70; --on-accent: #ffffff; }
-:root[data-theme="light"][data-accent="teal"] { --accent-rgb: 13 108 101; --accent-2-rgb: 15 86 82; --on-accent: #ffffff; }
+:root[data-theme="light"][data-accent="teal"] { --accent-rgb: 8 100 128; --accent-2-rgb: 7 85 109; --on-accent: #ffffff; }
 
 * {
   box-sizing: border-box;
