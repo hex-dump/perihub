@@ -8,23 +8,24 @@
   },
   "family": "corsair-bragi",
   "access": "read-only",
-  "source": "synthetic: docs/protocols/corsair-bragi.md",
+  "recorded_by": "PeriHub's tests, from a simulated device",
+  "source": "synthetic: recorded by the_katar_pro_replay_is_what_the_corsair_code_records (replay/tests.rs)",
   "notes": [
-    "Not from a device: no Corsair device has sent a report yet (issue #18). The packets are laid out as docs/protocols/corsair-bragi.md describes them, and the values (firmware 5.2.65, hardware mode, 1000 Hz, 800 DPI) are examples. Replace it with a real transcript when one comes."
+    "Recorded through PeriHub's real Corsair code (CorsairTask::open, BragiDevice, the recorder), but from a simulated device: no Corsair device has sent a report yet (issue #18). The simulated device answers as docs/protocols/corsair-bragi.md lays the answers out, and its values (firmware 5.2.65, hardware mode, 1000 Hz, 800 DPI) are examples. Replace it with a real transcript when one comes."
   ],
   "expect": {
-    "product_id": 7059,
-    "model": "KATAR PRO",
-    "kind": "mouse",
-    "receiver": null,
-    "leds": 1,
-    "firmware": "5.2.65",
-    "mode": 1,
-    "polling_hz": 1000,
     "dpi": 800,
-    "read_errors": [],
+    "firmware": "5.2.65",
+    "kind": "mouse",
     "layout": null,
-    "lighting": null
+    "leds": 1,
+    "lighting": null,
+    "mode": 1,
+    "model": "KATAR PRO",
+    "polling_hz": 1000,
+    "product_id": 7059,
+    "read_errors": [],
+    "receiver": null
   },
   "events": [
     {"op":"write","data":"00 08 02 13","len":65},

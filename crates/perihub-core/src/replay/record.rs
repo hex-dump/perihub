@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use super::{Event, Op};
 use crate::error::Result;
+use crate::hidpp::Transport;
 use crate::peripheral::Hid;
 
 /// Most events kept for one reading: a reading of a device's whole memory is cut there.
@@ -16,6 +17,8 @@ const MAX_EVENTS: usize = 4000;
 struct Tape {
     events: Vec<Event>,
     cut: bool,
+    /// Nothing more is kept (see [`Recording::stop`]).
+    stopped: bool,
 }
 
 /// The events since the last [`Recording::take`], shared by the collections of one device.
@@ -25,6 +28,9 @@ pub struct Recording(Arc<Mutex<Tape>>);
 impl Recording {
     fn push(&self, event: Event) {
         let mut tape = self.0.lock().unwrap();
+        if tape.stopped {
+            return;
+        }
         // The descriptor is asked for at every reading by some drivers: once is enough.
         if event.op == Op::Descriptor
             && tape.events.iter().any(|e| e.op == Op::Descriptor && e.collection == event.collection)
@@ -46,6 +52,18 @@ impl Recording {
             events.push(Event::mark(&format!("cut after {MAX_EVENTS} events")));
         }
         events
+    }
+
+    /// Keeps nothing more from now on: for a device whose transcript holds its first reading only.
+    pub fn stop(&self) {
+        let mut tape = self.0.lock().unwrap();
+        tape.stopped = true;
+        tape.events.clear();
+    }
+
+    /// `dev`, a HID++ or Corsair connection, with every call kept here under `collection`.
+    pub fn transport(&self, dev: Box<dyn Transport>, collection: &'static str) -> Box<dyn Transport> {
+        Box::new(TransportRecorder { inner: dev, tape: self.clone(), collection })
     }
 
     /// `hid`, with every call kept here under `collection`.
@@ -97,6 +115,28 @@ impl Hid for Recorder {
     }
 }
 
+/// The same for the HID++ and Corsair code, which talks to a [`Transport`] instead of a [`Hid`].
+struct TransportRecorder {
+    inner: Box<dyn Transport>,
+    tape: Recording,
+    collection: &'static str,
+}
+
+impl Transport for TransportRecorder {
+    fn write(&self, data: &[u8]) -> Result<()> {
+        self.inner.write(data)?;
+        self.tape.push(Event::new(Op::Write, self.collection, None, data));
+        Ok(())
+    }
+    fn read_timeout(&self, buf: &mut [u8], millis: i32) -> Result<usize> {
+        let n = self.inner.read_timeout(buf, millis)?;
+        if n > 0 {
+            self.tape.push(Event::new(Op::Read, self.collection, None, &buf[..n.min(buf.len())]));
+        }
+        Ok(n)
+    }
+}
+
 /// Bytes of an answer that tell one unit apart (a serial number), which a driver names so that
 /// they are left out of its transcripts.
 #[derive(Debug, Clone)]
@@ -123,18 +163,9 @@ pub fn anonymize(events: &mut [Event], rules: &[Private]) {
                     .map(|r| r.answer.clone());
             }
             Op::Read | Op::FeatureGet => {
-                let Some(range) = &hide else { continue };
-                let Ok(pattern) = event.pattern() else { continue };
-                let words: Vec<String> = pattern
-                    .iter()
-                    .enumerate()
-                    .map(|(i, b)| match b {
-                        Some(b) if !range.contains(&i) => format!("{b:02x}"),
-                        _ => "xx".to_string(),
-                    })
-                    .collect();
-                event.data = words.join(" ");
-                event.len = None;
+                if let Some(range) = &hide {
+                    super::hide(event, range);
+                }
             }
             _ => {}
         }

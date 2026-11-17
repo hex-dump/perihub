@@ -86,6 +86,9 @@ pub struct MouseInfo {
     /// The mouse's profile list when it was connected (for test reports;
     /// [`MouseState::profile_list`] is the state now).
     pub profile_list: ProfileList,
+    /// Every request and answer of the reading when PeriHub connected, in full, as a transcript
+    /// (`crate::replay`) in JSON, for test reports. Nothing in it tells the unit apart.
+    pub transcript: String,
 }
 
 /// What mice with the extended DPI and polling features (0x2202, 0x8061) and format 7 profiles
@@ -406,6 +409,7 @@ impl MouseTask {
             writable_format: support.writable_format,
             profile_list: ProfileList::Own,
             onboard,
+            transcript: String::new(),
         };
         let mut task = Self {
             dev,
@@ -431,6 +435,13 @@ impl MouseTask {
         if (1..=task.profile_count()).contains(&active) {
             task.last_profile = active;
         }
+        let device = crate::replay::Device {
+            vendor_id: "046d".into(),
+            product_id: format!("{:04x}", model.product_id),
+            name: format!("Logitech {}", model.name),
+        };
+        task.info.transcript = task.dev.transcript(device, crate::replay::Family::HidppMouse).to_json();
+        task.dev.stop_recording();
         Ok(task)
     }
 
@@ -1645,6 +1656,19 @@ mod tests {
         refuses_writes: bool,
         /// Profile switches answered with an error.
         refused_switches: Vec<[u8; 2]>,
+        /// The type and version of each feature in the feature table, from index 1 (0 0 if not given).
+        table: Vec<(u8, u8)>,
+        name: &'static str,
+        /// 0x0003 function 0: the entity count first.
+        device_info: Vec<u8>,
+        /// 0x0003 function 1, one answer for each entity.
+        firmware: Vec<Vec<u8>>,
+        /// The 0x2202 DPI list of both axes, as the pages carry it.
+        dpi_list: Vec<u8>,
+        /// 0x2202 function 5.
+        dpi_now: Vec<u8>,
+        /// The 0x8061 polling rate index in use, on the cable and through the receiver.
+        rate_in_use: [u8; 2],
     }
 
     impl Sim {
@@ -1684,6 +1708,14 @@ mod tests {
                 refuses_switches: false,
                 refuses_writes: false,
                 refused_switches: Vec::new(),
+                table: Vec::new(),
+                name: "Test",
+                device_info: vec![1],
+                firmware: vec![vec![0, b'U', b'1', b' ', 0x27, 0x03, 0x00, 0x00]],
+                // 100 to 25600 DPI in steps of 50.
+                dpi_list: vec![0x00, 0x64, 0xE0, 0x32, 0x64, 0x00],
+                dpi_now: vec![0, 0x04, 0xB0, 0x03, 0x20, 0x04, 0xB0, 0x03, 0x20, 2],
+                rate_in_use: [3, 4],
             }
         }
 
@@ -1732,28 +1764,34 @@ mod tests {
             const INVALID_ARGUMENT: u8 = 2;
             let info = &self.onboard;
             Ok(match (feature, function) {
-                (feature::DEVICE_INFO, 0) => vec![1],
-                (feature::DEVICE_INFO, 1) => vec![0, b'U', b'1', b' ', 0x27, 0x03, 0x00, 0x00],
+                (feature::DEVICE_INFO, 0) => self.device_info.clone(),
+                (feature::DEVICE_INFO, 1) => self.firmware.get(p[0] as usize).ok_or(INVALID_ARGUMENT)?.clone(),
                 // The count leaves out the root, at index 0.
                 (feature::FEATURE_SET, 0) => vec![self.features.len() as u8 - 1],
                 (feature::FEATURE_SET, 1) => {
                     let id = *self.features.get(p[0] as usize).ok_or(INVALID_ARGUMENT)?;
-                    vec![(id >> 8) as u8, id as u8, 0, 0]
+                    let (kind, version) = self.table.get(p[0] as usize - 1).copied().unwrap_or_default();
+                    vec![(id >> 8) as u8, id as u8, kind, version]
                 }
                 // Sensor 0 has an X and a Y axis and a lift-off distance.
                 (feature::EXTENDED_DPI, 1) => vec![0, 0, 3],
-                // 100 to 25600 DPI in steps of 50, on both axes, all in the first page.
+                // The same list on both axes, 13 bytes in each page.
                 (feature::EXTENDED_DPI, 2) => {
-                    let mut page = vec![p[0], p[1], p[2], 0x00, 0x64, 0xE0, 0x32, 0x64, 0x00];
+                    let mut page = vec![p[0], p[1], p[2]];
+                    page.extend(self.dpi_list.iter().skip(13 * p[2] as usize).take(13));
                     page.resize(16, 0);
                     page
                 }
-                (feature::EXTENDED_DPI, 5) => vec![0, 0x04, 0xB0, 0x03, 0x20, 0x04, 0xB0, 0x03, 0x20, 2],
+                (feature::EXTENDED_DPI, 5) => self.dpi_now.clone(),
                 // On the cable up to 1000 Hz (bits 0 to 3), through the receiver up to 8000 Hz.
                 (feature::EXTENDED_REPORT_RATE, 0) => vec![0, if p[0] == 0 { 0x0F } else { 0x7F }],
-                (feature::EXTENDED_REPORT_RATE, 2) => vec![if p[0] == 0 { 3 } else { 4 }],
-                (feature::DEVICE_NAME, 0) => vec![4],
-                (feature::DEVICE_NAME, 1) => b"Test".to_vec(),
+                (feature::EXTENDED_REPORT_RATE, 2) => vec![self.rate_in_use[(p[0] != 0) as usize]],
+                (feature::DEVICE_NAME, 0) => vec![self.name.len() as u8],
+                (feature::DEVICE_NAME, 1) => {
+                    let mut chunk: Vec<u8> = self.name.bytes().skip(p[0] as usize).take(16).collect();
+                    chunk.resize(16, 0);
+                    chunk
+                }
                 // 100 to 25600 DPI in steps of 50.
                 (feature::ADJUSTABLE_DPI, 1) => vec![0, 0x00, 0x64, 0xE0, 0x32, 0x64, 0x00],
                 (feature::ADJUSTABLE_DPI, 2) => vec![0, 0x03, 0x20, 0x03, 0x20],
@@ -2214,6 +2252,147 @@ mod tests {
         let state = task.state().unwrap();
         assert_eq!(state.profiles[0].settings.report_rate_hz, Some(1000));
         assert_eq!(state.profiles[0].settings.report_rate_ms, 1);
+    }
+
+    const PRO_X_2_DEX: u16 = 0xC0A0;
+
+    /// The feature table of the PRO X 2 DEX in issue #32, hidden features included, and the type
+    /// and version of each feature.
+    const DEX_FEATURES: &[u16] = &[
+        feature::ROOT,
+        0x0001,
+        0x0003,
+        0x0005,
+        0x1D4B,
+        0x0020,
+        0x1004,
+        0x2250,
+        0x2251,
+        0x2202,
+        0x8090,
+        0x80E0,
+        0x8061,
+        0x8100,
+        0x8110,
+        0x1500,
+        0x1801,
+        0x1802,
+        0x1803,
+        0x1806,
+        0x1817,
+        0x1805,
+        0x1830,
+        0x1875,
+        0x1861,
+        0x1890,
+        0x18A1,
+        0x1E00,
+        0x1E02,
+        0x1E22,
+        0x1602,
+        0x1EB0,
+        0x18B1,
+    ];
+    const DEX_TABLE: &[(u8, u8)] = &[
+        (0, 2),
+        (0, 7),
+        (0, 5),
+        (0, 0),
+        (0, 0),
+        (0, 5),
+        (0, 1),
+        (0, 0),
+        (0, 0),
+        (0, 3),
+        (0, 0),
+        (0, 0),
+        (0, 0),
+        (0, 0),
+        (0, 0),
+        (0x70, 0),
+        (0x70, 0),
+        (0x70, 1),
+        (0x70, 8),
+        (0x70, 0),
+        (0x60, 0),
+        (0x70, 0),
+        (0x70, 0),
+        (0x70, 1),
+        (0x68, 9),
+        (0x70, 0),
+        (0x40, 0),
+        (0x60, 0),
+        (0x70, 1),
+        (0, 0),
+        (0x70, 0),
+        (0x70, 0),
+    ];
+
+    /// A format 7 profile of the PRO X 2 DEX as its test report shows them: these DPI levels at
+    /// lift-off 2, the first one the default, 1000 Hz on both connections, BHOP 255, timeouts 60 and
+    /// 300, no name. The buttons and lights are not in the report: those of [`format7_sector`].
+    fn dex_sector(dpi: &[u16]) -> Vec<u8> {
+        let levels: Vec<(u16, u16, u8)> = dpi.iter().map(|&d| (d, d, 2)).collect();
+        let mut s = format7_sector("", &levels, 3, 3);
+        s[2] = 0; // default level: the first
+        s[37] = 255; // BHOP
+        s[44..46].copy_from_slice(&60u16.to_le_bytes());
+        s[46..48].copy_from_slice(&300u16.to_le_bytes());
+        profile::write_crc(&mut s);
+        s
+    }
+
+    /// The PRO X 2 DEX of issue #32 through its receiver, as its two test reports describe it. Not in
+    /// the reports, so made up: the unit id (12 34 56 78, which the transcript must leave out), the
+    /// firmware entity types, the steps of its DPI list (957 values from 100 to 44000: 25 apart up to
+    /// 4000, then 50), the buttons and lights of its profiles and its profile list (the G502's).
+    fn pro_x_2_dex() -> Sim {
+        let (memory, onboard) = g502_memory();
+        let onboard = OnboardInfo {
+            profile_count: 5,
+            rom_profile_count: 1,
+            button_count: 5,
+            sector_count: 16,
+            has_gshift: true,
+            has_dpi_shift: true,
+            ..onboard
+        };
+        let mut sim = Sim::new(memory, onboard).resized(255, 7);
+        sim.user[1] = dex_sector(&[1200]);
+        sim.user[2..=5].fill(dex_sector(&[800, 1200, 1600, 2400, 3200]));
+        sim.rom.insert(ROM_SECTOR_BASE + 1, sim.user[1].clone());
+        sim.features = DEX_FEATURES;
+        sim.table = DEX_TABLE.to_vec();
+        sim.name = "PRO X 2 DEX";
+        sim.device_info = vec![0x02, 0x12, 0x34, 0x56, 0x78, 0x00, 0x0C, 0x40, 0xB8, 0xC0, 0xA0, 0, 0, 0, 0x01, 0];
+        sim.firmware =
+            vec![vec![1, b'B', b'L', b'2', 0x38, 0x01, 0x00, 0x05], vec![0, b'M', b'P', b'M', 0x37, 0x03, 0x00, 0x07]];
+        sim.dpi_list = vec![0x00, 0x64, 0xE0, 0x19, 0x0F, 0xA0, 0xE0, 0x32, 0xAB, 0xE0, 0x00, 0x00];
+        sim.dpi_now = vec![0, 0x04, 0xB0, 0x04, 0xB0, 0x04, 0xB0, 0x04, 0xB0, 2];
+        sim.rate_in_use = [3, 3];
+        sim
+    }
+
+    /// The replay test of the PRO X 2 DEX (`tests/fixtures/transcripts`) holds what PeriHub records
+    /// when it opens the mouse of issue #32: run with PERIHUB_WRITE_TRANSCRIPTS=1 to write it again.
+    #[test]
+    fn the_replay_of_the_pro_x_2_dex_is_what_perihub_records_of_it() {
+        let (task, _) = open_sim_through(pro_x_2_dex(), PRO_X_2_DEX, true, true);
+        let extended = task.info.extended.clone().unwrap();
+        // As the test report of issue #32 read it.
+        assert_eq!(task.info.name, "PRO X 2 DEX");
+        assert_eq!((task.info.dpi.min, task.info.dpi.max, task.info.dpi.list.len()), (100, 44000, 957));
+        assert_eq!(extended.raw, ["rates cable: 00 0f", "rates receiver: 00 7f", "rate in use: index 3"]);
+        assert_eq!(
+            extended.profiles[0],
+            "Profile 1: DPI 1200 (level 1 default, 1 shift; lift-off 2), polling 1000 Hz wireless / 1000 Hz cable, \
+             BHOP 255, timeouts 60 / 300"
+        );
+        let text = &task.info.transcript;
+        assert!(!text.contains("12 34 56 78"), "the unit id stays out of the transcript");
+        let recorded = crate::replay::Transcript::from_json(text).unwrap();
+        assert_eq!(recorded.access, crate::replay::Access::ReadOnly);
+        crate::replay::tests::recorded_fixture("logitech-pro-x-2-dex.json", &recorded);
     }
 
     #[test]

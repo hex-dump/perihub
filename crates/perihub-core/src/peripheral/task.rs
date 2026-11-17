@@ -125,8 +125,6 @@ const PENDING_UNDO_MAX_AGE: Duration = Duration::from_secs(24 * 60 * 60);
 const REFRESH: Duration = Duration::from_secs(5);
 const SETTINGS_FILE: &str = "settings.json";
 const RAW_FILE: &str = "answers.txt";
-/// About the longest transcript a test report carries: GitHub takes 65536 characters in an issue.
-const TRANSCRIPT_MAX: usize = 40_000;
 const PENDING_FILE: &str = "pending-undo";
 
 pub struct PeripheralTask {
@@ -286,39 +284,22 @@ impl PeripheralTask {
     /// (changes sent since are in it too). The bytes the driver names private are left out.
     pub fn transcript(&self) -> Transcript {
         let mut events = self.first_reading.clone().unwrap_or_default();
-        // About the characters an event takes in the JSON.
-        let size = |events: &[Event]| events.iter().map(|e| e.data.len() + 48).sum::<usize>();
         if !self.latest_reading.is_empty()
             && self.first_reading.as_ref() != Some(&self.latest_reading)
-            && size(&events) + size(&self.latest_reading) <= TRANSCRIPT_MAX
+            && replay::json_size(&events) + replay::json_size(&self.latest_reading) <= replay::REPORT_MAX
         {
             events.push(Event::mark("latest reading"));
             events.extend(self.latest_reading.iter().cloned());
         }
-        if size(&events) > TRANSCRIPT_MAX {
-            let mut total = 0;
-            let keep = events.iter().take_while(|e| {
-                total += e.data.len() + 48;
-                total <= TRANSCRIPT_MAX
-            });
-            let keep = keep.count();
-            events.truncate(keep);
-            events.push(Event::mark("cut here: too long for a test report"));
-        }
+        replay::cut_to_fit(&mut events, replay::REPORT_MAX);
         replay::anonymize(&mut events, &self.driver.private_answers());
-        let commands = self.driver.commands();
-        let changes = events
-            .iter()
-            .filter(|e| matches!(e.op, replay::Op::Write | replay::Op::FeatureSet))
-            .any(|e| e.bytes().ok().and_then(|b| replay::command_effect(&commands, &b)) != Some(super::Effect::Read));
         let device = replay::Device {
             vendor_id: format!("{:04x}", self.info.vendor_id),
             product_id: format!("{:04x}", self.info.product_id),
             name: format!("{} {}", self.info.brand, self.info.model),
         };
-        let mut transcript = Transcript::new(device, replay::Family::Peripheral, events);
-        transcript.access = if changes { replay::Access::ReadWrite } else { replay::Access::ReadOnly };
-        transcript
+        let commands = replay::Classifier::Commands(self.driver.commands());
+        Transcript::recorded(device, replay::Family::Peripheral, events, &commands)
     }
 
     fn read(&mut self) -> Result<()> {

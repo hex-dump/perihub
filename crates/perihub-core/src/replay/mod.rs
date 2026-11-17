@@ -11,7 +11,7 @@
 
 mod record;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 use std::collections::{BTreeMap, VecDeque};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -49,6 +49,9 @@ pub enum Family {
     Peripheral,
     /// A HID++ 2.0 device in a slot of a Logitech receiver, read as for its test report.
     HidppReceiver,
+    /// A Logitech mouse with onboard profiles ([`crate::mouse::MouseTask`]), with its cable or in
+    /// receiver slot `slot`.
+    HidppMouse,
     /// A Corsair device (`docs/protocols/corsair-bragi.md`).
     CorsairBragi,
 }
@@ -175,7 +178,7 @@ pub struct Transcript {
     pub device: Device,
     pub family: Family,
     pub access: Access,
-    /// The receiver slot of a [`Family::HidppReceiver`] device.
+    /// The receiver slot of a HID++ device, the receiver channel of a Corsair device.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub slot: Option<u8>,
     /// "PeriHub 0.9.3 on windows x86_64".
@@ -244,6 +247,16 @@ impl Transcript {
         format!("{}\n  \"events\": [\n{}\n  ]\n}}\n", head.trim_end(), events.join(",\n"))
     }
 
+    /// A transcript of what was just recorded, cut to what a test report carries: read-only unless a
+    /// request in it changes something, as `classifier` tells (one it cannot tell counts as a change).
+    pub fn recorded(device: Device, family: Family, mut events: Vec<Event>, classifier: &Classifier) -> Self {
+        cut_to_fit(&mut events, REPORT_MAX);
+        let access = access_of(&events, classifier);
+        let mut transcript = Self::new(device, family, events);
+        transcript.access = access;
+        transcript
+    }
+
     /// The device's USB ids.
     pub fn ids(&self) -> Result<(u16, u16)> {
         let id = |s: &str| u16::from_str_radix(s, 16).map_err(|_| Error::Invalid(format!("transcript: USB id {s:?}")));
@@ -260,6 +273,99 @@ pub enum Classifier {
     Hidpp,
     /// Corsair: only "get property" reads.
     Bragi,
+}
+
+/// About the longest transcript a test report carries: GitHub takes 65536 characters in an issue.
+pub const REPORT_MAX: usize = 40_000;
+
+/// About the characters `events` take in the JSON.
+pub fn json_size(events: &[Event]) -> usize {
+    events.iter().map(|e| e.data.len() + 48).sum()
+}
+
+/// Cuts `events` to about `max` characters of JSON, with a mark where they were cut.
+pub fn cut_to_fit(events: &mut Vec<Event>, max: usize) {
+    if json_size(events) <= max {
+        return;
+    }
+    let mut total = 0;
+    let keep = events
+        .iter()
+        .take_while(|e| {
+            total += e.data.len() + 48;
+            total <= max
+        })
+        .count();
+    events.truncate(keep);
+    events.push(Event::mark("cut here: too long for a test report"));
+}
+
+/// Whether `events` only read the device, as `classifier` tells: a request it cannot tell
+/// counts as a change.
+pub fn access_of(events: &[Event], classifier: &Classifier) -> Access {
+    let mut index = BTreeMap::new();
+    let mut request: Option<Vec<u8>> = None;
+    for event in events {
+        let Ok(bytes) = event.bytes() else { return Access::ReadWrite };
+        match event.op {
+            Op::Write | Op::FeatureSet => {
+                if effect_of(classifier, &index, &bytes) != Some(Effect::Read) {
+                    return Access::ReadWrite;
+                }
+                request = Some(bytes);
+            }
+            Op::Read if matches!(classifier, Classifier::Hidpp) => {
+                if let Some(request) = &request {
+                    learn_index(&mut index, request, &bytes);
+                }
+            }
+            _ => {}
+        }
+    }
+    Access::ReadOnly
+}
+
+/// Writes `range` of an answer as `xx`.
+fn hide(event: &mut Event, range: &std::ops::Range<usize>) {
+    let Ok(pattern) = event.pattern() else { return };
+    let words: Vec<String> = pattern
+        .iter()
+        .enumerate()
+        .map(|(i, b)| match b {
+            Some(b) if !range.contains(&i) => format!("{b:02x}"),
+            _ => "xx".to_string(),
+        })
+        .collect();
+    event.data = words.join(" ");
+    event.len = None;
+}
+
+/// HID++: writes as `xx` what tells one unit apart, the unit id of every device info answer
+/// (0x0003 function 0, bytes 1 to 4) and the serial number (function 2, should a call ever ask for
+/// it). `known`: feature indexes that were looked up before these events, as (index, feature).
+pub fn anonymize_hidpp(events: &mut [Event], known: &[(u8, u16)]) {
+    let mut index: BTreeMap<u8, u16> = known.iter().copied().collect();
+    let mut request: Option<Vec<u8>> = None;
+    for event in events.iter_mut() {
+        match event.op {
+            Op::Write => request = event.bytes().ok(),
+            Op::Read => {
+                let (Some(request), Ok(answer)) = (&request, event.bytes()) else { continue };
+                if request.len() < 7 || answer.len() < 7 || answer[1..4] != request[1..4] {
+                    continue;
+                }
+                learn_index(&mut index, request, &answer);
+                if index.get(&request[2]) == Some(&crate::hidpp::feature::DEVICE_INFO) {
+                    match request[3] >> 4 {
+                        0 => hide(event, &(5..9)),
+                        2 => hide(event, &(4..answer.len())),
+                        _ => {}
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 /// The effect of a command of a driver's list, from the bytes on the wire: the report number 0 in
@@ -283,6 +389,54 @@ struct FeatureAnswer {
     report_id: u8,
     data: Vec<u8>,
     used: usize,
+}
+
+/// What a request does, as `classifier` tells it; `None` for one the code may not send at all.
+/// `hidpp_index`: the HID++ feature at each index, from the root feature's answers.
+fn effect_of(classifier: &Classifier, hidpp_index: &BTreeMap<u8, u16>, data: &[u8]) -> Option<Effect> {
+    match classifier {
+        Classifier::Commands(commands) => command_effect(commands, data),
+        Classifier::Bragi => {
+            let packet = data.get(1..)?;
+            if crate::corsair::allowed(packet, false) {
+                Some(Effect::Read)
+            } else {
+                crate::corsair::allowed(packet, true).then_some(Effect::Change)
+            }
+        }
+        Classifier::Hidpp => hidpp_effect(hidpp_index, data),
+    }
+}
+
+/// A HID++ request: the root feature's two reads, a feature call of [`crate::hidpp`]'s read
+/// calls, a register read. Every other call counts as a change, and one to a feature index the
+/// root feature did not give is not a request the code may send.
+fn hidpp_effect(index: &BTreeMap<u8, u16>, data: &[u8]) -> Option<Effect> {
+    if !matches!(data.first(), Some(0x10 | 0x11)) || data.len() < 7 {
+        return None;
+    }
+    // A register (HID++ 1.0 sub ids 0x80 to 0x83, which receivers take): 0x81 and 0x83 read, 0x80
+    // and 0x82 write. HID++ 2.0 feature indexes stay far below 0x80, whatever the device index
+    // (0xFF on a cable, the slot behind a receiver).
+    if data[2] & 0xFC == 0x80 {
+        return Some(if matches!(data[2], 0x81 | 0x83) { Effect::Read } else { Effect::Change });
+    }
+    let (at, function) = (data[2], data[3] >> 4);
+    if at == 0 {
+        return Some(if function <= 1 { Effect::Read } else { Effect::Change });
+    }
+    let feature = *index.get(&at)?;
+    Some(if crate::hidpp::is_read_request(feature, function) { Effect::Read } else { Effect::Change })
+}
+
+/// Learns from a root feature answer (function 0) which feature `request` found at which index.
+fn learn_index(index: &mut BTreeMap<u8, u16>, request: &[u8], answer: &[u8]) {
+    if request.len() < 6 || answer.len() < 9 || answer[1..4] != request[1..4] {
+        return;
+    }
+    if request[2] == 0 && request[3] >> 4 == 0 && answer[4] != 0 {
+        index.insert(answer[4], u16::from_be_bytes([request[4], request[5]]));
+    }
 }
 
 struct State {
@@ -406,32 +560,7 @@ fn fail(state: MutexGuard<'_, State>, message: String) -> ! {
 
 impl ReplayHid {
     fn effect(state: &State, data: &[u8]) -> Option<Effect> {
-        match &state.classifier {
-            Classifier::Commands(commands) => command_effect(commands, data),
-            Classifier::Bragi => {
-                let packet = data.get(1..)?;
-                if crate::corsair::allowed(packet, false) {
-                    Some(Effect::Read)
-                } else {
-                    crate::corsair::allowed(packet, true).then_some(Effect::Change)
-                }
-            }
-            Classifier::Hidpp => {
-                if !matches!(data.first(), Some(0x10 | 0x11)) || data.len() < 7 {
-                    return None;
-                }
-                // A register of the receiver itself (HID++ 1.0): 0x81 and 0x83 read, 0x80 and 0x82 write.
-                if data[1] == 0xFF {
-                    return Some(if matches!(data[2], 0x81 | 0x83) { Effect::Read } else { Effect::Change });
-                }
-                let (index, function) = (data[2], data[3] >> 4);
-                if index == 0 {
-                    return Some(if function <= 1 { Effect::Read } else { Effect::Change });
-                }
-                let feature = *state.hidpp_index.get(&index)?;
-                Some(if crate::hidpp::is_read_request(feature, function) { Effect::Read } else { Effect::Change })
-            }
-        }
+        effect_of(&state.classifier, &state.hidpp_index, data)
     }
 
     /// Answers a request: checks it, finds it in the transcript and queues what came after it.
@@ -493,13 +622,10 @@ impl ReplayHid {
 /// HID++: the feature index in each answer of the root feature, and a check that a device info
 /// answer (0x0003 function 0) has its unit id left out.
 fn hidpp_learn(mut state: MutexGuard<'_, State>, request: &[u8], answers: &[(String, Vec<u8>)]) {
-    let (slot, index, address) = (request[1], request[2], request[3]);
-    let answer =
-        answers.iter().map(|(_, a)| a).find(|a| a.len() >= 9 && a[1] == slot && a[2] == index && a[3] == address);
+    let (index, address) = (request[2], request[3]);
+    let answer = answers.iter().map(|(_, a)| a).find(|a| a.len() >= 9 && a[1..4] == request[1..4]);
     let Some(answer) = answer else { return };
-    if index == 0 && address >> 4 == 0 && answer[4] != 0 {
-        state.hidpp_index.insert(answer[4], u16::from_be_bytes([request[4], request[5]]));
-    }
+    learn_index(&mut state.hidpp_index, request, answer);
     let device_info = state.hidpp_index.get(&index) == Some(&crate::hidpp::feature::DEVICE_INFO);
     if device_info && address >> 4 == 0 && answer[5..9] != [0; 4] {
         fail(state, "the device info answer shows a unit id: write its bytes 1 to 4 as xx".into());

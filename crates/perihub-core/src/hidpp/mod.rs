@@ -420,6 +420,8 @@ pub struct HidppDevice {
     short: Option<Box<dyn Transport>>,
     /// The device's name in the write log.
     label: String,
+    /// Every request and answer, for the transcript of a test report (`crate::replay`).
+    tape: crate::replay::Recording,
 }
 
 impl HidppDevice {
@@ -452,7 +454,12 @@ impl HidppDevice {
         } else {
             "Logitech device".to_string()
         };
-        let mut device = Self { dev, device_index, access, features: HashMap::new(), behind_receiver, short, label };
+        // Recording only writes down what goes through: it sends nothing of its own.
+        let tape = crate::replay::Recording::default();
+        let dev = tape.transport(dev, crate::replay::MAIN);
+        let short = short.map(|s| tape.transport(s, "short"));
+        let mut device =
+            Self { dev, device_index, access, features: HashMap::new(), behind_receiver, short, label, tape };
         let (major, _) = device.protocol_version()?;
         if major < 2 {
             return Err(Error::Protocol(format!("HID++ {major}.x is not supported")));
@@ -462,6 +469,28 @@ impl HidppDevice {
 
     pub fn is_behind_receiver(&self) -> bool {
         self.behind_receiver
+    }
+
+    /// Every request and answer since the device was opened or since the last call, as a
+    /// transcript (`docs/replay.md`): the unit id left out, the receiver slot given.
+    pub fn transcript(
+        &mut self,
+        device: crate::replay::Device,
+        family: crate::replay::Family,
+    ) -> crate::replay::Transcript {
+        let mut events = self.tape.take();
+        let known: Vec<(u8, u16)> =
+            self.features.iter().filter(|(_, index)| **index != 0).map(|(&feature, &index)| (index, feature)).collect();
+        crate::replay::anonymize_hidpp(&mut events, &known);
+        let mut transcript =
+            crate::replay::Transcript::recorded(device, family, events, &crate::replay::Classifier::Hidpp);
+        transcript.slot = self.behind_receiver.then_some(self.device_index);
+        transcript
+    }
+
+    /// Records nothing more: the transcript of a test report holds the first reading.
+    pub fn stop_recording(&self) {
+        self.tape.stop();
     }
 
     /// Changes what PeriHub may send. A mouse is opened read-only, and [`crate::mouse::MouseTask`]

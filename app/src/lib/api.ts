@@ -328,6 +328,9 @@ export interface MouseInfo {
   report_rates_ms: number[];
   /** Extended features (0x2202, 0x8061) and format 7 profiles, if the mouse has them. */
   extended?: ExtendedReads | null;
+  /** Every request and answer of the reading when PeriHub connected, as a transcript in JSON
+   * (docs/replay.md), for test reports. Nothing in it tells the unit apart. */
+  transcript?: string;
   led_zones: LedZone[];
   /** The HID++ features the mouse lists, for test reports. */
   features: HidppFeature[];
@@ -430,6 +433,9 @@ export interface UnsupportedReceiverDevice {
   read_errors: string[];
   /** A keyboard's layout code (0x4540), if it has that feature. */
   layout?: DeviceLayout | null;
+  /** Every request and answer of the reading when PeriHub connected, as a transcript in JSON
+   * (docs/replay.md), for test reports. Nothing in it tells the unit apart. */
+  transcript?: string;
 }
 
 /** A connected Logitech receiver, for the test report that helps support what is paired with it. */
@@ -685,6 +691,9 @@ export interface CorsairInfo {
   lighting: string | null;
   /** A keyboard's physical layout, read from it. */
   layout?: DeviceLayout | null;
+  /** Every request and answer of the reading when PeriHub connected, as a transcript in JSON
+   * (docs/replay.md), for test reports. Nothing in it tells the unit apart. */
+  transcript?: string;
 }
 
 export interface BatteryAlerts {
