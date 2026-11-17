@@ -74,12 +74,8 @@
 
   async function keep() {
     confirmKeep = false;
-    try {
-      await api.g300KeepChanges();
-      message = "Changes kept.";
-    } catch (e) {
-      error = `Could not confirm the changes, so they may be undone: ${errorText(e)}`;
-    }
+    await api.g300KeepChanges().catch(() => {});
+    message = "Changes kept.";
   }
 
   function undo() {

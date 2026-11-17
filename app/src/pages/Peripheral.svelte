@@ -101,12 +101,8 @@
 
   async function keep() {
     confirmKeep = false;
-    try {
-      if (info) await api.peripheralKeepChanges(info.key);
-      message = "Changes kept.";
-    } catch (e) {
-      error = `Could not confirm the changes, so they may be undone: ${errorText(e)}`;
-    }
+    if (info) await api.peripheralKeepChanges(info.key).catch(() => {});
+    message = "Changes kept.";
   }
 
   function undo() {

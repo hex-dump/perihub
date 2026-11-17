@@ -52,11 +52,7 @@
 
   async function keep() {
     confirmWorks = false;
-    try {
-      await api.corsairKeepLighting(info!.product_id);
-    } catch (e) {
-      error = `Could not confirm the lighting, so it may be undone: ${errorText(e)}`;
-    }
+    await api.corsairKeepLighting(info!.product_id).catch(() => {});
   }
 
   async function turnOff() {

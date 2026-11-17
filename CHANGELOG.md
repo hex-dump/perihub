@@ -13,9 +13,6 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 - The udev rule command for the AppImage and the Flatpak in the README downloads the rule of the release (`v0.9.2`) instead of the one on `main`, which can be newer than the installed version and open devices an older PeriHub does not filter; `tools/release.py bump` updates the version in that command.
 - Settings → Devices lists the devices that are connected, whatever their brand (Logitech, Corsair, Razer and other keyboards and mice, the G300, QMK keyboards, receivers), instead of always saying "Apex 3 TKL: not connected" for a keyboard you may not have.
 - The dialogs that ask before a write to a device's memory (backups, the first save to an untested mouse or other brand, the macro editor, "Keep these changes?") now keep the keyboard inside them: Tab no longer reaches the page behind, the focus starts on the safe button (Cancel, Undo or Close), so Enter never confirms a write, and it goes back to where you were when the dialog closes.
-- When confirming a save fails ("Keep" after an experimental save, a G300, a peripheral or a Corsair lighting) or turning read-only mode off fails, PeriHub now shows the error instead of staying silent; before, you could believe a change was kept when it was going to be undone.
-- Device detection tries again when the system's HID access is not ready yet (for example when PeriHub starts at login), every 2 seconds and then more slowly up to 30, instead of showing "HID unavailable" until PeriHub is restarted.
-- A settings file that cannot be read is no longer overwritten by the defaults at the next save, which also turned read-only mode off: PeriHub keeps it as `config.corrupt-<time>.json` in its settings folder, and uses `config.json.bak`, a copy of the last good save, if it is there.
 
 
 ## 0.9.2 — 2026-11-17
