@@ -53,7 +53,8 @@ jobs:
 
       - name: Commit what changed
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.BOT_TOKEN || github.token }}
+          HAS_BOT_TOKEN: ${{ secrets.BOT_TOKEN != '' }}
           BASE: ${{ github.event_name == 'release' && 'main' || github.ref_name }}
           LABEL: ${{ github.event.release.tag_name || inputs.tag || github.run_id }}
         run: |
@@ -71,9 +72,14 @@ jobs:
           git push origin "HEAD:refs/heads/$branch"
           gh pr create --base "$BASE" --head "$branch" --title "Screenshots ($LABEL)" \
             --body "Screenshots and social preview, made by the Screenshots workflow."
-          # A pull request made with GITHUB_TOKEN starts no pull_request run: run the required
-          # checks (ci.yml, workflow_dispatch) on the branch, they report on the PR's head commit.
-          gh workflow run ci.yml --ref "$branch"
+          # A pull request made with GITHUB_TOKEN gets only a pull_request run that waits for approval,
+          # and a dispatched ci.yml run is not attached to the pull request, so the required checks
+          # never count. With a BOT_TOKEN secret (fine-grained token: contents and pull requests
+          # write) the pull request is made as that user and CI runs on it like on any other.
+          if [ "$HAS_BOT_TOKEN" != "true" ]; then
+            echo "::warning::No BOT_TOKEN secret: approve the CI run on the pull request by hand."
+            gh workflow run ci.yml --ref "$branch"
+          fi
           if ! gh pr merge "$branch" --auto --merge; then
             echo "::notice::Auto-merge is not available: merge the pull request once its checks pass."
           fi
