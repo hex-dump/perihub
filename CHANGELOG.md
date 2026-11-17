@@ -6,6 +6,9 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
+### New devices
+- **67 more Razer keyboards, read only**: BlackWidow (from the 2012 Ultimate to the V4, V4 Pro, V4 75%, V4 X and the V4 Tenkeyless HyperSpeed models), Huntsman (Elite, Tournament Edition, Mini, V2, V2 Analog, V3 Pro and V3 HE), Ornata, Cynosa, DeathStalker, Anansi and Joro, the wireless ones also through their own HyperSpeed receiver. PeriHub reads the firmware and the layout, and where the keyboard has them the backlight brightness, the game mode and the battery; it changes nothing. The list and each keyboard's interface, wait and transaction ids are written from facts found in OpenRazer (GPL-2.0; no code copied) by `tools/openrazer_facts.py`. Nobody has tried one yet: a test report moves a keyboard up. On Linux only the BlackWidow V4 Mini HyperSpeed is opened for now: on most of the others the interface PeriHub would read also carries what is typed, so the udev rule does not open it, and **Send a report** lists the keyboard with its interfaces instead.
+
 ### Fixed
 - **Steam and Epic Games games now show up in "Add from installed games" on Windows.** PeriHub only looked for Steam in `Program Files (x86)\Steam`, ignored the Epic Games Launcher, and only found a game's program when it sat directly in the game's folder (not in `bin\x64` or an Unreal game's `Binaries\Win64`). It now finds Steam where Windows says it is installed (also when it is not in Program Files), reads the Epic Games Launcher's list of installed games, and looks a few folders deep, preferring the real game program over launchers, crash reporters and installers. Games started from a folder with a very long path are also recognised as the app in focus.
 
