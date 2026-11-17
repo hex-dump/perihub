@@ -5,6 +5,31 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 export type Rgb = string; // "#rrggbb"
 
+// Keyboard layouts (perihub-core kblayout.rs); app/src/lib/keyboardLayout.svelte.ts combines them.
+export type Physical = "ansi" | "iso" | "jis" | "abnt";
+export type Legends = "us" | "uk" | "it" | "de" | "fr" | "es" | "pt" | "se" | "no" | "dk" | "jp" | "br";
+
+/** What a keyboard says about its own layout. */
+export interface DeviceLayout {
+  /** null for a value PeriHub does not know the meaning of yet. */
+  physical: Physical | null;
+  /** The region of its keycaps, when the keyboard tells it (Razer). */
+  region: string | null;
+  /** What was read, such as "Corsair property 0x41 = 2". */
+  read: string;
+}
+
+/** The layout the system types with. */
+export interface SystemLayout {
+  /** null for a layout PeriHub has no legends for. */
+  legends: Legends | null;
+  /** The system's own name for it: "it", "us(intl)", or a Windows layout handle. */
+  name: string;
+  /** Where it was read: "localectl", "GNOME", "Windows"… */
+  source: string;
+  physical: Physical | null;
+}
+
 export type KeyboardLighting =
   | { type: "off" }
   | { type: "static"; colors: Rgb[] }
@@ -403,6 +428,8 @@ export interface UnsupportedReceiverDevice {
   /** Its onboard profile memory (0x8100), if it has one. */
   onboard: MouseInfo["onboard"] | null;
   read_errors: string[];
+  /** A keyboard's layout code (0x4540), if it has that feature. */
+  layout?: DeviceLayout | null;
 }
 
 /** A connected Logitech receiver, for the test report that helps support what is paired with it. */
@@ -633,6 +660,8 @@ export interface PeripheralInfo {
   pending_undo: boolean;
   /** Requests and answers of the last reading, for test reports. */
   raw: string[];
+  /** A keyboard's physical layout, when its protocol has a read for it. */
+  layout?: DeviceLayout | null;
 }
 
 export interface CorsairInfo {
@@ -651,6 +680,8 @@ export interface CorsairInfo {
   read_errors: string[];
   /** The colour shown on every LED while experimental lighting is on ("#rrggbb"). */
   lighting: string | null;
+  /** A keyboard's physical layout, read from it. */
+  layout?: DeviceLayout | null;
 }
 
 export interface BatteryAlerts {
@@ -757,6 +788,7 @@ export const api = {
   restoreKeyboardBackup: (id: string) =>
     invoke<KeymapRestore>("kb_restore_backup", { id }),
   keyCatalog: () => invoke<KeyCatalog>("kb_key_catalog"),
+  systemLayout: () => invoke<SystemLayout | null>("kb_system_layout"),
   keyAccess: () => invoke<KeyAccess>("kb_key_access"),
   grantKeyAccess: () => invoke<void>("kb_grant_key_access"),
   revokeKeyAccess: () => invoke<void>("kb_revoke_key_access"),

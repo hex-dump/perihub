@@ -12,6 +12,7 @@
   import KeepChangesDialog from "../components/KeepChangesDialog.svelte";
   import PeripheralSaveDialog from "../components/PeripheralSaveDialog.svelte";
   import BlindSettings from "../components/BlindSettings.svelte";
+  import KeyboardLayout from "../components/KeyboardLayout.svelte";
   import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
@@ -166,6 +167,10 @@
   {#if busy}<div class="notice info">{busy}</div>{/if}
   {#if error}<div class="notice error">{error}</div>{/if}
   {#if message}<div class="notice ok">{message}</div>{/if}
+
+  {#if info.kind === "keyboard"}
+    <section class="card"><KeyboardLayout deviceKey={info.key} device={info.layout} /></section>
+  {/if}
 
   {#if shown}
     <section class="card">

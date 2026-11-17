@@ -34,6 +34,8 @@ pub mod feature {
     pub const BATTERY_STATUS: u16 = 0x1000;
     pub const BATTERY_VOLTAGE: u16 = 0x1001;
     pub const UNIFIED_BATTERY: u16 = 0x1004;
+    /// Keyboard international layouts: a keyboard's layout code.
+    pub const KEYBOARD_LAYOUT: u16 = 0x4540;
     pub const ADJUSTABLE_DPI: u16 = 0x2201;
     pub const EXTENDED_DPI: u16 = 0x2202;
     pub const REPORT_RATE: u16 = 0x8060;
@@ -70,6 +72,7 @@ const ALLOWED_FEATURES: &[u16] = &[
     feature::BATTERY_STATUS,
     feature::BATTERY_VOLTAGE,
     feature::UNIFIED_BATTERY,
+    feature::KEYBOARD_LAYOUT,
     feature::ADJUSTABLE_DPI,
     feature::EXTENDED_DPI,
     feature::REPORT_RATE,
@@ -91,6 +94,7 @@ const READ_ONLY_CALLS: &[(u16, u8)] = &[
     (feature::BATTERY_STATUS, 0),
     (feature::BATTERY_VOLTAGE, 0),
     (feature::UNIFIED_BATTERY, 1),
+    (feature::KEYBOARD_LAYOUT, 0),
     (feature::ADJUSTABLE_DPI, 1),
     (feature::ADJUSTABLE_DPI, 2),
     (feature::EXTENDED_DPI, 0),
@@ -688,6 +692,14 @@ impl HidppDevice {
         let [hi, lo] = dpi.to_be_bytes();
         self.call(feature::ADJUSTABLE_DPI, 3, &[sensor, hi, lo])?;
         Ok(())
+    }
+
+    // ---- 0x4540 keyboard international layouts ----
+
+    /// The keyboard's layout code: function 0, first byte, as Solaar and OpenRGB read it. What the
+    /// codes mean is not documented (see [`crate::kblayout::logitech`]).
+    pub fn keyboard_layout_code(&mut self) -> Result<u8> {
+        Ok(self.call(feature::KEYBOARD_LAYOUT, 0, &[])?[0])
     }
 
     // ---- 0x8060 polling rate ----

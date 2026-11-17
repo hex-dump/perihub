@@ -106,7 +106,7 @@ Not on the list? Open a [device request](https://github.com/hex-dump/perihub/iss
 |---|---|---|
 | Lighting | 8 zones: static, gradient, breathing, color cycle, wave, reactive (the zone of each key you press lights up), built-in rainbow, off | PC: PeriHub reapplies it when the keyboard is connected |
 | Brightness | 0–100% in 17 steps, in sync with SteelSeries + F11/F12 | PC |
-| Key remapping | Any key, on the normal layer and on the "SteelSeries key held" layer, with 10 keyboard layouts | **Keyboard**: works without PeriHub |
+| Key remapping | Any key, on the normal layer and on the "SteelSeries key held" layer, drawn in the layout PeriHub detects (ANSI, ISO, JIS or ABNT2; 12 sets of legends) | **Keyboard**: works without PeriHub |
 | Software macros | A key, such as SteelSeries + 1, starts a macro run by PeriHub | The key in the keyboard, the macro on the PC |
 
 ### Logitech G502 HERO
@@ -369,7 +369,7 @@ Software macros type and click through a virtual keyboard and mouse (`/dev/uinpu
 ## Using PeriHub
 
 - **Keyboard → Lighting**: pick an effect. It applies at once and is remembered.
-- **Keyboard → Keys**: pick your layout, click a key, choose its new function and press **Save to keyboard**. **With SteelSeries key** changes what keys do while the SteelSeries key is held.
+- **Keyboard → Keys**: click a key, choose its new function and press **Save to keyboard**. The layout under the keyboard's name is detected from the system; **Change** sets another one if it is wrong. **With SteelSeries key** changes what keys do while the SteelSeries key is held.
 - **Mouse**: pick a profile at the top, then change DPI, buttons and lighting. Nothing is written until you press **Save to mouse**. DPI and lighting are previewed live; leaving the page brings the saved settings back.
 - **G-Shift**: give "G-Shift" to a button. While you hold it, the other buttons do what the G-Shift tab says.
 

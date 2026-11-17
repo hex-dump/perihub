@@ -3,6 +3,8 @@
   import type { KeyboardInfo } from "../lib/api";
   import KeyboardLighting from "./KeyboardLighting.svelte";
   import KeyboardKeys from "./KeyboardKeys.svelte";
+  import KeyboardLayout from "../components/KeyboardLayout.svelte";
+  import { APEX_3_TKL } from "../lib/keyboardLayout.svelte";
 
   interface Props {
     info: KeyboardInfo | null;
@@ -22,6 +24,7 @@
     <span class="muted small">
       {#if info}Firmware {info.firmware}{:else}Not connected: lighting settings will be applied when it is plugged in{/if}
     </span>
+    <KeyboardLayout deviceKey={APEX_3_TKL} drawn />
   </div>
 </header>
 

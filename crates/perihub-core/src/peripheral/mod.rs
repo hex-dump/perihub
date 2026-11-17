@@ -268,6 +268,8 @@ pub struct Reading {
     pub details: Vec<(String, String)>,
     /// Something did not look as documented: nothing is changed on this device.
     pub problem: Option<String>,
+    /// A keyboard's physical layout, when its protocol has a read for it.
+    pub layout: Option<crate::kblayout::DeviceLayout>,
 }
 
 /// What the interface shows of a device.
@@ -308,6 +310,8 @@ pub struct PeripheralInfo {
     pub pending_undo: bool,
     /// Every request and answer of the last reading, for test reports.
     pub raw: Vec<String>,
+    /// A keyboard's physical layout, when its protocol has a read for it.
+    pub layout: Option<crate::kblayout::DeviceLayout>,
 }
 
 /// The HID calls the drivers use: a device, or a simulated one in the tests.

@@ -169,6 +169,8 @@ pub struct UnsupportedDevice {
     pub onboard: Option<OnboardInfo>,
     /// What could not be read.
     pub read_errors: Vec<String>,
+    /// A keyboard's layout code (0x4540), if it has that feature.
+    pub layout: Option<crate::kblayout::DeviceLayout>,
 }
 
 impl UnsupportedDevice {
@@ -192,6 +194,7 @@ impl UnsupportedDevice {
             report_rates_hz: Vec::new(),
             onboard: None,
             read_errors: Vec::new(),
+            layout: None,
         };
         let mut failed = |what: &str, error: Error| match error {
             Error::Unreachable => Err(Error::Unreachable),
@@ -265,6 +268,12 @@ impl UnsupportedDevice {
             match dev.onboard_info() {
                 Ok(info) => device.onboard = Some(info),
                 Err(error) => failed("onboard memory", error)?,
+            }
+        }
+        if has(feature::KEYBOARD_LAYOUT) {
+            match dev.keyboard_layout_code() {
+                Ok(code) => device.layout = Some(crate::kblayout::logitech(code)),
+                Err(error) => failed("keyboard layout (0x4540)", error)?,
             }
         }
         Ok(device)
@@ -506,6 +515,49 @@ mod tests {
             assert_eq!(request[1], 2);
             let (index, function) = (request[2], request[3] >> 4);
             assert!(index <= 3 || (index, function) == (4, 1), "feature index {index}, function {function}");
+        }
+    }
+
+    #[test]
+    fn a_keyboard_gives_its_layout_code_with_a_read() {
+        use super::super::feature;
+        const FEATURES: &[u16] = &[feature::ROOT, feature::FEATURE_SET, feature::DEVICE_NAME, feature::KEYBOARD_LAYOUT];
+        let fake = FakeDevice::new(|request| {
+            let index = request[2] as usize;
+            let (function, param) = (request[3] >> 4, request[4] as usize);
+            let payload: Vec<u8> = match (FEATURES.get(index).copied(), function) {
+                (Some(feature::ROOT), 1) => vec![4, 5, request[6]],
+                (Some(feature::ROOT), 0) => {
+                    let id = u16::from_be_bytes([request[4], request[5]]);
+                    vec![FEATURES.iter().position(|&f| f == id).unwrap_or(0) as u8]
+                }
+                (Some(feature::FEATURE_SET), 0) => vec![FEATURES.len() as u8 - 1],
+                (Some(feature::FEATURE_SET), 1) => {
+                    let [high, low] = FEATURES[param].to_be_bytes();
+                    vec![high, low, 0, 0]
+                }
+                (Some(feature::DEVICE_NAME), 0) => vec![0],
+                // A keyboard.
+                (Some(feature::DEVICE_NAME), 2) => vec![0],
+                (Some(feature::KEYBOARD_LAYOUT), 0) => vec![0x1A],
+                _ => {
+                    let mut error = vec![0u8; 20];
+                    error[..6].copy_from_slice(&[REPORT_LONG, 2, 0xFF, request[2], request[3], 0x02]);
+                    return vec![error];
+                }
+            };
+            vec![reply(request, &payload)]
+        });
+        let written = fake.written.clone();
+        let mut dev = HidppDevice::behind_receiver(fake, None, 2, true).unwrap();
+        let device = UnsupportedDevice::read(&mut dev, 2).unwrap();
+        assert_eq!(device.kind, Some(0));
+        assert_eq!(device.layout.as_ref().map(|l| l.read.as_str()), Some("Logitech HID++ 0x4540 = 1a"));
+        assert_eq!(device.layout.unwrap().physical, None, "the codes are not documented");
+        // Of 0x4540 (index 3), only function 0.
+        for request in written.lock().unwrap().iter() {
+            let (index, function) = (request[2], request[3] >> 4);
+            assert!(index != 3 || function == 0, "function {function} of 0x4540");
         }
     }
 

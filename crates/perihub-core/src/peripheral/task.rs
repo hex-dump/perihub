@@ -201,6 +201,7 @@ impl PeripheralTask {
             problem: None,
             pending_undo: false,
             raw: Vec::new(),
+            layout: None,
         };
         let mut task = Self {
             io,
@@ -253,6 +254,7 @@ impl PeripheralTask {
         self.info.limits = reading.limits;
         self.info.buttons = reading.buttons;
         self.info.details = reading.details;
+        self.info.layout = reading.layout;
         self.info.problem = reading.problem.or(self.info.problem.take());
         self.info.editable = self.io.changes_allowed();
         self.info.raw = self.io.take_raw();

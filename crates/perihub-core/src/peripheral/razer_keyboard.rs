@@ -23,6 +23,8 @@ const GET_BATTERY: [u8; 2] = [0x07, 0x80];
 const GET_CHARGING: [u8; 2] = [0x07, 0x84];
 const GET_BRIGHTNESS: [u8; 2] = [0x0F, 0x84];
 const GET_LED_STATE: [u8; 2] = [0x03, 0x80];
+/// The keyboard's region, so its physical layout (see [`crate::kblayout::razer`]).
+const GET_LAYOUT: [u8; 2] = [0x00, 0x86];
 
 /// Everything PeriHub may send to a Razer keyboard: reads only, the lights' with the stored
 /// values and the one LED each.
@@ -37,6 +39,7 @@ pub const COMMANDS: &[Command] = &[
         name: "read backlight brightness",
     },
     Command { prefix: &[0x03, 0x80, VARSTORE, GAME_LED], at: 6, effect: Effect::Read, name: "read game mode" },
+    Command { prefix: &GET_LAYOUT, at: 6, effect: Effect::Read, name: "read layout" },
 ];
 
 /// What a keyboard needs, from OpenRazer: how long it takes to answer and the transaction id of
@@ -161,8 +164,16 @@ impl Driver for RazerKeyboard {
             Err(Error::Invalid(_)) => details.push(("Game mode".into(), "not read: not supported".into())),
             Err(e) => return Err(e),
         }
+        // Its layout, with the firmware's transaction id as OpenRazer sends it. A keyboard that does
+        // not take it leaves the layout to the system.
+        let layout = match self.query(io, p.tid_firmware, GET_LAYOUT, 0x02, &[]) {
+            Ok(a) => Some(crate::kblayout::razer(a[0])),
+            Err(Error::Invalid(_)) => None,
+            Err(e) => return Err(e),
+        };
         Ok(Reading {
             firmware: Some(format!("v{}.{}", fw[0], fw[1])),
+            layout,
             battery: Some((percent(level), charging == 1)),
             details,
             problem: (!problems.is_empty()).then(|| format!("unexpected answer: {}", problems.join(", "))),
@@ -205,6 +216,7 @@ mod tests {
                 (GET_CHARGING, t) if t == battery_tid => a[9] = 1,
                 (GET_BRIGHTNESS, t) if t == battery_tid => a[10] = 0x80,
                 (GET_LED_STATE, 0xFF) => a[10] = 1,
+                (GET_LAYOUT, 0xFF) => a[8] = 0x11,
                 _ => a[0] = 0x03,
             }
             a
@@ -235,6 +247,8 @@ mod tests {
             assert_eq!((battery.level, battery.charging), (80, true));
             assert!(info.details.contains(&("Backlight brightness".into(), "50 %".into())), "{:?}", info.details);
             assert!(info.details.contains(&("Game mode".into(), "on".into())));
+            let layout = info.layout.as_ref().unwrap();
+            assert_eq!((layout.region, layout.physical), (Some("Italian"), Some(crate::kblayout::Physical::Iso)));
             assert_eq!(info.problem, None);
             assert!(info.limits == Default::default(), "nothing may be changed");
             assert!(!info.editable);

@@ -482,7 +482,9 @@ was copied.
   protocol, the interface and usage page of each ASUS mouse's configuration collection, and for the
   Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and
   that a reading right after a write is incomplete, and the interface and usage page of the Logitech
-  G600's, and the name and USB id of a white Corsair K70 PRO MINI WIRELESS (see `docs/protocols/corsair-bragi.md`).
+  G600's, and the name and USB id of a white Corsair K70 PRO MINI WIRELESS (see `docs/protocols/corsair-bragi.md`), and
+  the values of the Corsair keyboards' physical layout property and how it reads a Logitech keyboard's layout code (see
+  `docs/protocols/keyboard-layouts.md`).
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its issues 1782 and 2305: the USB captures
   of Cooler Master's app that users attached there, read as data, and which product ids form the Cooler Master mouse
   family (see `docs/protocols/coolermaster-mm.md`).
@@ -495,19 +497,22 @@ was copied.
 - [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0): the Logitech receiver ids, and how it reads and writes
   onboard profile lists and button entries, compared with libratbag's (see
   `docs/protocols/logitech-onboard-profiles.md`); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak
-  HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (see `docs/protocols/logitech-hidpp10.md`).
+  HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (see `docs/protocols/logitech-hidpp10.md`);
+  how it reads a Logitech keyboard's layout code, HID++ `0x4540` (see `docs/protocols/keyboard-layouts.md`).
 - The `lsusb -v` dumps of [linuxhw/LsUSB](https://github.com/linuxhw/LsUSB): which interfaces the Logitech G600
   and the Roccat Kone mice have.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse
   its USB interface, transaction ids, maximum DPI, lights with a brightness and custom frame width, read as text
   by `tools/openrazer_facts.py` (see `docs/protocols/razer-mice.md`); for the BlackWidow V4 Mini HyperSpeed, its
   interface, waits and transaction ids, and the battery, charging, brightness and game mode reads (see
-  `docs/protocols/razer-keyboards.md`).
+  `docs/protocols/razer-keyboards.md`); the keyboard layout read and its region codes (see
+  `docs/protocols/keyboard-layouts.md`).
 - [OpenMouse mouse-protocol](https://github.com/OpenMouse-Project/mouse-protocol) (AGPL-3.0), its K-Snake driver
   (commit 5a4f643): the battery request of the YJX mice and where their settings hold the lift-off distance (see
   `docs/protocols/yjx-mice.md`).
 - [ckb-next](https://github.com/ckb-next/ckb-next) (GPL-2.0-only) and
-  [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub) (GPL-3.0): Corsair's protocol.
+  [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub) (GPL-3.0): Corsair's protocol; from ckb-next also the
+  keyboards' physical layout property (see `docs/protocols/keyboard-layouts.md`).
 - [QMK](https://github.com/qmk/qmk_firmware) (GPL-2.0-or-later), [vial-qmk](https://github.com/vial-kb/vial-qmk)
   (GPL-2.0) and [vial-gui](https://github.com/vial-kb/vial-gui) (GPL-2.0): the VIA and Vial commands, the
   lighting values and VialRGB's effect ids, the raw HID collection and interface of QMK keyboards, and the

@@ -120,6 +120,8 @@ export const answers: Record<string, unknown> = {
   kb_read_brightness: keyboard.brightness,
   kb_get_keymap: data.keymap as unknown as Keymap,
   kb_key_catalog: data.key_catalog as unknown as KeyCatalog,
+  // The US layout whatever the computer taking the screenshots types with.
+  kb_system_layout: { legends: "us", name: "us", source: "localectl", physical: "ansi" },
   kb_backups: [],
   kb_get_presets: [],
   mouse_get_state: mouseState,
