@@ -11,6 +11,7 @@ import type {
   MouseLive,
   MouseProfile,
   MouseState,
+  PeripheralInfo,
   SoftMacrosInfo,
 } from "../src/lib/api";
 import data from "./data.json";
@@ -130,3 +131,52 @@ export const answers: Record<string, unknown> = {
   update_available: null,
   update_just_installed: null,
 };
+
+// ?devices=more (with npm run screenshots untouched): also a low battery on the mouse, an experimental Corsair
+// mouse and a read-only keyboard of another brand, to look at every kind of device state in the sidebar.
+if (typeof location !== "undefined" && new URLSearchParams(location.search).get("devices") === "more") {
+  live.battery = { percent: 12, estimated: false, state: "discharging" };
+  status.corsair = [
+    {
+      product_id: 0x1b7a,
+      model: "M65 RGB ULTRA",
+      kind: "mouse",
+      receiver: null,
+      leds: 3,
+      firmware: "1.2.47",
+      mode: 1,
+      polling_hz: 1000,
+      dpi: 1600,
+      read_errors: [],
+      lighting: null,
+    },
+  ];
+  status.peripherals = [
+    {
+      key: "1e7d:2dcd",
+      vendor_id: 0x1e7d,
+      product_id: 0x2dcd,
+      brand: "ROCCAT",
+      model: "Vulcan TKL",
+      kind: "keyboard",
+      source: "libratbag (MIT)",
+      profiles: 5,
+      firmware: "1.05",
+      battery: null,
+      active_profile: 1,
+      active_dpi: null,
+      readable: true,
+      settings: { dpi_levels: [], polling_hz: 1000, options: {}, leds: [] },
+      limits: { dpi: null, polling_hz: [], options: [], leds: [] },
+      buttons: [],
+      details: [],
+      blind: [],
+      editable: false,
+      can_save: false,
+      changes_stay: false,
+      problem: null,
+      pending_undo: false,
+      raw: [],
+    },
+  ];
+}

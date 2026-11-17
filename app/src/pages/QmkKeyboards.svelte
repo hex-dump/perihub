@@ -5,6 +5,7 @@
   // channel, after PeriHub checked that nothing typed arrives there.
   import { onMount } from "svelte";
   import { api, errorText, type QmkAccess, type QmkKeyboard } from "../lib/api";
+  import Status from "../components/Status.svelte";
 
   interface Props {
     keyboards: QmkKeyboard[];
@@ -68,7 +69,7 @@
 
 <header>
   <h1>QMK keyboards</h1>
-  <span class="chip test">Experimental</span>
+  <Status kind="experimental" label="Experimental" chip />
 </header>
 
 <div class="notice info">

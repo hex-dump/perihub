@@ -12,16 +12,24 @@
   --text: #eef0f5;
   --muted: #a9b0c0;
   --faint: #8a91a3;
-  /* Colors that need a transparency are written as "r g b", and the ones used as they are come from them. */
+  /* Colors that need a transparency are written as "r g b", and the ones used as they are come from them.
+     Status colors say the state of a device or of a change: ok (connected, saved, supported), warn (needs
+     attention, low battery, not saved yet), bad (an error), read-only and experimental. They are the same
+     whatever the accent, and never written with it: an accent may be close to one (green to ok), so a state is
+     always shown with an icon and a word too (components/Status.svelte), and the accent with a fill or an edge. */
   --ok-rgb: 60 207 145;
   --warn-rgb: 255 194 77;
   --bad-rgb: 255 107 120;
+  --readonly-rgb: 169 176 192;
+  --experimental-rgb: 255 194 77;
   --ok: rgb(var(--ok-rgb));
   --ok-soft: rgb(var(--ok-rgb) / 0.12);
   --warn: rgb(var(--warn-rgb));
   --warn-soft: rgb(var(--warn-rgb) / 0.1);
   --bad: rgb(var(--bad-rgb));
   --bad-soft: rgb(var(--bad-rgb) / 0.1);
+  --readonly: rgb(var(--readonly-rgb));
+  --experimental: rgb(var(--experimental-rgb));
   /* The accent is for what matters: the main action, the selection, the value in use. Orange unless the
      Appearance setting says otherwise (see the data-accent blocks below). */
   --accent-rgb: 255 106 43;
@@ -66,8 +74,10 @@
   --muted: #444b5c;
   --faint: #566074;
   --ok-rgb: 10 108 68;
-  --warn-rgb: 138 82 0;
+  --warn-rgb: 128 86 0;
   --bad-rgb: 190 30 52;
+  --readonly-rgb: 68 75 92;
+  --experimental-rgb: 128 86 0;
   --accent-rgb: 172 50 6;
   --accent-2-rgb: 140 40 8;
   --on-accent: #ffffff;
@@ -84,7 +94,7 @@
 
 /* Accent colors (Settings → Appearance): orange is the one above. Each has a version for the dark theme,
    light enough to read on it with dark text on top, and one for the light theme, dark enough to read on it
-   with white text on top. */
+   with white text on top. These blocks set the accent and nothing else (tested in theme.test.ts). */
 :root[data-accent="blue"] { --accent-rgb: 79 157 255; --accent-2-rgb: 122 182 255; --on-accent: #04101f; }
 :root[data-accent="green"] { --accent-rgb: 70 199 107; --accent-2-rgb: 111 219 140; --on-accent: #04140a; }
 :root[data-accent="purple"] { --accent-rgb: 172 138 255; --accent-2-rgb: 190 165 255; --on-accent: #0f0720; }
@@ -254,8 +264,35 @@ label:has(> input[type="checkbox"], > input[type="radio"]) { cursor: pointer; }
   font-weight: 600;
   white-space: nowrap;
 }
-.chip.ok { color: var(--ok); background: var(--ok-soft); border-color: rgb(var(--ok-rgb) / 0.35); }
 .chip.accent { color: var(--accent); background: var(--accent-soft); border-color: rgb(var(--accent-rgb) / 0.4); }
+
+/* A state: an icon in its status color and a word (components/Status.svelte). In a chip, the pill stays neutral,
+   so a status never looks like the accent's filled or edged marks. */
+
+.status {
+  --status: var(--faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.status svg { flex: none; color: var(--status); }
+.status[data-kind="ok"] { --status: var(--ok); }
+.status[data-kind="warn"] { --status: var(--warn); }
+.status[data-kind="bad"] { --status: var(--bad); }
+.status[data-kind="readonly"] { --status: var(--readonly); }
+.status[data-kind="experimental"] { --status: var(--experimental); }
+.status.chip {
+  padding: 2px 10px 2px 7px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-weight: 600;
+}
 
 /* Messages: a colored edge says what kind, the text stays readable. */
 
