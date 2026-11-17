@@ -426,6 +426,11 @@
   </provides>
 
   <releases>
+    <release version="0.9.4" date="2026-11-17">
+      <description>
+        <p>On Windows, games from Steam and the Epic Games Launcher now show up when you add a game profile, also when Steam is installed outside Program Files or the game keeps its program in a subfolder. PeriHub also recognises 67 more Razer keyboards, read only for now.</p>
+      </description>
+    </release>
     <release version="0.9.3" date="2026-11-17">
       <description>
         <p>A damaged config.json is no longer overwritten by the defaults: PeriHub keeps it and brings back the last good save. Device detection recovers on its own when HID access is not ready at start-up, errors are shown in plain words instead of being swallowed, and on Linux desktops without a system tray closing the window quits PeriHub instead of hiding it. Test reports now carry every request and answer in full, and the interface works better with screen readers.</p>
