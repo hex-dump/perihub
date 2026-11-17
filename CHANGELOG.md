@@ -4,7 +4,9 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
-## Unreleased
+## 0.9.2 — 2026-11-17
+
+A keyboard's page now shows its layout (ANSI, ISO, JIS or ABNT2, and the key legends) and lets you change it when detection is wrong, and the Apex 3 TKL's Keys tab draws the right keys for it. Also new: clearer status marks (an icon and a word, in colors that no longer look like the accent), a tidier look for every page, and a fix for the "Send a report" prompt that flashed at start-up. CI and release workflows are also safer. The layout read has not been tried on a real Corsair or Razer keyboard yet, and a Logitech keyboard's layout code is only written into test reports, not used, because what it means is not documented.
 
 ### Added
 - **Keyboard layouts are detected.** A keyboard's page shows its layout, such as "Layout: Italian (ISO), detected": the shape (ANSI, ISO, JIS or ABNT2) is read from Corsair keyboards (property `0x41`) and the Razer BlackWidow V4 Mini (command `00 86`) with a read already allowed for them, and otherwise follows the system's layout; the key legends follow the layout the system types with (Hyprland, Sway, GNOME, KDE Plasma, X11 or localectl on Linux, the active keyboard layout on Windows), without root and without sending anything to a keyboard. The Apex 3 TKL's Keys tab draws the right keys (ISO Enter and the key next to the left Shift, the JIS and ABNT2 keys) with Japanese and Brazilian legends too. **Change** sets the shape or the legends for that keyboard when detection is wrong; the layout chosen before on the Keys tab is kept. Test reports name the layout shown and where it came from, and for a Logitech keyboard paired with a receiver its HID++ `0x4540` layout code, whose meaning is not documented yet. Facts from ckb-next, OpenRGB, OpenRazer and Solaar (GPL; no code copied).
