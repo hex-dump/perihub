@@ -109,55 +109,20 @@ fn config_path() -> PathBuf {
     config_dir().join("config.json")
 }
 
-fn unix_now() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
-}
-
-fn backup_path(path: &Path) -> PathBuf {
-    path.with_extension("json.bak")
-}
-
 impl AppConfig {
     pub fn load() -> Self {
-        Self::load_from(&config_path())
-    }
-
-    /// A file that cannot be read is set aside as `config.corrupt-<time>.json` (the next save
-    /// would overwrite it with the defaults, losing read-only mode among other things), and the
-    /// copy of the last good save, `config.json.bak`, is used if it is there.
-    fn load_from(path: &Path) -> Self {
-        let text = match fs::read_to_string(path) {
-            Ok(text) => text,
-            Err(_) => return Self::default(),
-        };
-        let error = match serde_json::from_str(&text) {
-            Ok(config) => return config,
-            Err(error) => error,
-        };
-        let kept = path.with_file_name(format!("config.corrupt-{}.json", unix_now()));
-        match fs::rename(path, &kept) {
-            Ok(()) => log::warn!("invalid config.json ({error}), kept as {}", kept.display()),
-            Err(rename) => log::warn!("invalid config.json ({error}), could not keep it: {rename}"),
-        }
-        match fs::read_to_string(backup_path(path)).ok().and_then(|text| serde_json::from_str(&text).ok()) {
-            Some(config) => {
-                log::warn!("using config.json.bak, the last good save");
-                config
-            }
-            None => Self::default(),
+        match fs::read_to_string(config_path()) {
+            Ok(text) => serde_json::from_str(&text).unwrap_or_else(|error| {
+                log::warn!("invalid config.json, using defaults: {error}");
+                Self::default()
+            }),
+            Err(_) => Self::default(),
         }
     }
 
     pub fn save(&self) -> Result<()> {
-        self.save_to(&config_path())
-    }
-
-    fn save_to(&self, path: &Path) -> Result<()> {
+        let path = config_path();
         fs::create_dir_all(path.parent().unwrap())?;
-        // Keep the previous good file, if there is one, as config.json.bak.
-        if fs::read_to_string(path).is_ok_and(|text| serde_json::from_str::<AppConfig>(&text).is_ok()) {
-            let _ = fs::copy(path, backup_path(path));
-        }
         // Atomic write: a crash halfway through does not leave a truncated file.
         let temp = path.with_extension("json.tmp");
         fs::write(&temp, serde_json::to_string_pretty(self)?)?;
@@ -272,28 +237,6 @@ mod tests {
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).unwrap();
         root
-    }
-
-    #[test]
-    fn a_corrupt_config_is_kept_and_the_last_good_save_is_used() {
-        let root = temp_root("corrupt");
-        let path = root.join("config.json");
-        let config = AppConfig { read_only: true, ..Default::default() };
-        config.save_to(&path).unwrap();
-        config.save_to(&path).unwrap(); // the second save keeps the first as .bak
-        fs::write(&path, "{\"read_only\": tr").unwrap(); // cut short
-        assert!(AppConfig::load_from(&path).read_only);
-        let kept: Vec<_> = fs::read_dir(&root)
-            .unwrap()
-            .filter_map(|e| e.ok()?.file_name().into_string().ok())
-            .filter(|n| n.starts_with("config.corrupt-"))
-            .collect();
-        assert_eq!(kept.len(), 1);
-        // No backup: defaults, but the broken file is still kept.
-        fs::remove_file(root.join("config.json.bak")).unwrap();
-        fs::write(&path, "nonsense").unwrap();
-        assert!(!AppConfig::load_from(&path).read_only);
-        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
