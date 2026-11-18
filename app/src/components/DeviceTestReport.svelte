@@ -4,6 +4,7 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type WriteEntry } from "../lib/api";
   import { deviceTestFormUrl, type DeviceTestFields } from "../lib/testReport";
+  import { MAX_URL_LENGTH, PASTE_NOTE } from "../lib/reportWizard";
   import { readOnly, withWriteLog } from "../lib/readOnly.svelte";
 
   interface Props {
@@ -18,6 +19,8 @@
   let system = $state("");
   let copied = $state(false);
   let error = $state<string | null>(null);
+  /** The report was too long for the form's address: it went to the clipboard instead. */
+  let pasted = $state(false);
   /** The writes of this session, for the end of the report: read again before a click. */
   let writes = $state<WriteEntry[]>([]);
 
@@ -56,9 +59,23 @@
     }
   }
 
+  // The writes were read when the pointer or the focus came to the button: no waiting before the
+  // clipboard. A report too long for the address (a long transcript) is pasted into the form.
   async function openForm() {
-    await loadWrites();
-    api.openTestForm(deviceTestFormUrl(report(), version, system)).catch((e) => (error = errorText(e)));
+    const fields = report();
+    let url = deviceTestFormUrl(fields, version, system);
+    pasted = false;
+    if (url.length > MAX_URL_LENGTH) {
+      try {
+        await navigator.clipboard.writeText(fields.report);
+      } catch (e) {
+        error = errorText(e);
+        return;
+      }
+      url = deviceTestFormUrl({ ...fields, report: PASTE_NOTE }, version, system);
+      pasted = true;
+    }
+    api.openTestForm(url).catch((e) => (error = errorText(e)));
   }
 </script>
 
@@ -66,9 +83,14 @@
   <button type="button" class="tiny" disabled={!version} onpointerenter={loadWrites} onfocus={loadWrites} onclick={copy}>
     {copied ? "Copied" : "Copy test report"}
   </button>
-  <button type="button" class="tiny" disabled={!version} onclick={openForm}>Open test form</button>
+  <button type="button" class="tiny" disabled={!version} onpointerenter={loadWrites} onfocus={loadWrites} onclick={openForm}>
+    Open test form
+  </button>
 </div>
-{#if error}<div class="notice error">{error}</div>{/if}
+{#if pasted}
+  <div class="notice info">The report is too long for a link: PeriHub copied it. Paste it into the Test report box of the form.</div>
+{/if}
+{#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
 <style>
   .wrap {

@@ -1115,12 +1115,347 @@
           "level": "experimental"
         },
         {
+          "name": "BlackWidow Ultimate 2012",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Stealth Edition",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Anansi",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "DeathStalker/DeathStalker Essential",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Ultimate 2013",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow (Classic)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Tournament Edition 2014",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "DeathStalker Expert",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Chroma",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "DeathStalker Chroma",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Tournament Edition Chroma",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Chroma (Overwatch)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Ultimate 2016",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow X Chroma",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow X Ultimate",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow X Tournament Edition Chroma",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Ornata Chroma",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Ornata",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Chroma V2",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman Elite",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Elite",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Cynosa Chroma",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Cynosa Chroma Pro",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Lite",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow Essential",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Cynosa Lite",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow 2019",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman Tournament Edition",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V3",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman Mini",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V3 Mini HyperSpeed (Wired)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V3 Pro Wired",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V3 Pro 2.4 Ghz Wireless",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Ornata V2",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Cynosa V2",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman V2 Analog",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman Mini JP",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman V2 Tenkeyless",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman V2",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V3 Mini HyperSpeed (Wireless)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman Mini Analog",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V4",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V4 Pro",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Ornata V3 (Alternate)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "DeathStalker V2 Pro (Wireless)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "DeathStalker V2 Pro (Wired)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V4 X",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Ornata V3 X",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "DeathStalker V2",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "DeathStalker V2 Pro TKL (Wireless)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "DeathStalker V2 Pro TKL (Wired)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Ornata V3",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Ornata V3 X (Alternate)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Ornata V3 Tenkeyless",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V4 75%",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman V3 Pro",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman V3 Pro TKL",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman V3 Pro Mini",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
           "name": "BlackWidow V4 Mini HyperSpeed",
           "kind": "keyboard",
           "level": "read_only"
         },
         {
           "name": "BlackWidow V4 Mini HyperSpeed (wireless)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Joro",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman V3 Pro 8KHz",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V4 Low-profile Tenkeyless HyperSpeed (Wireless)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V4 Low-profile Tenkeyless HyperSpeed (Wired)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V4 Tenkeyless HyperSpeed (Wireless)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V4 Tenkeyless HyperSpeed (Wired)",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "Huntsman V3 HE Magnetic Tenkeyless 8KHz",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "BlackWidow V3 TK",
           "kind": "keyboard",
           "level": "read_only"
         }

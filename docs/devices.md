@@ -443,21 +443,94 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 
 👁 Read-only: nobody has tried PeriHub on one yet. The protocol is the one of the Razer mice, from facts found in
 [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0), described in
-[protocols/razer-keyboards.md](protocols/razer-keyboards.md): no code was copied.
+[protocols/razer-keyboards.md](protocols/razer-keyboards.md): no code was copied. The list below is written from
+OpenRazer's tables by `tools/openrazer_facts.py`; Razer laptops and keypads (Tartarus, Orbweaver, Nostromo) are left out.
 
-- **BlackWidow V4 Mini HyperSpeed**, on its cable and through its HyperSpeed receiver (the receiver belongs to this
-  keyboard alone): PeriHub reads the firmware, the battery and whether it is charging, the backlight brightness and
-  the game mode, and changes nothing.
+- PeriHub reads the firmware and the layout, and where OpenRazer reads them on that keyboard, the backlight
+  brightness, the game mode, and on the wireless ones the battery and whether it is charging. It changes nothing.
+- Wireless keyboards are recognized on their cable and through their own HyperSpeed receiver, where OpenRazer gives
+  that receiver to the keyboard alone.
 - Left out: lighting effects (OpenRazer stores them in the keyboard's memory and nothing reads them back, so one could
   not be undone), changing the brightness and the game mode, macros, key remapping and profiles.
-- On Linux only interface 3 is opened, and PeriHub reads the report descriptor of a keyboard's node first: a node that
+- **On Linux only the BlackWidow V4 Mini HyperSpeed for now.** On most Razer keyboards the interface OpenRazer sends
+  to also carries what is typed, and the udev rule would let any program read it, so the rule opens only interface 3
+  of the V4 Mini, which a tester showed holds only the media keys. The others are read on Windows, where the system
+  keeps typed keys from programs. On Linux, **Send a report** lists such a keyboard with its interfaces, which is what
+  is needed to open it there safely. PeriHub also reads the report descriptor of a keyboard's node first: a node that
   declares typed keys is never opened, whatever rule gave access to it.
 
 <!-- generated: table razer-keyboard -->
 | Keyboard | USB ID | Opened on Linux |
 |---|---|---|
+| BlackWidow Ultimate 2012 | `1532:010d` | — |
+| BlackWidow Stealth Edition | `1532:010e` | — |
+| Anansi | `1532:010f` | — |
+| DeathStalker/DeathStalker Essential | `1532:0118` | — |
+| BlackWidow Ultimate 2013 | `1532:011a` | — |
+| BlackWidow (Classic) | `1532:011b` | — |
+| BlackWidow Tournament Edition 2014 | `1532:011c` | — |
+| DeathStalker Expert | `1532:0202` | — |
+| BlackWidow Chroma | `1532:0203` | — |
+| DeathStalker Chroma | `1532:0204` | — |
+| BlackWidow Tournament Edition Chroma | `1532:0209` | — |
+| BlackWidow Chroma (Overwatch) | `1532:0211` | — |
+| BlackWidow Ultimate 2016 | `1532:0214` | — |
+| BlackWidow X Chroma | `1532:0216` | — |
+| BlackWidow X Ultimate | `1532:0217` | — |
+| BlackWidow X Tournament Edition Chroma | `1532:021a` | — |
+| Ornata Chroma | `1532:021e` | — |
+| Ornata | `1532:021f` | — |
+| BlackWidow Chroma V2 | `1532:0221` | — |
+| Huntsman Elite | `1532:0226` | — |
+| Huntsman | `1532:0227` | — |
+| BlackWidow Elite | `1532:0228` | — |
+| Cynosa Chroma | `1532:022a` | — |
+| Cynosa Chroma Pro | `1532:022c` | — |
+| BlackWidow Lite | `1532:0235` | — |
+| BlackWidow Essential | `1532:0237` | — |
+| Cynosa Lite | `1532:023f` | — |
+| BlackWidow 2019 | `1532:0241` | — |
+| Huntsman Tournament Edition | `1532:0243` | — |
+| BlackWidow V3 | `1532:024e` | — |
+| Huntsman Mini | `1532:0257` | — |
+| BlackWidow V3 Mini HyperSpeed (Wired) | `1532:0258` | — |
+| BlackWidow V3 Pro Wired | `1532:025a` | — |
+| BlackWidow V3 Pro 2.4 Ghz Wireless | `1532:025c` | — |
+| Ornata V2 | `1532:025d` | — |
+| Cynosa V2 | `1532:025e` | — |
+| Huntsman V2 Analog | `1532:0266` | — |
+| Huntsman Mini JP | `1532:0269` | — |
+| Huntsman V2 Tenkeyless | `1532:026b` | — |
+| Huntsman V2 | `1532:026c` | — |
+| BlackWidow V3 Mini HyperSpeed (Wireless) | `1532:0271` | — |
+| Huntsman Mini Analog | `1532:0282` | — |
+| BlackWidow V4 | `1532:0287` | — |
+| BlackWidow V4 Pro | `1532:028d` | — |
+| Ornata V3 (Alternate) | `1532:028f` | — |
+| DeathStalker V2 Pro (Wireless) | `1532:0290` | — |
+| DeathStalker V2 Pro (Wired) | `1532:0292` | — |
+| BlackWidow V4 X | `1532:0293` | — |
+| Ornata V3 X | `1532:0294` | — |
+| DeathStalker V2 | `1532:0295` | — |
+| DeathStalker V2 Pro TKL (Wireless) | `1532:0296` | — |
+| DeathStalker V2 Pro TKL (Wired) | `1532:0298` | — |
+| Ornata V3 | `1532:02a1` | — |
+| Ornata V3 X (Alternate) | `1532:02a2` | — |
+| Ornata V3 Tenkeyless | `1532:02a3` | — |
+| BlackWidow V4 75% | `1532:02a5` | — |
+| Huntsman V3 Pro | `1532:02a6` | — |
+| Huntsman V3 Pro TKL | `1532:02a7` | — |
+| Huntsman V3 Pro Mini | `1532:02b0` | — |
 | BlackWidow V4 Mini HyperSpeed | `1532:02b9` | interface 3 |
 | BlackWidow V4 Mini HyperSpeed (wireless) | `1532:02ba` | interface 3 |
+| Joro | `1532:02cd` | — |
+| Huntsman V3 Pro 8KHz | `1532:02cf` | — |
+| BlackWidow V4 Low-profile Tenkeyless HyperSpeed (Wireless) | `1532:02d2` | — |
+| BlackWidow V4 Low-profile Tenkeyless HyperSpeed (Wired) | `1532:02d4` | — |
+| BlackWidow V4 Tenkeyless HyperSpeed (Wireless) | `1532:02d5` | — |
+| BlackWidow V4 Tenkeyless HyperSpeed (Wired) | `1532:02d7` | — |
+| Huntsman V3 HE Magnetic Tenkeyless 8KHz | `1532:02ea` | — |
+| BlackWidow V3 TK | `1532:0a24` | — |
 <!-- end generated -->
 
 ## Glorious mice

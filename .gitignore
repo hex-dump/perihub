@@ -4,3 +4,5 @@ app/dist/
 app/src-tauri/gen/
 __pycache__/
 app/preview-dist/
+docs/screenshots/
+docs/social-preview.png

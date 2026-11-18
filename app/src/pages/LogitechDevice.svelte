@@ -176,7 +176,7 @@
   </div>
 
   {#each programs as program (program)}
-    <div class="notice error">
+    <div class="notice error" role="alert">
       <b>{program} is running.</b> It sets its own DPI and other settings on Logitech devices, and may undo what PeriHub
       sets on the {name}. Use one of the two for this device.
     </div>
@@ -243,7 +243,7 @@
             </div>
           </div>
         {/if}
-        {#if error}<div class="notice error">{error}</div>{/if}
+        {#if error}<div class="notice error" role="alert">{error}</div>{/if}
       {/if}
     </section>
   {/if}

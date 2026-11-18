@@ -201,6 +201,8 @@ impl LogitechTask {
         saved_dpi: Option<u16>,
         lights: LightsMemory,
     ) -> Result<Self> {
+        // Its test report carries the transcript of the reading in `device`.
+        dev.stop_recording();
         if let Some(unit) = device.unit_id {
             let info = dev.device_info()?;
             if info[1..5] != unit {
@@ -769,6 +771,7 @@ mod tests {
             lighting: None,
             read_errors: Vec::new(),
             layout: None,
+            transcript: String::new(),
         };
         (LogitechTask::open(dev, device, saved, LightsMemory::default()), mouse)
     }
@@ -875,6 +878,7 @@ mod tests {
                 onboard: None,
                 lighting: Some(g915x()),
                 layout: None,
+                transcript: String::new(),
                 read_errors: Vec::new(),
             }
         }

@@ -65,7 +65,9 @@ impl Entry {
     }
 }
 
-/// A device PeriHub opens, or names, by itself: it has its own entry in the interface already.
+/// A device PeriHub opens, or names, by itself: it has its own entry in the interface already. On
+/// Linux a model PeriHub does not open there (see [`peripheral::opened_on_linux`]) is listed, so that a
+/// device request can show what its interfaces carry.
 pub fn known(vendor_id: u16, product_id: u16) -> bool {
     match vendor_id {
         STEELSERIES if STEELSERIES_KEYBOARDS.contains(&product_id) => true,
@@ -74,7 +76,8 @@ pub fn known(vendor_id: u16, product_id: u16) -> bool {
         corsair::CORSAIR if corsair::models::find(product_id).is_some() || corsair::models::is_receiver(product_id) => {
             true
         }
-        _ => peripheral::find(vendor_id, product_id).is_some(),
+        _ => peripheral::find(vendor_id, product_id)
+            .is_some_and(|m| !cfg!(target_os = "linux") || peripheral::opened_on_linux(m)),
     }
 }
 
@@ -160,5 +163,12 @@ mod tests {
         ]);
         let names: Vec<_> = devices.iter().map(|d| d.product.as_deref().unwrap()).collect();
         assert_eq!(names, ["A Logitech headset"]);
+    }
+
+    #[test]
+    fn a_keyboard_perihub_does_not_open_on_linux_is_listed_there() {
+        let devices = unknown_devices([entry(0x1532, 0x0203, Some("BlackWidow Chroma"), 1, 1, 6)]);
+        assert_eq!(devices.len(), usize::from(cfg!(target_os = "linux")));
+        assert!(unknown_devices([entry(0x1532, 0x02B9, Some("BlackWidow V4 Mini"), 3, 0x0C, 1)]).is_empty());
     }
 }

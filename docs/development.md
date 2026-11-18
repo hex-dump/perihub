@@ -43,6 +43,10 @@ cd app && npm run check         # frontend type check
 cd app && npx vitest run        # frontend tests
 ```
 
+`cargo test` also replays the transcripts in `crates/perihub-core/tests/fixtures/transcripts`:
+what real devices answered, played back to the drivers without the device. A test report of a
+device of another brand ends with one; [replay.md](replay.md) says how to turn it into a test.
+
 ## Command-line tool
 
 Useful for diagnostics and scripting. It refuses to start while the app is open, since both would
@@ -80,7 +84,6 @@ crates/perihub-cli      command-line tool
 crates/xtask            generates the device lists from the driver tables (cargo xtask gen)
 app/                    UI: Tauri 2 + Svelte 5
 packaging/linux         udev rules
-packaging/aur           perihub-bin PKGBUILD
 docs/protocols          protocols described in our own words, written before the code
 ```
 
@@ -133,7 +136,9 @@ release, checks every updater signature against the key in `tauri.conf.json` and
 against the files, attaches `SHA256SUMS.txt`, and writes the notes from the version's section of
 `CHANGELOG.md` (`python3 tools/release.py notes 0.8.5` shows them). Publishing the draft is up to
 you; once it is published the website shows the new downloads, and the AUR workflow commits
-`packaging/aur/perihub-bin` for it to main.
+the PKGBUILD and .SRCINFO for it to the `aur` branch. To publish on aur.archlinux.org, take those two
+files from that branch (`git clone --branch aur https://github.com/hex-dump/perihub.git`) into the AUR
+repository, check them with `makepkg`, and push by hand.
 
 `CHANGELOG.md` sections, in this order: New devices, Added, Performance, Changed, Fixed, Security,
 Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI runs it.
@@ -148,7 +153,7 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 | Tag a release | by hand, on main | tags the version once CI is green, starts Release |
 | Release | the tag | draft release, signature and `latest.json` checks, `SHA256SUMS.txt`, notes from CHANGELOG.md; publishing opens an Announcements discussion |
 | Release comment | a release is published | one comment on each open issue the notes or commits name, saying the version is out; nothing is closed |
-| AUR package | a release is published | `packaging/aur/perihub-bin` for it, committed to main |
+| AUR package | a release is published | PKGBUILD and .SRCINFO for it, committed to the `aur` branch (not main, which takes no pushes from bots) |
 | Website | main, a published release | builds and publishes `site/` |
 | Triage | a new issue | answers requests for devices PeriHub knows, asks old test reports to retry, labels brand and kind |
 | Reminders | every day | one reminder when an author has not answered a question for 14 days (device requests, test reports and unlabeled issues) |
@@ -157,7 +162,7 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 | Links | Mondays | broken links in the README, docs and website, in one issue |
 | Security advisories | Mondays | known vulnerabilities in the Rust crates and npm packages |
 | Dependabot | weekly | one pull request per ecosystem (Cargo, npm, Actions) |
-| Screenshots | by hand, a published release | `docs/screenshots` and the social preview from the interface with simulated devices (`npm run screenshots`, `app/preview`), committed when they change |
+| Screenshots | by hand, a published release | `docs/screenshots` and the social preview from the interface with simulated devices (`npm run screenshots`, `app/preview`), committed to the `assets` branch (`screenshots/`, `social-preview.png`) when they change, then starts Website; the README and the website read them from there |
 
 ## Performance measurements
 

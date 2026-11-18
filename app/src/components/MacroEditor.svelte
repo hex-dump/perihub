@@ -2,6 +2,7 @@
   // Editor for a macro stored in the mouse, or (with `soft`) for a macro run by PeriHub: kind or
   // mode, steps recorded from the keyboard or added by hand.
   import { untrack } from "svelte";
+  import { trapFocus } from "../lib/focusTrap";
   import {
     api, errorText, type KeyInfo, type Macro, type MacroKind, type MacroStep, type SoftMode, type SoftStep,
     type SoftwareMacro,
@@ -291,7 +292,7 @@
 {/snippet}
 
 <div class="backdrop">
-  <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="macro-title">
+  <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="macro-title" use:trapFocus>
     <div class="row wrap">
       <h2 id="macro-title" class="grow">{software ? "Macro run by PeriHub" : "Macro"} for “{button}”</h2>
       {#if library.length}
@@ -425,7 +426,7 @@
       <div class="notice info">Still pressed when the macro ends: {leftDown.join(", ")}. Add the release if it is not meant to stay down.</div>
     {/if}
 
-    {#if fileError}<div class="notice error">{fileError}</div>{/if}
+    {#if fileError}<div class="notice error" role="alert">{fileError}</div>{/if}
     {#if fileMessage}<div class="notice ok">{fileMessage}</div>{/if}
 
     <footer class="row">
@@ -436,7 +437,7 @@
       {/if}
       <div class="grow"></div>
       {#if problem}<span class="warn small">{problem}</span>{/if}
-      <button onclick={oncancel}>Cancel</button>
+      <button data-autofocus onclick={oncancel}>Cancel</button>
       <button class="primary" disabled={!!problem} onclick={save}>Done</button>
     </footer>
     {#if software}

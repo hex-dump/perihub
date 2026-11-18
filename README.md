@@ -25,7 +25,7 @@
   <a href="https://github.com/hex-dump/perihub/discussions">💬 Discussions</a>
 </p>
 
-![Keyboard lighting](docs/screenshots/keyboard-lighting.png)
+![Keyboard lighting](https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/keyboard-lighting.png)
 
 ## Highlights
 
@@ -81,6 +81,7 @@
 | **Logitech G9, G9x, G500, G700** with a cable | 👁 Profile in use, DPI, polling rate and buttons |
 | <!-- generated: count Corsair:mouse -->26<!-- end generated --> **Corsair mice** and <!-- generated: count Corsair:keyboard -->23<!-- end generated --> **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Read, and one colour of lighting for the session, at your own risk |
 | <!-- generated: count razer -->74<!-- end generated --> **Razer mice** (DeathAdder, Viper, Basilisk, Naga, Orochi…) on their USB cable | 🧪 Read; DPI, polling rate and the brightness of the lights can be saved at your own risk, and on <!-- generated: count colour -->27<!-- end generated --> of them one colour can be sent without saving it |
+| <!-- generated: count razer-keyboard -->69<!-- end generated --> **Razer keyboards** (BlackWidow, Huntsman, Ornata, Cynosa, DeathStalker…) | 👁 Firmware, layout, backlight brightness, game mode and battery; on Linux only the BlackWidow V4 Mini HyperSpeed for now |
 | <!-- generated: count steelseries-mice -->33<!-- end generated --> **SteelSeries mice** (Rival, Sensei, Aerox, Prime, Kana, Kinzu) | 🧪 They cannot report their settings: DPI, polling rate, colours and effects are sent one at a time, never saved to the mouse |
 | <!-- generated: count asus -->21<!-- end generated --> **ASUS ROG and TUF mice** (Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3…) | 🧪 Read; DPI, polling rate, button response, angle snapping and lighting can be changed at your own risk |
 | <!-- generated: count glorious -->3<!-- end generated --> **Glorious mice** (Model O/O-, Model D, Model O Eternal) with a cable | 🧪 Read; on Linux DPI and polling rate can be saved at your own risk, on Windows read-only for now |
@@ -137,12 +138,12 @@ Not on the list? Open a [device request](https://github.com/hex-dump/perihub/iss
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/keyboard-keys.png" alt="Key remapping"><br><sub><b>Key remapping</b> on both layers of the Apex 3 TKL</sub></td>
-    <td width="50%"><img src="docs/screenshots/mouse-dpi.png" alt="Mouse DPI and polling rate"><br><sub><b>DPI and polling rate</b>, previewed live on the mouse</sub></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/keyboard-keys.png" alt="Key remapping"><br><sub><b>Key remapping</b> on both layers of the Apex 3 TKL</sub></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/mouse-dpi.png" alt="Mouse DPI and polling rate"><br><sub><b>DPI and polling rate</b>, previewed live on the mouse</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/mouse-buttons.png" alt="Mouse buttons"><br><sub><b>Buttons and G-Shift</b>, saved in the mouse</sub></td>
-    <td><img src="docs/screenshots/mouse-lighting.png" alt="Mouse lighting"><br><sub><b>Lighting</b> of each zone</sub></td>
+    <td><img src="https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/mouse-buttons.png" alt="Mouse buttons"><br><sub><b>Buttons and G-Shift</b>, saved in the mouse</sub></td>
+    <td><img src="https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/mouse-lighting.png" alt="Mouse lighting"><br><sub><b>Lighting</b> of each zone</sub></td>
   </tr>
 </table>
 
@@ -302,11 +303,11 @@ scoop install perihub-scoop/perihub
 | Any, with Flatpak | `PeriHub_…_x86_64.flatpak` (below) |
 | Any other | `PeriHub_…_amd64.AppImage`: `chmod +x` it and run it |
 
-On Arch-based distributions, until `perihub-bin` is on the AUR:
+On Arch-based distributions, until `perihub-bin` is on the AUR (the `aur` branch holds the PKGBUILD of the latest release):
 
 ```sh
-git clone https://github.com/hex-dump/perihub.git
-cd perihub/packaging/aur/perihub-bin
+git clone --branch aur --single-branch https://github.com/hex-dump/perihub.git perihub-aur
+cd perihub-aur
 makepkg -si
 ```
 
@@ -320,11 +321,11 @@ PeriHub is not on Flathub, so the Flatpak does not update by itself: install the
 
 #### USB permissions
 
-The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage** or the **Flatpak**, if PeriHub shows "permission denied", install it by hand, and again after an update that adds devices:
+The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage** or the **Flatpak**, if PeriHub shows "permission denied", install it by hand (this is the rule of release 0.9.4: if you have another version, change the version in the address), and again after an update that adds devices:
 
 ```sh
 sudo curl -o /etc/udev/rules.d/70-perihub.rules \
-  https://raw.githubusercontent.com/hex-dump/perihub/main/packaging/linux/70-perihub.rules
+  https://raw.githubusercontent.com/hex-dump/perihub/v0.9.4/packaging/linux/70-perihub.rules
 sudo udevadm control --reload && sudo udevadm trigger
 ```
 
