@@ -14,6 +14,7 @@ mod quick;
 mod soft_macros;
 #[cfg(target_os = "linux")]
 mod system_theme;
+mod tray_support;
 mod unifying_access;
 mod updates;
 mod window;
@@ -29,6 +30,8 @@ use tauri::{AppHandle, Emitter, Manager as _, RunEvent, WindowEvent};
 pub struct AppState {
     pub manager: Manager,
     pub config: Mutex<AppConfig>,
+    /// Set when config.json could not be read: shown to the user (see `app_config_problem`).
+    pub config_problem: Option<String>,
     pub profiles: Arc<AppProfileEngine>,
     pub soft: Arc<SoftMacroEngine>,
     /// Keeps perihub-cli away from the devices while the app runs.
@@ -56,6 +59,32 @@ fn starts_hidden(args: &[String], start_hidden_setting: bool) -> bool {
         return false;
     }
     start_hidden_setting || args.iter().any(|a| a == HIDDEN_ARG)
+}
+
+/// The first time the window is closed, a notification says that PeriHub is still running (the
+/// README says so, but few read it), and how to quit. Not repeated: the flag is saved.
+fn tell_it_keeps_running(app: &AppHandle) {
+    use tauri_plugin_notification::NotificationExt;
+    let state = app.state::<AppState>();
+    let mut config = state.config.lock().unwrap();
+    if config.close_hint_shown {
+        return;
+    }
+    let shown = app
+        .notification()
+        .builder()
+        .title("PeriHub is still running")
+        .body("It keeps your lighting and settings working from the system tray. To quit: Quit in the tray menu, or Settings > Quit PeriHub.")
+        .show();
+    match shown {
+        Ok(()) => {
+            config.close_hint_shown = true;
+            if let Err(error) = config.save() {
+                log::warn!("cannot save the settings: {error}");
+            }
+        }
+        Err(error) => log::warn!("cannot show a notification: {error}"),
+    }
 }
 
 fn main() {
@@ -92,7 +121,9 @@ fn main() {
             // Autostart: the HKLM entry goes to HKCU, old entries get quoted (see autostart.rs).
             autostart::startup(app.handle());
             autostart::restart_hidden();
-            let config = AppConfig::load();
+            let loaded = AppConfig::load_checked();
+            let config_problem = loaded.problem.map(|p| p.message());
+            let config = loaded.config;
             let devices = match config::try_lock_devices() {
                 Ok(Some(lock)) => Some(lock),
                 // perihub-cli is running: its commands take a few seconds.
@@ -144,12 +175,20 @@ fn main() {
                 watch_focus(app.handle(), &profiles);
             }
             let start_hidden = starts_hidden(&args, config.start_hidden);
-            app.manage(AppState { manager, config: Mutex::new(config), profiles, soft, _devices: devices });
+            app.manage(AppState {
+                manager,
+                config: Mutex::new(config),
+                config_problem,
+                profiles,
+                soft,
+                _devices: devices,
+            });
 
             app.manage(updates::Available::default());
             if args.iter().any(|a| a == AFTER_UPDATE_ARG) {
                 app.state::<updates::Available>().started_by_update();
             }
+            tray_support::detect();
             window::build_tray(app.handle())?;
             battery::start(app.handle().clone());
             updates::watch(app.handle().clone());
@@ -165,12 +204,22 @@ fn main() {
             system_theme::watch(app.handle().clone());
 
             // Started hidden (autostart), PeriHub creates no window until it is opened.
-            if !start_hidden {
+            // Without a tray a hidden PeriHub could not be brought back.
+            if !start_hidden || !tray_support::available() {
                 window::show(app.handle(), None);
             }
             Ok(())
         })
         .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { .. } = event {
+                if tray_support::available() {
+                    tell_it_keeps_running(window.app_handle());
+                } else {
+                    // No tray to come back from: closing the window quits (on its own thread, as quitting waits for macros).
+                    let app = window.app_handle().clone();
+                    std::thread::spawn(move || window::quit(&app));
+                }
+            }
             // Closing the window destroys it (see window.rs). A DPI or LED preview the interface
             // could not cancel goes back to the saved settings.
             if let WindowEvent::Destroyed = event {
@@ -245,6 +294,7 @@ fn main() {
             commands::app_set_settings,
             commands::app_quit,
             commands::app_read_only,
+            commands::app_config_problem,
             commands::app_set_read_only,
             commands::app_write_log,
             commands::app_clear_write_log,

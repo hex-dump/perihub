@@ -5,7 +5,7 @@
   release.py bump VERSION [DATE]   new version everywhere; "## Unreleased" becomes "## VERSION — DATE"
   release.py notes VERSION         the release notes on GitHub, from that version's CHANGELOG section
   release.py check DIR VERSION     signatures, latest.json and SHA256SUMS.txt of the files in DIR
-  release.py aur VERSION DEB       packaging/aur/perihub-bin for that version, from its .deb
+  release.py aur VERSION DEB DIR   PKGBUILD and .SRCINFO in DIR (a checkout of the aur branch) for that version, from its .deb
 
 A version's section in CHANGELOG.md starts with a summary paragraph, then has some of these
 sections, in this order. The release notes show each with its title.
@@ -151,8 +151,13 @@ def bump(version: str, day: str) -> None:
 
     # Every file is changed in memory first: nothing is written if one of them does not look as expected.
     files = {name: (ROOT / name).read_text(encoding="utf-8") for name in (
-        "Cargo.toml", "Cargo.lock", "app/package.json", "app/src-tauri/tauri.conf.json", "CHANGELOG.md", str(METAINFO.relative_to(ROOT)),
+        "Cargo.toml", "Cargo.lock", "app/package.json", "app/src-tauri/tauri.conf.json", "CHANGELOG.md", "README.md", str(METAINFO.relative_to(ROOT)),
     )}
+    # The udev rule in the README is fetched from the release tag, so it matches the version installed.
+    files["README.md"] = replace_once(
+        files["README.md"], "README.md", r"(perihub/)v\d+\.\d+\.\d+(/packaging/linux/70-perihub\.rules)", rf"\g<1>v{version}\g<2>"
+    )
+    files["README.md"] = replace_once(files["README.md"], "README.md", r"rule of release \d+\.\d+\.\d+", f"rule of release {version}")
     files["Cargo.toml"] = replace_once(files["Cargo.toml"], "Cargo.toml", r'(\[workspace\.package\]\nversion = )"[^"]+"', rf'\g<1>"{version}"')
     for crate in ("perihub-app", "perihub-core", "perihub-cli", "xtask"):
         files["Cargo.lock"] = replace_once(files["Cargo.lock"], "Cargo.lock", rf'(name = "{crate}"\nversion = )"[^"]+"', rf'\g<1>"{version}"')
@@ -170,7 +175,7 @@ def bump(version: str, day: str) -> None:
     files[meta] = replace_once(files[meta], meta, r"(  <releases>\n)", lambda m: m.group(1) + release)
     for name, text in files.items():
         (ROOT / name).write_text(text, encoding="utf-8")
-    print(f"Version {version} ({day}): Cargo.toml, Cargo.lock, package.json, package-lock.json, tauri.conf.json, CHANGELOG.md, metainfo")
+    print(f"Version {version} ({day}): Cargo.toml, Cargo.lock, package.json, package-lock.json, tauri.conf.json, CHANGELOG.md, README.md, metainfo")
 
 
 def entry(text: str) -> str:
@@ -316,9 +321,9 @@ def check(directory: str, version: str) -> None:
     print(f"SHA256SUMS.txt: {len(files)} files")
 
 
-def aur(version: str, deb: str) -> None:
+def aur(version: str, deb: str, folder: str) -> None:
     check_version(version)
-    folder = ROOT / "packaging/aur/perihub-bin"
+    folder = Path(folder)
     deb_sum = hashlib.sha256(Path(deb).read_bytes()).hexdigest()
     # The LICENSE the PKGBUILD downloads is the one at the tag, the same as in the repository.
     if git("tag", "--list", f"v{version}"):
@@ -356,8 +361,8 @@ def main() -> None:
         sys.stdout.write(notes(args[1]))
     elif len(args) == 3 and args[0] == "check":
         check(args[1], args[2])
-    elif len(args) == 3 and args[0] == "aur":
-        aur(args[1], args[2])
+    elif len(args) == 4 and args[0] == "aur":
+        aur(args[1], args[2], args[3])
     else:
         sys.exit(__doc__)
 

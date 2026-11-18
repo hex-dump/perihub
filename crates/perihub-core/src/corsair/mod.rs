@@ -136,6 +136,8 @@ pub struct BragiDevice {
     lighting: bool,
     /// The device's name in the write log.
     label: String,
+    /// Every request and answer, for the transcript of a test report (`crate::replay`).
+    tape: crate::replay::Recording,
 }
 
 /// What a command that changes the device does, for the write log.
@@ -153,7 +155,27 @@ fn command_name(command: u8) -> &'static str {
 impl BragiDevice {
     /// `size`: the packet size of the model, 64 or 128 bytes.
     pub fn new(dev: impl Transport + 'static, size: usize) -> Self {
-        Self { dev: Box::new(dev), size, channel: 0, lighting: false, label: "Corsair device".into() }
+        // Recording only writes down what goes through: it sends nothing of its own.
+        let tape = crate::replay::Recording::default();
+        let dev = tape.transport(Box::new(dev), crate::replay::MAIN);
+        Self { dev, size, channel: 0, lighting: false, label: "Corsair device".into(), tape }
+    }
+
+    /// Every request and answer since the device was opened or since the last call, as a
+    /// transcript (`docs/replay.md`), with the receiver channel. Nothing PeriHub reads from a
+    /// Corsair device tells the unit apart: no serial number is asked for.
+    pub fn transcript(&mut self, device: crate::replay::Device) -> crate::replay::Transcript {
+        let events = self.tape.take();
+        let family = crate::replay::Family::CorsairBragi;
+        let mut transcript =
+            crate::replay::Transcript::recorded(device, family, events, &crate::replay::Classifier::Bragi);
+        transcript.slot = (self.channel != 0).then_some(self.channel);
+        transcript
+    }
+
+    /// Records nothing more: the transcript of a test report holds the first reading.
+    pub fn stop_recording(&self) {
+        self.tape.stop();
     }
 
     /// Names the device in the write log.

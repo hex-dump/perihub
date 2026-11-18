@@ -48,10 +48,10 @@
     F13–F18 (up to 8 macros).
   </p>
 
-  {#if error}<div class="notice error">{error}</div>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
   {#if !info.status.available}
-    <div class="notice error">PeriHub cannot simulate a keyboard and a mouse yet, so these macros cannot run.</div>
+    <div class="notice error" role="alert">PeriHub cannot simulate a keyboard and a mouse yet, so these macros cannot run.</div>
     {#if info.rule_supported}
       <div class="warning col">
         <b>Before you allow it, know what it means:</b>
@@ -85,7 +85,7 @@
   {/if}
 
   {#if info.status.keyboard_error}
-    <div class="notice error">
+    <div class="notice error" role="alert">
       A key of the Apex 3 TKL starts a macro, but PeriHub cannot read the keyboard's keys: {info.status.keyboard_error}
     </div>
     <KeyAccessPermission

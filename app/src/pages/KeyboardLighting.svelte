@@ -185,7 +185,7 @@
 <div class="col gap">
   <ZoneStrip {lighting} brightness={brightnessShown.current} />
 
-  {#if error}<div class="notice error">{error}</div>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
   <!-- Read-only mode: the lighting is shown, nothing can be changed. -->
   <fieldset class="guard" disabled={readOnly.on}>
@@ -249,7 +249,7 @@
       <!-- With the permission granted, the effect starts reading keys once it is applied again. -->
       <KeyAccessPermission
         title="Reactive lighting needs permission to read what you type on this keyboard."
-        ongranted={() => api.setLighting(lighting).catch(() => {})}
+        ongranted={() => api.setLighting(lighting).then(() => (error = null), (e) => (error = errorText(e)))}
       />
     {/if}
 

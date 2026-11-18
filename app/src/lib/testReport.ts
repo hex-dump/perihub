@@ -17,6 +17,12 @@ const PROFILE_LIST = {
 
 const hex = (id: number) => id.toString(16).padStart(4, "0");
 
+/** The end of a test report: every request and answer in full, the transcript a replay test is made
+ * from (docs/replay.md). None from an older core. */
+function transcriptLines(transcript: string | undefined): string[] {
+  return transcript ? ["Transcript (every request and answer, for a replay test):", transcript.trimEnd()] : [];
+}
+
 function usbId(mouse: MouseInfo): string {
   return `${LOGITECH}:${hex(mouse.link?.receiver_id ?? mouse.product_id)}`;
 }
@@ -107,6 +113,7 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
     ...extendedLines(mouse),
     `LEDs: ${zones.join("; ") || "none reported"}`,
     `Features: ${featureList(mouse.features) || "not read"}`,
+    ...transcriptLines(mouse.transcript),
   ].join("\n");
 }
 
@@ -200,7 +207,7 @@ export function receiverTest(
         `DPI set by PeriHub at every connection: ${live.saved_dpi ?? "none"}`,
       );
     }
-    lines.push(`Could not read: ${device.read_errors.join("; ") || "nothing"}`);
+    lines.push(`Could not read: ${device.read_errors.join("; ") || "nothing"}`, ...transcriptLines(device.transcript));
   } else {
     lines.push("Paired device: none answered");
   }
@@ -231,6 +238,7 @@ export function corsairTest(info: CorsairInfo, version: string, system: string):
       info.kind === "keyboard" ? layoutReport(`1b1c:${hex(info.product_id)}`, info.layout) : null,
       `Could not read: ${info.read_errors.join("; ") || "nothing"}`,
       `Experimental lighting: ${info.lighting ? "on" : "off"}`,
+      ...transcriptLines(info.transcript),
     ]
       .filter((line): line is string => line !== null)
       .join("\n"),
@@ -258,8 +266,8 @@ export function g300Test(
   };
 }
 
-/** What a tester sends about a device of another brand, with every request and answer of the last
- * reading. */
+/** What a tester sends about a device of another brand, with every request and answer in full (the
+ * transcript a replay test is made from, docs/replay.md), or the short list of an older core. */
 export function peripheralTest(info: PeripheralInfo, version: string, system: string): DeviceTestFields {
   const usbId = info.key;
   const set = info.settings;
@@ -296,8 +304,7 @@ export function peripheralTest(info: PeripheralInfo, version: string, system: st
       info.kind === "keyboard" ? layoutReport(info.key, info.layout) : null,
       ...info.buttons.map((b) => `Button ${b.name}: ${b.action}`),
       `Changes: ${info.problem ? `off (${info.problem})` : info.editable ? "available (experimental)" : "off (read-only)"}`,
-      "Requests and answers:",
-      ...info.raw.map((line) => `  ${line}`),
+      ...(info.transcript ? transcriptLines(info.transcript) : ["Requests and answers:", ...info.raw.map((line) => `  ${line}`)]),
     ]
       .filter((line): line is string => line !== null)
       .join("\n"),

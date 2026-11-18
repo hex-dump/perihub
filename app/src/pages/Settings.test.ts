@@ -36,6 +36,7 @@ const settings = (autostart: boolean): AppSettings => ({
   log_dir: "/logs",
   config_dir: "/config",
   system: "windows x86_64",
+  no_tray_reason: null,
 });
 
 const status: DeviceStatus = {
@@ -148,6 +149,13 @@ describe("Settings", () => {
     await fireEvent.change(limit, { target: { value: "30" } });
     await waitFor(() => expect(limit.value).toBe("15"));
     expect(document.body.textContent).toContain("cannot save");
+  });
+
+  it("says why close to tray is unavailable on a desktop without a tray", async () => {
+    api.appSettings.mockResolvedValue({ ...settings(false), no_tray_reason: "This desktop shows no system tray" });
+    render(Settings, { props: { status } });
+    await waitFor(() => expect(document.body.textContent).toContain("Close to tray is unavailable"));
+    expect(document.body.textContent).not.toContain("Closing the window does not quit PeriHub");
   });
 
   it("reads autostart again when the window comes back, as Task Manager can change it", async () => {

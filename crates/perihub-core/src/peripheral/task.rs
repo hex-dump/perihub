@@ -16,6 +16,7 @@ use super::{
 };
 use crate::config;
 use crate::error::{Error, Result};
+use crate::replay::{self, Event, Transcript};
 use crate::worker::DeviceTask;
 
 /// How a protocol reads and changes a device. A driver reaches the device only through [`Io`].
@@ -49,6 +50,11 @@ pub trait Driver: Send {
     /// one onto the device's (a colour the device keeps as hue and saturation).
     fn normalize(&self, wanted: &Settings) -> Settings {
         wanted.clone()
+    }
+    /// Bytes of answers that tell one unit apart, such as a serial number: they are left out of the
+    /// transcript of a test report.
+    fn private_answers(&self) -> Vec<crate::replay::Private> {
+        Vec::new()
     }
     /// Where the protocol is documented, for the page and the test report.
     fn source(&self) -> &'static str;
@@ -140,6 +146,9 @@ pub struct PeripheralTask {
     /// What the device's memory is taken to hold: the settings read when PeriHub connected, until
     /// a save is kept. The undo of a save puts this back, not what a kept Apply left in RAM.
     in_memory: Option<Settings>,
+    /// The calls of the first reading, and of the latest one, for the transcript.
+    first_reading: Option<Vec<Event>>,
+    latest_reading: Vec<Event>,
 }
 
 impl Drop for PeripheralTask {
@@ -201,6 +210,7 @@ impl PeripheralTask {
             problem: None,
             pending_undo: false,
             raw: Vec::new(),
+            transcript: String::new(),
             layout: None,
         };
         let mut task = Self {
@@ -215,6 +225,8 @@ impl PeripheralTask {
             undo_at: None,
             last_refresh: Instant::now(),
             in_memory: None,
+            first_reading: None,
+            latest_reading: Vec::new(),
         };
         task.take(reading);
         log::info!(
@@ -258,7 +270,36 @@ impl PeripheralTask {
         self.info.problem = reading.problem.or(self.info.problem.take());
         self.info.editable = self.io.changes_allowed();
         self.info.raw = self.io.take_raw();
+        let events = self.io.take_transcript();
+        match &self.first_reading {
+            None => self.first_reading = Some(events),
+            Some(_) if !events.is_empty() => self.latest_reading = events,
+            Some(_) => {}
+        }
+        self.info.transcript = self.transcript().to_json();
         self.last_refresh = Instant::now();
+    }
+
+    /// Every call to the device in full: the first reading, and the latest one when it differs
+    /// (changes sent since are in it too). The bytes the driver names private are left out.
+    pub fn transcript(&self) -> Transcript {
+        let mut events = self.first_reading.clone().unwrap_or_default();
+        if !self.latest_reading.is_empty()
+            && self.first_reading.as_ref() != Some(&self.latest_reading)
+            && replay::json_size(&events) + replay::json_size(&self.latest_reading) <= replay::REPORT_MAX
+        {
+            events.push(Event::mark("latest reading"));
+            events.extend(self.latest_reading.iter().cloned());
+        }
+        replay::cut_to_fit(&mut events, replay::REPORT_MAX);
+        replay::anonymize(&mut events, &self.driver.private_answers());
+        let device = replay::Device {
+            vendor_id: format!("{:04x}", self.info.vendor_id),
+            product_id: format!("{:04x}", self.info.product_id),
+            name: format!("{} {}", self.info.brand, self.info.model),
+        };
+        let commands = replay::Classifier::Commands(self.driver.commands());
+        Transcript::recorded(device, replay::Family::Peripheral, events, &commands)
     }
 
     fn read(&mut self) -> Result<()> {
@@ -500,6 +541,18 @@ pub(crate) fn start_for_test(
     backups: PathBuf,
 ) -> Result<PeripheralTask> {
     PeripheralTask::start(hid, None, driver(model), model, Identity::of(model, product_id), changes, backups)
+}
+
+/// [`start_for_test`] with the second HID++ collection, for the replay tests.
+#[cfg(test)]
+pub(crate) fn start_for_replay(
+    hid: Box<dyn Hid>,
+    short: Option<Box<dyn Hid>>,
+    model: &'static Model,
+    product_id: u16,
+    backups: PathBuf,
+) -> Result<PeripheralTask> {
+    PeripheralTask::start(hid, short, driver(model), model, Identity::of(model, product_id), true, backups)
 }
 
 #[cfg(test)]

@@ -2,6 +2,7 @@
   // Before the first save to a mouse whose memory format nobody has tested yet: what could go
   // wrong, what PeriHub does about it, and the "No warranty" box to tick. Asked once per mouse.
   import NoWarranty from "./NoWarranty.svelte";
+  import { trapFocus } from "../lib/focusTrap";
   interface Props {
     /** The mouse, e.g. "G403 HERO". */
     model: string;
@@ -27,7 +28,7 @@
 <svelte:window onkeydown={keydown} />
 
 <div class="backdrop">
-  <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="experimental-title">
+  <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="experimental-title" use:trapFocus>
     <h2 id="experimental-title">Save to the {model}?</h2>
     {#if receiver}
       <p>
@@ -71,7 +72,7 @@
     </p>
     <NoWarranty device={`Logitech ${model}`} bind:accepted={understood} />
     <div class="row end">
-      <button onclick={onclose}>Cancel</button>
+      <button data-autofocus onclick={onclose}>Cancel</button>
       <button class="primary" disabled={!understood} onclick={onconfirm}>{action}</button>
     </div>
   </div>

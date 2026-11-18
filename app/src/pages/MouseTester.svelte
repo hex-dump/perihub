@@ -310,7 +310,7 @@
       <span class="muted">Click here with each button</span>
     </div>
     {#if worn.length > 0}
-      <div class="notice error">
+      <div class="notice error" role="alert">
         <b>Unwanted double clicks.</b>
         {worn.map((r) => `${buttonName(r.button)} button: ${r.chatter}`).join(", ")}. If this happens when you click
         once, the switch is failing, which is a hardware fault.

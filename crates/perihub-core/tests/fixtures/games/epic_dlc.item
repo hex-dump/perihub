@@ -1,0 +1,8 @@
+{
+	"bIsIncompleteInstall": false,
+	"LaunchExecutable": "Example.exe",
+	"DisplayName": "Example Shooter - Season Pass",
+	"InstallLocation": "C:\\Program Files\\Epic Games\\Example",
+	"MainGameAppName": "ExampleApp",
+	"AppName": "ExampleDlc"
+}

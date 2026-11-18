@@ -569,9 +569,11 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d6", ENV{ID_USB
 # Razer Viper V3 Pro SE (Wired)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00de", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 
-# Razer keyboards (read only, untested; facts from OpenRazer): only interface 3, the one OpenRazer sends
-# to. Through the receiver it holds only the media keys. PeriHub also reads each keyboard node's report
-# descriptor and does not open one that carries typed keys. The receiver (02ba) belongs to this keyboard alone.
+# Razer keyboards (read only, untested; facts from OpenRazer): only the BlackWidow V4 Mini HyperSpeed's
+# interface 3, the one OpenRazer sends to. Through the receiver it holds only the media keys. PeriHub also
+# reads each keyboard node's report descriptor and does not open one that carries typed keys. The receiver
+# (02ba) belongs to this keyboard alone. The other Razer keyboards PeriHub reads are left out on Linux for
+# now: on most of them the interface OpenRazer sends to also carries typed keys.
 # Razer BlackWidow V4 Mini HyperSpeed (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="02b9", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 # Razer BlackWidow V4 Mini HyperSpeed (wireless) (read only)

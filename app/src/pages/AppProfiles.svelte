@@ -135,7 +135,7 @@
 
 <div class="col gap">
 
-  {#if error}<div class="notice error">{error}</div>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
   {#if info}
     {#if setupMessage}<div class="notice info">{setupMessage}</div>{/if}
@@ -214,7 +214,7 @@
             {#if !games}
               <p class="loading">Looking for games…</p>
             {:else if !games.length}
-              <p class="muted small">No games found. PeriHub looks at Steam, Lutris and Heroic.</p>
+              <p class="muted small">No games found. PeriHub looks at Steam, the Epic Games Launcher, Lutris and Heroic.</p>
             {:else if !shownGames.length}
               <p class="muted small">No game matches.</p>
             {:else}

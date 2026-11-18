@@ -1,0 +1,40 @@
+{
+  "format": "perihub-transcript",
+  "version": 1,
+  "device": {
+    "vendor_id": "1b1c",
+    "product_id": "1b93",
+    "name": "Corsair KATAR PRO"
+  },
+  "family": "corsair-bragi",
+  "access": "read-only",
+  "recorded_by": "PeriHub's tests, from a simulated device",
+  "source": "synthetic: recorded by the_katar_pro_replay_is_what_the_corsair_code_records (replay/tests.rs)",
+  "notes": [
+    "Recorded through PeriHub's real Corsair code (CorsairTask::open, BragiDevice, the recorder), but from a simulated device: no Corsair device has sent a report yet (issue #18). The simulated device answers as docs/protocols/corsair-bragi.md lays the answers out, and its values (firmware 5.2.65, hardware mode, 1000 Hz, 800 DPI) are examples. Replace it with a real transcript when one comes."
+  ],
+  "expect": {
+    "dpi": 800,
+    "firmware": "5.2.65",
+    "kind": "mouse",
+    "layout": null,
+    "leds": 1,
+    "lighting": null,
+    "mode": 1,
+    "model": "KATAR PRO",
+    "polling_hz": 1000,
+    "product_id": 7059,
+    "read_errors": [],
+    "receiver": null
+  },
+  "events": [
+    {"op":"write","data":"00 08 02 13","len":65},
+    {"op":"read","data":"00 02 00 05 02 41","len":64},
+    {"op":"write","data":"00 08 02 03","len":65},
+    {"op":"read","data":"00 02 00 01","len":64},
+    {"op":"write","data":"00 08 02 01","len":65},
+    {"op":"read","data":"00 02 00 04","len":64},
+    {"op":"write","data":"00 08 02 21","len":65},
+    {"op":"read","data":"00 02 00 20 03","len":64}
+  ]
+}

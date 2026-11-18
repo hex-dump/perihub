@@ -1,9 +1,9 @@
 name: AUR package
 
-# Once a release is published: packaging/aur/perihub-bin's PKGBUILD and .SRCINFO for it, with the
-# checksum of its .deb, in a pull request from bot/aur-<version> (main does not take pushes; the
-# required checks are run on the branch by dispatching ci.yml, and auto-merge is asked for).
-# Publishing to aur.archlinux.org stays a manual step.
+# Once a release is published: the PKGBUILD and .SRCINFO of perihub-bin for it, with the checksum of
+# its .deb, committed to the aur branch (only those two files, at its root, the layout of an AUR
+# repository). The aur branch is not covered by the ruleset on main, so GITHUB_TOKEN can push to it
+# and no pull request is needed. Publishing to aur.archlinux.org stays a manual step.
 on:
   release:
     types: [published]
@@ -24,9 +24,7 @@ jobs:
     name: PKGBUILD and .SRCINFO
     runs-on: ubuntu-latest
     permissions:
-      contents: write       # push the bot/ branch
-      pull-requests: write  # open the pull request, ask for auto-merge
-      actions: write        # dispatch ci.yml on the branch
+      contents: write       # push the aur branch
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -38,8 +36,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
+          # The aur branch holds the previous PKGBUILD and .SRCINFO, which the script updates.
+          if ! git ls-remote --exit-code --heads origin aur >/dev/null; then
+            echo "::error::The aur branch does not exist: create it with the current PKGBUILD and .SRCINFO at its root."
+            exit 1
+          fi
+          git fetch origin aur
+          git worktree add -B aur "$RUNNER_TEMP/aur" origin/aur
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*_amd64.deb' --dir "$RUNNER_TEMP/deb"
-          python3 tools/release.py aur "${TAG#v}" "$RUNNER_TEMP"/deb/*_amd64.deb
+          python3 tools/release.py aur "${TAG#v}" "$RUNNER_TEMP"/deb/*_amd64.deb "$RUNNER_TEMP/aur"
+          cd "$RUNNER_TEMP/aur"
           if git diff --quiet; then
             echo "perihub-bin is already at ${TAG#v}."
             exit 0
@@ -47,16 +53,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "AUR: perihub-bin ${TAG#v}"
-          branch="bot/aur-${TAG#v}"
-          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
-            branch="$branch-$GITHUB_RUN_ID"
-          fi
-          git push origin "HEAD:refs/heads/$branch"
-          gh pr create --base main --head "$branch" --title "AUR: perihub-bin ${TAG#v}" \
-            --body "PKGBUILD and .SRCINFO for ${TAG#v}, made by the AUR workflow."
-          # A pull request made with GITHUB_TOKEN starts no pull_request run: run the required
-          # checks (ci.yml, workflow_dispatch) on the branch, they report on the PR's head commit.
-          gh workflow run ci.yml --ref "$branch"
-          if ! gh pr merge "$branch" --auto --merge; then
-            echo "::notice::Auto-merge is not available: merge the pull request once its checks pass."
-          fi
+          git push origin aur

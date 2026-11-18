@@ -95,7 +95,13 @@
 
   async function keep() {
     confirmKeep = false;
-    await api.keepChanges().catch(() => {});
+    try {
+      await api.keepChanges();
+    } catch (e) {
+      // Without this answer the backup is put back by itself: say so instead of letting the
+      // user believe the save stayed.
+      error = `The save could not be kept: ${errorText(e)} PeriHub puts the backup back when a change is not kept, so check the device's current settings.`;
+    }
   }
 
   async function undo() {
@@ -334,7 +340,7 @@
     or move it: PeriHub finds it again within a few seconds.
   </div>
 {/if}
-{#if connectError && !info && !unsupported}<div class="notice error">{connectError}</div>{/if}
+{#if connectError && !info && !unsupported}<div class="notice error" role="alert">{connectError}</div>{/if}
 {#if !info}
   {#each receivers as receiver (receiver.product_id)}
     {#each receiver.unsupported as device (device.slot)}
@@ -370,7 +376,7 @@
   {/each}
 {/if}
 {#if info?.experimental && info.receiver}
-  <div class="notice error">
+  <div class="notice error" role="alert">
     <b>Experimental: saving through the receiver.</b> PeriHub has saved to this memory format with the USB cable, and
     over the radio, as Logitech G HUB does, on one mouse so far (a G502 HERO Wireless on a POWERPLAY mat). You can change and save the {info.model}'s profiles at your own risk:
     every save is backed up, and undone after 15 seconds unless you keep it. Keep the mouse charged and close to its
@@ -380,7 +386,7 @@
     </div>
   </div>
 {:else if info?.experimental}
-  <div class="notice error">
+  <div class="notice error" role="alert">
     <b>Experimental: not tested yet.</b> PeriHub has never saved to a mouse whose memory uses this format (profile
     format {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors). You can change and save the
     {info.model}'s profiles at your own risk: every save is backed up, and undone after 15 seconds unless you keep it.
@@ -457,7 +463,7 @@
 {/if}
 
 {#if info && mouse?.profile_list === "damaged"}
-  <div class="notice error">
+  <div class="notice error" role="alert">
     <b>The profile list in this mouse's memory is damaged</b> (its checksum does not match), so PeriHub cannot tell
     which profiles the mouse uses and will not save to it. Restore a backup with <b>Backups…</b>, or save a profile
     once with Logitech G HUB or Onboard Memory Manager. Please send a mouse test report too (Settings → Problems).
@@ -514,7 +520,7 @@
     {/each}
   </div>
 
-  {#if error}<div class="notice error">{error}</div>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
   <div class="tabs">
     <button class:active={shownTab === "performance"} onclick={() => changeTab("performance")}>DPI and polling</button>
@@ -574,7 +580,7 @@
     {/await}
   {/if}
 {:else if info}
-  {#if error}<div class="notice error">{error}</div>{:else}<p class="loading">{busy ?? "Loading…"}</p>{/if}
+  {#if error}<div class="notice error" role="alert">{error}</div>{:else}<p class="loading">{busy ?? "Loading…"}</p>{/if}
 {/if}
 
 <style>

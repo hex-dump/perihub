@@ -74,8 +74,12 @@
 
   async function keep() {
     confirmKeep = false;
-    await api.g300KeepChanges().catch(() => {});
-    message = "Changes kept.";
+    try {
+      await api.g300KeepChanges();
+      message = "Changes kept.";
+    } catch (e) {
+      error = `The save could not be kept: ${errorText(e)} PeriHub puts the backup back when a change is not kept, so check the device's current settings.`;
+    }
   }
 
   function undo() {
@@ -92,7 +96,7 @@
   {#if info && !info.editable}<Status kind="readonly" label="Read-only" chip />{/if}
 </header>
 
-{#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
+{#if connectError && !info}<div class="notice error" role="alert">{connectError}</div>{/if}
 
 {#if info?.editable}
   <div class="notice info">
@@ -119,7 +123,7 @@
   <KeepChangesDialog model="G300" checkText="move it, try the buttons and DPI you changed" onkeep={keep} onundo={undo} />
 {/if}
 {#if busy}<div class="notice info">{busy}</div>{/if}
-{#if error}<div class="notice error">{error}</div>{/if}
+{#if error}<div class="notice error" role="alert">{error}</div>{/if}
 {#if message}<div class="notice ok">{message}</div>{/if}
 
 {#if info}

@@ -584,7 +584,8 @@ pub fn profiles_get(app: AppHandle, state: State<'_, AppState>) -> ProfilesInfo 
     }
 }
 
-/// The games installed through Steam, Lutris and Heroic, for suggesting rules. Reads files only.
+/// The games installed through Steam, the Epic Games Launcher, Lutris and Heroic, for suggesting rules.
+/// Reads files only (and, on Windows, where Steam is installed from the registry).
 #[tauri::command]
 pub async fn games_installed() -> CmdResult<Vec<perihub_core::games::InstalledGame>> {
     blocking(|| Ok(perihub_core::games::installed_games())).await
@@ -633,6 +634,9 @@ pub struct AppSettings {
     /// Operating system and architecture, for test reports: read only.
     #[serde(default)]
     system: String,
+    /// Why "close to tray" is unavailable (the desktop has no tray), `None` when it works: read only.
+    #[serde(default)]
+    no_tray_reason: Option<String>,
 }
 
 #[tauri::command]
@@ -648,6 +652,7 @@ pub fn app_get_settings(app: AppHandle, state: State<'_, AppState>) -> AppSettin
         log_dir: crate::logfile::dir().display().to_string(),
         config_dir: perihub_core::config::config_dir().display().to_string(),
         system: format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
+        no_tray_reason: crate::tray_support::unavailable_reason(),
     }
 }
 
@@ -664,6 +669,12 @@ pub fn app_set_settings(app: AppHandle, state: State<'_, AppState>, settings: Ap
     config.save().map_err(|e| e.to_string())?;
     drop(config);
     Ok(app_get_settings(app, state))
+}
+
+/// Why the settings file was not used at start-up, if it was not (see `AppConfig::load_checked`).
+#[tauri::command]
+pub fn app_config_problem(state: State<'_, AppState>) -> Option<String> {
+    state.config_problem.clone()
 }
 
 #[tauri::command]
@@ -806,6 +817,7 @@ mod tests {
         "app_get_settings",
         "app_set_settings",
         "app_read_only",
+        "app_config_problem",
         "app_set_read_only",
         "app_write_log",
         "app_clear_write_log",

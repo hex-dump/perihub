@@ -2,6 +2,7 @@
   // Before the first save to the memory of a device of another brand: what could go wrong, what
   // PeriHub does about it, and the "No warranty" box to tick. Asked once per device.
   import NoWarranty from "./NoWarranty.svelte";
+  import { trapFocus } from "../lib/focusTrap";
 
   interface Props {
     /** e.g. "ASUS ROG Keris". */
@@ -24,7 +25,7 @@
 <svelte:window onkeydown={keydown} />
 
 <div class="backdrop">
-  <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="save-title">
+  <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="save-title" use:trapFocus>
     <h2 id="save-title">Save to the {device}'s memory?</h2>
     <p>
       PeriHub knows how to talk to the {device} from published documentation ({source}), not from a test on a real
@@ -50,7 +51,7 @@
     </p>
     <NoWarranty {device} bind:accepted={understood} />
     <div class="row end">
-      <button onclick={onclose}>Cancel</button>
+      <button data-autofocus onclick={onclose}>Cancel</button>
       <button class="primary" disabled={!understood} onclick={onconfirm}>Save to memory</button>
     </div>
   </div>

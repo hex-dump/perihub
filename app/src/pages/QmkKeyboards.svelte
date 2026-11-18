@@ -170,7 +170,7 @@
   <div class="notice info">No keyboard with QMK firmware is connected.</div>
 {/each}
 
-{#if error && error.key === ""}<div class="notice error">{error.text}</div>{/if}
+{#if error && error.key === ""}<div class="notice error" role="alert">{error.text}</div>{/if}
 
 <style>
 

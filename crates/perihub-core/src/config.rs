@@ -51,6 +51,8 @@ pub struct AppProfiles {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AppConfig {
+    /// Schema version of the file (see [`migrate`]). Files without it are version 1.
+    pub version: u32,
     pub keyboard: KeyboardConfig,
     /// Start hidden in the system tray.
     pub start_hidden: bool,
@@ -70,11 +72,14 @@ pub struct AppConfig {
     pub read_only: bool,
     /// Notifications about the battery of wireless devices.
     pub battery: crate::battery::BatteryAlerts,
+    /// PeriHub already said, the first time the window was closed, that it keeps running in the tray.
+    pub close_hint_shown: bool,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
+            version: CONFIG_VERSION,
             keyboard: KeyboardConfig::default(),
             start_hidden: false,
             lighting_presets: Vec::new(),
@@ -85,8 +90,30 @@ impl Default for AppConfig {
             qmk_keyboards: Vec::new(),
             read_only: false,
             battery: Default::default(),
+            close_hint_shown: false,
         }
     }
+}
+
+/// The schema version PeriHub writes. Raise it, and add a step to [`migrate`], when the format
+/// changes in a way that old files cannot be read as they are.
+pub const CONFIG_VERSION: u32 = 1;
+
+/// Brings a parsed settings file up to [`CONFIG_VERSION`], so a format change can convert old
+/// files instead of resetting them. No step exists yet: version 1 is the only format.
+fn migrate(value: serde_json::Value) -> serde_json::Value {
+    // Files from before the field existed are version 1.
+    let _version = value.get("version").and_then(|v| v.as_u64()).unwrap_or(1);
+    // Future: if _version < 2 { ...convert...; set "version": 2 }
+    value
+}
+
+/// Parses and migrates the text of a settings file.
+fn parse_config(bytes: &[u8]) -> std::result::Result<AppConfig, String> {
+    let value: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
+    let mut config: AppConfig = serde_json::from_value(migrate(value)).map_err(|e| e.to_string())?;
+    config.version = CONFIG_VERSION;
+    Ok(config)
 }
 
 #[cfg(not(test))]
@@ -106,25 +133,155 @@ fn config_path() -> PathBuf {
     config_dir().join("config.json")
 }
 
-impl AppConfig {
-    pub fn load() -> Self {
-        match fs::read_to_string(config_path()) {
-            Ok(text) => serde_json::from_str(&text).unwrap_or_else(|error| {
-                log::warn!("invalid config.json, using defaults: {error}");
-                Self::default()
-            }),
-            Err(_) => Self::default(),
+/// Why the settings file could not be used, for the interface to tell the user.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ConfigProblem {
+    /// What went wrong, as the parser or the system said it.
+    pub error: String,
+    /// Where a copy of the unreadable file was kept, when one could be made.
+    pub backup: Option<PathBuf>,
+    /// The last good save (`config.json.bak`) was valid and is in use instead.
+    pub restored: bool,
+}
+
+impl ConfigProblem {
+    /// A sentence for the user.
+    pub fn message(&self) -> String {
+        let kept = match &self.backup {
+            Some(path) => format!(" The old file was kept as {}.", path.display()),
+            None => String::new(),
+        };
+        if self.restored {
+            return format!(
+                "PeriHub could not read its settings file, so it restored the last good save (config.json.bak).{kept} Check that your settings are as you expect ({}).",
+                self.error
+            );
         }
+        format!(
+            "PeriHub could not read its settings file, so it started with the default settings and read-only mode on, to be safe.{kept} Turn read-only mode off when you are ready to change your devices ({}).",
+            self.error
+        )
+    }
+}
+
+/// The settings, and what went wrong when they could not be read.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LoadedConfig {
+    pub config: AppConfig,
+    pub problem: Option<ConfigProblem>,
+}
+
+impl AppConfig {
+    /// The settings used when the file exists but cannot be read: the defaults, with read-only
+    /// mode ON. The file may have said it was on, and nothing sent to a device can be undone by a
+    /// settings file that is lost, so a doubt never turns it off.
+    pub fn safe_defaults() -> Self {
+        Self { read_only: true, ..Self::default() }
+    }
+
+    pub fn load() -> Self {
+        Self::load_checked().config
+    }
+
+    /// Like [`AppConfig::load`], and also says why the file was not used. A missing file is a first
+    /// start, not a problem. A file that cannot be read or parsed is copied to
+    /// `config.json.bad-<unix seconds>` (the original stays until the next save replaces it, and a
+    /// copy with the same content is not made twice), and the settings are [`AppConfig::safe_defaults`].
+    pub fn load_checked() -> LoadedConfig {
+        load_from(&config_path())
     }
 
     pub fn save(&self) -> Result<()> {
         let path = config_path();
         fs::create_dir_all(path.parent().unwrap())?;
-        // Atomic write: a crash halfway through does not leave a truncated file.
-        let temp = path.with_extension("json.tmp");
-        fs::write(&temp, serde_json::to_string_pretty(self)?)?;
-        fs::rename(temp, path)?;
+        let text = serde_json::to_string_pretty(self)?;
+        write_atomic(&path, text.as_bytes())?;
+        // The last good config, for when config.json is damaged later. Failing here does not fail
+        // the save: the settings themselves are already on disk.
+        if let Err(e) = write_atomic(&bak_path(&path), text.as_bytes()) {
+            log::warn!("could not update config.json.bak: {e}");
+        }
         Ok(())
+    }
+}
+
+/// Atomic write: a temporary file, then a rename, so a crash halfway through does not leave a
+/// truncated file.
+fn write_atomic(path: &Path, content: &[u8]) -> std::io::Result<()> {
+    let mut temp = path.as_os_str().to_owned();
+    temp.push(".tmp");
+    let temp = PathBuf::from(temp);
+    fs::write(&temp, content)?;
+    fs::rename(&temp, path)
+}
+
+fn bak_path(path: &Path) -> PathBuf {
+    let mut bak = path.as_os_str().to_owned();
+    bak.push(".bak");
+    PathBuf::from(bak)
+}
+
+/// The settings could not be used: the last good save if it is valid, else the safe defaults.
+fn recover(path: &Path, error: String, backup: Option<PathBuf>) -> LoadedConfig {
+    if let Ok(bytes) = fs::read(bak_path(path))
+        && let Ok(config) = parse_config(&bytes)
+    {
+        log::warn!("using config.json.bak, the last good save");
+        return LoadedConfig { config, problem: Some(ConfigProblem { error, backup, restored: true }) };
+    }
+    LoadedConfig { config: AppConfig::safe_defaults(), problem: Some(ConfigProblem { error, backup, restored: false }) }
+}
+
+fn load_from(path: &Path) -> LoadedConfig {
+    let text = match fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return LoadedConfig { config: AppConfig::default(), problem: None };
+        }
+        Err(e) => {
+            log::warn!("cannot read config.json, using safe defaults: {e}");
+            return recover(path, e.to_string(), None);
+        }
+    };
+    match parse_config(&text) {
+        Ok(config) => LoadedConfig { config, problem: None },
+        Err(error) => {
+            log::warn!("invalid config.json: {error}");
+            let backup = keep_bad_copy(path, &text);
+            recover(path, error, backup)
+        }
+    }
+}
+
+/// Copies an unreadable settings file to `<name>.bad-<unix seconds>` next to it, or returns the
+/// copy that already holds the same content (PeriHub starts again and again with the same file).
+fn keep_bad_copy(path: &Path, content: &[u8]) -> Option<PathBuf> {
+    let dir = path.parent()?;
+    let name = path.file_name()?.to_string_lossy().into_owned();
+    let prefix = format!("{name}.bad-");
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            if entry.file_name().to_string_lossy().starts_with(&prefix)
+                && fs::read(entry.path()).is_ok_and(|old| old == content)
+            {
+                return Some(entry.path());
+            }
+        }
+    }
+    let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    // Two different bad files in the same second must not overwrite each other.
+    let mut copy = dir.join(format!("{prefix}{stamp}"));
+    let mut n = 1;
+    while copy.exists() {
+        copy = dir.join(format!("{prefix}{stamp}-{n}"));
+        n += 1;
+    }
+    match fs::write(&copy, content) {
+        Ok(()) => Some(copy),
+        Err(e) => {
+            log::warn!("could not keep a copy of the unreadable config.json: {e}");
+            None
+        }
     }
 }
 
@@ -242,6 +399,121 @@ mod tests {
         // Settings saved by an older PeriHub have no such field.
         assert!(!serde_json::from_str::<AppConfig>("{}").unwrap().read_only);
         assert!(serde_json::from_str::<AppConfig>(r#"{"read_only": true}"#).unwrap().read_only);
+    }
+
+    #[test]
+    fn a_missing_config_is_a_first_start_not_a_problem() {
+        let root = temp_root("config-missing");
+        let loaded = load_from(&root.join("config.json"));
+        assert_eq!(loaded, LoadedConfig { config: AppConfig::default(), problem: None });
+    }
+
+    #[test]
+    fn a_good_config_is_loaded_as_it_is() {
+        let root = temp_root("config-good");
+        fs::write(root.join("config.json"), r#"{"read_only": false, "start_hidden": true}"#).unwrap();
+        let loaded = load_from(&root.join("config.json"));
+        assert!(loaded.problem.is_none());
+        assert!(loaded.config.start_hidden && !loaded.config.read_only);
+    }
+
+    #[test]
+    fn a_corrupt_config_is_kept_and_read_only_mode_stays_on() {
+        let root = temp_root("config-corrupt");
+        let path = root.join("config.json");
+        // A file cut short, as a crash or a full disk leaves it, that had read-only mode off.
+        let broken = r#"{"read_only": false, "start_hidden": tr"#;
+        fs::write(&path, broken).unwrap();
+        let loaded = load_from(&path);
+        assert!(loaded.config.read_only, "a doubt must never turn read-only mode off");
+        let problem = loaded.problem.expect("the interface must be told");
+        let backup = problem.backup.clone().expect("a copy is kept");
+        assert!(backup.file_name().unwrap().to_string_lossy().starts_with("config.json.bad-"));
+        assert_eq!(fs::read_to_string(&backup).unwrap(), broken);
+        // The original is untouched until the next save, and the message names the copy.
+        assert_eq!(fs::read_to_string(&path).unwrap(), broken);
+        assert!(problem.message().contains(&backup.display().to_string()));
+        // Starting again with the same file does not pile up copies.
+        assert_eq!(load_from(&path).problem.unwrap().backup, Some(backup));
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 2);
+    }
+
+    #[test]
+    fn a_corrupt_config_is_replaced_by_the_last_good_save() {
+        let root = temp_root("config-bak-good");
+        let path = root.join("config.json");
+        fs::write(&path, r#"{"read_only": false, "start_hidden": tr"#).unwrap();
+        fs::write(root.join("config.json.bak"), r#"{"read_only": false, "start_hidden": true}"#).unwrap();
+        let loaded = load_from(&path);
+        assert!(loaded.config.start_hidden && !loaded.config.read_only);
+        let problem = loaded.problem.expect("the interface must be told");
+        assert!(problem.restored && problem.backup.is_some());
+        assert!(problem.message().contains("last good save"));
+    }
+
+    #[test]
+    fn a_corrupt_config_and_a_corrupt_bak_mean_safe_defaults() {
+        let root = temp_root("config-bak-bad");
+        let path = root.join("config.json");
+        fs::write(&path, "{").unwrap();
+        fs::write(root.join("config.json.bak"), "[").unwrap();
+        let loaded = load_from(&path);
+        assert!(loaded.config.read_only && !loaded.config.start_hidden);
+        assert!(!loaded.problem.unwrap().restored);
+    }
+
+    #[test]
+    fn a_corrupt_config_without_a_bak_means_safe_defaults() {
+        let root = temp_root("config-bak-missing");
+        let path = root.join("config.json");
+        fs::write(&path, "{").unwrap();
+        let loaded = load_from(&path);
+        assert!(loaded.config.read_only);
+        assert!(!loaded.problem.unwrap().restored);
+    }
+
+    #[test]
+    fn saving_keeps_the_last_good_copy_and_the_version() {
+        let config = AppConfig { start_hidden: true, ..AppConfig::default() };
+        config.save().unwrap();
+        let dir = config_dir();
+        let saved = fs::read(dir.join("config.json")).unwrap();
+        assert_eq!(saved, fs::read(dir.join("config.json.bak")).unwrap());
+        assert!(!dir.join("config.json.tmp").exists());
+        let value: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+        assert_eq!(value["version"], CONFIG_VERSION);
+        assert_eq!(load_from(&dir.join("config.json")).config, config);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_file_without_a_version_is_version_one() {
+        let config = parse_config(br#"{"start_hidden": true}"#).unwrap();
+        assert_eq!(config.version, 1);
+        assert!(config.start_hidden);
+    }
+
+    #[test]
+    fn different_corrupt_files_keep_separate_copies() {
+        let root = temp_root("config-corrupt-twice");
+        let path = root.join("config.json");
+        fs::write(&path, "{").unwrap();
+        let first = load_from(&path).problem.unwrap().backup.unwrap();
+        fs::write(&path, "[").unwrap();
+        let second = load_from(&path).problem.unwrap().backup.unwrap();
+        assert_ne!(first, second);
+        assert_eq!(fs::read_to_string(first).unwrap(), "{");
+        assert_eq!(fs::read_to_string(second).unwrap(), "[");
+    }
+
+    #[test]
+    fn an_unreadable_config_also_means_read_only_mode_on() {
+        let root = temp_root("config-unreadable");
+        // A folder where the file should be: reading it fails with something other than "not found".
+        fs::create_dir_all(root.join("config.json")).unwrap();
+        let loaded = load_from(&root.join("config.json"));
+        assert!(loaded.config.read_only);
+        assert!(loaded.problem.is_some_and(|p| p.backup.is_none()));
     }
 
     #[test]
