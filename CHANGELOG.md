@@ -25,6 +25,9 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
   - The test report counts host mode over the whole session (take-overs, give-backs and why, unanswered calls, notices, looks shown) instead of since the last take-over, and shows the last look when PeriHub does not drive the lights.
 - **No "Logitech mouse" entry for a keyboard behind a receiver** ([issue #30](https://github.com/hex-dump/perihub/issues/30)): with a keyboard such as the G915 X LS paired with a LIGHTSPEED receiver, the sidebar listed a "Logitech mouse — Not opened" next to the keyboard's own entry, appearing and disappearing as the keyboard woke up and fell asleep. The note that the device "is not supported yet" was shown as the mouse's error; a device with a page of its own no longer adds it, and a keyboard PeriHub has seen awake is no longer shown as a mouse asleep when it sleeps.
 
+### Changed
+- **SteelSeries Rival 5 tried on a real mouse** (cable, Windows, issue #71): the name, DPI, polling rate, lighting and changes (taking effect, and still there after unplugging) were confirmed. It stays experimental, and nothing about buttons or profiles was tested. The test report checklist no longer asks whether "the buttons and profiles match" for a mouse PeriHub shows none for, such as the SteelSeries ones, which cannot be read back.
+
 ## 0.9.4 — 2026-11-17
 
 On Windows, games from Steam and the Epic Games Launcher now show up when you add a game profile, also when Steam is installed outside Program Files or the game keeps its program in a subfolder. PeriHub also recognises 67 more Razer keyboards, read only for now.
