@@ -3500,6 +3500,773 @@
     {
       "family": "razer-keyboard",
       "brand": "Razer",
+      "name": "BlackWidow Ultimate 2012",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:010d"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Stealth Edition",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:010e"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Anansi",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:010f"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "DeathStalker/DeathStalker Essential",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0118"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Ultimate 2013",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:011a"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow (Classic)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:011b"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Tournament Edition 2014",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:011c"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "DeathStalker Expert",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0202"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Chroma",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0203"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "DeathStalker Chroma",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0204"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Tournament Edition Chroma",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0209"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Chroma (Overwatch)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0211"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Ultimate 2016",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0214"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow X Chroma",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0216"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow X Ultimate",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0217"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow X Tournament Edition Chroma",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:021a"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Ornata Chroma",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:021e"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Ornata",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:021f"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Chroma V2",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0221"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman Elite",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0226"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0227"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Elite",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0228"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Cynosa Chroma",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:022a"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Cynosa Chroma Pro",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:022c"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Lite",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0235"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow Essential",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0237"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Cynosa Lite",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:023f"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow 2019",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0241"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman Tournament Edition",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0243"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V3",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:024e"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman Mini",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0257"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V3 Mini HyperSpeed (Wired)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0258"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V3 Pro Wired",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:025a"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V3 Pro 2.4 Ghz Wireless",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:025c"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Ornata V2",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:025d"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Cynosa V2",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:025e"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman V2 Analog",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0266"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman Mini JP",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0269"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman V2 Tenkeyless",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:026b"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman V2",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:026c"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V3 Mini HyperSpeed (Wireless)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0271"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman Mini Analog",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0282"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0287"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 Pro",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:028d"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Ornata V3 (Alternate)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:028f"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "DeathStalker V2 Pro (Wireless)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0290"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "DeathStalker V2 Pro (Wired)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0292"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 X",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0293"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Ornata V3 X",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0294"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "DeathStalker V2",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0295"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "DeathStalker V2 Pro TKL (Wireless)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0296"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "DeathStalker V2 Pro TKL (Wired)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0298"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Ornata V3",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02a1"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Ornata V3 X (Alternate)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02a2"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Ornata V3 Tenkeyless",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02a3"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 75%",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02a5"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman V3 Pro",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02a6"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman V3 Pro TKL",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02a7"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman V3 Pro Mini",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02b0"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
       "name": "BlackWidow V4 Mini HyperSpeed",
       "kind": "keyboard",
       "level": "read_only",
@@ -3523,6 +4290,110 @@
       "linux": {
         "kind": "interface",
         "interface": 3
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Joro",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02cd"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman V3 Pro 8KHz",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02cf"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 Low-profile Tenkeyless HyperSpeed (Wireless)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02d2"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 Low-profile Tenkeyless HyperSpeed (Wired)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02d4"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 Tenkeyless HyperSpeed (Wireless)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02d5"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V4 Tenkeyless HyperSpeed (Wired)",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02d7"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "Huntsman V3 HE Magnetic Tenkeyless 8KHz",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:02ea"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "razer-keyboard",
+      "brand": "Razer",
+      "name": "BlackWidow V3 TK",
+      "kind": "keyboard",
+      "level": "read_only",
+      "usb_ids": [
+        "1532:0a24"
+      ],
+      "linux": {
+        "kind": "closed"
       }
     },
     {

@@ -116,6 +116,10 @@ fn udev_rule_matches_the_other_brands_tables() {
             .collect();
         let mut in_tables = Vec::new();
         for model in models().filter(|m| m.vendor_id == vendor) {
+            // Models PeriHub does not open on Linux have no line (checked below).
+            if !perihub_core::peripheral::opened_on_linux(model) {
+                continue;
+            }
             for id in model.product_ids {
                 let id = format!("{id:04x}");
                 let line = lines.iter().find(|l| l.contains(&format!(r#"ATTRS{{idProduct}}=="{id}""#))).unwrap();
@@ -166,5 +170,21 @@ fn udev_rule_never_opens_the_asus_omni_receiver() {
 fn udev_rule_never_opens_the_wraith_keyboard() {
     for line in RULE.lines().filter(|l| !l.trim_start().starts_with('#')) {
         assert!(!line.contains(r#"ATTRS{idVendor}=="2e3c""#), "{line}");
+    }
+}
+
+#[test]
+fn udev_rule_never_opens_a_razer_keyboard_whose_interface_may_carry_typing() {
+    use perihub_core::peripheral::{Protocol, models, opened_on_linux};
+    let keyboards: Vec<_> = models().filter(|m| matches!(m.protocol, Protocol::RazerKeyboard(_))).collect();
+    assert!(keyboards.len() > 2);
+    for model in keyboards {
+        for id in model.product_ids {
+            let tag = format!(r#"ATTRS{{idVendor}}=="1532", ATTRS{{idProduct}}=="{id:04x}""#);
+            let opened = RULE.lines().any(|l| !l.trim_start().starts_with('#') && l.contains(&tag));
+            assert_eq!(opened, opened_on_linux(model), "{} {id:04x}", model.name);
+            // Only the BlackWidow V4 Mini HyperSpeed, whose interface 3 a tester showed (issue #24).
+            assert_eq!(opened, matches!(id, 0x02B9 | 0x02BA), "{} {id:04x}", model.name);
+        }
     }
 }

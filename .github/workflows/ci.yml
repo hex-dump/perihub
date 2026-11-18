@@ -7,8 +7,7 @@ on:
     paths-ignore: ["site/**", ".github/workflows/pages.yml"]
   pull_request:
     paths-ignore: ["site/**", ".github/workflows/pages.yml"]
-  # Also run by the aur and screenshots workflows on their bot/* branch: a pull request made with
-  # GITHUB_TOKEN starts no pull_request run, and main requires these checks.
+  # Run by hand on a branch (its checks do not count for a pull request's required checks).
   workflow_dispatch:
 
 permissions:

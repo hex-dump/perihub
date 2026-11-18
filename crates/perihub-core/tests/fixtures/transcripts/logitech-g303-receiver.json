@@ -1,0 +1,285 @@
+{
+  "format": "perihub-transcript",
+  "version": 1,
+  "device": {
+    "vendor_id": "046d",
+    "product_id": "c547",
+    "name": "Logitech G303 SHROUD EDITION GAMING MOUSE through a LIGHTSPEED receiver"
+  },
+  "family": "hidpp-receiver",
+  "access": "read-only",
+  "slot": 1,
+  "recorded_by": "PeriHub 0.8.4 on windows x86_64",
+  "source": "issue #34, receiver test report (values) and mouse test report (onboard memory)",
+  "notes": [
+    "Rebuilt from the values in the reports, which had no bytes: name, HID++ version, device info (unit id left out as in the report), firmware, feature table, DPI range, polling rates and onboard memory. The bytes are laid out as hidpp/mod.rs reads them (HID++ 2.0, libratbag, MIT).",
+    "Not in the reports, so zeros or a guess: the firmware entity types (1 bootloader, 0 application) and the bytes after each version. The root feature's answers repeat the type and version of the feature table.",
+    "Not in the reports either: the battery (0x1004, index 5 by the feature table). Its status answer is zeros, only so that the battery read of the receiver page (test/logitech-usb) has an answer; the expected values leave the battery out."
+  ],
+  "expect": {
+    "slot": 1,
+    "name": "G303 SHROUD EDITION GAMING MOUSE",
+    "kind": 3,
+    "protocol": "4.2",
+    "wireless_id": 16542,
+    "device_info": "02 xx xx xx xx 00 0c 40 9e c0 97 00 00 00 01 00",
+    "firmware": [
+      "BL1 52.00.0015",
+      "MPM 29.01.0016"
+    ],
+    "features": [
+      {
+        "id": 1,
+        "kind": 0,
+        "version": 2
+      },
+      {
+        "id": 3,
+        "kind": 0,
+        "version": 4
+      },
+      {
+        "id": 5,
+        "kind": 0,
+        "version": 0
+      },
+      {
+        "id": 32,
+        "kind": 0,
+        "version": 0
+      },
+      {
+        "id": 4100,
+        "kind": 0,
+        "version": 3
+      },
+      {
+        "id": 6145,
+        "kind": 112,
+        "version": 0
+      },
+      {
+        "id": 6146,
+        "kind": 112,
+        "version": 0
+      },
+      {
+        "id": 6147,
+        "kind": 112,
+        "version": 0
+      },
+      {
+        "id": 6149,
+        "kind": 96,
+        "version": 0
+      },
+      {
+        "id": 6150,
+        "kind": 112,
+        "version": 8
+      },
+      {
+        "id": 6161,
+        "kind": 112,
+        "version": 0
+      },
+      {
+        "id": 6192,
+        "kind": 112,
+        "version": 0
+      },
+      {
+        "id": 6241,
+        "kind": 112,
+        "version": 1
+      },
+      {
+        "id": 6288,
+        "kind": 104,
+        "version": 7
+      },
+      {
+        "id": 6305,
+        "kind": 112,
+        "version": 0
+      },
+      {
+        "id": 6321,
+        "kind": 112,
+        "version": 0
+      },
+      {
+        "id": 7499,
+        "kind": 0,
+        "version": 0
+      },
+      {
+        "id": 7680,
+        "kind": 64,
+        "version": 0
+      },
+      {
+        "id": 7714,
+        "kind": 112,
+        "version": 0
+      },
+      {
+        "id": 7856,
+        "kind": 112,
+        "version": 0
+      },
+      {
+        "id": 8481,
+        "kind": 0,
+        "version": 0
+      },
+      {
+        "id": 8705,
+        "kind": 0,
+        "version": 2
+      },
+      {
+        "id": 32864,
+        "kind": 0,
+        "version": 0
+      },
+      {
+        "id": 33024,
+        "kind": 0,
+        "version": 0
+      },
+      {
+        "id": 33040,
+        "kind": 0,
+        "version": 0
+      },
+      {
+        "id": 5376,
+        "kind": 0,
+        "version": 0
+      }
+    ],
+    "dpi": {
+      "min": 100,
+      "max": 25600,
+      "step": 50,
+      "list": []
+    },
+    "dpi_extended": null,
+    "report_rates_ms": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "report_rates_hz": [],
+    "onboard": {
+      "memory_model": 1,
+      "profile_format": 3,
+      "macro_format": 1,
+      "profile_count": 5,
+      "rom_profile_count": 1,
+      "button_count": 6,
+      "sector_count": 16,
+      "sector_size": 255,
+      "has_gshift": true,
+      "has_dpi_shift": true
+    },
+    "read_errors": [],
+    "layout": null
+  },
+  "events": [
+    {"op":"write","data":"11 01 00 1b 00 00 5a","len":20},
+    {"op":"read","data":"11 01 00 1b 04 02 5a","len":20},
+    {"op":"write","data":"11 01 00 0b 00 05","len":20},
+    {"op":"read","data":"11 01 00 0b 03","len":20},
+    {"op":"write","data":"11 01 03 0b","len":20},
+    {"op":"read","data":"11 01 03 0b 20","len":20},
+    {"op":"write","data":"11 01 03 1b","len":20},
+    {"op":"read","data":"11 01 03 1b 47 33 30 33 20 53 48 52 4f 55 44 20 45 44 49 54"},
+    {"op":"write","data":"11 01 03 1b 10","len":20},
+    {"op":"read","data":"11 01 03 1b 49 4f 4e 20 47 41 4d 49 4e 47 20 4d 4f 55 53 45"},
+    {"op":"write","data":"11 01 00 0b 00 03","len":20},
+    {"op":"read","data":"11 01 00 0b 02 00 04","len":20},
+    {"op":"write","data":"11 01 02 0b","len":20},
+    {"op":"read","data":"11 01 02 0b 02 xx xx xx xx 00 0c 40 9e c0 97 00 00 00 01 00"},
+    {"op":"write","data":"11 01 02 1b","len":20},
+    {"op":"read","data":"11 01 02 1b 01 42 4c 31 52 00 00 15","len":20},
+    {"op":"write","data":"11 01 02 1b 01","len":20},
+    {"op":"read","data":"11 01 02 1b 00 4d 50 4d 29 01 00 16","len":20},
+    {"op":"write","data":"11 01 00 0b 00 01","len":20},
+    {"op":"read","data":"11 01 00 0b 01 00 02","len":20},
+    {"op":"write","data":"11 01 01 0b","len":20},
+    {"op":"read","data":"11 01 01 0b 1a","len":20},
+    {"op":"write","data":"11 01 01 1b 01","len":20},
+    {"op":"read","data":"11 01 01 1b 00 01 00 02","len":20},
+    {"op":"write","data":"11 01 01 1b 02","len":20},
+    {"op":"read","data":"11 01 01 1b 00 03 00 04","len":20},
+    {"op":"write","data":"11 01 01 1b 03","len":20},
+    {"op":"read","data":"11 01 01 1b 00 05","len":20},
+    {"op":"write","data":"11 01 01 1b 04","len":20},
+    {"op":"read","data":"11 01 01 1b 00 20","len":20},
+    {"op":"write","data":"11 01 01 1b 05","len":20},
+    {"op":"read","data":"11 01 01 1b 10 04 00 03","len":20},
+    {"op":"write","data":"11 01 01 1b 06","len":20},
+    {"op":"read","data":"11 01 01 1b 18 01 70","len":20},
+    {"op":"write","data":"11 01 01 1b 07","len":20},
+    {"op":"read","data":"11 01 01 1b 18 02 70","len":20},
+    {"op":"write","data":"11 01 01 1b 08","len":20},
+    {"op":"read","data":"11 01 01 1b 18 03 70","len":20},
+    {"op":"write","data":"11 01 01 1b 09","len":20},
+    {"op":"read","data":"11 01 01 1b 18 05 60","len":20},
+    {"op":"write","data":"11 01 01 1b 0a","len":20},
+    {"op":"read","data":"11 01 01 1b 18 06 70 08","len":20},
+    {"op":"write","data":"11 01 01 1b 0b","len":20},
+    {"op":"read","data":"11 01 01 1b 18 11 70","len":20},
+    {"op":"write","data":"11 01 01 1b 0c","len":20},
+    {"op":"read","data":"11 01 01 1b 18 30 70","len":20},
+    {"op":"write","data":"11 01 01 1b 0d","len":20},
+    {"op":"read","data":"11 01 01 1b 18 61 70 01","len":20},
+    {"op":"write","data":"11 01 01 1b 0e","len":20},
+    {"op":"read","data":"11 01 01 1b 18 90 68 07","len":20},
+    {"op":"write","data":"11 01 01 1b 0f","len":20},
+    {"op":"read","data":"11 01 01 1b 18 a1 70","len":20},
+    {"op":"write","data":"11 01 01 1b 10","len":20},
+    {"op":"read","data":"11 01 01 1b 18 b1 70","len":20},
+    {"op":"write","data":"11 01 01 1b 11","len":20},
+    {"op":"read","data":"11 01 01 1b 1d 4b","len":20},
+    {"op":"write","data":"11 01 01 1b 12","len":20},
+    {"op":"read","data":"11 01 01 1b 1e 00 40","len":20},
+    {"op":"write","data":"11 01 01 1b 13","len":20},
+    {"op":"read","data":"11 01 01 1b 1e 22 70","len":20},
+    {"op":"write","data":"11 01 01 1b 14","len":20},
+    {"op":"read","data":"11 01 01 1b 1e b0 70","len":20},
+    {"op":"write","data":"11 01 01 1b 15","len":20},
+    {"op":"read","data":"11 01 01 1b 21 21","len":20},
+    {"op":"write","data":"11 01 01 1b 16","len":20},
+    {"op":"read","data":"11 01 01 1b 22 01 00 02","len":20},
+    {"op":"write","data":"11 01 01 1b 17","len":20},
+    {"op":"read","data":"11 01 01 1b 80 60","len":20},
+    {"op":"write","data":"11 01 01 1b 18","len":20},
+    {"op":"read","data":"11 01 01 1b 81","len":20},
+    {"op":"write","data":"11 01 01 1b 19","len":20},
+    {"op":"read","data":"11 01 01 1b 81 10","len":20},
+    {"op":"write","data":"11 01 01 1b 1a","len":20},
+    {"op":"read","data":"11 01 01 1b 15","len":20},
+    {"op":"write","data":"11 01 03 2b","len":20},
+    {"op":"read","data":"11 01 03 2b 03","len":20},
+    {"op":"write","data":"11 01 00 0b 22 01","len":20},
+    {"op":"read","data":"11 01 00 0b 16 00 02","len":20},
+    {"op":"write","data":"11 01 16 1b","len":20},
+    {"op":"read","data":"11 01 16 1b 00 00 64 e0 32 64","len":20},
+    {"op":"write","data":"11 01 00 0b 80 60","len":20},
+    {"op":"read","data":"11 01 00 0b 17","len":20},
+    {"op":"write","data":"11 01 17 0b","len":20},
+    {"op":"read","data":"11 01 17 0b 8b","len":20},
+    {"op":"write","data":"11 01 00 0b 81","len":20},
+    {"op":"read","data":"11 01 00 0b 18","len":20},
+    {"op":"write","data":"11 01 18 0b","len":20},
+    {"op":"read","data":"11 01 18 0b 01 03 01 05 01 06 10 00 ff 0a 00 00 00 00 00 00"},
+    {"op":"write","data":"11 01 00 0b 10 04","len":20},
+    {"op":"read","data":"11 01 00 0b 05 00 03","len":20},
+    {"op":"write","data":"11 01 05 1b","len":20},
+    {"op":"read","data":"11 01 05 1b 00 00 00 00","len":20}
+  ]
+}

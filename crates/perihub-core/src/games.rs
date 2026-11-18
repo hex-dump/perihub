@@ -1,6 +1,7 @@
 //! Suggests app ids for the games installed on this computer, to prefill App profiles rules.
 //!
-//! Read only: it parses the launchers' own files (Steam, Lutris, Heroic) and lists folders. It
+//! Read only: it parses the launchers' own files (Steam, Epic Games Launcher, Lutris, Heroic) and
+//! lists folders. On Windows it also reads two registry values to find where Steam is installed. It
 //! does not use the network and never looks at running processes. The app id is what focus
 //! detection reports: the executable name on Windows, the window class on Linux. A game's window
 //! class cannot be known without running it, so each game says whether the id is certain.
@@ -14,7 +15,7 @@ use serde::Serialize;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct InstalledGame {
     pub name: String,
-    /// "Steam", "Lutris" or "Heroic".
+    /// "Steam", "Epic", "Lutris" or "Heroic".
     pub launcher: String,
     /// What to put in the rule: the executable name (Windows) or the window class (Linux).
     pub app: String,
@@ -25,6 +26,7 @@ pub struct InstalledGame {
 }
 
 /// Where to look. Separate from the real folders so the tests can use a fake home.
+#[derive(Default)]
 struct Places {
     windows: bool,
     home: Option<PathBuf>,
@@ -32,26 +34,34 @@ struct Places {
     appdata: Option<PathBuf>,
     /// Program Files folders on Windows (Steam).
     program_files: Vec<PathBuf>,
+    /// Where the registry says Steam is installed (Windows).
+    steam_dirs: Vec<PathBuf>,
+    /// ProgramData on Windows (the Epic Games Launcher keeps its manifests there).
+    program_data: Option<PathBuf>,
 }
 
 /// The games found, sorted by name. Never fails: a launcher that is not installed gives nothing.
 pub fn installed_games() -> Vec<InstalledGame> {
     let windows = cfg!(windows);
-    let program_files = if windows {
-        ["ProgramFiles(x86)", "ProgramFiles"]
+    let mut places = Places { windows, home: dirs::home_dir(), appdata: dirs::config_dir(), ..Places::default() };
+    if windows {
+        places.program_files = ["ProgramFiles(x86)", "ProgramFiles"]
             .iter()
             .filter_map(|v| std::env::var_os(v).map(PathBuf::from))
             .chain([PathBuf::from(r"C:\Program Files (x86)"), PathBuf::from(r"C:\Program Files")])
-            .collect()
-    } else {
-        Vec::new()
-    };
-    let places = Places { windows, home: dirs::home_dir(), appdata: dirs::config_dir(), program_files };
+            .collect();
+        places.steam_dirs = steam_registry();
+        places.program_data = ["ProgramData", "ALLUSERSPROFILE"]
+            .iter()
+            .find_map(|v| std::env::var_os(v).filter(|p| !p.is_empty()).map(PathBuf::from))
+            .or_else(|| Some(PathBuf::from(r"C:\ProgramData")));
+    }
     find(&places)
 }
 
 fn find(places: &Places) -> Vec<InstalledGame> {
     let mut games = steam(places);
+    games.extend(epic(places));
     games.extend(lutris(places));
     games.extend(heroic(places));
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()).then(a.launcher.cmp(&b.launcher)));
@@ -63,6 +73,8 @@ fn find(places: &Places) -> Vec<InstalledGame> {
 fn steam_roots(places: &Places) -> Vec<PathBuf> {
     let mut roots = Vec::new();
     if places.windows {
+        // The registry first: Steam can be installed anywhere. Then the default folders.
+        roots.extend(places.steam_dirs.iter().cloned());
         roots.extend(places.program_files.iter().map(|p| p.join("Steam")));
     } else if let Some(home) = &places.home {
         roots.push(home.join(".steam/steam"));
@@ -124,7 +136,10 @@ fn steam(places: &Places) -> Vec<InstalledGame> {
                 continue;
             }
             let game = if places.windows {
-                steam_windows(&name, &steamapps.join("common").join(&installdir))
+                // No folder name: looking in "common" would show another game's program.
+                (!installdir.is_empty())
+                    .then(|| steamapps.join("common").join(&installdir))
+                    .and_then(|f| steam_windows(&name, &f))
             } else {
                 Some(steam_linux(&name, &appid, &steamapps))
             };
@@ -153,22 +168,7 @@ fn steam_linux(name: &str, appid: &str, steamapps: &Path) -> InstalledGame {
 
 /// On Windows the manifest does not name the executable: take it from the game's folder.
 fn steam_windows(name: &str, folder: &Path) -> Option<InstalledGame> {
-    let mut exes: Vec<(u64, String)> = fs::read_dir(folder)
-        .ok()?
-        .flatten()
-        .filter_map(|e| {
-            let file = e.file_name().to_string_lossy().into_owned();
-            let lower = file.to_lowercase();
-            let skip = ["unins", "crash", "redist", "dxsetup", "dotnet", "vc_", "vcredist"];
-            if !lower.ends_with(".exe") || skip.iter().any(|s| lower.contains(s)) {
-                return None;
-            }
-            Some((e.metadata().map(|m| m.len()).unwrap_or(0), file))
-        })
-        .collect();
-    exes.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
-    let certain = exes.len() == 1;
-    let (_, app) = exes.into_iter().next()?;
+    let (app, certain) = game_exe(folder)?;
     Some(InstalledGame {
         name: name.to_string(),
         launcher: "Steam".into(),
@@ -176,6 +176,196 @@ fn steam_windows(name: &str, folder: &Path) -> Option<InstalledGame> {
         certain,
         note: (!certain).then(|| "Several programs in the game's folder: this is the biggest one.".into()),
     })
+}
+
+/// Names (lowercase, part of) of programs that are not the game: uninstallers, crash reporters,
+/// redistributable installers, anti-cheat services, browser helpers.
+const NOT_THE_GAME: [&str; 19] = [
+    "unins",
+    "crashhandler",
+    "crashreport",
+    "crashpad",
+    "crashsender",
+    "unitycrash",
+    "redist",
+    "dxsetup",
+    "dotnet",
+    "vc_",
+    "easyanticheat",
+    "beservice",
+    "battleye",
+    "ue4prereq",
+    "ueprereq",
+    "cefsubprocess",
+    "notification_helper",
+    "installer",
+    "setup.exe",
+];
+
+/// Folders that only hold installers and helpers.
+const NOT_GAME_FOLDERS: [&str; 5] = ["redist", "directx", "dotnet", "installer", "prereq"];
+
+/// How deep below the game's folder to look: Unreal games keep the real program in
+/// <Name>/Binaries/Win64.
+const EXE_DEPTH: usize = 3;
+
+/// Every program of a game's folder that may be the game: (size, file name, is an Unreal
+/// "-Win64-Shipping" program). The game's folder is searched down to [`EXE_DEPTH`] levels.
+fn exes_in(folder: &Path) -> Vec<(u64, String, bool)> {
+    fn walk(dir: &Path, depth: usize, out: &mut Vec<(u64, String, bool)>, budget: &mut usize) {
+        let Ok(entries) = fs::read_dir(dir) else { return };
+        let mut entries: Vec<_> = entries.flatten().collect();
+        entries.sort_by_key(|e| e.file_name());
+        for e in entries {
+            if *budget == 0 {
+                return;
+            }
+            *budget -= 1;
+            let file = e.file_name().to_string_lossy().into_owned();
+            let lower = file.to_lowercase();
+            let Ok(kind) = e.file_type() else { continue };
+            if kind.is_dir() {
+                if depth < EXE_DEPTH && !NOT_GAME_FOLDERS.iter().any(|s| lower.contains(s)) {
+                    walk(&e.path(), depth + 1, out, budget);
+                }
+            } else if lower.ends_with(".exe") && !NOT_THE_GAME.iter().any(|s| lower.contains(s)) {
+                let shipping = lower.ends_with("-shipping.exe");
+                out.push((e.metadata().map(|m| m.len()).unwrap_or(0), file, shipping));
+            }
+        }
+    }
+    let mut out = Vec::new();
+    walk(folder, 0, &mut out, &mut 20_000);
+    out
+}
+
+/// The program of an installed game, from its folder, and whether it is the only candidate.
+/// Unreal games start from a small program in the folder that starts the real one in
+/// Binaries/Win64, which is the one with the window: that one is preferred.
+fn game_exe(folder: &Path) -> Option<(String, bool)> {
+    let mut exes = exes_in(folder);
+    if exes.iter().any(|e| e.2) {
+        exes.retain(|e| e.2);
+    }
+    exes.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+    let mut seen = HashSet::new();
+    exes.retain(|e| seen.insert(e.1.to_lowercase()));
+    let certain = exes.len() == 1;
+    exes.into_iter().next().map(|e| (e.1, certain))
+}
+
+#[cfg(windows)]
+fn steam_registry() -> Vec<PathBuf> {
+    use windows_sys::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+    [
+        (HKEY_CURRENT_USER, r"Software\Valve\Steam", "SteamPath"),
+        (HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
+        (HKEY_LOCAL_MACHINE, r"SOFTWARE\Valve\Steam", "InstallPath"),
+    ]
+    .into_iter()
+    .filter_map(|(root, key, value)| registry_string(root, key, value))
+    .map(|p| PathBuf::from(p.replace('/', "\\")))
+    .collect()
+}
+
+#[cfg(not(windows))]
+fn steam_registry() -> Vec<PathBuf> {
+    Vec::new()
+}
+
+/// A text value of the registry, or None when it is missing or not text.
+#[cfg(windows)]
+fn registry_string(root: windows_sys::Win32::System::Registry::HKEY, key: &str, value: &str) -> Option<String> {
+    use windows_sys::Win32::System::Registry::{RRF_RT_REG_SZ, RegGetValueW};
+    let wide = |s: &str| s.encode_utf16().chain(std::iter::once(0)).collect::<Vec<u16>>();
+    let (key, value) = (wide(key), wide(value));
+    let mut bytes = 0u32;
+    // SAFETY: the strings end with a zero; the first call only asks for the size, the second
+    // gets a buffer of exactly that many bytes (rounded up to whole u16).
+    unsafe {
+        let status = RegGetValueW(
+            root,
+            key.as_ptr(),
+            value.as_ptr(),
+            RRF_RT_REG_SZ,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            &mut bytes,
+        );
+        if status != 0 || !(2..=64 * 1024).contains(&bytes) {
+            return None;
+        }
+        let mut buf = vec![0u16; (bytes as usize).div_ceil(2)];
+        let status = RegGetValueW(
+            root,
+            key.as_ptr(),
+            value.as_ptr(),
+            RRF_RT_REG_SZ,
+            std::ptr::null_mut(),
+            buf.as_mut_ptr().cast(),
+            &mut bytes,
+        );
+        if status != 0 {
+            return None;
+        }
+        let len = (bytes as usize / 2).min(buf.len());
+        let text = String::from_utf16_lossy(&buf[..len]);
+        let text = text.trim_end_matches('\0').trim();
+        (!text.is_empty()).then(|| text.to_string())
+    }
+}
+
+// ---- Epic Games Launcher (Windows) ----
+
+/// The games of the Epic Games Launcher: it writes one JSON file per installed item in
+/// <ProgramData>\Epic\EpicGamesLauncher\Data\Manifests, named *.item.
+fn epic(places: &Places) -> Vec<InstalledGame> {
+    let Some(data) = places.program_data.as_ref().filter(|_| places.windows) else { return Vec::new() };
+    let dir = data.join("Epic").join("EpicGamesLauncher").join("Data").join("Manifests");
+    let Ok(entries) = fs::read_dir(&dir) else { return Vec::new() };
+    let mut files: Vec<PathBuf> = entries
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|e| e.eq_ignore_ascii_case("item")))
+        .collect();
+    files.sort();
+    files.iter().filter_map(|f| read_json(f)).filter_map(|v| parse_epic(&v)).collect()
+}
+
+/// One Epic manifest. DLC, unfinished installs and items without a program give nothing.
+fn parse_epic(v: &serde_json::Value) -> Option<InstalledGame> {
+    if v.get("bIsIncompleteInstall").and_then(|b| b.as_bool()) == Some(true) {
+        return None;
+    }
+    let app_name = str_of(v, "AppName").unwrap_or_default();
+    // Add-ons name the game they belong to.
+    if str_of(v, "MainGameAppName").is_some_and(|main| main != app_name) {
+        return None;
+    }
+    let name = str_of(v, "DisplayName").or(Some(app_name).filter(|n| !n.is_empty()))?;
+    let launch = str_of(v, "LaunchExecutable").and_then(file_name);
+    // The launcher knows the name of the program with the game's window, when the game says so.
+    let window = str_of(v, "MainWindowProcessName").and_then(file_name);
+    let launch_name = window.clone().or(launch.clone())?;
+    let mut app = launch_name;
+    let mut certain = true;
+    let mut note = None;
+    if window.is_none()
+        && let Some(folder) = str_of(v, "InstallLocation").map(PathBuf::from)
+    {
+        // Unreal games start from a small program that starts the real one, which has the window.
+        let mut shipping: Vec<(u64, String, bool)> = exes_in(&folder).into_iter().filter(|e| e.2).collect();
+        shipping.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+        let already = shipping.iter().any(|e| e.1.eq_ignore_ascii_case(&app));
+        if !already && let Some(first) = shipping.first() {
+            app = first.1.clone();
+            if shipping.len() > 1 {
+                certain = false;
+                note = Some("Several programs in the game's folder: this is the biggest one.".to_string());
+            }
+        }
+    }
+    Some(InstalledGame { name: name.to_string(), launcher: "Epic".into(), app, certain, note })
 }
 
 // ---- Valve's text format (VDF / ACF) ----
@@ -423,7 +613,9 @@ fn read_json(path: &Path) -> Option<serde_json::Value> {
     if fs::metadata(path).ok()?.len() > 64 * 1024 * 1024 {
         return None;
     }
-    serde_json::from_str(&fs::read_to_string(path).ok()?).ok()
+    // Some launchers write a byte order mark first.
+    let text = fs::read_to_string(path).ok()?;
+    serde_json::from_str(text.trim_start_matches('\u{feff}')).ok()
 }
 
 fn str_of<'a>(v: &'a serde_json::Value, key: &str) -> Option<&'a str> {
@@ -528,7 +720,7 @@ mod tests {
     }
 
     fn linux(home: &Path) -> Places {
-        Places { windows: false, home: Some(home.to_path_buf()), appdata: None, program_files: Vec::new() }
+        Places { home: Some(home.to_path_buf()), ..Places::default() }
     }
 
     const MANIFEST: &str = "\"AppState\"\n{\n\t\"appid\"\t\t\"1245620\"\n\t\"name\"\t\t\"ELDEN RING\"\n\t\"installdir\"\t\t\"ELDEN RING\"\n}\n";
@@ -603,7 +795,7 @@ mod tests {
         let game = steam.join("steamapps/common/ELDEN RING");
         put(game.join("eldenring.exe"), "0123456789");
         put(game.join("unins000.exe"), "0123456789012345");
-        let places = Places { windows: true, home: None, appdata: None, program_files: vec![root.clone()] };
+        let places = Places { windows: true, program_files: vec![root.clone()], ..Places::default() };
         let games = find(&places);
         assert_eq!(games.len(), 1);
         assert_eq!((games[0].app.as_str(), games[0].certain), ("eldenring.exe", true));
@@ -659,12 +851,166 @@ mod tests {
                 ("Mine", "mine", false),
             ]
         );
-        let on_windows =
-            Places { windows: true, home: None, appdata: Some(home.join(".config")), program_files: Vec::new() };
+        let on_windows = Places { windows: true, appdata: Some(home.join(".config")), ..Places::default() };
         let games = find(&on_windows);
         assert_eq!(games.len(), 3);
         assert!(games.iter().all(|g| g.certain));
         let _ = fs::remove_dir_all(&home);
+    }
+
+    const LIBRARIES_NEW: &str = include_str!("../tests/fixtures/games/libraryfolders_new.vdf");
+    const LIBRARIES_OLD: &str = include_str!("../tests/fixtures/games/libraryfolders_old.vdf");
+    const CYBERPUNK: &str = include_str!("../tests/fixtures/games/appmanifest_1091500.acf");
+    const EPIC_UNREAL: &str = include_str!("../tests/fixtures/games/epic_unreal.item");
+    const EPIC_PLAIN: &str = include_str!("../tests/fixtures/games/epic_plain.item");
+    const EPIC_DLC: &str = include_str!("../tests/fixtures/games/epic_dlc.item");
+    const EPIC_UNFINISHED: &str = include_str!("../tests/fixtures/games/epic_unfinished.item");
+
+    /// A path as it is written inside a JSON or VDF string (backslashes doubled).
+    fn escaped(p: &Path) -> String {
+        p.display().to_string().replace('\\', "\\\\")
+    }
+
+    #[test]
+    fn windows_library_folders_in_both_layouts() {
+        assert_eq!(
+            library_paths(LIBRARIES_NEW),
+            [r"C:\Program Files (x86)\Steam", r"D:\SteamLibrary", "E:/Steam Games"]
+        );
+        assert_eq!(library_paths(LIBRARIES_OLD), [r"D:\SteamLibrary", r"E:\Games\Steam Games"]);
+        // Written by a Steam that does not double the backslashes.
+        assert_eq!(library_paths("\"libraryfolders\" { \"1\" \"D:/Games\" }"), ["D:/Games"]);
+    }
+
+    #[test]
+    fn windows_manifest_and_names() {
+        assert_eq!(
+            parse_manifest(CYBERPUNK),
+            Some(("1091500".into(), "Cyberpunk 2077".into(), "Cyberpunk 2077".into()))
+        );
+        assert_eq!(
+            file_name(r"C:\Games\Cyberpunk 2077\bin\x64\Cyberpunk2077.exe").as_deref(),
+            Some("Cyberpunk2077.exe")
+        );
+        assert_eq!(file_name("Binaries/Win64/RocketThing.exe").as_deref(), Some("RocketThing.exe"));
+        assert_eq!(file_name(r"Binaries\Win64\"), None);
+    }
+
+    #[test]
+    fn steam_on_windows_in_a_registry_folder_with_a_second_library_and_a_nested_program() {
+        let root = temp("steam-win-registry");
+        // Steam is not in Program Files: only the registry says where it is.
+        let steam = root.join("Apps/Valve Steam");
+        let library = root.join("SteamLibrary");
+        let vdf = LIBRARIES_NEW
+            .replace(r"C:\\Program Files (x86)\\Steam", &escaped(&steam))
+            .replace(r"D:\\SteamLibrary", &escaped(&library))
+            .replace("E:/Steam Games", &escaped(&root.join("missing drive")));
+        put(steam.join("steamapps/libraryfolders.vdf"), &vdf);
+        put(
+            steam.join("steamapps/appmanifest_228980.acf"),
+            "\"AppState\" { \"appid\" \"228980\" \"name\" \"Steamworks Common Redistributables\" }",
+        );
+        put(library.join("steamapps/appmanifest_1091500.acf"), CYBERPUNK);
+        let game = library.join("steamapps/common/Cyberpunk 2077");
+        put(game.join("bin/x64/Cyberpunk2077.exe"), "0123456789");
+        put(game.join("REDprelauncher.exe"), "01234567890123456789012345");
+        put(game.join("_CommonRedist/vcredist_x64.exe"), "0123456789012345678901234567890123456789");
+        put(game.join("bin/x64/crashreporter.exe"), "x");
+        // An Unreal game: a small program in the folder, the real one deeper.
+        put(
+            library.join("steamapps/appmanifest_1.acf"),
+            "\"AppState\" { \"appid\" \"1\" \"name\" \"Unreal Thing\" \"installdir\" \"UnrealThing\" }",
+        );
+        let unreal = library.join("steamapps/common/UnrealThing");
+        put(unreal.join("Thing.exe"), "0123");
+        put(unreal.join("Thing/Binaries/Win64/Thing-Win64-Shipping.exe"), "0123456789012345");
+        put(unreal.join("Engine/Binaries/Win64/CrashReportClient.exe"), "0123456789012345678901234567");
+        // A manifest without a folder name never takes another game's program.
+        put(library.join("steamapps/appmanifest_2.acf"), "\"AppState\" { \"appid\" \"2\" \"name\" \"No Folder\" }");
+
+        let places = Places { windows: true, steam_dirs: vec![steam.clone(), steam.clone()], ..Places::default() };
+        let games: Vec<_> = find(&places).into_iter().map(|g| (g.name, g.launcher, g.app, g.certain)).collect();
+        let row = |n: &str, a: &str, c: bool| (n.to_string(), "Steam".to_string(), a.to_string(), c);
+        assert_eq!(
+            games,
+            [
+                // Two programs outside Redist folders: the bigger one, and not sure.
+                row("Cyberpunk 2077", "REDprelauncher.exe", false),
+                row("Unreal Thing", "Thing-Win64-Shipping.exe", true),
+            ]
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn steam_on_windows_in_the_default_program_files_folder() {
+        let root = temp("steam-win-default");
+        let steam = root.join("Program Files (x86)/Steam");
+        put(steam.join("steamapps/appmanifest_1091500.acf"), CYBERPUNK);
+        put(steam.join("steamapps/common/Cyberpunk 2077/bin/x64/Cyberpunk2077.exe"), "0123456789");
+        let places =
+            Places { windows: true, program_files: vec![root.join("Program Files (x86)")], ..Places::default() };
+        let games = find(&places);
+        assert_eq!(games.len(), 1, "{games:?}");
+        assert_eq!((games[0].app.as_str(), games[0].certain), ("Cyberpunk2077.exe", true));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn epic_manifests_of_the_launcher() {
+        let root = temp("epic");
+        let manifests = root.join("Epic/EpicGamesLauncher/Data/Manifests");
+        let game = root.join("Games/Example Shooter");
+        let item = |text: &str| text.replace("@DIR@", &escaped(&game));
+        put(manifests.join("ABC123.item"), &item(EPIC_UNREAL));
+        put(manifests.join("DEF456.item"), EPIC_PLAIN);
+        put(manifests.join("GHI789.ITEM"), EPIC_DLC);
+        put(manifests.join("JKL.item"), EPIC_UNFINISHED);
+        put(manifests.join("broken.item"), "{");
+        put(manifests.join("notes.txt"), EPIC_PLAIN);
+        // The program of an Unreal game is not the one the manifest names.
+        put(game.join("Example.exe"), "0123");
+        put(game.join("Example/Binaries/Win64/Example-Win64-Shipping.exe"), "0123456789");
+        put(game.join("Engine/Binaries/Win64/CrashReportClient.exe"), "0123456789012345678901234567");
+
+        let places = Places { windows: true, program_data: Some(root.clone()), ..Places::default() };
+        let games: Vec<_> = find(&places).into_iter().map(|g| (g.name, g.launcher, g.app, g.certain)).collect();
+        let row = |n: &str, a: &str| (n.to_string(), "Epic".to_string(), a.to_string(), true);
+        assert_eq!(
+            games,
+            [row("Example Shooter", "Example-Win64-Shipping.exe"), row("Rocket Thing", "RocketThing.exe")]
+        );
+        // Not Windows: the launcher's folder is not looked at.
+        let elsewhere = Places { program_data: Some(root.clone()), ..Places::default() };
+        assert!(find(&elsewhere).is_empty());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn epic_manifest_fields() {
+        let json = |t: &str| serde_json::from_str::<serde_json::Value>(t.trim_start_matches('\u{feff}')).unwrap();
+        let plain = parse_epic(&json(EPIC_PLAIN)).unwrap();
+        assert_eq!((plain.name.as_str(), plain.app.as_str(), plain.certain), ("Rocket Thing", "RocketThing.exe", true));
+        assert!(parse_epic(&json(EPIC_DLC)).is_none());
+        assert!(parse_epic(&json(EPIC_UNFINISHED)).is_none());
+        // The window's process, when the launcher knows it, wins.
+        let named =
+            r#"{"AppName":"a","DisplayName":"A","LaunchExecutable":"Stub.exe","MainWindowProcessName":"Real.exe"}"#;
+        assert_eq!(parse_epic(&json(named)).unwrap().app, "Real.exe");
+        // Nothing to start: nothing to suggest.
+        assert!(parse_epic(&json(r#"{"AppName":"a","DisplayName":"A","LaunchExecutable":""}"#)).is_none());
+        // No display name: the app name.
+        assert_eq!(parse_epic(&json(r#"{"AppName":"a","LaunchExecutable":"x.exe"}"#)).unwrap().name, "a");
+    }
+
+    #[test]
+    fn byte_order_mark_does_not_hide_a_json_file() {
+        let dir = temp("bom");
+        put(dir.join("a.json"), EPIC_PLAIN);
+        assert!(EPIC_PLAIN.starts_with('\u{feff}'));
+        assert!(read_json(&dir.join("a.json")).is_some());
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

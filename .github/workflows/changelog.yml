@@ -12,7 +12,7 @@ permissions:
 jobs:
   entry:
     name: CHANGELOG entry
-    # Bot pull requests (bot/*: AUR package, screenshots) change no code.
+    # Old bot pull requests (bot/*) change no code.
     if: ${{ !startsWith(github.head_ref, 'bot/') && !contains(github.event.pull_request.labels.*.name, 'no changelog') }}
     runs-on: ubuntu-latest
     steps:

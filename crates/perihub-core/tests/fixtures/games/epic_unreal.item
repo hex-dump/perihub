@@ -1,0 +1,14 @@
+{
+	"FormatVersion": 0,
+	"bIsIncompleteInstall": false,
+	"LaunchCommand": "",
+	"LaunchExecutable": "Example.exe",
+	"ManifestLocation": "@DIR@\\.egstore",
+	"AppCategories": ["public", "games", "applications"],
+	"DisplayName": "Example Shooter",
+	"InstallationGuid": "00000000-0000-0000-0000-000000000000",
+	"InstallLocation": "@DIR@",
+	"MainWindowProcessName": "",
+	"MainGameAppName": "ExampleApp",
+	"AppName": "ExampleApp"
+}

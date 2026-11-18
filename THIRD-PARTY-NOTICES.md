@@ -517,8 +517,8 @@ was copied.
   and the Roccat Kone mice have.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse
   its USB interface, transaction ids, maximum DPI, lights with a brightness and custom frame width, read as text
-  by `tools/openrazer_facts.py` (see `docs/protocols/razer-mice.md`); for the BlackWidow V4 Mini HyperSpeed, its
-  interface, waits and transaction ids, and the battery, charging, brightness and game mode reads (see
+  by `tools/openrazer_facts.py` (see `docs/protocols/razer-mice.md`); per keyboard its USB interface, waits
+  and transaction ids, and the battery, charging, brightness and game mode reads, read as text by the same tool (see
   `docs/protocols/razer-keyboards.md`); the keyboard layout read and its region codes (see
   `docs/protocols/keyboard-layouts.md`).
 - [OpenMouse mouse-protocol](https://github.com/OpenMouse-Project/mouse-protocol) (AGPL-3.0), its K-Snake driver

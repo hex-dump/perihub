@@ -95,7 +95,7 @@ export interface ProfilesInfo {
 
 export interface InstalledGame {
   name: string;
-  /** "Steam", "Lutris" or "Heroic". */
+  /** "Steam", "Epic", "Lutris" or "Heroic". */
   launcher: string;
   /** Executable name on Windows, window class on Linux. */
   app: string;
@@ -328,6 +328,9 @@ export interface MouseInfo {
   report_rates_ms: number[];
   /** Extended features (0x2202, 0x8061) and format 7 profiles, if the mouse has them. */
   extended?: ExtendedReads | null;
+  /** Every request and answer of the reading when PeriHub connected, as a transcript in JSON
+   * (docs/replay.md), for test reports. Nothing in it tells the unit apart. */
+  transcript?: string;
   led_zones: LedZone[];
   /** The HID++ features the mouse lists, for test reports. */
   features: HidppFeature[];
@@ -440,6 +443,9 @@ export interface UnsupportedReceiverDevice {
   read_errors: string[];
   /** A keyboard's layout code (0x4540), if it has that feature. */
   layout?: DeviceLayout | null;
+  /** Every request and answer of the reading when PeriHub connected, as a transcript in JSON
+   * (docs/replay.md), for test reports. Nothing in it tells the unit apart. */
+  transcript?: string;
 }
 
 /** What PeriHub read of a Logitech device's lighting, by its features. Read only. */
@@ -755,8 +761,11 @@ export interface PeripheralInfo {
   problem: string | null;
   /** A change was neither kept nor undone, and could not be undone on this connection. */
   pending_undo: boolean;
-  /** Requests and answers of the last reading, for test reports. */
+  /** Requests and answers of the last reading, cut short, for the backups. */
   raw: string[];
+  /** Every request and answer in full, as a transcript in JSON (docs/replay.md), for test reports:
+   * the first reading and the latest one. Nothing in it tells the unit apart. */
+  transcript?: string;
   /** A keyboard's physical layout, when its protocol has a read for it. */
   layout?: DeviceLayout | null;
 }
@@ -779,6 +788,9 @@ export interface CorsairInfo {
   lighting: string | null;
   /** A keyboard's physical layout, read from it. */
   layout?: DeviceLayout | null;
+  /** Every request and answer of the reading when PeriHub connected, as a transcript in JSON
+   * (docs/replay.md), for test reports. Nothing in it tells the unit apart. */
+  transcript?: string;
 }
 
 export interface BatteryAlerts {
@@ -807,6 +819,8 @@ export interface AppSettings {
   config_dir: string;
   /** Operating system and architecture, for test reports. */
   system: string;
+  /** Why closing the window cannot keep PeriHub in the tray (no tray on this desktop); null when it can. */
+  no_tray_reason: string | null;
 }
 
 /** A write PeriHub sent to a device in this session, or refused in read-only mode. */
@@ -981,7 +995,7 @@ export const api = {
   profiles: () => invoke<ProfilesInfo>("profiles_get"),
   setProfiles: (profiles: AppProfiles) =>
     invoke<void>("profiles_set", { profiles }),
-  /** Games installed through Steam, Lutris and Heroic (reads their files only). */
+  /** Games installed through Steam, the Epic Games Launcher, Lutris and Heroic (reads their files only). */
   installedGames: () => invoke<InstalledGame[]>("games_installed"),
   /** Runs the step a "setup" FocusSupport offers; resolves with what to tell the user. */
   setupFocus: () => invoke<string>("profiles_setup_focus"),
@@ -992,6 +1006,8 @@ export const api = {
   setAppSettings: (settings: AppSettings) =>
     invoke<AppSettings>("app_set_settings", { settings }),
   quit: () => invoke<void>("app_quit"),
+  /** Why the settings file was not used at start-up (it could not be read), or null. */
+  configProblem: () => invoke<string | null>("app_config_problem"),
   /** Read-only mode: nothing that changes a device is sent to it. */
   readOnly: () => invoke<boolean>("app_read_only"),
   setReadOnly: (on: boolean) => invoke<boolean>("app_set_read_only", { on }),
@@ -1043,10 +1059,35 @@ export function debounce<A extends unknown[]>(
   return call;
 }
 
-export function errorText(error: unknown): string {
+/** The error as the backend or the system said it, without any rewriting. */
+export function rawErrorText(error: unknown): string {
   return typeof error === "string"
     ? error
     : error instanceof Error
       ? error.message
       : JSON.stringify(error);
+}
+
+/** Causes people meet often, and what to do about them. The first match wins; a message that
+ * matches none is shown as it came. The raw text stays in brackets for reports and for the log. */
+const KNOWN_ERRORS: [RegExp, string][] = [
+  [/read-only mode is on/i, "Read-only mode is on, so nothing was sent to the device. Turn it off first if you want to change it."],
+  [/permission denied|access is denied|access denied/i, "PeriHub is not allowed to open this device. On Linux the udev rule is usually missing (see Settings); on Windows, close the maker's own software and try again."],
+  [/device or resource busy|resource busy|already in use|sharing violation/i, "Another program is using this device. Quit the maker's own software (G HUB, iCUE, Synapse...) and try again."],
+  [/turned off or asleep/i, "The device is turned off or asleep. Wake it by moving it, then try again."],
+  [/did not respond in time|timed out|timeout/i, "The device did not answer in time. If it is wireless, wake it by moving it, then try again."],
+  [/device not connected|no such device|not connected/i, "The device is not connected any more. Plug it back in and try again."],
+  [/different device answers/i, "A different device now answers in this receiver slot. Wait a moment, PeriHub looks again by itself."],
+  [/device busy/i, "The device is busy right now. Try again in a moment."],
+];
+
+/** An error from the backend as a sentence a person can act on. */
+export function errorText(error: unknown): string {
+  const raw = rawErrorText(error);
+  // PeriHub's own advice (the udev rule) says more than the general one.
+  if (/udev rule/i.test(raw)) return raw;
+  const known = KNOWN_ERRORS.find(([pattern]) => pattern.test(raw));
+  if (!known) return raw;
+  // The raw text is not repeated when it says the same (e.g. "Read-only mode is on").
+  return raw.length < 30 && known[1].toLowerCase().startsWith(raw.toLowerCase()) ? known[1] : `${known[1]} (${raw})`;
 }

@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./api", () => ({}));
 
-import type { MouseInfo, ReceiverReport } from "./api";
-import { deviceTestFormUrl, receiverTest, testFormUrl, testReport } from "./testReport";
+import type { CorsairInfo, MouseInfo, ReceiverReport } from "./api";
+import { corsairTest, deviceTestFormUrl, receiverTest, testFormUrl, testReport } from "./testReport";
 
 const cable: MouseInfo = {
   product_id: 0xc08b,
@@ -519,6 +519,15 @@ describe("receiverTest", () => {
       "PeriHub drives the lights at every start; not now: quit Logitech G HUB first",
     );
     expect(backReport).toContain("Last look PeriHub showed: zone 0 effect 0x01 #ff0000;");
+
+    // Host mode (3) is PeriHub's while it drives the lights, another program's otherwise (issue #30).
+    const hostMode = { brightness: 50, on: true, control: 3 };
+    expect(receiverTest(bolt, keyboard, "0.8.5", "windows x86_64", { ...live, lighting: hostMode }).report).toContain(
+      "Lighting now: brightness 50, on, driven by PeriHub (3)",
+    );
+    expect(receiverTest(bolt, keyboard, "0.8.5", "windows x86_64", { ...back, lighting: hostMode }).report).toContain(
+      "Lighting now: brightness 50, on, driven by a program (3)",
+    );
   });
 
   it("says when the system refused to open a Unifying receiver", () => {
@@ -526,5 +535,72 @@ describe("receiverTest", () => {
     const fields = receiverTest({ ...unifying, denied: true, unsupported: [] }, null, "0.6.7", "linux x86_64");
     expect(fields.usbId).toBe("046d:c52b");
     expect(fields.report).toContain("PeriHub reaches its paired devices: no (the system refused to open it)");
+  });
+});
+
+// docs/replay.md: HID++ and Corsair test reports end with the transcript of the reading, as the
+// reports of the other brands do, when the core gives one.
+describe("the transcript at the end of a test report", () => {
+  const transcript = '{\n  "format": "perihub-transcript",\n  "version": 1,\n  "events": [\n    {"op":"write","data":"11 01 00 1b"}\n  ]\n}\n';
+  const heading = "Transcript (every request and answer, for a replay test):";
+
+  it("ends a mouse report, and stays out when an older core gives none", () => {
+    const lines = testReport({ ...cable, transcript }, "0.9.3", "linux x86_64").split("\n");
+    expect(lines.slice(-8, -6)).toEqual([heading, "{"]);
+    expect(lines.at(-1)).toBe("}");
+    expect(testReport(cable, "0.9.3", "linux x86_64")).not.toContain(heading);
+  });
+
+  it("ends the report of a device behind a receiver and of a Corsair device", () => {
+    const bolt: ReceiverReport = {
+      product_id: 0xc548,
+      name: "Logi Bolt receiver",
+      collections: [],
+      bolt: true,
+      unifying: false,
+      reachable: true,
+      denied: false,
+      direct: false,
+      open_slots: [1],
+      slots: [],
+      unsupported: [],
+    };
+    const device = {
+      slot: 1,
+      name: "MX Master 3S",
+      kind: 3,
+      protocol: "4.5",
+      wireless_id: null,
+      device_info: null,
+      firmware: [],
+      features: [],
+      dpi: null,
+      report_rates_ms: [],
+      onboard: null,
+      led_zones: [],
+      battery: null,
+      battery_reply: null,
+      read_only: false,
+      read_errors: [],
+      transcript,
+    };
+    expect(receiverTest(bolt, device, "0.9.3", "linux x86_64").report).toContain(`${heading}\n{\n  "format"`);
+    expect(receiverTest(bolt, { ...device, transcript: undefined }, "0.9.3", "linux x86_64").report).not.toContain(heading);
+    const katar: CorsairInfo = {
+      product_id: 0x1b93,
+      model: "KATAR PRO",
+      kind: "mouse",
+      receiver: null,
+      leds: 1,
+      firmware: "5.2.65",
+      mode: 1,
+      polling_hz: 1000,
+      dpi: 800,
+      read_errors: [],
+      lighting: null,
+      transcript,
+    };
+    const report = corsairTest(katar, "0.9.3", "linux x86_64").report;
+    expect(report.endsWith(`Experimental lighting: off\n${heading}\n${transcript.trimEnd()}`)).toBe(true);
   });
 });

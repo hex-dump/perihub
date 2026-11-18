@@ -1,11 +1,12 @@
 name: Website
 
 # Publishes site/ to GitHub Pages (https://hex-dump.github.io/perihub/), with the
-# download links and sizes of the latest release (see site/build.py).
+# download links and sizes of the latest release (see site/build.py). The screenshots workflow
+# starts it again after it commits new pictures to the assets branch.
 on:
   push:
     branches: [main]
-    paths: ["site/**", "docs/screenshots/**", "docs/social-preview.png", ".github/workflows/pages.yml"]
+    paths: ["site/**", ".github/workflows/pages.yml"]
   release:
     types: [published]
   workflow_dispatch:
@@ -48,6 +49,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # The screenshots and social preview live on the assets branch, not on main.
+          git fetch --depth=1 origin assets
+          git archive FETCH_HEAD screenshots social-preview.png | tar -x -C docs
           gh release view --repo "$GITHUB_REPOSITORY" --json tagName,assets > "$RUNNER_TEMP/release.json"
           python3 site/build.py "$RUNNER_TEMP/release.json" _site
 

@@ -92,6 +92,7 @@ pub fn not_read(model: &DirectModel, why: String) -> UnsupportedDevice {
         battery_reply: None,
         read_only: true,
         read_errors: vec![why],
+        transcript: String::new(),
     }
 }
 

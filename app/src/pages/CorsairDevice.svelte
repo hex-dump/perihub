@@ -52,7 +52,11 @@
 
   async function keep() {
     confirmWorks = false;
-    await api.corsairKeepLighting(info!.product_id).catch(() => {});
+    try {
+      await api.corsairKeepLighting(info!.product_id);
+    } catch (e) {
+      error = `The lighting could not be kept: ${errorText(e)} The lighting goes back to the device's own settings when it is not kept.`;
+    }
   }
 
   async function turnOff() {
@@ -77,7 +81,7 @@
   <Status kind="experimental" label="Experimental" chip />
 </header>
 
-{#if connectError && !info}<div class="notice error">{connectError}</div>{/if}
+{#if connectError && !info}<div class="notice error" role="alert">{connectError}</div>{/if}
 
 {#if info}
   <div class="notice info">
@@ -163,7 +167,7 @@
       </div>
     {/if}
     {#if busy}<p class="small muted" role="status">{busy}</p>{/if}
-    {#if error}<div class="notice error">{error}</div>{/if}
+    {#if error}<div class="notice error" role="alert">{error}</div>{/if}
   </section>
 
   {#if confirmWorks && on}
