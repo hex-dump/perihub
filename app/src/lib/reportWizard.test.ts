@@ -276,6 +276,12 @@ describe("checklist", () => {
     expect(ids(first({}, [unknown]))).toEqual([]);
   });
 
+  it("does not ask about buttons and profiles of a mouse that shows none", () => {
+    const ids = (p: PeripheralInfo) => checklist(first({ peripherals: [p] })).map((i) => i.id);
+    expect(ids(peripheral)).toContain("buttons");
+    expect(ids({ ...peripheral, profiles: 1, buttons: [], readable: false } as PeripheralInfo)).not.toContain("buttons");
+  });
+
   it("asks about changes only for a device that can be changed", () => {
     expect(checklist(first({ peripherals: [peripheral] })).map((i) => i.id)).toContain("change");
     expect(checklist(first({ mouse })).map((i) => i.id)).not.toContain("change");

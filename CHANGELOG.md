@@ -14,6 +14,9 @@ The Corsair KATAR PRO WIRELESS is recognized through its receiver, read only for
 ### Added
 - Corsair mice and keyboards connected through a receiver show their battery level (property `0x0f`, a read), on their page and in test reports. A mouse that does not report its DPI on property `0x21` is asked on `0x20`, where OpenLinkHub sets it on some wireless mice.
 
+### Changed
+- **SteelSeries Rival 5 tried on a real mouse** (cable, Windows, issue #71): the name, DPI, polling rate, lighting and changes (taking effect, and still there after unplugging) were confirmed. It stays experimental, and nothing about buttons or profiles was tested. The test report checklist no longer asks whether "the buttons and profiles match" for a mouse PeriHub shows none for, such as the SteelSeries ones, which cannot be read back.
+
 ## 0.9.4 — 2026-11-17
 
 On Windows, games from Steam and the Epic Games Launcher now show up when you add a game profile, also when Steam is installed outside Program Files or the game keeps its program in a subfolder. PeriHub also recognises 67 more Razer keyboards, read only for now.
