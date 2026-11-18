@@ -143,7 +143,7 @@ def testbuild(sha: str, url: str, run_id: str, base: str, apply: bool, before: s
         body = (
             f"New test build of {branch or 'this branch'} for this, from {built:%Y-%m-%d %H:%M} UTC: {url}\n\n"
             "Download the file for your system at the bottom of that page (you need to be signed in to GitHub). "
-            "The version number in it is main's, so it may look old, that's expected.\n\n"
+            "It shows the version number of the last release, that's expected.\n\n"
             f"{mark}"
         )
         # Only our own test build comments of this branch, or from before the marker had a branch, are
