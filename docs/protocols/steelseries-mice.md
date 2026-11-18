@@ -1,7 +1,7 @@
 # SteelSeries mice
 
-How PeriHub talks to SteelSeries mice (Rival, Sensei, Aerox, Prime, Kana, Kinzu). **No mouse has been tried with
-PeriHub yet.** Everything comes from [rivalcfg](https://github.com/flozz/rivalcfg) (WTFPL, commit 779ea52): its
+How PeriHub talks to SteelSeries mice (Rival, Sensei, Aerox, Prime, Kana, Kinzu). **Only one mouse has been tried with
+PeriHub: a Rival 5 on its cable, on Windows (issue #71).** Everything comes from [rivalcfg](https://github.com/flozz/rivalcfg) (WTFPL, commit 779ea52): its
 device profiles, turned into `crates/perihub-core/src/peripheral/steelseries_models.rs` by
 `tools/rivalcfg_to_rust.py`, and the reports its tests expect, in `crates/perihub-core/tests/fixtures`. Both are read
 as text and never run.

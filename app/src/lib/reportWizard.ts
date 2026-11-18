@@ -322,6 +322,12 @@ export interface CheckItem {
   label: string;
 }
 
+/** A mouse PeriHub reads through its own driver shows buttons or several profiles only when it read some: one that
+ * cannot be read back (SteelSeries) shows neither, so there is nothing to compare with the mouse. */
+function offersButtons(t: Target): boolean {
+  return t.type !== "peripheral" || t.info.buttons.length > 0 || t.info.profiles > 1;
+}
+
 /** What a tester may have tried, by kind of device. Everything is optional. */
 export function checklist(c: Candidate): CheckItem[] {
   const t = c.target;
@@ -335,7 +341,7 @@ export function checklist(c: Candidate): CheckItem[] {
     items.push(
       { id: "dpi", label: "The DPI PeriHub shows matches the mouse" },
       { id: "polling", label: "The polling rate PeriHub shows is right" },
-      { id: "buttons", label: "The buttons and profiles PeriHub shows match the mouse" },
+      ...(offersButtons(t) ? [{ id: "buttons", label: "The buttons and profiles PeriHub shows match the mouse" }] : []),
       { id: "leds", label: "The lighting PeriHub shows matches the mouse" },
     );
   } else if (c.kind === "keyboard") {
