@@ -500,6 +500,7 @@ describe("the transcript at the end of a test report", () => {
       features: [],
       dpi: null,
       report_rates_ms: [],
+      lighting: null,
       onboard: null,
       read_errors: [],
       transcript,
