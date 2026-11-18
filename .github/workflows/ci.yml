@@ -82,6 +82,10 @@ jobs:
         if: runner.os == 'Linux'
         run: python3 tools/release.py lint
 
+      - name: Tools tests
+        if: runner.os == 'Linux'
+        run: python3 -I -m unittest discover -s tools -p "test_*.py"
+
       - name: Format
         run: cargo fmt --all --check
 

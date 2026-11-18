@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Comments on the issues a change is about, and the "waiting for reporter" label.
 
-  notify.py testbuild SHA RUN_URL RUN_ID [--base origin/main] [--apply]
+  notify.py testbuild SHA RUN_URL RUN_ID [--base origin/main] [--before OLD] [--branch NAME] [--apply]
       a test build of SHA is ready: the open issues named by a "Test: #N" or "Tests: #N, #M" line in
-      a commit message of BASE..SHA get one comment each; a later build edits that comment (new link
-      and time) instead of adding another. A plain "#N" in a message does nothing.
+      a commit message new to this push (OLD..SHA, or BASE..SHA for a new branch) get a new comment,
+      so they are notified; the earlier test build comments of the same branch are then deleted. Commits
+      already on main or on another origin/test/* branch are not new. A plain "#N" does nothing.
   notify.py release VERSION RELEASE_URL [--notes FILE] [--apply]
       VERSION is published: one comment on each open issue the CHANGELOG notes of that version name,
       quoting those lines, unless the maintainer commented since the previous release that the fix
@@ -114,24 +115,43 @@ def trailers(log: str) -> list[int]:
 
 
 TESTBUILD_MARK = "<!-- perihub-testbuild"
+# <!-- perihub-testbuild:BRANCH:SHA -->, or the older <!-- perihub-testbuild:SHA --> without a branch.
+TESTBUILD = re.compile(r"<!-- perihub-testbuild:(?:([^\s:]+):)?[0-9a-f]{7,40} -->")
 
 
-def testbuild(sha: str, url: str, run_id: str, base: str, apply: bool) -> None:
+def new_commits(sha: str, base: str, before: str, branch: str) -> str:
+    """The messages of the commits this push brings: before..sha (base..sha for a new branch or when
+    before is unknown), without what is on main or on any other test/* branch. A branch merged into a
+    stacked one, or main merged into a branch, does not bring its commits again."""
+    start = before if before and set(before) != {"0"} and subprocess.run(
+        ["git", "cat-file", "-e", before + "^{commit}"], capture_output=True).returncode == 0 else base
+    others = [r for r in git("for-each-ref", "--format=%(refname)", "refs/remotes/origin/test/").split()
+              if r != f"refs/remotes/origin/{branch}"]
+    exclude = [f"^{r}" for r in [base, *others]]
+    return git("log", "--format=%B", f"{start}..{sha}", *exclude)
+
+
+def testbuild(sha: str, url: str, run_id: str, base: str, apply: bool, before: str = "", branch: str = "") -> None:
     sha = git("rev-parse", sha).strip()
-    # All the commits of the branch since main: every push refreshes the one comment of each issue
-    # the branch names, so the link is always the latest build.
+    branch = branch.removeprefix("refs/heads/")
     built = when(git("show", "-s", "--format=%cI", sha).strip()).astimezone(timezone.utc)
-    mark = f"{TESTBUILD_MARK}:{sha} -->"
-    for number in trailers(git("log", "--format=%B", f"{base}..{sha}")):
+    mark = f"{TESTBUILD_MARK}:{branch}:{sha} -->"
+    for number in trailers(new_commits(sha, base, before, branch)):
         if not open_issue(number):
             continue
         comments = api(f"repos/{REPO}/issues/{number}/comments?per_page=100")
         body = (
-            f"Test build for this, from {built:%Y-%m-%d %H:%M} UTC: {url}\n\n"
+            f"New test build of {branch or 'this branch'} for this, from {built:%Y-%m-%d %H:%M} UTC: {url}\n\n"
             "Download the file for your system at the bottom of that page (you need to be signed in to GitHub). "
-            f"It still says the previous version number, that's expected.\n\n{mark}"
+            "The version number in it is main's, so it may look old, that's expected.\n\n"
+            f"{mark}"
         )
-        ours = [c for c in comments if bot(c) and TESTBUILD_MARK in c["body"]]
+        # Only our own test build comments of this branch, or from before the marker had a branch, are
+        # replaced; a comment of another branch, or anyone else's, is never touched.
+        ours = [
+            c for c in comments
+            if bot(c) and (m := TESTBUILD.search(c["body"])) and m.group(1) in (None, branch)
+        ]
         if any(url in c["body"] or f"actions/runs/{run_id}" in c["body"] for c in comments):
             print(f"#{number}: a comment already has the link of this run")
         # The maintainer posted a test build by hand after this commit, with the steps to try.
@@ -140,13 +160,12 @@ def testbuild(sha: str, url: str, run_id: str, base: str, apply: bool) -> None:
             for c in comments
         ):
             print(f"#{number}: the maintainer already posted a test build for this")
-        elif ours:
-            print(f"#{number}: update the automatic comment with {url}")
-            if apply:
-                gh("api", "-X", "PATCH", f"repos/{REPO}/issues/comments/{ours[-1]['id']}", "-f", f"body={body}")
         else:
-            print(f"#{number}: comment with {url}")
+            # A new comment, so the reporter is notified (an edit would not be); then the old ones go.
+            print(f"#{number}: comment with {url}" + (f", delete {len(ours)} old" if ours else ""))
             post(number, body, apply)
+            for c in ours if apply else []:
+                gh("api", "-X", "DELETE", f"repos/{REPO}/issues/comments/{c['id']}")
 
 
 def previous_tag(version: str) -> str | None:
@@ -250,8 +269,9 @@ def main() -> None:
         return default
 
     base, notes_file = option("--base", "origin/main"), option("--notes", "")
+    before, branch = option("--before", ""), option("--branch", "")
     if args[:1] == ["testbuild"] and len(args) == 4:
-        testbuild(args[1], args[2], args[3], base, apply)
+        testbuild(args[1], args[2], args[3], base, apply, before, branch)
     elif args[:1] == ["release"] and len(args) == 3:
         release(args[1], args[2], Path(notes_file).read_text() if notes_file else "", apply)
     elif args[:1] == ["waiting"] and len(args) == 2:
