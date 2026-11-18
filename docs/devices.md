@@ -274,7 +274,7 @@ receiver. Nobody has tried PeriHub on one yet. Their protocol comes from
 ## SteelSeries mice
 
 🧪 Experimental: <!-- generated: count steelseries-mice -->33<!-- end generated --> SteelSeries mice (Rival, Sensei, Aerox, Prime, Kana, Kinzu), on their cable and
-through their own 2.4 GHz receiver. Nobody has tried PeriHub on one yet. Their commands come from
+through their own 2.4 GHz receiver. One Rival 5 (cable, Windows, issue #71) was tried: its name, finding it again after unplugging, DPI, polling rate, lighting, and changes taking effect and staying until unplugged all worked; nothing else has been tried, so they stay experimental. Their commands come from
 [rivalcfg](https://github.com/flozz/rivalcfg) (WTFPL), described in
 [protocols/steelseries-mice.md](protocols/steelseries-mice.md); PeriHub sends the same bytes as
 rivalcfg's own tests expect (616 reports compared).
