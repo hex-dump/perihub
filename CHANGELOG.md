@@ -7,7 +7,7 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 ## Unreleased
 
 ### Changed
-- **SteelSeries Rival 5 tried on a real mouse** (cable, Windows, issue #71): the name, DPI, polling rate, lighting and changes (taking effect, and staying until unplugged) were confirmed. It stays experimental, and nothing about buttons or profiles was tested. The test report checklist no longer asks whether "the buttons and profiles match" for a mouse PeriHub shows none for, such as the SteelSeries ones, which cannot be read back.
+- **SteelSeries Rival 5 tried on a real mouse** (cable, Windows, issue #71): the name, DPI, polling rate, lighting and changes (taking effect, and still there after unplugging) were confirmed. It stays experimental, and nothing about buttons or profiles was tested. The test report checklist no longer asks whether "the buttons and profiles match" for a mouse PeriHub shows none for, such as the SteelSeries ones, which cannot be read back.
 
 ## 0.9.4 — 2026-11-17
 
