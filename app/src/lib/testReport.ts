@@ -255,7 +255,12 @@ export function receiverTest(
       );
       if (live.lighting) {
         const l = live.lighting;
-        const control = l.control === null ? "not read" : l.control === 0 ? "the device (0)" : `a program (${l.control})`;
+        const control =
+          l.control === null
+            ? "not read"
+            : l.control === 0
+              ? "the device (0)"
+              : `${live.host && l.control === 3 ? "PeriHub" : "a program"} (${l.control})`;
         lines.push(
           `Lighting now: brightness ${l.brightness ?? "not read"}${l.on === null ? "" : l.on ? ", on" : ", off"}, driven by ${control}`,
         );

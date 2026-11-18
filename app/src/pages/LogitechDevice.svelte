@@ -112,10 +112,11 @@
     return `${caps.min} to ${caps.max}${caps.step ? `, in steps of ${caps.step}` : ""}`;
   }
 
-  /** Who drives the lights, from 0x8071 function 5. */
-  function controlText(control: number): string {
+  /** Who drives the lights, from 0x8071 function 5. Host mode (3) is PeriHub's own while it drives
+   * them (`live.host`), another program's otherwise (issue #30). */
+  function controlText(control: number, host: boolean): string {
     if (control === 0) return `The ${kind} itself, with its own effects`;
-    if (control === 3) return "A program, such as G HUB";
+    if (control === 3) return host ? "PeriHub" : "A program, such as G HUB";
     return `Mode ${control}`;
   }
 
@@ -269,7 +270,7 @@
             {#if lighting.brightness.steps}<span class="muted">· {lighting.brightness.steps} levels on the key</span>{/if}
           </dd>
         {/if}
-        {#if now?.control != null}<dt>Lights driven by</dt><dd>{controlText(now.control)}</dd>{/if}
+        {#if now?.control != null}<dt>Lights driven by</dt><dd>{controlText(now.control, !!live?.host)}</dd>{/if}
         {#each lighting.effects?.zones ?? [] as zone (zone.index)}
           <dt>{zoneName(zone.location, device.kind)}</dt>
           <dd>{[...new Set(zone.effects.map((e) => effectName(e.id)))].join(", ") || "no effects listed"}</dd>

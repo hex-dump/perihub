@@ -444,6 +444,15 @@ describe("receiverTest", () => {
       "PeriHub drives the lights at every start; not now: quit Logitech G HUB first",
     );
     expect(backReport).toContain("Last look PeriHub showed: zone 0 effect 0x01 #ff0000;");
+
+    // Host mode (3) is PeriHub's while it drives the lights, another program's otherwise (issue #30).
+    const hostMode = { brightness: 50, on: true, control: 3 };
+    expect(receiverTest(bolt, keyboard, "0.8.5", "windows x86_64", { ...live, lighting: hostMode }).report).toContain(
+      "Lighting now: brightness 50, on, driven by PeriHub (3)",
+    );
+    expect(receiverTest(bolt, keyboard, "0.8.5", "windows x86_64", { ...back, lighting: hostMode }).report).toContain(
+      "Lighting now: brightness 50, on, driven by a program (3)",
+    );
   });
 
   it("says when the system refused to open a Unifying receiver", () => {

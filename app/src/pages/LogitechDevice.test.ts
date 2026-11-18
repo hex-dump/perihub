@@ -197,6 +197,18 @@ describe("a Logitech keyboard whose lights PeriHub can drive", () => {
     return screen.getByRole("combobox", { name }) as HTMLSelectElement;
   }
 
+  it("says PeriHub drives the lights while it has them in host mode, a program otherwise (issue #30)", async () => {
+    const look = { zones: [{ zone: 0, effect: 1, color: "#00ff00", period_ms: null, direction: null }], keys: [] };
+    live = { ...live, host: host(look), lighting: { brightness: 100, on: null, control: 3 } };
+    await open(props);
+    const driver = () => screen.getByText("Lights driven by").nextElementSibling!.textContent;
+    expect(driver()).toBe("PeriHub");
+    cleanup();
+    live = { ...live, host: null };
+    await open(props);
+    expect(driver()).toBe("A program, such as G HUB");
+  });
+
   it("offers nothing that changes the lights in read-only mode", async () => {
     readOnly.on = true;
     try {
