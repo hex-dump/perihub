@@ -13,8 +13,7 @@
   "source": "issue #34, receiver test report (values) and mouse test report (onboard memory)",
   "notes": [
     "Rebuilt from the values in the reports, which had no bytes: name, HID++ version, device info (unit id left out as in the report), firmware, feature table, DPI range, polling rates and onboard memory. The bytes are laid out as hidpp/mod.rs reads them (HID++ 2.0, libratbag, MIT).",
-    "Not in the reports, so zeros or a guess: the firmware entity types (1 bootloader, 0 application) and the bytes after each version. The root feature's answers repeat the type and version of the feature table.",
-    "Not in the reports either: the battery (0x1004, index 5 by the feature table). Its status answer is zeros, only so that the battery read of the receiver page (test/logitech-usb) has an answer; the expected values leave the battery out."
+    "Not in the reports, so zeros or a guess: the firmware entity types (1 bootloader, 0 application) and the bytes after each version. The root feature's answers repeat the type and version of the feature table."
   ],
   "expect": {
     "slot": 1,
@@ -276,10 +275,6 @@
     {"op":"write","data":"11 01 00 0b 81","len":20},
     {"op":"read","data":"11 01 00 0b 18","len":20},
     {"op":"write","data":"11 01 18 0b","len":20},
-    {"op":"read","data":"11 01 18 0b 01 03 01 05 01 06 10 00 ff 0a 00 00 00 00 00 00"},
-    {"op":"write","data":"11 01 00 0b 10 04","len":20},
-    {"op":"read","data":"11 01 00 0b 05 00 03","len":20},
-    {"op":"write","data":"11 01 05 1b","len":20},
-    {"op":"read","data":"11 01 05 1b 00 00 00 00","len":20}
+    {"op":"read","data":"11 01 18 0b 01 03 01 05 01 06 10 00 ff 0a 00 00 00 00 00 00"}
   ]
 }
