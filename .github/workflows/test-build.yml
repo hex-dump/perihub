@@ -3,8 +3,8 @@ name: Test build
 # Builds the Windows installer and the Linux AppImage, .deb and Flatpak for testing, without a tag or a
 # release: by itself for every push to a test/… branch, or by hand for any branch (Actions → Test build
 # → Run workflow). The files are attached to the run as artifacts. When all three are built, the
-# open issues the branch's commits name with a "Test: #30" line get one comment with the link, updated by
-# later pushes (tools/notify.py).
+# open issues named by a "Test: #30" line in the commits new to the push get a new comment with the link,
+# and the branch's earlier comment is deleted (tools/notify.py).
 on:
   push:
     branches: ["test/**"]
@@ -131,8 +131,9 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
-  # The issues named by "Test: #N" lines in the commit messages of the branch (since main) get one comment
-  # with the link to this run, edited by later pushes, unless the maintainer already posted it by hand.
+  # The issues named by "Test: #N" lines in the commits new to this push (not on main, not on another test/*
+  # branch) get a new comment with the link to this run, so they are notified; the branch's older comment
+  # goes. Skipped when the maintainer already posted a build by hand.
   notify:
     name: Tell the issues
     needs: [windows, linux, flatpak]
@@ -144,13 +145,17 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # The commits since main.
+          # All branches and their history: the commits on main and on the other test/* branches are not new.
           fetch-depth: 0
           sparse-checkout: tools/notify.py
           sparse-checkout-cone-mode: false
+
+      - name: Fetch the other test branches
+        run: git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/test/*:refs/remotes/origin/test/*"
 
       - name: Comment on the issues
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: python3 tools/notify.py testbuild "$GITHUB_SHA" "$RUN_URL" "$GITHUB_RUN_ID" --apply
+          BEFORE: ${{ github.event.before }}
+        run: python3 tools/notify.py testbuild "$GITHUB_SHA" "$RUN_URL" "$GITHUB_RUN_ID" --before "$BEFORE" --branch "$GITHUB_REF_NAME" --apply
