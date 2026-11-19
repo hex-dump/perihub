@@ -114,7 +114,20 @@ fn main() {
             Some(vec![HIDDEN_ARG]),
         ))
         .setup(move |app| {
-            log::info!("PeriHub {} on {} {}", env!("CARGO_PKG_VERSION"), std::env::consts::OS, std::env::consts::ARCH);
+            match option_env!("PERIHUB_BUILD") {
+                Some(build) => log::info!(
+                    "PeriHub {} (test build {build}) on {} {}",
+                    env!("CARGO_PKG_VERSION"),
+                    std::env::consts::OS,
+                    std::env::consts::ARCH
+                ),
+                None => log::info!(
+                    "PeriHub {} on {} {}",
+                    env!("CARGO_PKG_VERSION"),
+                    std::env::consts::OS,
+                    std::env::consts::ARCH
+                ),
+            }
             if args.iter().any(|a| a == AFTER_UPDATE_ARG) {
                 log::info!("started by the update, with its window");
             }

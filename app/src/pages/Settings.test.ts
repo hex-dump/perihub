@@ -40,6 +40,7 @@ const settings = (autostart: boolean): AppSettings => ({
   config_dir: "/config",
   system: "windows x86_64",
   no_tray_reason: null,
+  build: null,
 });
 
 const status: DeviceStatus = {
@@ -159,6 +160,17 @@ describe("Settings", () => {
     render(Settings, { props: { status } });
     await waitFor(() => expect(document.body.textContent).toContain("Close to tray is unavailable"));
     expect(document.body.textContent).not.toContain("Closing the window does not quit PeriHub");
+  });
+
+  it("says in About which test build this is, and nothing in a release", async () => {
+    api.appSettings.mockResolvedValue({ ...settings(false), build: "test/x@abc1234" });
+    const { unmount } = render(Settings, { props: { status } });
+    await waitFor(() => expect(document.body.textContent).toContain("Test build test/x@abc1234"));
+    unmount();
+    api.appSettings.mockResolvedValue(settings(false));
+    render(Settings, { props: { status } });
+    await waitFor(() => expect(autostartBox().checked).toBe(false));
+    expect(document.body.textContent).not.toContain("Test build");
   });
 
   it("reads autostart again when the window comes back, as Task Manager can change it", async () => {

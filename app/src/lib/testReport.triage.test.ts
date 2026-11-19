@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("./api", () => ({}));
 
 import type { CorsairInfo, MouseInfo, PeripheralInfo } from "./api";
-import { corsairTest, peripheralTest, testReport } from "./testReport";
+import { corsairTest, peripheralTest, reportVersion, testReport } from "./testReport";
 import { checklistText } from "./reportWizard";
 import { writeLogLines } from "./readOnly.svelte";
 
@@ -31,6 +31,24 @@ const mouse = {
 } as unknown as MouseInfo;
 
 const lines = (report: string) => report.split("\n");
+
+describe("a test build in the first line", () => {
+  it("adds the branch and commit after the version, before 'on'", () => {
+    expect(reportVersion("0.9.5")).toBe("0.9.5");
+    expect(reportVersion("0.9.5", null)).toBe("0.9.5");
+    const version = reportVersion("0.9.5", "test/viper-v3-pro-wireless@02fd962");
+    expect(version).toBe("0.9.5 (test build test/viper-v3-pro-wireless@02fd962)");
+    expect(lines(peripheralTest(peripheral, version, "windows x86_64").report)[0]).toBe(
+      "PeriHub 0.9.5 (test build test/viper-v3-pro-wireless@02fd962) on windows x86_64",
+    );
+    expect(lines(corsairTest(corsair, version, "linux x86_64").report)[0]).toBe(
+      "PeriHub 0.9.5 (test build test/viper-v3-pro-wireless@02fd962) on linux x86_64",
+    );
+    expect(lines(testReport(mouse, version, "linux x86_64"))[0]).toBe(
+      "PeriHub 0.9.5 (test build test/viper-v3-pro-wireless@02fd962) on linux x86_64",
+    );
+  });
+});
 
 describe("the lines the triage workflow reads", () => {
   it("a device of another brand: its Device line and how its changes stand", () => {

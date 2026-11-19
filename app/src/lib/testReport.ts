@@ -91,6 +91,12 @@ function extendedLines(mouse: MouseInfo): string[] {
 }
 
 /** What a tester sends about a mouse: never key presses, macros, apps or log lines. */
+/** The version as a report's first line says it: a test build adds its branch and commit
+ * ("0.9.5 (test build test/x@abc1234)"), which tools/triage.py reads: such a report counts as the version's. */
+export function reportVersion(version: string, build?: string | null): string {
+  return build ? `${version} (test build ${build})` : version;
+}
+
 export function testReport(mouse: MouseInfo, version: string, system: string): string {
   const { onboard } = mouse;
   const zones = mouse.led_zones.map((z) => `zone ${z.index} at ${z.location}, effects ${z.effects.join(" ")}`);

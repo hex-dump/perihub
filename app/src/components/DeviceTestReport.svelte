@@ -3,7 +3,7 @@
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type WriteEntry } from "../lib/api";
-  import { deviceTestFormUrl, type DeviceTestFields } from "../lib/testReport";
+  import { deviceTestFormUrl, reportVersion, type DeviceTestFields } from "../lib/testReport";
   import { MAX_URL_LENGTH, PASTE_NOTE } from "../lib/reportWizard";
   import { readOnly, withWriteLog } from "../lib/readOnly.svelte";
 
@@ -39,9 +39,12 @@
 
   onMount(async () => {
     loadWrites();
-    version = await getVersion();
+    const v = await getVersion();
+    version = v;
     try {
-      system = (await api.appSettings()).system;
+      const settings = await api.appSettings();
+      system = settings.system;
+      version = reportVersion(v, settings.build);
     } catch {
       system = "unknown system";
     }

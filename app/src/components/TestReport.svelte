@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type MouseInfo, type WriteEntry } from "../lib/api";
-  import { testFormUrl, testReport } from "../lib/testReport";
+  import { reportVersion, testFormUrl, testReport } from "../lib/testReport";
   import { MAX_URL_LENGTH, PASTE_NOTE } from "../lib/reportWizard";
   import { readOnly, withWriteLog } from "../lib/readOnly.svelte";
 
@@ -34,8 +34,10 @@
 
   onMount(async () => {
     loadWrites();
-    version = await getVersion();
-    system = (await api.appSettings()).system;
+    const v = await getVersion();
+    const settings = await api.appSettings();
+    version = reportVersion(v, settings.build);
+    system = settings.system;
   });
 
   // Browsers allow writing to the clipboard only straight after the click: no waiting before it.
