@@ -82,13 +82,15 @@ crates/perihub-core     Rust library: protocols, effects, device detection, conf
   src/effects.rs        lighting effects rendered on the PC
   src/manager.rs        device hotplug
   src/worker.rs         one thread per device, so requests never interleave
-  tests/fixtures/       real G502 HERO sectors used by the tests
+  src/usbcap/           USB recordings for device requests: pcap/usbmon readers, privacy filter, text, and
+                        the recorders (USBPcap through an elevated helper on Windows, usbmon through pkexec on Linux)
+  tests/fixtures/       real G502 HERO sectors and a USBPcap recording used by the tests
 crates/perihub-cli      command-line tool
 crates/xtask            generates the device lists from the driver tables (cargo xtask gen)
 app/                    UI: Tauri 2 + Svelte 5
 packaging/linux         udev rules
 docs/protocols          protocols described in our own words, written before the code
-docs/captures.md        how a tester records what the official software sends to a device
+docs/captures.md        how a tester records what the official software sends to a device (in the app, or by hand)
 docs/device-request.md  what a device request carries, and why reading the feature reports is safe
 ```
 

@@ -17,11 +17,15 @@ whole. This page says what is in it and why none of it is risky. The code is in
   the system keeps it to itself.
 - The **feature reports (read only)**: the current contents of the feature reports the device declares
   (next section).
+- Only if you made one with **Record the official software**: a **USB recording** of what the device's
+  official software sends it, under "USB recording of the official software" ([captures.md](captures.md)):
+  the device's own transfers only, one line each, without key presses, other devices, sound and video, the
+  string descriptors or the serial number. Nothing is recorded unless you start it.
 - Never a serial number or a path.
 
 A link longer than about 8000 characters is not opened by GitHub, so the app trims it in this order:
-the raw descriptors, then the feature reports (the section stays, saying it was left out), then the end
-of the details. The text says so, and **Copy report** always has everything.
+the USB recording (the biggest part, cut short and then left out), then the raw descriptors, then the
+feature reports (the section stays, saying it was left out), then the end of the details. The text says so, and **Copy report** always has everything.
 
 ## Reading the feature reports
 

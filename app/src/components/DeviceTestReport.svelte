@@ -4,7 +4,8 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type WriteEntry } from "../lib/api";
   import { deviceTestFormUrl, reportVersion, type DeviceTestFields } from "../lib/testReport";
-  import { MAX_URL_LENGTH, PASTE_NOTE } from "../lib/reportWizard";
+  import { PASTE_NOTE } from "../lib/reportWizard";
+  import { fitsGithubLink } from "../lib/githubLink";
   import { readOnly, withWriteLog } from "../lib/readOnly.svelte";
 
   interface Props {
@@ -68,7 +69,7 @@
     const fields = report();
     let url = deviceTestFormUrl(fields, version, system);
     pasted = false;
-    if (url.length > MAX_URL_LENGTH) {
+    if (!fitsGithubLink(url)) {
       try {
         await navigator.clipboard.writeText(fields.report);
       } catch (e) {

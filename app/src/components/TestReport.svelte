@@ -3,7 +3,8 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type MouseInfo, type WriteEntry } from "../lib/api";
   import { reportVersion, testFormUrl, testReport } from "../lib/testReport";
-  import { MAX_URL_LENGTH, PASTE_NOTE } from "../lib/reportWizard";
+  import { PASTE_NOTE } from "../lib/reportWizard";
+  import { fitsGithubLink } from "../lib/githubLink";
   import { readOnly, withWriteLog } from "../lib/readOnly.svelte";
 
   interface Props {
@@ -58,7 +59,7 @@
     const text = report();
     let url = testFormUrl(mouse, version, system, text);
     pasted = false;
-    if (url.length > MAX_URL_LENGTH) {
+    if (!fitsGithubLink(url)) {
       try {
         await navigator.clipboard.writeText(text);
       } catch (e) {

@@ -803,4 +803,6 @@ on the **QMK keyboards** page.
 ## Something else?
 
 Open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml)
-with the model and USB ID. Any brand can be requested.
+with the model and USB ID. Any brand can be requested. PeriHub's **Send a report** page fills it in, and
+its **Record the official software** button adds a USB recording of what the device's own software sends
+it ([captures.md](captures.md)).

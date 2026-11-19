@@ -6,6 +6,7 @@ import type {
   api as Api, CorsairInfo, DeviceStatus, G300Info, LogitechLive, MouseInfo, PeripheralInfo, ReceiverReport,
   ReportDevice, UnsupportedReceiverDevice,
 } from "./api";
+import { MAX_LINK, fitsGithubLink } from "./githubLink";
 import { errorText } from "./api";
 import { describe } from "./g300";
 import { kindName } from "./logitechFeatures";
@@ -237,8 +238,8 @@ export async function readDevice(
 
 // ---- The form ----
 
-/** The longest address GitHub takes (it answers longer ones with an error), with room to spare. */
-export const MAX_URL_LENGTH = 7000;
+/** The longest address GitHub takes as it is; [fitsGithubLink] also checks it fits through the login page. */
+export const MAX_URL_LENGTH = MAX_LINK;
 
 /** In the long field when the report is too long for the address: the user pastes it. */
 export const PASTE_NOTE = "Paste the report here (PeriHub copied it to the clipboard).";
@@ -311,7 +312,7 @@ export function formUrl(form: Form, withReport = true): string {
 }
 
 /** The report does not fit in an address: it is copied, and pasted into the form. */
-export const needsPaste = (form: Form): boolean => formUrl(form).length > MAX_URL_LENGTH;
+export const needsPaste = (form: Form): boolean => !fitsGithubLink(formUrl(form));
 
 // ---- The checklist ----
 

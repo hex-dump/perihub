@@ -1,3 +1,4 @@
+import { MAX_LINK, fitsGithubLink } from "./githubLink";
 import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
@@ -353,8 +354,9 @@ const BRANDS: Record<number, string> = {
   0x046d: "Logitech", 0x1038: "SteelSeries", 0x1b1c: "Corsair", 0x1532: "Razer", 0x0b05: "ASUS",
 };
 
-/** A link longer than this is not opened by GitHub (it answers 414 at about 8 KB). */
-export const MAX_URL = 8000;
+/** A link longer than this is not opened by GitHub (it answers 414 at about 8 KB); see also [fitsGithubLink],
+ * which every link is checked with. */
+export const MAX_URL = MAX_LINK;
 /** Said in the details when the link could not carry them all. */
 export const SHORTENED = "(shortened: Copy the details and paste them)";
 
@@ -400,8 +402,16 @@ export function featureLines(reports: InterfaceFeatures[] | null): string[] {
 /** What PeriHub sees of a device, for the "What PeriHub saw" field: names, ids, release number, HID
  * collections, the shape of each interface's report descriptor and the contents of its feature reports
  * (never a serial number or a path). `raw`: also the descriptors in hex, which a maintainer can decode to
- * the last byte. `features`: also the feature reports (the section is then there, saying it was left out). */
-export function deviceDetails(device: ReportDevice, version: string, system: string, raw = true, features = true): string {
+ * the last byte. `recording`: also a USB recording of the official software. `features`: also the feature
+ * reports (the section is then there, saying it was left out). */
+export function deviceDetails(
+  device: ReportDevice,
+  version: string,
+  system: string,
+  raw = true,
+  recording: string | null = null,
+  features = true,
+): string {
   const collections = device.collections.map(
     (c) =>
       "  " + (c.interface < 0 ? "no interface number" : "interface " + c.interface) + ", usage page " + hex(c.usage_page) + ", usage " + hex(c.usage),
@@ -428,14 +438,29 @@ export function deviceDetails(device: ReportDevice, version: string, system: str
     ...(rawLines.length ? ["Raw descriptors (hex):", ...(raw ? rawLines : ["  left out of the link: use Copy report"])] : []),
     "Feature reports (read only):",
     ...(features ? featureLines(device.feature_reports) : ["  left out of the link: use Copy report"]),
+    ...(recording ? [RECORDING_HEADING, recording] : []),
   ].join("\n");
 }
 
+/** Above a USB recording made by "Record the official software" (docs/captures.md). */
+export const RECORDING_HEADING =
+  "USB recording of the official software (made by PeriHub; key presses, other devices and the serial number left out):";
+
 /** The device request form, filled in with what PeriHub sees of `device`. GitHub fills in inputs,
  * text areas and dropdowns from the link, not checkboxes, so what the device can do is left to be
- * ticked. The link stays under [MAX_URL]: the raw descriptors go first, then the feature reports, then the
- * end of the details. */
-export function deviceRequestUrl(device: ReportDevice, version: string, system: string): string {
+ * ticked. The link stays under [MAX_URL]: the USB recording goes first (it is the biggest; it is cut short
+ * and then left out), then the raw descriptors, then the feature reports, then the end of the details. */
+export function deviceRequestUrl(device: ReportDevice, version: string, system: string, recording: string | null = null): string {
+  return deviceRequestLink(device, version, system, recording).url;
+}
+
+/** [deviceRequestUrl], and whether the details had to be shortened to fit the link. */
+export function deviceRequestLink(
+  device: ReportDevice,
+  version: string,
+  system: string,
+  recording: string | null = null,
+): { url: string; shortened: boolean } {
   const name = reportDeviceName(device);
   const link = (details: string) => {
     const kind = deviceKind(device);
@@ -451,11 +476,26 @@ export function deviceRequestUrl(device: ReportDevice, version: string, system: 
     const query = Object.entries(values).map(([field, value]) => field + "=" + encodeURIComponent(value));
     return DEVICE_REQUEST_FORM + "&" + query.join("&");
   };
-  const full = link(deviceDetails(device, version, system));
-  if (full.length <= MAX_URL) return full;
+  const full = link(deviceDetails(device, version, system, true, recording));
+  if (fitsGithubLink(full)) return { url: full, shortened: false };
+  const short = (details: string) => link([details, SHORTENED].join("\n"));
+  // 1. The USB recording, as many of its lines as fit (none: the section is left out).
+  if (recording) {
+    const rows = recording.split("\n");
+    const fits = (n: number) => fitsGithubLink(short(deviceDetails(device, version, system, true, rows.slice(0, n).join("\n"))));
+    let lo = 0;
+    let hi = rows.length - 1;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      if (fits(mid)) lo = mid;
+      else hi = mid - 1;
+    }
+    if (lo > 0) return { url: short(deviceDetails(device, version, system, true, rows.slice(0, lo).join("\n"))), shortened: true };
+  }
+  // 2. The raw descriptors, 3. the feature reports, 4. the end of the details.
   const withFeatures = deviceDetails(device, version, system, false);
-  if (link([withFeatures, SHORTENED].join("\n")).length <= MAX_URL) return link([withFeatures, SHORTENED].join("\n"));
-  const lines = deviceDetails(device, version, system, false, false).split("\n");
-  while (lines.length > 1 && link([...lines, SHORTENED].join("\n")).length > MAX_URL) lines.pop();
-  return link([...lines, SHORTENED].join("\n"));
+  if (fitsGithubLink(short(withFeatures))) return { url: short(withFeatures), shortened: true };
+  const lines = deviceDetails(device, version, system, false, null, false).split("\n");
+  while (lines.length > 1 && !fitsGithubLink(link([...lines, SHORTENED].join("\n")))) lines.pop();
+  return { url: link([...lines, SHORTENED].join("\n")), shortened: true };
 }

@@ -833,11 +833,48 @@ export interface MouseRestore {
   directory: boolean;
 }
 
+/** What the USB recorder of the Send a report page can do here. */
+export interface UsbRecorderInfo {
+  available: boolean;
+  /** Why it cannot record here, when it cannot. */
+  reason: string | null;
+  /** "USBPcap" (Windows) or "usbmon" (Linux). */
+  tool: string;
+  windows: boolean;
+  /** An earlier recording did not finish and left USBPcap installed (Windows). */
+  leftover: boolean;
+}
+
+/** One step of a USB recording, as the "usb-record" event tells it. */
+export interface UsbRecordProgress {
+  state: "status" | "recording" | "cleanup" | "done" | "cancelled" | "failed" | "ended";
+  text: string;
+}
+
+/** A step of the user's list and when it started (milliseconds since 1970). */
+export interface UsbRecordStep {
+  at_ms: number;
+  name: string;
+}
+
 // ---- Commands ----
 
 export const api = {
   status: () => invoke<DeviceStatus>("get_status"),
   devicesForReport: () => invoke<ReportDevice[]>("devices_for_report"),
+  usbRecordInfo: () => invoke<UsbRecorderInfo>("usb_record_info"),
+  usbRecordStart: (device: ReportDevice) =>
+    invoke<void>("usb_record_start", {
+      vendorId: device.vendor_id,
+      productId: device.product_id,
+      product: device.product,
+      descriptors: device.descriptors.map((d) => ({ interface: d.interface, hex: d.hex })),
+    }),
+  usbRecordStop: (steps: UsbRecordStep[]) => invoke<void>("usb_record_stop", { steps }),
+  usbRecordCancel: () => invoke<void>("usb_record_cancel"),
+  usbRecordCleanLeftover: () => invoke<void>("usb_record_clean_leftover"),
+  onUsbRecord: (handler: (progress: UsbRecordProgress) => void): Promise<UnlistenFn> =>
+    listen<UsbRecordProgress>("usb-record", (event) => handler(event.payload)),
   onStatus: (handler: (status: DeviceStatus) => void): Promise<UnlistenFn> =>
     listen<DeviceStatus>("devices-changed", (event) => handler(event.payload)),
 

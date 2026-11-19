@@ -97,7 +97,7 @@ How PeriHub changes the devices of each brand: [Mice and keyboards of other bran
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
 
-Not on the list? Open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml): any brand can be asked for. PeriHub fills one in for you: with no supported device connected its sidebar shows **Send a report**, which lists your USB and Bluetooth devices with their USB ids (Settings → Devices links to it too). What it reads and sends is in [docs/device-request.md](docs/device-request.md).
+Not on the list? Open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml): any brand can be asked for. PeriHub fills one in for you: with no supported device connected its sidebar shows **Send a report**, which lists your USB and Bluetooth devices with their USB ids (Settings → Devices links to it too). Its **Record the official software** button records what the device's own software sends it while you change one setting at a time (USBPcap installed only for the recording on Windows, usbmon on Linux) and puts it in the request, without what you type or the serial number ([docs/captures.md](docs/captures.md)). What it reads and sends is in [docs/device-request.md](docs/device-request.md).
 
 ## What PeriHub can do
 
