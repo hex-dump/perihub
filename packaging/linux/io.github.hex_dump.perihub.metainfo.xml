@@ -426,6 +426,11 @@
   </provides>
 
   <releases>
+    <release version="0.9.5" date="2026-11-19">
+      <description>
+        <p>When you connect a device nobody has confirmed on real hardware yet, PeriHub now offers once to send a test report for it with Test my device: one report is what moves a device up for everyone who has it. A device request sent from the app now carries everything needed to add the device, and a clean test report leads straight to the device being confirmed.</p>
+      </description>
+    </release>
     <release version="0.9.4" date="2026-11-17">
       <description>
         <p>On Windows, games from Steam and the Epic Games Launcher now show up when you add a game profile, also when Steam is installed outside Program Files or the game keeps its program in a subfolder. PeriHub also recognises 67 more Razer keyboards, read only for now.</p>
