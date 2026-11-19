@@ -370,6 +370,34 @@ export interface ReportDevice {
   bus: "USB" | "Bluetooth";
   /** Interface -1: the system does not say (Bluetooth). */
   collections: { interface: number; usage_page: number; usage: number }[];
+  /** The release number (bcdDevice), `null`: not read. */
+  release: number | null;
+  /** Interfaces of the USB device, HID or not, `null`: not read. */
+  usb_interfaces: number | null;
+  /** The report descriptor of each interface. */
+  descriptors: InterfaceDescriptor[];
+}
+
+/** The lengths in bytes of one report id's reports, with the id byte; 0: there is none. */
+export interface DescriptorReports {
+  id: number;
+  input: number;
+  output: number;
+  feature: number;
+}
+
+export interface DescriptorCollection {
+  usage_page: number;
+  usage: number;
+  reports: DescriptorReports[];
+}
+
+export interface InterfaceDescriptor {
+  interface: number;
+  /** In hex, `null`: not read. */
+  hex: string | null;
+  /** Report ids and lengths, `null`: not read or not understood. */
+  collections: DescriptorCollection[] | null;
 }
 
 export interface DeviceStatus {
@@ -640,6 +668,8 @@ export interface PeripheralInfo {
   kind: "mouse" | "keyboard";
   /** Where PeriHub knows the protocol from, e.g. "libratbag (MIT)". */
   source: string;
+  /** A tester confirmed this model on real hardware (the core's confirmed.rs). */
+  tested: boolean;
   profiles: number;
   firmware: string | null;
   battery: { level: number; charging: boolean } | null;
@@ -677,6 +707,8 @@ export interface CorsairInfo {
   product_id: number;
   model: string;
   kind: "mouse" | "keyboard";
+  /** A tester confirmed this model on real hardware (the core's confirmed.rs). */
+  tested: boolean;
   /** Connected through its wireless receiver: the receiver's USB product id. */
   receiver: number | null;
   leds: number;

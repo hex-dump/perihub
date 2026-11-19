@@ -17,7 +17,8 @@ releases); the test build reply on an issue is already agreed.
 
 ## 2. Sources, and how to use them
 
-- Allowed: answers from the device, USB captures (USBPcap/Wireshark) by testers or published by other
+- Allowed: answers from the device, USB captures (USBPcap/Wireshark; testers follow `docs/captures.md`,
+  link it to them) by testers or published by other
   projects, projects that tried the commands on hardware, the maker's published specifications.
 - Never: facts from decompiling or reading the official software or its web drivers, even when a
   third party did it.
@@ -70,16 +71,47 @@ two once those versions are no longer in use.
 cargo fmt --all && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace
 cd app && npm run check && npx vitest run
 python3 tools/release.py lint
+cargo xtask check
+python3 -I -m unittest discover -s tools -p "test_*.py"
 ```
 
 ## 6. CHANGELOG and the test build
 
 - Under `## Unreleased`, in `### New devices` (sections and order: `tools/release.py`): what is
   supported, at which level, from which source.
-- Commit on a local branch. With the user's OK: push it as `test/<name>`, run
-  `gh workflow run test-build.yml --ref test/<name>`, and once it is green answer the issue with the
-  link to the run (artifacts need a GitHub account; the build still says the previous version).
+- A device with a known source (the triage answered a device request "ready to add": its id is in
+  `tools/upstream-seen.json` for a vendor PeriHub has a driver for) goes **straight into the next
+  release** as read-only or experimental: no test build round (maintainer decision, 2026-11-19). The
+  triage answer already tells the requester so. The app then asks the tester for a test report
+  (the one-time prompt starts **Test my device**), and a clean report opens the pull request that
+  confirms the device (step 7). A device that "needs captures" waits for them
+  (`docs/captures.md`); once a driver is written from them, it is tried the way the next bullet says.
+- A driver that has not been tried by anyone and has no source to lean on: commit on a local branch,
+  and with the user's OK push it as `test/<name>`. **The push already starts test-build.yml: never also
+  run `gh workflow run test-build.yml`**, its concurrency cancels the build that is running (and
+  cancelling the new one stops them all). Once the run is green, answer the issue with the link to
+  the run (artifacts need a GitHub account; the build still says the previous version).
 - To have the build announced on the device request, put a line `Test: #N` (or `Tests: #N, #M`) in the
-  body of a commit. A plain `#N` does nothing. The first build comments on the open issue, later
-  pushes edit that comment.
+  body of a commit. A plain `#N` does nothing. A build with new commits posts a new comment on the
+  open issue and deletes the earlier test build comments of the branch.
 - No release until the tester confirms, or the user asks for one.
+
+## 7. When the tester confirms
+
+A clean report (made by the app, from the latest version, no error line, nothing under "Messages and
+errors" or "What is wrong or missing", the boxes ticked; the one from **Test my device** counts the
+same) is picked up by the triage workflow, which opens a pull request through confirm.yml: the
+maintainer only merges it (CI does not start on a pull request a workflow opens: close and reopen it).
+By hand, for a device of another brand or a Corsair one, or a Logitech memory format:
+
+```sh
+cargo xtask confirm 1532:00b7 --issue 40
+cargo xtask confirm --memory-format 4:255 --issue 40
+cargo xtask confirm 1532:00b7 --issue 40 --report ISSUE_BODY.md   # also the replay fixture, if the report has a transcript
+```
+
+It adds the entry to `crates/perihub-core/src/confirmed.rs`, runs `cargo xtask gen` and writes the
+CHANGELOG line under "New devices". Do not edit the device tables or the tested memory formats by hand
+(`mouse::support` reads `confirmed::MEMORY`). Then run the checks of step 5. A fixture made from a
+report only expects what the confirmation is about: add the values the tester confirmed
+(`docs/replay.md`).

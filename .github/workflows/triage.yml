@@ -1,10 +1,12 @@
 name: Triage
 
-# A new device request for a device the latest release already recognizes gets an answer with its level, a test
-# report from an older version is asked to try the latest one, and both get the label of the brand
-# ("brand: Razer") and of the kind of device ("mouse", "keyboard"): from the form's Brand and Device
-# type dropdowns, else from the catalogue (tools/triage.py). The issue text
-# is only read by the script, never put in a command.
+# A new device request gets an answer: its level if the latest release already recognizes the device,
+# "can be added directly" if another project documents it for a protocol PeriHub has a driver for, else
+# "needs USB captures" (the labels "ready to add" and "needs captures"). A test report from an older
+# version is asked to try the latest one, and both get the label of the brand ("brand: Razer") and of the
+# kind of device ("mouse", "keyboard"): from the form's Brand and Device type dropdowns, else from the
+# catalogue (tools/triage.py). A test report with nothing wrong in it that confirms a device starts the
+# Confirm workflow (confirm.yml). The issue text is only read by the script, never put in a command.
 on:
   issues:
     types: [opened]
@@ -19,15 +21,20 @@ jobs:
   # recognized by its first line and gets the label it lacks.
   triage:
     runs-on: ubuntu-latest
+    outputs:
+      confirm: ${{ steps.answer.outputs.confirm }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           sparse-checkout: |
             tools/triage.py
+            tools/upstream-seen.json
             site/devices.json
+            crates/perihub-core/src/confirmed.rs
           sparse-checkout-cone-mode: false
 
       - name: Answer and labels
+        id: answer
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE: ${{ github.event.issue.number }}
@@ -38,6 +45,9 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/contents/site/devices.json?ref=$latest" -H "Accept: application/vnd.github.raw" > "$RUNNER_TEMP/released.json"
           python3 tools/triage.py "$GITHUB_EVENT_PATH" "${latest#v}" "$RUNNER_TEMP/released.json" > "$RUNNER_TEMP/triage.json"
           jq -r '.comment // empty' "$RUNNER_TEMP/triage.json" > "$RUNNER_TEMP/comment.md"
+          if jq -e '.confirm' "$RUNNER_TEMP/triage.json" > /dev/null; then
+            echo "confirm=true" >> "$GITHUB_OUTPUT"
+          fi
           if [ -s "$RUNNER_TEMP/comment.md" ]; then
             gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"
           fi
@@ -46,6 +56,21 @@ jobs:
             case "$label" in
               "brand: "*) gh label create "$label" --repo "$GITHUB_REPOSITORY" --color d4c5f9 --description "Devices of this brand" 2>/dev/null || true ;;
               "test report") gh label create "$label" --repo "$GITHUB_REPOSITORY" --color 0e8a16 --description "A device's test report" 2>/dev/null || true ;;
+              "ready to add") gh label create "$label" --repo "$GITHUB_REPOSITORY" --color 0e8a16 --description "Documented by another project: can be added directly" 2>/dev/null || true ;;
+              "needs captures") gh label create "$label" --repo "$GITHUB_REPOSITORY" --color fbca04 --description "No public documentation: needs USB captures" 2>/dev/null || true ;;
             esac
             gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label "$label"
           done
+
+  # The report confirms a device: a pull request for the maintainer to merge (confirm.yml decides again
+  # from the issue itself, and only needs its number).
+  confirm:
+    needs: triage
+    if: needs.triage.outputs.confirm == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    uses: ./.github/workflows/confirm.yml
+    with:
+      issue: ${{ github.event.issue.number }}

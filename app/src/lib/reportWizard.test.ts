@@ -42,13 +42,13 @@ const g300 = {
 } as G300Info;
 
 const corsair = {
-  product_id: 0x1b4f, model: "M65", kind: "mouse", receiver: null, leds: 3, firmware: "1.0", mode: 1,
+  product_id: 0x1b4f, model: "M65", kind: "mouse", tested: false, receiver: null, leds: 3, firmware: "1.0", mode: 1,
   polling_hz: 1000, dpi: 800, read_errors: [], lighting: null,
 } as CorsairInfo;
 
 const peripheral = {
   key: "0b05:195c", vendor_id: 0x0b05, product_id: 0x195c, brand: "ASUS", model: "ROG Keris", kind: "mouse",
-  source: "libratbag (MIT)", profiles: 3, firmware: "1.02.03", battery: null, active_profile: 1, active_dpi: 1,
+  source: "libratbag (MIT)", tested: false, profiles: 3, firmware: "1.02.03", battery: null, active_profile: 1, active_dpi: 1,
   readable: true,
   settings: { dpi_levels: [800], polling_hz: 1000, options: {}, leds: [] },
   limits: { dpi: { min: 100, max: 16000, step: 100 }, polling_hz: [1000], options: [], leds: [] },
@@ -71,6 +71,7 @@ const receiver = (unsupported: UnsupportedReceiverDevice[], extra: Partial<Recei
 const unknown: ReportDevice = {
   vendor_id: 0x1234, product_id: 0xabcd, manufacturer: "Acme", product: "Zap Mouse", bus: "USB",
   collections: [{ interface: 0, usage_page: 1, usage: 2 }],
+  release: null, usb_interfaces: null, descriptors: [],
 };
 
 const status = (part: Partial<DeviceStatus>): DeviceStatus =>
@@ -285,6 +286,14 @@ describe("checklist", () => {
   it("asks about changes only for a device that can be changed", () => {
     expect(checklist(first({ peripherals: [peripheral] })).map((i) => i.id)).toContain("change");
     expect(checklist(first({ mouse })).map((i) => i.id)).not.toContain("change");
+  });
+
+  it("keeps asking about the changes of a device a tester confirmed", () => {
+    const tested = first({ peripherals: [{ ...peripheral, tested: true }] });
+    expect(tested.state).toBe("Supported");
+    expect(checklist(tested).map((i) => i.id)).toContain("kept");
+    expect(first({ corsair: [{ ...corsair, tested: true }] }).state).toBe("Supported");
+    expect(checklist(first({ peripherals: [{ ...peripheral, tested: true, editable: false }] })).map((i) => i.id)).not.toContain("change");
   });
 
   it("writes only what was answered", () => {

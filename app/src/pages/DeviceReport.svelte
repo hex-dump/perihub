@@ -3,7 +3,7 @@
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type ReportDevice } from "../lib/api";
-  import { deviceRequestUrl, reportDeviceName, reportUsbId as usbId } from "../lib/testReport";
+  import { deviceDetails, deviceRequestUrl, reportDeviceName, reportUsbId as usbId } from "../lib/testReport";
 
   interface Props {
     /** No supported device is connected: this page is all the sidebar shows. */
@@ -61,9 +61,9 @@
 
   // Browsers allow writing to the clipboard only straight after the click: no waiting before it.
   async function copy(device: ReportDevice) {
-    const url = new URL(deviceRequestUrl(device, version, system));
     try {
-      await navigator.clipboard.writeText(url.searchParams.get("details") ?? "");
+      // The whole text, with the raw descriptors, which the link may have had to leave out.
+      await navigator.clipboard.writeText(deviceDetails(device, version, system));
       error = null;
       copied = usbId(device);
       setTimeout(() => (copied = null), COPIED_MS);
@@ -79,8 +79,10 @@
 
 <p class="lead">
   {#if alone}<b>PeriHub found no mouse or keyboard it supports.</b>{/if}
-  Pick yours below: PeriHub opens a device request on GitHub with its name, its USB id and the HID collections it
-  shows, so its support can be looked into. No serial number is included, and nothing is sent until you submit the
+  Pick yours below: PeriHub opens a device request on GitHub with its name, its USB id, the HID collections it
+  shows and the layout of its report descriptors (read without opening anything that needs administrator rights, and
+  without sending anything to the device), so its support can be looked into. Tick what it can do in its official
+  software on the form. No serial number is included, and nothing is sent until you submit the
   form, which needs a GitHub account.
 </p>
 {#if error}<div class="notice error" role="alert">{error}</div>{/if}

@@ -68,7 +68,7 @@ export function candidates(status: DeviceStatus, unknown: ReportDevice[]): Candi
     list.push({
       id: `corsair:${info.product_id}`,
       name: `Corsair ${info.model}`,
-      state: "Experimental",
+      state: info.tested ? "Supported" : "Experimental",
       kind: info.kind,
       target: { type: "corsair", info },
     });
@@ -77,7 +77,7 @@ export function candidates(status: DeviceStatus, unknown: ReportDevice[]): Candi
     list.push({
       id: `peripheral:${info.key}`,
       name: `${info.brand} ${info.model}`,
-      state: info.editable ? "Experimental" : "Read-only",
+      state: info.tested ? "Supported" : info.editable ? "Experimental" : "Read-only",
       kind: info.kind,
       target: { type: "peripheral", info },
     });
@@ -352,7 +352,9 @@ export function checklist(c: Candidate): CheckItem[] {
   } else {
     items.push({ id: "settings", label: "What PeriHub shows matches the device" });
   }
-  if (c.state === "Experimental") {
+  // A device a tester confirmed keeps its experimental changes (see confirmed.rs): its report may still say how they went.
+  const changes = c.state === "Experimental" || (c.state === "Supported" && (t.type === "corsair" || (t.type === "peripheral" && t.info.editable)));
+  if (changes) {
     items.push(
       { id: "change", label: "A change I made in PeriHub took effect on the device (optional, at your own risk)" },
       { id: "kept", label: "A change I kept was still there after unplugging the device (optional, at your own risk)" },

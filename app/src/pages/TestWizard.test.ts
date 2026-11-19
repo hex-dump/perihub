@@ -87,6 +87,22 @@ describe("the test wizard", () => {
     expect((screen.getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false);
   });
 
+  it("starts with the device it was asked for, already read, and goes back to the list from there", async () => {
+    render(TestWizard, { props: { status: status(), start: "peripheral:0b05:195c" } });
+    await settle();
+    expect(readings.peripheralInfo).toHaveBeenCalledWith("0b05:195c");
+    expect(document.body.textContent).toContain("PeriHub only reads ASUS ROG Keris here");
+    await click("Back");
+    expect(screen.getByRole("radio", { name: /ASUS ROG Keris/ })).toBeTruthy();
+  });
+
+  it("starts at the list when the device it was asked for is not there", async () => {
+    render(TestWizard, { props: { status: status(), start: "peripheral:1532:0099" } });
+    await settle();
+    expect(readings.peripheralInfo).not.toHaveBeenCalled();
+    expect(screen.getByRole("radio", { name: /ASUS ROG Keris/ })).toBeTruthy();
+  });
+
   it("says so when no device is found", async () => {
     render(TestWizard, { props: { status: status({ peripherals: [] }) } });
     await settle();

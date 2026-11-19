@@ -2,9 +2,15 @@
 """Reads a new device request or test report and says what the triage workflow should do.
 
   triage.py EVENT.json LATEST_VERSION [RELEASED_DEVICES.json]   → {"comment": "..." or null, "labels": [...]}
+                                           plus {"confirm": {...}, "issue": N} when the report confirms something
 
-A request for a device the latest release recognizes gets an answer with its level, and a test
-report from an older version gets asked to try the latest one. Everything else is left to a person.
+A request for a device the latest release recognizes gets an answer with its level; one for a device
+another project documents, for a protocol PeriHub has a driver for, is told it can be added directly
+("ready to add"); any other is told it needs USB captures ("needs captures"). A test report from an
+older version gets asked to try the latest one. A test report from the latest version with nothing
+wrong in it, for a device or a Logitech memory format nobody had confirmed, says so in "confirm"
+({"usb": "1532:00b7"} or {"memory_format": [4, 255]}): the confirm workflow takes it from there, and
+a person reviews what it opens. Anything doubtful confirms nothing. Everything else is left to a person.
 RELEASED_DEVICES.json is site/devices.json as of the latest release's tag: a device that is only on
 main is not in it, and is left to the maintainer, since no published version has it. Without it,
 site/devices.json is used for both.
@@ -17,9 +23,23 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+CONFIRMED_RS = ROOT / "crates/perihub-core/src/confirmed.rs"
 MARK = "<!-- perihub-triage -->"
 DEVICES_MD = "https://github.com/hex-dump/perihub/blob/main/docs/devices.md"
 TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml"
+CAPTURE_GUIDE = "https://github.com/hex-dump/perihub/blob/main/docs/captures.md"
+UPSTREAM_URLS = {
+    "libratbag": "https://github.com/libratbag/libratbag",
+    "openrazer": "https://github.com/openrazer/openrazer",
+    "rivalcfg": "https://github.com/flozz/rivalcfg",
+    "OpenRGB": "https://gitlab.com/CalcProgrammer1/OpenRGB",
+}
+# The vendors whose protocol a project documents and PeriHub's driver speaks, by project. A project that
+# lists an id of another vendor tells nothing PeriHub can build on: OpenRGB is for lights only, and its
+# ids are of many protocols PeriHub has no driver for.
+PROJECT_VENDORS = {"libratbag": {"046d"}, "openrazer": {"1532"}, "rivalcfg": {"1038"}}
+# Levels of a device PeriHub sends something to, which a driver exists for.
+DRIVER_LEVELS = {"supported", "experimental", "read_only", "by_memory_format"}
 LEVELS = {
     "supported": "✅ **supported**: tested on real hardware",
     "experimental": "🧪 **experimental**: recognized, not tested yet, changes at your own risk",
@@ -67,6 +87,47 @@ def brand_labels(usb: str | None, devices: list[dict]) -> list[str]:
     if known and known[0]["kind"] in ("mouse", "keyboard"):
         labels.append(known[0]["kind"])
     return labels
+
+
+def listed_by(usb: str, upstream: dict[str, list[str]]) -> list[str]:
+    """The projects whose list of devices has this id."""
+    return [project for project, ids in upstream.items() if usb in ids]
+
+
+def driver_brand(vendor: str, devices: list[dict]) -> str | None:
+    """The brand of the devices of this vendor that PeriHub has a driver for, if there are any."""
+    brands = sorted(
+        {d["brand"] for d in devices if d["level"] in DRIVER_LEVELS and any(i.startswith(vendor + ":") for i in d["usb_ids"])}
+    )
+    return brands[0] if brands else None
+
+
+def next_steps(usb: str, latest: str, devices: list[dict], upstream: dict[str, list[str]]) -> tuple[str, str]:
+    """What happens next for a device PeriHub does not know: the answer and the label.
+    Only the fact that a project lists the id is used from it."""
+    projects = listed_by(usb, upstream)
+    brand = driver_brand(usb.split(":")[0], devices)
+    documented = [p for p in projects if brand and usb.split(":")[0] in PROJECT_VENDORS.get(p, ())]
+    if documented:
+        project = documented[0]
+        return (
+            f"Thanks! `{usb}` is not in PeriHub {latest} yet, but [{project}]({UPSTREAM_URLS[project]}) lists it, and "
+            f"PeriHub already has a driver for {brand} devices of that kind. So it **can be added directly**: it will be "
+            "in the next version, as **read-only or experimental**, and the app will ask you for a test report when you "
+            "connect it. That report is what moves it up for everyone who has it. Nothing more is needed from you now.",
+            "ready to add",
+        )
+    listed = ""
+    if projects:
+        names = " and ".join(projects)
+        listed = f" ({names} lists the id, but that gives PeriHub no protocol to build on: it has no driver for it)"
+    return (
+        f"Thanks! `{usb}` is not in PeriHub {latest}, and no public documentation of its protocol that PeriHub can "
+        f"build on was found{listed}. So we need **USB captures** of its official software changing each setting: the "
+        f"[capture guide]({CAPTURE_GUIDE}) says how. With captures the device can be added; until then PeriHub sends "
+        "nothing to it.",
+        "needs captures",
+    )
 
 
 TYPES = ("device request", "test report")
@@ -131,9 +192,199 @@ def kind_label(body: str) -> list[str]:
     return [next(g for g in m.groups() if g).lower()] if m else []
 
 
-def triage(issue: dict, latest: str, devices: list[dict], current: list[dict] | None = None) -> dict:
-    """devices: those the latest release knows. current: those on main, for the labels."""
+# What a report confirms. The lines it reads are the ones app/src/lib/testReport.ts writes (the vitest
+# file testReport.triage.test.ts keeps them in step), the answers are the ones the test report form in
+# .github/ISSUE_TEMPLATE asks for (test_triage.py keeps these in step with the form).
+REPORT_FIRST = re.compile(r"PeriHub (\d+)\.(\d+)\.(\d+) on \S+")
+DEVICE_LINE = re.compile(r"Device: (.+) \((mouse|keyboard)\), USB ID ([0-9a-f]{4}:[0-9a-f]{4})(?:,|$)")
+MEMORY_LINE = re.compile(
+    r"Memory: model \d+, profile format (\d+), macro format \d+, \d+ sectors of (\d+) bytes, \d+ factory profiles$"
+)
+# Anything of these in a line the app wrote means something went wrong or was refused.
+TROUBLE = re.compile(
+    r"\b(errors?|problems?|unexpected|failed|failure|refused|denied|damaged|did not|could not|cannot|no answer|"
+    r"not as documented|timed out|timeout)\b",
+    re.I,
+)
+# The families whose form checkbox says what PeriHub shows matches the device.
+OTHER_BRANDS = {
+    "asus", "steelseries-mice", "razer", "razer-keyboard", "glorious", "roccat", "pulsar", "coolermaster", "nordic",
+    "evga", "yjx", "wraith",
+}
+SHOWS_OTHER = (
+    "Other brands (ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX, Wraith, "
+    "QMK keyboards): the DPI levels, polling rate, lighting and buttons PeriHub shows match the device"
+)
+SHOWS_CORSAIR = ("Firmware version", "Polling rate (report rate)")
+SHOWS_CORSAIR_MOUSE = ("DPI (mice)",)
+SHOWS_CORSAIR_LIGHTING = (
+    "Corsair: experimental lighting showed the colour, and the device went back to its own lighting when it was turned off",
+    "Corsair: every button or key kept working while experimental lighting was on",
+)
+SHOWS_MOUSE = (
+    "Logitech mouse: profiles (number of profiles, which one is active)",
+    "Logitech mouse: DPI levels and the default level",
+)
+SAVING_MOUSE = (
+    "A change I saved took effect on the device",
+    "It was still there after unplugging the device and plugging it back in",
+)
+# What mouse.rs writes: profile formats 2 and 3, in 255- or 256-byte sectors.
+WRITABLE_FORMATS = (2, 3)
+WRITABLE_SECTORS = (255, 256)
+CHANGES_OK = ("Changes: available (experimental)", "Changes: off (read-only)")
+TRANSCRIPT = "Transcript (every request and answer"
+# The lines of the log of writes: the header counts the writes PeriHub refused (read-only mode), not a problem.
+WRITES_HEADER = "Writes this session:"
+
+
+def ticked(value: str) -> set[str]:
+    """The boxes ticked in a checkboxes answer of an issue form."""
+    return {m.group(1).strip() for m in re.finditer(r"^- \[[xX]\] (.+)$", value or "", re.M)}
+
+
+def app_report(answers: dict[str, str]) -> list[str] | None:
+    """The lines of the Test report answer, if it starts the way PeriHub's report does."""
+    lines = [line.rstrip() for line in answers.get("Test report", "").splitlines() if not line.startswith("```")]
+    return lines if lines and REPORT_FIRST.match(lines[0]) else None
+
+
+def tested_memory_formats(source: str) -> set[tuple[int, int]]:
+    """The memory formats listed in perihub-core/src/confirmed.rs."""
+    table = re.search(r"pub const MEMORY: [^=]*= &\[(.*?)\];", source, re.S)
+    return {(int(a), int(b)) for a, b in re.findall(r"memory\((\d+),\s*(\d+),\s*\d+\)", table.group(1))} if table else set()
+
+
+def without_transcript(lines: list[str]) -> list[str] | None:
+    """The report without its transcript (JSON, after a heading line), which holds no sentences of the app.
+    None when the transcript does not end where a transcript does: a cut one hides what comes after it."""
+    out, i = [], 0
+    while i < len(lines):
+        if not lines[i].startswith(TRANSCRIPT):
+            out.append(lines[i])
+            i += 1
+            continue
+        i += 1
+        if i < len(lines) and lines[i].startswith("{") and lines[i].endswith("}"):
+            i += 1
+            continue
+        while i < len(lines) and lines[i] != "}":
+            i += 1
+        if i == len(lines):
+            return None
+        i += 1
+    return out
+
+
+def trouble_in(lines: list[str]) -> bool:
+    """A line that says something went wrong, among those after the first. A few lines say so in words
+    that are no trouble: they are checked on their own, or are what a device that cannot be read back says."""
+    lines = without_transcript(lines)
+    if lines is None:
+        return True
+    for line in lines[1:]:
+        if line.startswith(("Could not read:", "Changes:", "Support:", "Settings: this device cannot be read back", WRITES_HEADER)):
+            continue
+        if TROUBLE.search(line):
+            return True
+    return False
+
+
+def confirm_device(lines: list[str], answers: dict[str, str], devices: list[dict]) -> dict | None:
+    """A test report of a mouse or keyboard of another brand, or a Corsair one, nobody had confirmed."""
+    found = DEVICE_LINE.match(lines[1]) if len(lines) > 1 else None
+    if not found or found.group(3) != usb_id(answers.get("USB ID (vendor:product)", "")):
+        return None
+    name, kind, uid = found.groups()
+    known = [d for d in devices if uid in d["usb_ids"]]
+    if len(known) != 1:
+        return None
+    d = known[0]
+    if d["level"] not in ("experimental", "read_only") or d["kind"] != kind or f"{d['brand']} {d['name']}" != name:
+        return None
+    boxes = ticked(answers.get("What PeriHub shows correctly", ""))
+    if d["family"].startswith("corsair-"):
+        needed = set(SHOWS_CORSAIR) | (set(SHOWS_CORSAIR_MOUSE) if kind == "mouse" else set())
+        if "Experimental lighting: on" in lines:
+            needed |= set(SHOWS_CORSAIR_LIGHTING)
+        if "Could not read: nothing" not in lines:
+            return None
+    elif d["family"] in OTHER_BRANDS:
+        needed = {SHOWS_OTHER}
+        if not any(line in CHANGES_OK for line in lines):
+            return None
+    else:
+        return None
+    if not needed <= boxes or trouble_in(lines):
+        return None
+    return {"usb": uid}
+
+
+def confirm_mouse(lines: list[str], answers: dict[str, str], devices: list[dict], tested: set[tuple[int, int]]) -> dict | None:
+    """A test report of a Logitech mouse with a memory format nobody had saved to, saved to over the cable."""
+    fields_ = {line.split(": ", 1)[0]: line.split(": ", 1)[1] for line in lines[1:] if ": " in line}
+    uid = fields_.get("USB ID", "")
+    if uid != usb_id(answers.get("USB ID (vendor:product)", "")) or fields_.get("Connection") != "USB cable":
+        return None
+    known = [d for d in devices if uid in d["usb_ids"]]
+    if len(known) != 1 or known[0]["level"] != "by_memory_format" or known[0]["brand"] != "Logitech":
+        return None
+    memory = next((m for m in map(MEMORY_LINE.fullmatch, lines) if m), None)
+    if not memory:
+        return None
+    fmt = (int(memory.group(1)), int(memory.group(2)))
+    if fmt in tested or fmt[0] not in WRITABLE_FORMATS or fmt[1] not in WRITABLE_SECTORS:
+        return None
+    # The app itself says PeriHub can write this memory and that nobody has saved to it.
+    if fields_.get("Support") != "experimental (memory format not tested yet)":
+        return None
+    if fields_.get("Profile list") != "saved in the mouse" or not fields_.get("Firmware"):
+        return None
+    if fields_.get("Features", "not read") == "not read" or trouble_in(lines):
+        return None
+    if not set(SHOWS_MOUSE) <= ticked(answers.get("What PeriHub shows correctly", "")):
+        return None
+    if not set(SAVING_MOUSE) <= ticked(answers.get("Saving, if you tried it", "")):
+        return None
+    return {"memory_format": list(fmt)}
+
+
+def confirmation(
+    answers: dict[str, str], latest: str, devices: list[dict], current: list[dict], tested: set[tuple[int, int]]
+) -> dict | None:
+    """What a test report from PeriHub's form (the app's own, or the wizard's) confirms: {"usb": ...} or
+    {"memory_format": [...]}, or None when anything is missing, doubtful or already confirmed. A device
+    must be known to the latest release, and not supported yet there or on main (a confirmation that is
+    waiting for a release is not made twice)."""
+    lines = app_report(answers)
+    if lines is None or len(lines) < 2:
+        return None
+    used, newest = version(lines[0]), version(latest)
+    if not used or not newest or used < newest:
+        return None
+    if answers.get("Messages and errors") or answers.get("What is wrong or missing"):
+        return None
+    if lines[1].startswith("Mouse: "):
+        return confirm_mouse(lines, answers, devices, tested)
+    found = confirm_device(lines, answers, devices)
+    if found and any(d["level"] == "supported" for d in current if found["usb"] in d["usb_ids"]):
+        return None
+    return found
+
+
+def triage(
+    issue: dict,
+    latest: str,
+    devices: list[dict],
+    current: list[dict] | None = None,
+    tested: set[tuple[int, int]] | None = None,
+    upstream: dict[str, list[str]] | None = None,
+) -> dict:
+    """devices: those the latest release knows. current: those on main, for the labels and for what is
+    confirmed already. tested: the Logitech memory formats confirmed.rs lists (read from it by default).
+    upstream: the ids other projects list, for what happens to a request."""
     current = devices if current is None else current
+    from_form = True
     labels = {label["name"] for label in issue.get("labels", [])}
     present = set(labels)
     answers = fields(issue.get("body", ""))
@@ -145,6 +396,7 @@ def triage(issue: dict, latest: str, devices: list[dict], current: list[dict] | 
             if not found:
                 return {"comment": None, "labels": []}
             kind, answers = found
+            from_form = False
             pasted_kind = kind_label(issue.get("body", ""))
         labels.add(kind)
     catalogue = brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), current)
@@ -175,6 +427,10 @@ def triage(issue: dict, latest: str, devices: list[dict], current: list[dict] | 
                     "useful thing you can send: one report moves the device up for everyone who has it."
                 )
             )
+        elif not any(found in d["usb_ids"] for d in current):
+            # Only on main: no published version has it, so what to say is up to the maintainer.
+            result["comment"], label = next_steps(found, latest, current, upstream or {})
+            result["labels"].append(label)
         return result
 
     if "test report" in labels:
@@ -185,6 +441,14 @@ def triage(issue: dict, latest: str, devices: list[dict], current: list[dict] | 
                 "it may already behave differently with this device. If you can, please try it and add a new test report "
                 "here. The [changelog](https://github.com/hex-dump/perihub/blob/main/CHANGELOG.md) says what changed."
             )
+        # Only a report sent with its form has the answers a confirmation needs, not one pasted as text.
+        if from_form:
+            if tested is None:
+                tested = tested_memory_formats(CONFIRMED_RS.read_text())
+            confirms = confirmation(answers, latest, devices, current, tested)
+            if confirms and issue.get("number"):
+                result["confirm"] = confirms
+                result["issue"] = issue["number"]
     return result
 
 
@@ -194,7 +458,8 @@ def main() -> None:
     event = json.loads(Path(sys.argv[1]).read_text())
     current = json.loads((ROOT / "site/devices.json").read_text())["devices"]
     released = json.loads(Path(sys.argv[3]).read_text())["devices"] if len(sys.argv) == 4 else current
-    result = triage(event["issue"], sys.argv[2], released, current)
+    upstream = json.loads((ROOT / "tools/upstream-seen.json").read_text())
+    result = triage(event["issue"], sys.argv[2], released, current, upstream=upstream)
     if result["comment"]:
         result["comment"] += f"\n\n<sub>Automatic answer from the repository's triage workflow.</sub>\n{MARK}"
     print(json.dumps(result))

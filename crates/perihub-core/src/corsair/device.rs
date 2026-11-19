@@ -31,6 +31,8 @@ pub struct CorsairInfo {
     pub product_id: u16,
     pub model: String,
     pub kind: super::models::Kind,
+    /// A tester confirmed this model on real hardware (see `confirmed`).
+    pub tested: bool,
     /// Connected through its wireless receiver: the receiver's USB product id.
     pub receiver: Option<u16>,
     pub leds: u8,
@@ -119,6 +121,7 @@ impl CorsairTask {
             product_id: model.product_id,
             model: model.name.into(),
             kind: model.kind,
+            tested: crate::confirmed::usb_confirmed(super::CORSAIR, model.product_id),
             receiver: None,
             leds: model.leds,
             firmware,
