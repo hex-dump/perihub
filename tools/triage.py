@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reads a new device request or test report and says what the triage workflow should do.
 
-  triage.py EVENT.json LATEST_VERSION [RELEASED_DEVICES.json]   → {"comment": "..." or null, "labels": [...]}
+  triage.py EVENT.json LATEST_VERSION [RELEASED_DEVICES.json [BRANCHES.json]]   → {"comment": "..." or null, "labels": [...]}
                                            plus {"confirm": {...}, "issue": N} when the report confirms something
 
 A request for a device the latest release recognizes gets an answer with its level; one for a device
@@ -15,6 +15,11 @@ a person reviews what it opens. Anything doubtful confirms nothing. Everything e
 RELEASED_DEVICES.json is site/devices.json as of the latest release's tag: a device that is only on
 main is not in it, and is left to the maintainer, since no published version has it. Without it,
 site/devices.json is used for both.
+A new device is never merged before a tester confirms it: it is on a test/<name> branch, and the tester
+runs that branch's test build, whose reports start "PeriHub 0.9.5 (test build test/x@abc1234) on ...".
+BRANCHES.json ({"test/x": [devices of site/devices.json on that branch]}, made by
+tools/test-branch-devices.sh) lets a clean report of such a build confirm the device on its branch:
+{"usb": ..., "branch": "test/x"}. A test build is never told to update (it is as new as its branch).
 The issue text comes from anyone: it is only parsed, never run.
 """
 
@@ -70,9 +75,23 @@ def usb_id(text: str) -> str | None:
     return f"{m.group(1)}:{m.group(2)}".lower() if m else None
 
 
+# The first line of a report: "PeriHub 0.9.5 on windows x86_64", and from a test build
+# "PeriHub 0.9.5 (test build test/x@abc1234) on windows x86_64".
+BUILD = r"(?: \(test build ([A-Za-z0-9._/-]+@[0-9a-f]{4,40})\))?"
+REPORT_FIRST = re.compile(rf"PeriHub (\d+)\.(\d+)\.(\d+){BUILD} on \S+")
+
+
 def version(text: str) -> tuple | None:
-    m = re.search(r"(\d+)\.(\d+)\.(\d+)", text or "")
+    """The version number at the start of "0.9.5", "0.9.5 (test build ...)" or "PeriHub 0.9.5 on ..."; a branch
+    name later in the text, with digits in it, is not read."""
+    m = re.match(r"\s*(?:PeriHub\s+)?v?(\d+)\.(\d+)\.(\d+)", text or "") or re.search(r"(\d+)\.(\d+)\.(\d+)", text or "")
     return tuple(int(n) for n in m.groups()) if m else None
+
+
+def test_build(text: str) -> str | None:
+    """The branch and commit ("test/x@abc1234") a report or a version field names as its test build, if any."""
+    m = re.search(rf"PeriHub \d+\.\d+\.\d+{BUILD} on \S+", text or "") or re.match(rf"\s*\d+\.\d+\.\d+{BUILD}\s*$", text or "")
+    return m.group(1) if m else None
 
 
 def brand_labels(usb: str | None, devices: list[dict]) -> list[str]:
@@ -103,6 +122,15 @@ def driver_brand(vendor: str, devices: list[dict]) -> str | None:
     return brands[0] if brands else None
 
 
+# What happens after "ready to add": a device is never in a release before a tester has confirmed it.
+TEST_BUILD_STEPS = (
+    "A **test build** with it will be posted on this issue (the link comes here automatically). Install it, connect "
+    "the device, and try it with **Test my device**: it reads the device, and the report says which test build it is "
+    "from. Once a clean report comes in, the device is confirmed and goes into the next release. Nothing more is "
+    "needed from you until the test build is here."
+)
+
+
 def next_steps(usb: str, latest: str, devices: list[dict], upstream: dict[str, list[str]]) -> tuple[str, str]:
     """What happens next for a device PeriHub does not know: the answer and the label.
     Only the fact that a project lists the id is used from it."""
@@ -113,9 +141,8 @@ def next_steps(usb: str, latest: str, devices: list[dict], upstream: dict[str, l
         project = documented[0]
         return (
             f"Thanks! `{usb}` is not in PeriHub {latest} yet, but [{project}]({UPSTREAM_URLS[project]}) lists it, and "
-            f"PeriHub already has a driver for {brand} devices of that kind. So it **can be added directly**: it will be "
-            "in the next version, as **read-only or experimental**, and the app will ask you for a test report when you "
-            "connect it. That report is what moves it up for everyone who has it. Nothing more is needed from you now.",
+            f"PeriHub already has a driver for {brand} devices of that kind. So it **can be added directly**, as "
+            f"**read-only or experimental**. {TEST_BUILD_STEPS}",
             "ready to add",
         )
     if projects:
@@ -123,9 +150,8 @@ def next_steps(usb: str, latest: str, devices: list[dict], upstream: dict[str, l
         return (
             f"Thanks! `{usb}` is not in PeriHub {latest} yet, but [{project}]({UPSTREAM_URLS[project]}) documents its "
             "protocol, so a new driver can be written from that documentation: **no USB captures are needed**. It may "
-            "take a little longer than a device PeriHub already has a driver for. When it is in, it will be "
-            "**read-only or experimental**, and the app will ask you for a test report when you connect it. That report "
-            "is what moves it up for everyone who has it. Nothing more is needed from you now.",
+            "take a little longer than a device PeriHub already has a driver for. It will be "
+            f"**read-only or experimental**. {TEST_BUILD_STEPS}",
             "ready to add",
         )
     return (
@@ -178,7 +204,7 @@ def pasted(body: str) -> tuple[str, dict[str, str]] | None:
     """A report from PeriHub pasted as plain text (Copy test report) instead of sent with its form:
     the kind of issue it is, and the form fields it holds."""
     lines = [line.strip() for line in (body or "").splitlines()]
-    start = next((i for i, line in enumerate(lines) if re.match(r"PeriHub \d+\.\d+\.\d+ on \S+", line)), None)
+    start = next((i for i, line in enumerate(lines) if REPORT_FIRST.match(line)), None)
     if start is None:
         return None
     rest = [line for line in lines[start + 1 :] if line]
@@ -203,7 +229,6 @@ def kind_label(body: str) -> list[str]:
 # What a report confirms. The lines it reads are the ones app/src/lib/testReport.ts writes (the vitest
 # file testReport.triage.test.ts keeps them in step), the answers are the ones the test report form in
 # .github/ISSUE_TEMPLATE asks for (test_triage.py keeps these in step with the form).
-REPORT_FIRST = re.compile(r"PeriHub (\d+)\.(\d+)\.(\d+) on \S+")
 DEVICE_LINE = re.compile(r"Device: (.+) \((mouse|keyboard)\), USB ID ([0-9a-f]{4}:[0-9a-f]{4})(?:,|$)")
 MEMORY_LINE = re.compile(
     r"Memory: model \d+, profile format (\d+), macro format \d+, \d+ sectors of (\d+) bytes, \d+ factory profiles$"
@@ -357,18 +382,42 @@ def confirm_mouse(lines: list[str], answers: dict[str, str], devices: list[dict]
     return {"memory_format": list(fmt)}
 
 
+def is_test_build(answers: dict[str, str]) -> bool:
+    """The report, or its version field, says it is from a test build: as new as its branch, whatever
+    release came out since."""
+    lines = app_report(answers)
+    return bool(test_build(lines[0] if lines else "") or test_build(answers.get("PeriHub version", "")))
+
+
+def branch_for(usb: str, header: str | None, branches: dict[str, list[dict]]) -> str | None:
+    """The test/* branch a device that no release and not main has is on: the one the report's test build
+    names if it has the device, else the only one that has it. Several without a name: none (a person decides)."""
+    having = sorted(b for b, devices in branches.items() if any(usb in d["usb_ids"] for d in devices))
+    named = (header or "").split("@")[0]
+    if named in having:
+        return named
+    return having[0] if len(having) == 1 else None
+
+
 def confirmation(
-    answers: dict[str, str], latest: str, devices: list[dict], current: list[dict], tested: set[tuple[int, int]]
+    answers: dict[str, str],
+    latest: str,
+    devices: list[dict],
+    current: list[dict],
+    tested: set[tuple[int, int]],
+    branches: dict[str, list[dict]] | None = None,
 ) -> dict | None:
     """What a test report from PeriHub's form (the app's own, or the wizard's) confirms: {"usb": ...} or
     {"memory_format": [...]}, or None when anything is missing, doubtful or already confirmed. A device
     must be known to the latest release, and not supported yet there or on main (a confirmation that is
-    waiting for a release is not made twice)."""
+    waiting for a release is not made twice). A device that is in no release and not on main, only on a
+    test/* branch (branches), is confirmed there: {"usb": ..., "branch": "test/x"}; the report is then
+    from a test build, whose version is that of its branch and is not compared with the latest one."""
     lines = app_report(answers)
     if lines is None or len(lines) < 2:
         return None
     used, newest = version(lines[0]), version(latest)
-    if not used or not newest or used < newest:
+    if not used or not newest or (used < newest and not is_test_build(answers)):
         return None
     if answers.get("Messages and errors") or answers.get("What is wrong or missing"):
         return None
@@ -377,7 +426,15 @@ def confirmation(
     found = confirm_device(lines, answers, devices)
     if found and any(d["level"] == "supported" for d in current if found["usb"] in d["usb_ids"]):
         return None
-    return found
+    if found or not branches:
+        return found
+    # In no release and not on main: only a test branch can have it.
+    uid = usb_id(answers.get("USB ID (vendor:product)", ""))
+    if not uid or any(uid in d["usb_ids"] for d in [*devices, *current]):
+        return None
+    branch = branch_for(uid, test_build(lines[0]) or test_build(answers.get("PeriHub version", "")), branches)
+    found = confirm_device(lines, answers, branches[branch]) if branch else None
+    return {**found, "branch": branch} if found else None
 
 
 def triage(
@@ -387,10 +444,12 @@ def triage(
     current: list[dict] | None = None,
     tested: set[tuple[int, int]] | None = None,
     upstream: dict[str, list[str]] | None = None,
+    branches: dict[str, list[dict]] | None = None,
 ) -> dict:
     """devices: those the latest release knows. current: those on main, for the labels and for what is
     confirmed already. tested: the Logitech memory formats confirmed.rs lists (read from it by default).
-    upstream: the ids other projects list, for what happens to a request."""
+    upstream: the ids other projects list, for what happens to a request. branches: the devices of each
+    test/* branch, for a report of a test build of a device that is only there."""
     current = devices if current is None else current
     from_form = True
     labels = {label["name"] for label in issue.get("labels", [])}
@@ -443,7 +502,7 @@ def triage(
 
     if "test report" in labels:
         used, newest = version(answers.get("PeriHub version", "")), version(latest)
-        if used and newest and used < newest:
+        if used and newest and used < newest and not is_test_build(answers):
             result["comment"] = (
                 f"Thanks for testing! This report is from PeriHub {'.'.join(map(str, used))}, and {latest} is out: "
                 "it may already behave differently with this device. If you can, please try it and add a new test report "
@@ -453,7 +512,7 @@ def triage(
         if from_form:
             if tested is None:
                 tested = tested_memory_formats(CONFIRMED_RS.read_text())
-            confirms = confirmation(answers, latest, devices, current, tested)
+            confirms = confirmation(answers, latest, devices, current, tested, branches)
             if confirms and issue.get("number"):
                 result["confirm"] = confirms
                 result["issue"] = issue["number"]
@@ -461,13 +520,14 @@ def triage(
 
 
 def main() -> None:
-    if len(sys.argv) not in (3, 4):
+    if len(sys.argv) not in (3, 4, 5):
         sys.exit(__doc__)
     event = json.loads(Path(sys.argv[1]).read_text())
     current = json.loads((ROOT / "site/devices.json").read_text())["devices"]
     released = json.loads(Path(sys.argv[3]).read_text())["devices"] if len(sys.argv) == 4 else current
     upstream = json.loads((ROOT / "tools/upstream-seen.json").read_text())
-    result = triage(event["issue"], sys.argv[2], released, current, upstream=upstream)
+    branches = json.loads(Path(sys.argv[4]).read_text()) if len(sys.argv) == 5 else None
+    result = triage(event["issue"], sys.argv[2], released, current, upstream=upstream, branches=branches)
     if result["comment"]:
         result["comment"] += f"\n\n<sub>Automatic answer from the repository's triage workflow.</sub>\n{MARK}"
     print(json.dumps(result))

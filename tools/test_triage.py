@@ -484,6 +484,94 @@ class Triage(unittest.TestCase):
         self.assertNotIn("confirm", run({"number": 9, "labels": [], "body": ASUS}))
 
 
+BUILD = "test/asus-keris@02fd962"
+BUILT = ASUS.replace("PeriHub 0.9.0 on linux", f"PeriHub 0.9.5 (test build {BUILD}) on linux")
+KERIS = next(d for d in DEVICES if d["family"] == "asus")
+NO_KERIS = [d for d in DEVICES if d is not KERIS]
+BRANCHES = {"test/asus-keris": [KERIS], "test/other": [d for d in DEVICES if d["family"] == "razer"]}
+
+
+def build_run(issue, branches=BRANCHES, latest="0.9.4", devices=NO_KERIS, current=None):
+    return triage.triage(issue, latest, devices, NO_KERIS if current is None else current, TESTED, branches=branches)
+
+
+class TestBuilds(unittest.TestCase):
+    """A new device is on a test/* branch until a tester confirms it with that branch's test build."""
+
+    def test_the_first_line_of_a_test_build_parses(self):
+        self.assertEqual(BUILT.splitlines()[0], f"PeriHub 0.9.5 (test build {BUILD}) on linux x86_64")
+        self.assertEqual(triage.version(BUILT.splitlines()[0]), (0, 9, 5))
+        self.assertEqual(triage.version(f"0.9.5 (test build test/g915-1.2.3@abc1234)"), (0, 9, 5))
+        self.assertEqual(triage.test_build(BUILT.splitlines()[0]), BUILD)
+        self.assertEqual(triage.test_build(f"0.9.5 (test build {BUILD})"), BUILD)
+        self.assertIsNone(triage.test_build(ASUS.splitlines()[0]))
+        self.assertIsNone(triage.test_build("0.9.5"))
+
+    def test_a_clean_report_of_a_test_build_confirms_on_its_branch(self):
+        result = build_run(device_issue(BUILT, "0b05:195c", version=f"0.9.5 (test build {BUILD})"))
+        self.assertEqual(result["confirm"], {"usb": "0b05:195c", "branch": "test/asus-keris"})
+        self.assertEqual(result["issue"], 40)
+        self.assertIsNone(result["comment"])
+
+    def test_a_test_build_is_never_told_to_update(self):
+        # Built from 0.9.3's main while 0.9.4 is out: still the newest of its branch.
+        old = BUILT.replace("PeriHub 0.9.5", "PeriHub 0.9.3")
+        result = build_run(device_issue(old, "0b05:195c", version="0.9.3"))
+        self.assertIsNone(result["comment"])
+        self.assertEqual(result["confirm"]["branch"], "test/asus-keris")
+        # The same report from a release is.
+        plain = build_run(device_issue(ASUS.replace("0.9.0", "0.9.3"), "0b05:195c", version="0.9.3"))
+        self.assertIn("0.9.3", plain["comment"])
+        self.assertNotIn("confirm", plain)
+
+    def test_the_branch_the_report_names_is_preferred(self):
+        both = {**BRANCHES, "test/asus-more": [KERIS]}
+        self.assertEqual(build_run(device_issue(BUILT, "0b05:195c"), both)["confirm"]["branch"], "test/asus-keris")
+        other = BUILT.replace(BUILD, "test/asus-more@1234567")
+        self.assertEqual(build_run(device_issue(other, "0b05:195c"), both)["confirm"]["branch"], "test/asus-more")
+
+    def test_several_branches_and_no_name_leave_it_to_a_person(self):
+        both = {**BRANCHES, "test/asus-more": [KERIS]}
+        self.assertNotIn("confirm", build_run(device_issue(ASUS.replace("0.9.0", "0.9.5"), "0b05:195c", version="0.9.5"), both))
+        # One branch has it: a report that does not name it still finds it.
+        self.assertEqual(
+            build_run(device_issue(ASUS.replace("0.9.0", "0.9.5"), "0b05:195c", version="0.9.5"))["confirm"]["branch"],
+            "test/asus-keris",
+        )
+
+    def test_a_report_with_trouble_confirms_nothing_on_a_branch_either(self):
+        bad = BUILT.replace("Changes: available (experimental)", "Changes: off (unexpected answer: polling rate code 09)")
+        self.assertNotIn("confirm", build_run(device_issue(bad, "0b05:195c")))
+        self.assertNotIn("confirm", build_run(device_issue(BUILT, "0b05:195c", wrong="the DPI is wrong")))
+        self.assertNotIn("confirm", build_run(device_issue(BUILT, "0b05:195c", ticked=())))
+
+    def test_a_device_on_main_or_in_a_release_does_not_use_a_branch(self):
+        # On main (not released): as before, left to the maintainer.
+        self.assertNotIn("confirm", build_run(device_issue(BUILT, "0b05:195c"), current=DEVICES))
+        # In the release: confirmed as before, without a branch.
+        self.assertEqual(build_run(device_issue(BUILT, "0b05:195c"), devices=DEVICES, current=DEVICES)["confirm"], {"usb": "0b05:195c"})
+
+    def test_a_branch_that_has_it_confirmed_already_confirms_nothing(self):
+        done = {"test/asus-keris": [{**KERIS, "level": "supported"}]}
+        self.assertNotIn("confirm", build_run(device_issue(BUILT, "0b05:195c"), done))
+
+    def test_without_branches_nothing_changes(self):
+        self.assertNotIn("confirm", build_run(device_issue(BUILT, "0b05:195c"), None))
+        self.assertNotIn("confirm", build_run(device_issue(BUILT, "0b05:195c"), {}))
+
+    def test_a_pasted_report_of_a_test_build_is_recognized_and_not_told_to_update(self):
+        body = BUILT.replace("PeriHub 0.9.5", "PeriHub 0.9.3").replace("Device: ", "Device: ", 1)
+        result = build_run({"number": 7, "labels": [], "body": body})
+        self.assertIn("test report", result["labels"])
+        self.assertIsNone(result["comment"])
+        self.assertNotIn("confirm", result)
+
+    def test_the_branch_lookup_does_not_trust_the_report_for_a_branch_without_the_device(self):
+        # The report names a branch that does not have the device: only the real one counts.
+        liar = BUILT.replace(BUILD, "test/other@1234567")
+        self.assertEqual(build_run(device_issue(liar, "0b05:195c"))["confirm"]["branch"], "test/asus-keris")
+
+
 REQ_DEVICES = [
     {"brand": "Razer", "name": "Viper", "kind": "mouse", "level": "supported", "usb_ids": ["1532:0078"]},
     {"brand": "Logitech", "name": "G502", "kind": "mouse", "level": "supported", "usb_ids": ["046d:c08b"]},
@@ -518,9 +606,12 @@ class DeviceRequestAnswers(unittest.TestCase):
     def test_an_id_another_project_documents_for_a_driver_perihub_has_can_be_added_directly(self):
         result = run_req("1532:0099")
         self.assertIn("can be added directly", result["comment"])
-        self.assertIn("next version", result["comment"])
         self.assertIn("read-only or experimental", result["comment"])
-        self.assertIn("test report", result["comment"])
+        self.assertIn("test build", result["comment"])
+        self.assertIn("posted on this issue", result["comment"])
+        self.assertIn("Test my device", result["comment"])
+        self.assertIn("next release", result["comment"])
+        self.assertNotIn("next version", result["comment"])
         self.assertIn("openrazer", result["comment"])
         self.assertEqual(result["labels"], ["brand: Razer", "ready to add"])
 
@@ -540,7 +631,9 @@ class DeviceRequestAnswers(unittest.TestCase):
                 self.assertIn(project, result["comment"])
                 self.assertIn("no USB captures are needed", result["comment"])
                 self.assertIn("a little longer", result["comment"])
-                self.assertIn("test report", result["comment"])
+                self.assertIn("posted on this issue", result["comment"])
+                self.assertIn("Test my device", result["comment"])
+                self.assertNotIn("next version", result["comment"])
                 self.assertNotIn(triage.CAPTURE_GUIDE, result["comment"])
                 self.assertEqual(result["labels"][-1], "ready to add")
                 self.assertNotIn("needs captures", result["labels"])
