@@ -20,6 +20,9 @@ contributions are the ones that need a real device, which the maintainer does no
   test build has confirmed the device (the confirmation is added on the branch). Commits on a `test/*`
   branch can name the issue they are for with a `Test: #N` (or `Tests: #N, #M`) line; the test build
   then comments on it, and later builds edit that comment. A plain `#N` does nothing.
+  For a Razer mouse that OpenRazer documents, the Auto-add workflow does all of this by itself when the
+  request is "ready to add": the `test/auto-…` branch, its test build and a draft pull request (if it cannot,
+  the issue gets the label `needs maintainer`); it stays a draft until a tester has confirmed the device.
 
 ## Rules for code
 

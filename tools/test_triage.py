@@ -671,6 +671,154 @@ class DeviceRequestAnswers(unittest.TestCase):
         self.assertIn("ready to add", result["labels"])
 
 
+G604 = """### Device model
+
+Logitech G604_LIGHTSPEED
+
+### USB ID (vendor:product)
+
+046d:b024
+
+### What PeriHub saw
+
+```text
+PeriHub 0.9.0 on windows x86_64
+Device: Logitech G604_LIGHTSPEED
+USB ID: 046d:b024 (Bluetooth)
+HID collections:
+  no interface number, usage page 0001, usage 0002
+  no interface number, usage page 0001, usage 0006
+  no interface number, usage page 000c, usage 0001
+  no interface number, usage page ff43, usage 0202
+```
+"""
+HIDPP = G604.replace("046d:b024", "046d:b999").replace(
+    "no interface number, usage page ff43, usage 0202",
+    "interface 2, usage page ff00, usage 0001\n  interface 2, usage page ff00, usage 0002",
+)
+
+
+class NoDocsButHidpp(unittest.TestCase):
+    def run_body(self, body, upstream=None):
+        issue = {"labels": [{"name": "device request"}], "body": body}
+        return triage.triage(issue, "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM if upstream is None else upstream)
+
+    def test_the_g604_over_bluetooth_is_ready_to_add_when_libratbag_lists_it(self):
+        upstream = dict(REQ_UPSTREAM, libratbag=REQ_UPSTREAM["libratbag"] + ["046d:b024"])
+        result = self.run_body(G604, upstream)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("libratbag", result["comment"])
+
+    def test_a_logitech_device_with_hidpp_collections_is_ready_to_add_without_any_project(self):
+        result = self.run_body(HIDPP)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("HID++", result["comment"])
+        self.assertIn("already supports", result["comment"])
+        self.assertNotIn("auto_add", result)
+
+    def test_without_hidpp_collections_the_same_logitech_id_needs_captures(self):
+        result = self.run_body(G604.replace("046d:b024", "046d:b999"))
+        self.assertEqual(result["labels"][-1], "needs captures")
+
+    def test_another_vendor_with_the_same_collections_is_not_told_it_speaks_hidpp(self):
+        result = self.run_body(HIDPP.replace("046d:b999", "24ae:2015"))
+        self.assertEqual(result["labels"][-1], "needs captures")
+
+    def test_other_ff00_usages_are_not_hidpp(self):
+        result = self.run_body(HIDPP.replace("usage 0001\n", "usage 000e\n").replace("usage 0002\n", "usage 00ff\n"))
+        self.assertEqual(result["labels"][-1], "needs captures")
+
+
+class OnTestBranch(unittest.TestCase):
+    BRANCHES = {"test/viper-v3-pro-wireless": [{"usb_ids": ["1532:00c1"]}], "test/evision": [{"usb_ids": ["320f:505b"]}]}
+
+    def run_branch(self, usb, upstream=None):
+        return triage.triage(
+            req(usb), "0.9.5", REQ_DEVICES, upstream=REQ_UPSTREAM if upstream is None else upstream, branches=self.BRANCHES
+        )
+
+    def test_an_id_on_a_test_branch_says_the_build_exists_and_how_to_get_it(self):
+        result = self.run_branch("1532:00c1", dict(REQ_UPSTREAM, openrazer=["1532:00c1"]))
+        c = result["comment"]
+        self.assertIn("already exists, on the branch `test/viper-v3-pro-wireless`", c)
+        self.assertIn("test-build.yml?query=branch%3Atest%2Fviper-v3-pro-wireless", c)
+        self.assertIn("Test my device", c)
+        self.assertNotIn("will be posted", c)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertNotIn("auto_add", result)
+
+    def test_the_same_when_no_project_lists_the_id(self):
+        result = self.run_branch("320f:505b")
+        self.assertIn("test%2Fevision", result["comment"])
+        self.assertEqual(result["labels"][-1], "ready to add")
+
+    def test_an_id_on_no_branch_is_unchanged(self):
+        self.assertIn("built automatically", self.run_branch("1532:0099")["comment"])
+
+
+class AutoAdd(unittest.TestCase):
+    """"Mechanically addable": a project whose table a generator writes lists the id, nobody has it yet."""
+
+    def issue(self, usb, number=7):
+        return {**req(usb), "number": number}
+
+    def test_an_openrazer_id_nobody_has_is_auto_added_and_the_answer_says_so(self):
+        result = triage.triage(self.issue("1532:0099"), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM)
+        self.assertEqual((result["auto_add"], result["issue"]), ("1532:0099", 7))
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("written and built automatically", result["comment"])
+        self.assertIn("posted on this issue", result["comment"])
+        self.assertIn("Test my device", result["comment"])
+        self.assertNotIn("A maintainer will look", result["comment"])
+
+    def test_a_listed_id_without_a_generator_is_not(self):
+        # libratbag's Logitech devices, rivalcfg's SteelSeries ones and OpenRGB's have no generator to add an id to.
+        upstream = {"libratbag": ["046d:4099"], "openrazer": [], "rivalcfg": ["1038:1234"], "OpenRGB": ["1532:0098"]}
+        devices = REQ_DEVICES + [{"brand": "SteelSeries", "name": "Rival", "kind": "mouse", "level": "experimental", "usb_ids": ["1038:0001"]}]
+        for usb in ("046d:4099", "1038:1234", "1532:0098"):
+            with self.subTest(usb=usb):
+                result = triage.triage(self.issue(usb), "0.9.0", devices, upstream=upstream)
+                self.assertEqual(result["labels"][-1], "ready to add")
+                self.assertNotIn("auto_add", result)
+                self.assertNotIn("written and built automatically", result["comment"])
+                self.assertIn("will be posted on this issue", result["comment"])
+
+    def test_known_ids_and_ids_nobody_lists_are_not(self):
+        for usb in ("1532:0078", "dead:beef"):
+            with self.subTest(usb=usb):
+                self.assertNotIn("auto_add", triage.triage(self.issue(usb), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM))
+
+    def test_an_id_a_test_branch_has_already_is_not_started_again(self):
+        branches = {"test/auto-1532-0099": [{"usb_ids": ["1532:0099"]}]}
+        result = triage.triage(self.issue("1532:0099"), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM, branches=branches)
+        self.assertNotIn("auto_add", result)
+        self.assertNotIn("written and built automatically", result["comment"])
+
+    def test_a_pasted_request_without_a_number_starts_nothing(self):
+        self.assertNotIn("auto_add", triage.triage(req("1532:0099"), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM))
+
+    def test_the_pure_function(self):
+        up = {"openrazer": ["1532:0099", "1532:0078"], "libratbag": ["046d:4099"]}
+        self.assertTrue(triage.auto_addable("1532:0099", up, REQ_DEVICES))
+        self.assertFalse(triage.auto_addable("1532:0078", up, REQ_DEVICES))  # known
+        self.assertFalse(triage.auto_addable("046d:4099", up, REQ_DEVICES))  # no generator
+        self.assertFalse(triage.auto_addable("1532:0001", up, REQ_DEVICES))  # nobody lists it
+        self.assertFalse(triage.auto_addable("1532:99", up, REQ_DEVICES))  # not a USB id
+        self.assertFalse(triage.auto_addable("1532:0099", {}, REQ_DEVICES))
+
+    def test_the_pairs_are_the_ones_auto_add_has_generators_for(self):
+        import auto_add
+
+        self.assertEqual(triage.MECHANICAL, set(auto_add.GENERATORS))
+
+    def test_the_real_example_viper_v3_pro_dongle(self):
+        seen = json.loads((triage.ROOT / "tools/upstream-seen.json").read_text())
+        catalogue = json.loads((triage.ROOT / "site/devices.json").read_text())["devices"]
+        if any("1532:00c1" in d["usb_ids"] for d in catalogue):
+            self.skipTest("1532:00c1 is in the catalogue now")
+        self.assertTrue(triage.auto_addable("1532:00c1", seen, catalogue))
+
+
 class Catalogue(unittest.TestCase):
     """The data the answers come from: every project's ids in the files are well formed."""
 
