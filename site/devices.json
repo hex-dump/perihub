@@ -2658,7 +2658,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "polling rate; brightness of scroll wheel"
+      "note": "polling rate; brightness of scroll wheel; battery shown"
     },
     {
       "family": "razer",
@@ -2690,7 +2690,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 6400, polling rate; brightness of scroll wheel"
+      "note": "DPI up to 6400, polling rate; brightness of scroll wheel; battery shown"
     },
     {
       "family": "razer",
@@ -2738,7 +2738,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 8200, polling rate; brightness of scroll wheel"
+      "note": "DPI up to 8200, polling rate; brightness of scroll wheel; battery shown"
     },
     {
       "family": "razer",
@@ -2834,7 +2834,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 8200, polling rate; brightness of scroll wheel and backlight"
+      "note": "DPI up to 8200, polling rate; brightness of scroll wheel and backlight; battery shown"
     },
     {
       "family": "razer",
@@ -2914,7 +2914,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 16000, polling rate shown"
+      "note": "DPI up to 16000, polling rate shown; battery shown"
     },
     {
       "family": "razer",
@@ -3042,7 +3042,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
+      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3234,7 +3234,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
+      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3266,7 +3266,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
+      "note": "DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3298,7 +3298,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 20000, polling rate; brightness of logo; one colour, not saved"
+      "note": "DPI up to 20000, polling rate; brightness of logo; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3314,7 +3314,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 20000, polling rate; brightness of logo; one colour, not saved"
+      "note": "DPI up to 20000, polling rate; brightness of logo; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3330,7 +3330,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 16000, polling rate"
+      "note": "DPI up to 16000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3378,7 +3378,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
+      "note": "DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3442,7 +3442,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
+      "note": "DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3458,7 +3458,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 20000; brightness of logo"
+      "note": "DPI up to 20000, polling rate; brightness of logo"
     },
     {
       "family": "razer",
@@ -3522,7 +3522,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000"
+      "note": "DPI up to 30000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3570,7 +3570,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate"
+      "note": "DPI up to 30000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3586,7 +3586,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate; brightness of logo; one colour, not saved"
+      "note": "DPI up to 30000, polling rate; brightness of logo; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3602,7 +3602,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
+      "note": "DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3618,7 +3618,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate; brightness of logo and scroll wheel"
+      "note": "DPI up to 30000, polling rate; brightness of logo and scroll wheel; battery shown"
     },
     {
       "family": "razer",
@@ -3634,7 +3634,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000"
+      "note": "DPI up to 30000, polling rate"
     },
     {
       "family": "razer",
@@ -3650,7 +3650,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate"
+      "note": "DPI up to 35000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3666,7 +3666,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 45000"
+      "note": "DPI up to 45000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3682,7 +3682,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate"
+      "note": "DPI up to 35000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3698,7 +3698,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000"
+      "note": "DPI up to 35000, polling rate; what the dongle light shows; battery shown"
     },
     {
       "family": "razer",
@@ -3714,7 +3714,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate"
+      "note": "DPI up to 35000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3730,7 +3730,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate"
+      "note": "DPI up to 30000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3762,7 +3762,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
+      "note": "DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3778,7 +3778,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate"
+      "note": "DPI up to 30000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3810,7 +3810,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved"
+      "note": "DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3826,7 +3826,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate"
+      "note": "DPI up to 35000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3842,7 +3842,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate"
+      "note": "DPI up to 35000, polling rate; battery shown"
     },
     {
       "family": "razer-keyboard",
