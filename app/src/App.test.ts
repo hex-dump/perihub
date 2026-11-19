@@ -60,6 +60,7 @@ const ite: ReportDevice = {
   release: 0x0100,
   usb_interfaces: 1,
   descriptors: [{ interface: 0, hex: null, collections: null }],
+  feature_reports: null,
 };
 
 const wait = (ms = 0) => vi.advanceTimersByTimeAsync(ms);

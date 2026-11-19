@@ -107,8 +107,10 @@
 <p class="lead">
   {#if alone}<b>PeriHub found no mouse or keyboard it supports.</b>{/if}
   Pick yours below: PeriHub opens a device request on GitHub with its name, its USB id, the HID collections it
-  shows and the layout of its report descriptors (read without opening anything that needs administrator rights, and
-  without sending anything to the device), so its support can be looked into. Tick what it can do in its official
+  shows and the layout of its report descriptors (read without opening anything that needs administrator rights), so
+  its support can be looked into. While this page is open PeriHub also reads, once, what the device's vendor-defined
+  feature reports hold, only from interfaces it can open without extra rights and never from a mouse or keyboard
+  interface; it writes nothing to the device and reads nothing you type. Tick what it can do in its official
   software on the form. No serial number is included, and nothing is sent until you submit the
   form, which needs a GitHub account. <b>Record the official software</b> adds what that software sends the device
   while you change its settings, which is what a maintainer needs to support them.

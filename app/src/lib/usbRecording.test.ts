@@ -13,6 +13,7 @@ const device: ReportDevice = {
   release: 0x0114,
   usb_interfaces: 2,
   descriptors: [{ interface: 1, hex: "0600ff0901a101".repeat(40), collections: null }],
+  feature_reports: null,
 };
 
 describe("the steps of a recording", () => {
@@ -63,5 +64,34 @@ describe("a recording in the device request", () => {
     expect(details.endsWith(SHORTENED)).toBe(true);
     // The details before the recording are all there: only the recording's end went.
     expect(details).toContain("USB ID: 1234:00ab");
+  });
+
+  it("is the first thing a long link drops: recording, then raw descriptors, then feature reports, then the end", () => {
+    const rec = recording + "\n" + Array.from({ length: 400 }, (_, k) => `   +${k}.000 ← in ep82 if1: 11ff${k}`).join("\n");
+    const details = (d: ReportDevice, r: string | null) => new URL(deviceRequestLink(d, "0.9.6", "linux x86_64", r).url).searchParams.get("details")!;
+    const features = { interface: 1, outcome: "read" as const, reports: [{ id: 5, length: 3, hex: "050a0b" }] };
+    const base = { ...device, feature_reports: [features] };
+    // 1. Raw descriptors and feature reports fit: only the recording is cut.
+    const first = details(base, rec);
+    expect(first).toContain(RECORDING_HEADING);
+    expect(first).toContain("0600ff0901a101".repeat(40));
+    expect(first).toContain("id 05 (3 bytes): 050a0b");
+    // 2. The raw descriptors are too long even without the recording: recording and raw go, features stay.
+    const big = { ...base, descriptors: [{ ...device.descriptors[0], hex: "05".repeat(4200) }] };
+    const second = details(big, rec);
+    expect(second).not.toContain(RECORDING_HEADING);
+    expect(second).not.toContain("05".repeat(4200));
+    expect(second).toContain("id 05 (3 bytes): 050a0b");
+    // 3. The feature reports too: they go as well, and the rest of the details stays.
+    const huge = { ...big, feature_reports: [{ interface: 1, outcome: "read" as const, reports: Array.from({ length: 32 }, (_, i) => ({ id: i + 1, length: 200, hex: "ab".repeat(200) })) }] };
+    const third = details(huge, rec);
+    expect(third).not.toContain(RECORDING_HEADING);
+    expect(third).toContain("Feature reports (read only):\n  left out of the link: use Copy report");
+    expect(third).toContain("USB ID: 1234:00ab");
+    // Copy report has all of it.
+    const all = deviceDetails(huge, "0.9.6", "linux x86_64", true, rec);
+    expect(all).toContain("05".repeat(4200));
+    expect(all).toContain("ab".repeat(200));
+    expect(all).toContain(RECORDING_HEADING);
   });
 });

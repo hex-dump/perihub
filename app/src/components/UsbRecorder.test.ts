@@ -24,6 +24,7 @@ const device: ReportDevice = {
   release: null,
   usb_interfaces: null,
   descriptors: [],
+    feature_reports: null,
 };
 
 const windows: UsbRecorderInfo = { available: true, reason: null, tool: "USBPcap", windows: true, leftover: false };

@@ -1,8 +1,10 @@
 //! The USB and Bluetooth HID devices connected that PeriHub does not know, for a device request:
 //! what a user can send so that support for their device can be looked into. The list goes into a
 //! public issue, so it holds no serial numbers and no paths, only what `lsusb` would show, the
-//! collections of each interface and the shape of their report descriptors. Nothing is sent to a
-//! device and no interface is read from: only descriptors and metadata.
+//! collections of each interface and the shape of their report descriptors. Nothing is written to a
+//! device and no input report is read. The one thing asked of a device is the current contents of the
+//! feature reports its vendor-defined collections declare, read only and only while the Send a
+//! report page is open: see [`feature_reports`] for why that is safe.
 
 use std::collections::HashMap;
 #[cfg(target_os = "linux")]
@@ -13,6 +15,7 @@ use std::path::Path;
 use hidapi::{BusType, DeviceInfo, HidApi};
 use serde::Serialize;
 
+use crate::feature_reports::{self, FeatureRead, Outcome};
 use crate::hid_descriptor::{self, TopCollection};
 use crate::hidpp::{models, receiver};
 use crate::{corsair, g300, peripheral};
@@ -39,6 +42,17 @@ pub struct ReportDevice {
     /// The report descriptor of each interface, one entry for an interface whose descriptor could
     /// not be read.
     pub descriptors: Vec<InterfaceDescriptor>,
+    /// The feature reports of each interface that declares vendor-defined ones, read only.
+    /// `None`: not read (yet). `Some` and empty: there was nothing to read.
+    pub feature_reports: Option<Vec<InterfaceFeatures>>,
+}
+
+/// The feature reports of one interface.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct InterfaceFeatures {
+    pub interface: i32,
+    #[serde(flatten)]
+    pub read: FeatureRead,
 }
 
 /// What the report descriptor of one interface says.
@@ -77,6 +91,8 @@ pub struct Entry {
 pub struct NodeDetails {
     pub descriptor: Option<Vec<u8>>,
     pub usb_interfaces: Option<u8>,
+    /// The feature reports, read once the Send a report page is open. `None`: not read yet.
+    pub features: Option<FeatureRead>,
 }
 
 /// What was read from each node already, by the node's path: a node is read once, however often the
@@ -106,8 +122,9 @@ impl Entry {
 }
 
 /// The entries of every HID device hidapi lists, with the descriptor of each device PeriHub does not
-/// know, read once (see [`DetailsCache`]).
-pub fn entries(api: &HidApi, cache: &mut DetailsCache) -> Vec<Entry> {
+/// know, read once (see [`DetailsCache`]). `features`: also its feature reports, once each, which
+/// needs the node opened (see [`feature_reports`]): only for the Send a report page.
+pub fn entries(api: &HidApi, cache: &mut DetailsCache, features: bool) -> Vec<Entry> {
     let mut seen = Vec::new();
     let entries = api
         .device_list()
@@ -115,7 +132,11 @@ pub fn entries(api: &HidApi, cache: &mut DetailsCache) -> Vec<Entry> {
             let mut entry = Entry::from_hid(d)?;
             if !known(entry.vendor_id, entry.product_id) {
                 let path = d.path().to_string_lossy().into_owned();
-                entry.details = cache.entry(path.clone()).or_insert_with(|| read_node(api, d, &path)).clone();
+                let details = cache.entry(path.clone()).or_insert_with(|| read_node(api, d, &path));
+                if features && details.features.is_none() {
+                    details.features = Some(read_features(api, d, details.descriptor.as_deref()));
+                }
+                entry.details = details.clone();
                 seen.push(path);
             }
             Some(entry)
@@ -123,6 +144,25 @@ pub fn entries(api: &HidApi, cache: &mut DetailsCache) -> Vec<Entry> {
         .collect();
     cache.retain(|path, _| seen.contains(path));
     entries
+}
+
+/// The feature reports a node's vendor-defined collections declare, read only (see
+/// [`feature_reports`]). Nothing is opened unless the descriptor declares some and the node is not
+/// a mouse or a keyboard; the node is opened like any other (no rights asked for), and closed when
+/// the reading is over.
+fn read_features(api: &HidApi, d: &DeviceInfo, descriptor: Option<&[u8]>) -> FeatureRead {
+    let mouse_or_keyboard = d.usage_page() == 0x01 && matches!(d.usage(), 0x01 | 0x02 | 0x06 | 0x07);
+    let requests = match descriptor {
+        Some(descriptor) if !mouse_or_keyboard => feature_reports::plan(descriptor),
+        _ => Vec::new(),
+    };
+    if requests.is_empty() {
+        return FeatureRead::new(Outcome::NothingToRead);
+    }
+    match d.open_device(api) {
+        Ok(device) => feature_reports::read(device, &requests, feature_reports::REPORT_TIMEOUT),
+        Err(_) => FeatureRead::new(Outcome::NotOpened),
+    }
 }
 
 /// The descriptor of a node and the number of interfaces of its USB device, or what of them could
@@ -143,7 +183,7 @@ fn read_node(api: &HidApi, d: &DeviceInfo, _path: &str) -> NodeDetails {
         let length = device.get_report_descriptor(&mut buffer).ok()?;
         Some(buffer[..length].to_vec())
     });
-    NodeDetails { descriptor, usb_interfaces: None }
+    NodeDetails { descriptor, usb_interfaces: None, features: None }
 }
 
 /// A hidraw node's descriptor and the interface count of its USB device, from sysfs under
@@ -166,7 +206,7 @@ fn read_sysfs(class_dir: &Path, node_path: &str) -> NodeDetails {
         .and_then(Path::parent)
         .and_then(|usb| std::fs::read_to_string(usb.join("bNumInterfaces")).ok())
         .and_then(|n| n.trim().parse().ok());
-    NodeDetails { descriptor, usb_interfaces }
+    NodeDetails { descriptor, usb_interfaces, features: None }
 }
 
 /// A device PeriHub opens, or names, by itself: it has its own entry in the interface already. On
@@ -203,6 +243,7 @@ pub fn unknown_devices(entries: impl IntoIterator<Item = Entry>) -> Vec<ReportDe
                     release: None,
                     usb_interfaces: None,
                     descriptors: Vec::new(),
+                    feature_reports: Some(Vec::new()),
                 });
                 devices.last_mut().unwrap()
             }
@@ -219,10 +260,26 @@ pub fn unknown_devices(entries: impl IntoIterator<Item = Entry>) -> Vec<ReportDe
             let collections = e.details.descriptor.as_deref().and_then(hid_descriptor::summarize);
             device.descriptors.push(InterfaceDescriptor { interface: e.collection.interface, hex, collections });
         }
+        // One node not read yet leaves the whole device "not read".
+        match (&mut device.feature_reports, e.details.features) {
+            (Some(list), Some(read)) => {
+                let interface = e.collection.interface;
+                if read.outcome != Outcome::NothingToRead
+                    && !list.iter().any(|f| (f.interface, &f.read) == (interface, &read))
+                {
+                    list.push(InterfaceFeatures { interface, read });
+                }
+            }
+            (slot, None) => *slot = None,
+            _ => {}
+        }
     }
     for d in &mut devices {
         d.collections.sort_by_key(|c| (c.interface, c.usage_page, c.usage));
         d.descriptors.sort_by(|a, b| (a.interface, &a.hex).cmp(&(b.interface, &b.hex)));
+        if let Some(list) = &mut d.feature_reports {
+            list.sort_by_key(|f| f.interface);
+        }
         // An interface whose descriptor was read once does not need a line saying it was not read.
         let read: Vec<i32> = d.descriptors.iter().filter(|x| x.hex.is_some()).map(|x| x.interface).collect();
         d.descriptors.retain(|x| x.hex.is_some() || !read.contains(&x.interface));
@@ -298,7 +355,7 @@ mod tests {
     ];
 
     fn with_descriptor(mut e: Entry, descriptor: Option<&[u8]>, usb_interfaces: Option<u8>) -> Entry {
-        e.details = NodeDetails { descriptor: descriptor.map(<[u8]>::to_vec), usb_interfaces };
+        e.details = NodeDetails { descriptor: descriptor.map(<[u8]>::to_vec), usb_interfaces, features: None };
         e
     }
 
@@ -333,6 +390,7 @@ mod tests {
                 "bus",
                 "collections",
                 "descriptors",
+                "feature_reports",
                 "manufacturer",
                 "product",
                 "product_id",
@@ -341,6 +399,53 @@ mod tests {
                 "vendor_id"
             ]
         );
+    }
+
+    fn with_features(mut e: Entry, features: Option<FeatureRead>) -> Entry {
+        e.details.features = features;
+        e
+    }
+
+    fn read_of(outcome: Outcome, ids: &[u8]) -> FeatureRead {
+        let reports = ids
+            .iter()
+            .map(|&id| feature_reports::Report { id, length: 3, hex: Some(format!("{id:02x}0102")) })
+            .collect();
+        FeatureRead { outcome, reports }
+    }
+
+    #[test]
+    fn a_device_whose_nodes_are_not_read_yet_says_not_read_and_one_with_nothing_declared_says_so() {
+        let devices = unknown_devices([
+            with_features(entry(0x1234, 1, Some("A"), 0, 1, 2), Some(FeatureRead::new(Outcome::NothingToRead))),
+            with_features(entry(0x1234, 1, Some("A"), 1, 0xFF00, 1), Some(FeatureRead::new(Outcome::NothingToRead))),
+            with_features(entry(0x1234, 2, Some("B"), 0, 1, 2), Some(FeatureRead::new(Outcome::NothingToRead))),
+            with_features(entry(0x1234, 2, Some("B"), 1, 0xFF00, 1), None),
+        ]);
+        assert_eq!(devices[0].feature_reports, Some(Vec::new()));
+        assert_eq!(devices[1].feature_reports, None);
+    }
+
+    #[test]
+    fn feature_reports_are_listed_by_interface_once_each() {
+        let ok = read_of(Outcome::Read, &[0x20, 0x21]);
+        let devices = unknown_devices([
+            with_features(entry(0x1234, 1, Some("A"), 2, 0xFF01, 1), Some(FeatureRead::new(Outcome::NotOpened))),
+            with_features(entry(0x1234, 1, Some("A"), 1, 0xFF00, 1), Some(ok.clone())),
+            // The same node listed twice (Windows lists every collection).
+            with_features(entry(0x1234, 1, Some("A"), 1, 0xFF00, 1), Some(ok.clone())),
+            with_features(entry(0x1234, 1, Some("A"), 0, 1, 2), Some(FeatureRead::new(Outcome::NothingToRead))),
+        ]);
+        assert_eq!(
+            devices[0].feature_reports,
+            Some(vec![
+                InterfaceFeatures { interface: 1, read: ok },
+                InterfaceFeatures { interface: 2, read: FeatureRead::new(Outcome::NotOpened) },
+            ])
+        );
+        let json = serde_json::to_value(&devices[0]).unwrap();
+        assert_eq!(json["feature_reports"][1]["outcome"], "not_opened");
+        assert_eq!(json["feature_reports"][0]["reports"][0]["hex"], "200102");
     }
 
     #[cfg(target_os = "linux")]
@@ -358,7 +463,7 @@ mod tests {
         std::os::unix::fs::symlink(&hid, node.join("device")).unwrap();
 
         let details = read_sysfs(&root.join("class"), "/dev/hidraw4");
-        assert_eq!(details, NodeDetails { descriptor: Some(MOUSE.to_vec()), usb_interfaces: Some(3) });
+        assert_eq!(details, NodeDetails { descriptor: Some(MOUSE.to_vec()), usb_interfaces: Some(3), features: None });
         // A node that is not there, or not a hidraw node, says nothing.
         assert_eq!(read_sysfs(&root.join("class"), "/dev/hidraw9"), NodeDetails::default());
         assert_eq!(read_sysfs(&root.join("class"), "/dev/input/event4"), NodeDetails::default());

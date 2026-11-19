@@ -10,6 +10,7 @@ pub mod conflicts;
 pub mod corsair;
 pub mod effects;
 pub mod error;
+pub mod feature_reports;
 pub mod focus;
 pub mod g300;
 pub mod games;

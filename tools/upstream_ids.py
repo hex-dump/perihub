@@ -34,7 +34,7 @@ def libratbag(root: Path):
         text = f.read_text(errors="replace")
         name = re.search(r"^Name=(.*)$", text, re.M)
         driver = re.search(r"^Driver=(.*)$", text, re.M)
-        for vid, pid in re.findall(r"usb:([0-9a-fA-F]{4}):([0-9a-fA-F]{4})", text):
+        for vid, pid in re.findall(r"(?:usb|bluetooth):([0-9a-fA-F]{4}):([0-9a-fA-F]{4})", text):
             yield hexid(vid, pid), name.group(1).strip() if name else f.stem, f"driver {driver.group(1).strip() if driver else '?'}"
 
 
