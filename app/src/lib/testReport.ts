@@ -1,7 +1,7 @@
 import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
-import type { DescriptorCollection, DescriptorReports, HidppFeature, MouseInfo, ReportDevice } from "./api";
+import type { DescriptorCollection, DescriptorReports, HidppFeature, InterfaceFeatures, MouseInfo, ReportDevice } from "./api";
 import { kindName } from "./logitechFeatures";
 import { layoutReport } from "./keyboardLayout.svelte";
 
@@ -373,10 +373,35 @@ function reportLengths(collections: DescriptorCollection[]): string {
     .join("; ");
 }
 
+/** What happened to one interface's feature reports, one line for it and one for each id asked for. */
+const FEATURE_ENDINGS: Record<InterfaceFeatures["outcome"], string> = {
+  nothing_to_read: "",
+  not_opened: "not opened (it needs rights PeriHub does not ask for)",
+  read: "",
+  stopped_after_error: "stopped after the first error, the other ids were not asked for",
+  timed_out: "stopped after no answer in time, the other ids were not asked for",
+};
+
+/** The section "Feature reports (read only)": the current contents of the feature reports a device's
+ * vendor-defined collections declare, read with GET_FEATURE only, from the interfaces PeriHub could open
+ * without extra rights. `null`: they were not read (yet). */
+export function featureLines(reports: InterfaceFeatures[] | null): string[] {
+  if (reports === null) return ["  not read"];
+  const lines = reports.flatMap((f) => [
+    ...f.reports.map(
+      (r) =>
+        "  interface " + f.interface + ", id " + r.id.toString(16).padStart(2, "0") + " (" + r.length + " bytes): " + (r.hex ?? "no answer"),
+    ),
+    ...(FEATURE_ENDINGS[f.outcome] ? ["  interface " + f.interface + ": " + FEATURE_ENDINGS[f.outcome]] : []),
+  ]);
+  return lines.length ? lines : ["  none declared by a vendor-defined collection"];
+}
+
 /** What PeriHub sees of a device, for the "What PeriHub saw" field: names, ids, release number, HID
- * collections and the shape of each interface's report descriptor (never a serial number or a path).
- * `raw`: also the descriptors in hex, which a maintainer can decode to the last byte. */
-export function deviceDetails(device: ReportDevice, version: string, system: string, raw = true): string {
+ * collections, the shape of each interface's report descriptor and the contents of its feature reports
+ * (never a serial number or a path). `raw`: also the descriptors in hex, which a maintainer can decode to
+ * the last byte. `features`: also the feature reports (the section is then there, saying it was left out). */
+export function deviceDetails(device: ReportDevice, version: string, system: string, raw = true, features = true): string {
   const collections = device.collections.map(
     (c) =>
       "  " + (c.interface < 0 ? "no interface number" : "interface " + c.interface) + ", usage page " + hex(c.usage_page) + ", usage " + hex(c.usage),
@@ -401,12 +426,15 @@ export function deviceDetails(device: ReportDevice, version: string, system: str
     "Report descriptors (lengths in bytes, with the id byte):",
     ...(descriptors.length ? descriptors : ["  not read"]),
     ...(rawLines.length ? ["Raw descriptors (hex):", ...(raw ? rawLines : ["  left out of the link: use Copy report"])] : []),
+    "Feature reports (read only):",
+    ...(features ? featureLines(device.feature_reports) : ["  left out of the link: use Copy report"]),
   ].join("\n");
 }
 
 /** The device request form, filled in with what PeriHub sees of `device`. GitHub fills in inputs,
  * text areas and dropdowns from the link, not checkboxes, so what the device can do is left to be
- * ticked. The link stays under [MAX_URL]: the raw descriptors go first, then the end of the details. */
+ * ticked. The link stays under [MAX_URL]: the raw descriptors go first, then the feature reports, then the
+ * end of the details. */
 export function deviceRequestUrl(device: ReportDevice, version: string, system: string): string {
   const name = reportDeviceName(device);
   const link = (details: string) => {
@@ -425,7 +453,9 @@ export function deviceRequestUrl(device: ReportDevice, version: string, system: 
   };
   const full = link(deviceDetails(device, version, system));
   if (full.length <= MAX_URL) return full;
-  const lines = deviceDetails(device, version, system, false).split("\n");
+  const withFeatures = deviceDetails(device, version, system, false);
+  if (link([withFeatures, SHORTENED].join("\n")).length <= MAX_URL) return link([withFeatures, SHORTENED].join("\n"));
+  const lines = deviceDetails(device, version, system, false, false).split("\n");
   while (lines.length > 1 && link([...lines, SHORTENED].join("\n")).length > MAX_URL) lines.pop();
   return link([...lines, SHORTENED].join("\n"));
 }

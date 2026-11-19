@@ -71,7 +71,7 @@ const receiver = (unsupported: UnsupportedReceiverDevice[], extra: Partial<Recei
 const unknown: ReportDevice = {
   vendor_id: 0x1234, product_id: 0xabcd, manufacturer: "Acme", product: "Zap Mouse", bus: "USB",
   collections: [{ interface: 0, usage_page: 1, usage: 2 }],
-  release: null, usb_interfaces: null, descriptors: [],
+  release: null, usb_interfaces: null, descriptors: [], feature_reports: null,
 };
 
 const status = (part: Partial<DeviceStatus>): DeviceStatus =>

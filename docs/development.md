@@ -89,6 +89,7 @@ app/                    UI: Tauri 2 + Svelte 5
 packaging/linux         udev rules
 docs/protocols          protocols described in our own words, written before the code
 docs/captures.md        how a tester records what the official software sends to a device
+docs/device-request.md  what a device request carries, and why reading the feature reports is safe
 ```
 
 - Device communication goes through [hidapi](https://github.com/libusb/hidapi). On Linux the
