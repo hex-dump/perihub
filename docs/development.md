@@ -144,7 +144,33 @@ It refuses an id PeriHub does not know, a Logitech mouse by USB id (its memory f
 memory format PeriHub does not write, and anything confirmed already. Otherwise it adds the entry
 (sorted, one per line), runs `cargo xtask gen`, and adds the line under "New devices" in
 `CHANGELOG.md`. A confirmed device keeps the safety checks of an experimental one (No warranty box,
-backup, read-back, undo) for now.
+backup, read-back, undo) for now. With `--report FILE` (the text of the issue), the transcript at the
+end of its test report also becomes a replay fixture ([replay.md](replay.md)) when it is whole, read-only
+and the device's own; its `expect` holds only what the confirmation is about, and the values the tester
+confirmed are added by hand.
+
+The same happens by itself for a clean report: `tools/triage.py` (run on every new issue) says a test
+report confirms something only if it was made by the app (first line `PeriHub X.Y.Z on …`, from the
+test report form, with the report the **Test my device** wizard makes counting the same) from the
+latest version, the device is in the latest release's `site/devices.json` and not supported yet, there
+or on main (for a Logitech mouse: the memory format is not tested yet, PeriHub can write it, and the
+mouse was saved to over the cable), no line of the report is an error (a transcript is skipped, a
+cut one confirms nothing), "Messages and errors" and "What is wrong or missing" are empty, and the
+boxes that say what PeriHub shows matches are ticked (for a Logitech mouse also the two about saving).
+Anything doubtful confirms nothing, and a person handles the issue as before. The `Confirm a device`
+workflow (`.github/workflows/confirm.yml`) then runs `cargo xtask confirm`, the core and xtask tests
+and `cargo xtask check`, pushes `confirm/<id>` and opens a pull request that says "Closes #N"; merging
+it is the maintainer's one click. A pull request opened with `GITHUB_TOKEN` does not start CI, which
+main's ruleset requires: close and reopen it. If Actions may not create pull requests in the
+repository, it pushes the branch and comments with the link to open it. To run it by hand:
+**Actions → Confirm a device → Run workflow** with the issue number. `tools/test_triage.py` tests the
+decision.
+
+A device request gets its answer from the same script: the level when the latest release knows the
+device, "can be added directly" (label `ready to add`) when the id is in `tools/upstream-seen.json`
+for a vendor PeriHub has a driver for (libratbag for Logitech, OpenRazer for Razer, rivalcfg for
+SteelSeries), and "needs USB captures" (label `needs captures`, linking [captures.md](captures.md))
+otherwise.
 
 ## Releasing
 
@@ -178,7 +204,8 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 | Release comment | a release is published | one comment on each open issue the notes or commits name, saying the version is out; nothing is closed |
 | AUR package | a release is published | PKGBUILD and .SRCINFO for it, committed to the `aur` branch (not main, which takes no pushes from bots) |
 | Website | main, a published release | builds and publishes `site/` |
-| Triage | a new issue | answers requests for devices PeriHub knows, asks old test reports to retry, labels brand and kind |
+| Triage | a new issue | answers requests (the device's level, "ready to add" or "needs captures"), asks old test reports to retry, labels brand and kind; a clean test report starts Confirm a device |
+| Confirm a device | triage, or by hand | `cargo xtask confirm` for the report in an issue, checks, and a pull request that makes the device supported |
 | Reminders | every day | one reminder when an author has not answered a question for 14 days (device requests, test reports and unlabeled issues) |
 | Waiting for reporter | a new comment on an issue | the label `waiting for reporter` when the maintainer asks something, removed when the reporter answers |
 | Upstream device ids | Mondays | ids other projects know and PeriHub has not looked at, in one issue |
