@@ -327,7 +327,7 @@ describe("Test report prompt", () => {
     calls.status = vi.fn(async () => ({ ...empty(), mouse: mouse(false), scanned: true }));
     const first = render(App);
     await wait();
-    expect(prompt()?.textContent).toContain("Your Logitech G403 isn't confirmed yet. Sending a test report takes 30 seconds");
+    expect(prompt()?.textContent).toContain("Your Logitech G403 isn't confirmed yet. Sending a test report takes a couple of minutes");
     (screen.getByRole("button", { name: "Dismiss" }) as HTMLButtonElement).click();
     await wait();
     expect(prompt()).toBeNull();

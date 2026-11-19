@@ -424,7 +424,7 @@
       {#if prompt}
         <div class="notice info row confirm" role="region" aria-label="Test report">
           <span class="grow">
-            Your {prompt.name} isn't confirmed yet. Sending a test report takes 30 seconds and unlocks it for everyone.
+            Your {prompt.name} isn't confirmed yet. Sending a test report takes a couple of minutes and unlocks it for everyone.
           </span>
           <button class="tiny" onclick={testPrompted}>Send test report</button>
           <button class="ghost tiny" aria-label="Dismiss" onclick={() => (promptKey = null)}><Icon name="close" /></button>
