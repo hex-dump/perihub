@@ -4,14 +4,12 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
-## Unreleased
-
-### New devices
-- **EVision keyboards**, 14 ids on an EVision controller (`320f:505b`, a keyboard sold as the Surmen V400 in [issue #80](https://github.com/hex-dump/perihub/issues/80), and thirteen more that OpenRGB lists), **on Windows only for now**. PeriHub reads the lighting in use (mode, brightness, speed, colour), counts the key table, and on `320f:5041` reads the profile in use. On `320f:505b`, the only id someone has tried these commands on, the lighting (mode, brightness, colour, speed) can also be changed as an experimental feature, with **Save to memory** after the No warranty box, a backup, a read-back and the 15-second undo; every change stays in the keyboard's flash. The other ids are read only. Written from facts found in OpenRGB and OpenEVision (GPL-2.0; no code copied). Nobody has tried one with PeriHub yet: a test report moves a keyboard up. Key remapping, macros and onboard profiles wait for captures. On Linux these keyboards are not opened: their vendor collection shares interface 1 with a keyboard, so the udev rule would also give programs what is typed, and **Send a report** lists the keyboard with its interfaces instead.
-
 ## 0.9.5 — 2026-11-19
 
 When you connect a device nobody has confirmed on real hardware yet, PeriHub now offers once to send a test report for it with **Test my device**: one report is what moves a device up for everyone who has it. A device request sent from the app now carries everything needed to add the device, and a clean test report leads straight to the device being confirmed.
+
+### New devices
+- **EVision keyboards**, 14 ids on an EVision controller (`320f:505b`, a keyboard sold as the Surmen V400 in [issue #80](https://github.com/hex-dump/perihub/issues/80), and thirteen more that OpenRGB lists), **on Windows only for now**. PeriHub reads the lighting in use (mode, brightness, speed, colour), counts the key table, and on `320f:5041` reads the profile in use. On `320f:505b`, the only id someone has tried these commands on, the lighting (mode, brightness, colour, speed) can also be changed as an experimental feature, with **Save to memory** after the No warranty box, a backup, a read-back and the 15-second undo; every change stays in the keyboard's flash. The other ids are read only. Written from facts found in OpenRGB and OpenEVision (GPL-2.0; no code copied). Nobody has tried one with PeriHub yet: a test report moves a keyboard up. Key remapping, macros and onboard profiles wait for captures. On Linux these keyboards are not opened: their vendor collection shares interface 1 with a keyboard, so the udev rule would also give programs what is typed, and **Send a report** lists the keyboard with its interfaces instead.
 
 ### Added
 - **A "What's new" dialog after each update**: the first time PeriHub starts on a new version it shows that version's release notes (the summary and the title of each entry, with a link to the full notes), once. **Settings → About → What's new** opens it again. A first install shows nothing, and the "PeriHub was updated" notice is not shown next to it.
