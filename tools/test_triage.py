@@ -671,6 +671,69 @@ class DeviceRequestAnswers(unittest.TestCase):
         self.assertIn("ready to add", result["labels"])
 
 
+class AutoAdd(unittest.TestCase):
+    """"Mechanically addable": a project whose table a generator writes lists the id, nobody has it yet."""
+
+    def issue(self, usb, number=7):
+        return {**req(usb), "number": number}
+
+    def test_an_openrazer_id_nobody_has_is_auto_added_and_the_answer_says_so(self):
+        result = triage.triage(self.issue("1532:0099"), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM)
+        self.assertEqual((result["auto_add"], result["issue"]), ("1532:0099", 7))
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("written and built automatically", result["comment"])
+        self.assertIn("posted on this issue", result["comment"])
+        self.assertIn("Test my device", result["comment"])
+        self.assertNotIn("A maintainer will look", result["comment"])
+
+    def test_a_listed_id_without_a_generator_is_not(self):
+        # libratbag's Logitech devices, rivalcfg's SteelSeries ones and OpenRGB's have no generator to add an id to.
+        upstream = {"libratbag": ["046d:4099"], "openrazer": [], "rivalcfg": ["1038:1234"], "OpenRGB": ["1532:0098"]}
+        devices = REQ_DEVICES + [{"brand": "SteelSeries", "name": "Rival", "kind": "mouse", "level": "experimental", "usb_ids": ["1038:0001"]}]
+        for usb in ("046d:4099", "1038:1234", "1532:0098"):
+            with self.subTest(usb=usb):
+                result = triage.triage(self.issue(usb), "0.9.0", devices, upstream=upstream)
+                self.assertEqual(result["labels"][-1], "ready to add")
+                self.assertNotIn("auto_add", result)
+                self.assertNotIn("written and built automatically", result["comment"])
+                self.assertIn("will be posted on this issue", result["comment"])
+
+    def test_known_ids_and_ids_nobody_lists_are_not(self):
+        for usb in ("1532:0078", "dead:beef"):
+            with self.subTest(usb=usb):
+                self.assertNotIn("auto_add", triage.triage(self.issue(usb), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM))
+
+    def test_an_id_a_test_branch_has_already_is_not_started_again(self):
+        branches = {"test/auto-1532-0099": [{"usb_ids": ["1532:0099"]}]}
+        result = triage.triage(self.issue("1532:0099"), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM, branches=branches)
+        self.assertNotIn("auto_add", result)
+        self.assertNotIn("written and built automatically", result["comment"])
+
+    def test_a_pasted_request_without_a_number_starts_nothing(self):
+        self.assertNotIn("auto_add", triage.triage(req("1532:0099"), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM))
+
+    def test_the_pure_function(self):
+        up = {"openrazer": ["1532:0099", "1532:0078"], "libratbag": ["046d:4099"]}
+        self.assertTrue(triage.auto_addable("1532:0099", up, REQ_DEVICES))
+        self.assertFalse(triage.auto_addable("1532:0078", up, REQ_DEVICES))  # known
+        self.assertFalse(triage.auto_addable("046d:4099", up, REQ_DEVICES))  # no generator
+        self.assertFalse(triage.auto_addable("1532:0001", up, REQ_DEVICES))  # nobody lists it
+        self.assertFalse(triage.auto_addable("1532:99", up, REQ_DEVICES))  # not a USB id
+        self.assertFalse(triage.auto_addable("1532:0099", {}, REQ_DEVICES))
+
+    def test_the_pairs_are_the_ones_auto_add_has_generators_for(self):
+        import auto_add
+
+        self.assertEqual(triage.MECHANICAL, set(auto_add.GENERATORS))
+
+    def test_the_real_example_viper_v3_pro_dongle(self):
+        seen = json.loads((triage.ROOT / "tools/upstream-seen.json").read_text())
+        catalogue = json.loads((triage.ROOT / "site/devices.json").read_text())["devices"]
+        if any("1532:00c1" in d["usb_ids"] for d in catalogue):
+            self.skipTest("1532:00c1 is in the catalogue now")
+        self.assertTrue(triage.auto_addable("1532:00c1", seen, catalogue))
+
+
 class Catalogue(unittest.TestCase):
     """The data the answers come from: every project's ids in the files are well formed."""
 

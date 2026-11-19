@@ -211,6 +211,7 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 | AUR package | a release is published | PKGBUILD and .SRCINFO for it, committed to the `aur` branch (not main, which takes no pushes from bots) |
 | Website | main, a published release | builds and publishes `site/` |
 | Triage | a new issue | answers requests (the device's level, "ready to add" or "needs captures"), asks old test reports to retry, labels brand and kind; a clean test report starts Confirm a device |
+| Auto-add a device | triage when a request is "ready to add" with an id a generator can write, or by hand (`issue` and `usb`) | for OpenRazer's mice (`tools/triage.py` `MECHANICAL`, `tools/auto_add.py` `GENERATORS`): the id goes in `tools/auto-add.json`, `tools/openrazer_facts.py` writes the table from the source at the commit the table names, `cargo xtask gen` and the checks run, and the commit (`Test: #N`) goes on `test/auto-VVVV-PPPP`; the branch is pushed, Test build is started by hand (a push made with the workflow token starts nothing), and a draft pull request to main is opened. If the generator cannot produce the id or a check fails, nothing is commented and the issue gets the label `needs maintainer`. Nothing is pushed to main, and nothing is merged before a tester has confirmed it |
 | Confirm a device | triage, or by hand | `cargo xtask confirm` for the report in an issue, checks, and a pull request that makes the device supported; for a device only on a `test/…` branch, the commit goes to that branch and the pull request is from it to main |
 | Reminders | every day | one reminder when an author has not answered a question for 14 days (device requests, test reports and unlabeled issues) |
 | Waiting for reporter | a new comment on an issue | the label `waiting for reporter` when the maintainer asks something, removed when the reporter answers |
@@ -219,6 +220,24 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 | Security advisories | Mondays | known vulnerabilities in the Rust crates and npm packages |
 | Dependabot | weekly | one pull request per ecosystem (Cargo, npm, Actions) |
 | Screenshots | by hand, a published release | `docs/screenshots` and the social preview from the interface with simulated devices (`npm run screenshots`, `app/preview`), committed to the `assets` branch (`screenshots/`, `social-preview.png`) when they change, then starts Website; the README and the website read them from there |
+
+### Devices added without a person
+
+Which ids can be added by the Auto-add workflow is decided in two places that agree (a test keeps them in step):
+`tools/triage.py` (`MECHANICAL`, a pure function `auto_addable` that needs only the catalogue and the ids the
+upstream projects list) and `tools/auto_add.py` (`GENERATORS`, the (project, vendor) pairs whose table a script
+writes from the project's source). Only OpenRazer's mice (1532) are such a pair today: at the commit the table
+names, every Razer mouse is in the table except the receivers, docks and wireless dongles the generator leaves out,
+and `tools/auto-add.json` (`{"allow": ["1532:00c1"]}`) lets an id through. Not the others: libratbag's Logitech
+devices and the other brands have no generator (their drivers and models are written by hand), rivalcfg's table
+already has every id of its pinned commit (a newer one needs the pin bumped, which brings every new id and changed
+fact, so a person reads it), the Razer keyboard table leaves out only laptops and ids another driver shares, and
+OpenRGB is for lights only. The generator's output may only gain the one device (`auto_add.check_diff`), else a
+person takes over.
+
+To try it without GitHub, in a clean checkout: `python3 tools/auto_add.py 1532:00c1 85 --src /tmp/openrazer --dry-run`
+(it fetches the pinned commit into `--src`, builds the branch in a throwaway worktree, runs the checks, prints
+the commit and removes everything; `--keep` keeps the worktree, `--skip-checks` leaves out the cargo checks).
 
 ## Performance measurements
 

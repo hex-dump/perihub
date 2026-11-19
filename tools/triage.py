@@ -2,7 +2,8 @@
 """Reads a new device request or test report and says what the triage workflow should do.
 
   triage.py EVENT.json LATEST_VERSION [RELEASED_DEVICES.json [BRANCHES.json]]   → {"comment": "..." or null, "labels": [...]}
-                                           plus {"confirm": {...}, "issue": N} when the report confirms something
+                                           plus {"confirm": {...}, "issue": N} when the report confirms something,
+                                           or {"auto_add": "1532:00c1", "issue": N} when the id can be added without a person
 
 A request for a device the latest release recognizes gets an answer with its level; one for a device
 that any project lists is "ready to add": added directly if PeriHub has a driver for it, else by writing a driver from
@@ -15,7 +16,9 @@ a person reviews what it opens. Anything doubtful confirms nothing. Everything e
 RELEASED_DEVICES.json is site/devices.json as of the latest release's tag: a device that is only on
 main is not in it, and is left to the maintainer, since no published version has it. Without it,
 site/devices.json is used for both.
-A new device is never merged before a tester confirms it: it is on a test/<name> branch, and the tester
+"Ready to add" with a project and vendor whose table a generator writes (MECHANICAL: OpenRazer's mice) says
+{"auto_add": "1532:00c1"}: the auto-add workflow writes the support on a test branch and starts its test
+build by itself, and the answer says so. A new device is never merged before a tester confirms it: it is on a test/<name> branch, and the tester
 runs that branch's test build, whose reports start "PeriHub 0.9.5 (test build test/x@abc1234) on ...".
 BRANCHES.json ({"test/x": [devices of site/devices.json on that branch]}, made by
 tools/test-branch-devices.sh) lets a clean report of such a build confirm the device on its branch:
@@ -44,6 +47,12 @@ UPSTREAM_URLS = {
 # lists an id of another vendor tells nothing PeriHub can build on: OpenRGB is for lights only, and its
 # ids are of many protocols PeriHub has no driver for.
 PROJECT_VENDORS = {"libratbag": {"046d"}, "openrazer": {"1532"}, "rivalcfg": {"1038"}}
+# The (project, vendor) pairs whose table a generator writes from the project's source, so that
+# tools/auto_add.py can add an id to it without a person (it keeps the same pairs, GENERATORS: test_triage.py
+# checks they agree). Not the others: libratbag's Logitech devices have no generator (their drivers and
+# models are written by hand), rivalcfg's table already has every id of its pinned commit (a newer one needs
+# the pin bumped, by a person), and OpenRGB is for lights only.
+MECHANICAL = {("openrazer", "1532")}
 # Levels of a device PeriHub sends something to, which a driver exists for.
 DRIVER_LEVELS = {"supported", "experimental", "read_only", "by_memory_format"}
 LEVELS = {
@@ -131,7 +140,36 @@ TEST_BUILD_STEPS = (
 )
 
 
-def next_steps(usb: str, latest: str, devices: list[dict], upstream: dict[str, list[str]]) -> tuple[str, str]:
+# The same, when the support is written by the repository's own workflow: nobody has to do anything.
+AUTO_TEST_BUILD_STEPS = (
+    "The support is being **written and built automatically** right now (a draft pull request on a `test/` branch "
+    "and a **test build**): the link to the test build is posted on this issue when it is ready. Install it, connect "
+    "the device, and try it with **Test my device**: it reads the device, and the report says which test build it is "
+    "from. Once a clean report comes in, the device is confirmed and goes into the next release. Nothing more is "
+    "needed from you until the test build is here. If the automatic step cannot add it, a maintainer takes over and "
+    "the link still comes here."
+)
+
+
+def auto_addable(usb: str, upstream: dict[str, list[str]], devices: list[dict], branches: dict[str, list[dict]] | None = None) -> bool:
+    """Whether tools/auto_add.py can add this id without a person, from what is known without the sources: a project
+    whose table a generator writes (MECHANICAL) lists it, and no device of the catalogue (the devices of main) or of
+    a test branch has it already. Whether the generator really produces it is found out by the auto-add workflow,
+    which hands the issue to a person when it does not."""
+    if not re.fullmatch(r"[0-9a-f]{4}:[0-9a-f]{4}", usb):
+        return False
+    if any(usb in d["usb_ids"] for d in devices) or any(usb in d["usb_ids"] for ds in (branches or {}).values() for d in ds):
+        return False
+    return any((project, usb.split(":")[0]) in MECHANICAL for project in listed_by(usb, upstream))
+
+
+def next_steps(
+    usb: str,
+    latest: str,
+    devices: list[dict],
+    upstream: dict[str, list[str]],
+    branches: dict[str, list[dict]] | None = None,
+) -> tuple[str, str]:
     """What happens next for a device PeriHub does not know: the answer and the label.
     Only the fact that a project lists the id is used from it."""
     projects = listed_by(usb, upstream)
@@ -139,10 +177,11 @@ def next_steps(usb: str, latest: str, devices: list[dict], upstream: dict[str, l
     documented = [p for p in projects if brand and usb.split(":")[0] in PROJECT_VENDORS.get(p, ())]
     if documented:
         project = documented[0]
+        steps = AUTO_TEST_BUILD_STEPS if auto_addable(usb, upstream, devices, branches) else TEST_BUILD_STEPS
         return (
             f"Thanks! `{usb}` is not in PeriHub {latest} yet, but [{project}]({UPSTREAM_URLS[project]}) lists it, and "
             f"PeriHub already has a driver for {brand} devices of that kind. So it **can be added directly**, as "
-            f"**read-only or experimental**. {TEST_BUILD_STEPS}",
+            f"**read-only or experimental**. {steps}",
             "ready to add",
         )
     if projects:
@@ -496,8 +535,12 @@ def triage(
             )
         elif not any(found in d["usb_ids"] for d in current):
             # Only on main: no published version has it, so what to say is up to the maintainer.
-            result["comment"], label = next_steps(found, latest, current, upstream or {})
+            result["comment"], label = next_steps(found, latest, current, upstream or {}, branches)
             result["labels"].append(label)
+            # The workflow that writes and builds it (auto-add.yml) is started with the id and this issue.
+            if label == "ready to add" and issue.get("number") and auto_addable(found, upstream or {}, current, branches):
+                result["auto_add"] = found
+                result["issue"] = issue["number"]
         return result
 
     if "test report" in labels:

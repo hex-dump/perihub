@@ -4,6 +4,11 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+### Added
+- **A Razer mouse OpenRazer documents is added without a person**: when a device request is "ready to add" and its id is one the generator of the Razer mouse table can write (including receivers and wireless dongles, which an allow list, `tools/auto-add.json`, lets through), the new Auto-add workflow writes the support on a `test/auto-…` branch, runs the checks, starts the test build, and opens a draft pull request. The test build's link comes on the request as for any test branch, and the answer to the request says so. If the generator cannot produce the id or a check fails, the request gets the label `needs maintainer` and a person takes over. Nothing is merged before a tester has confirmed the device.
+
 ## 0.9.5 — 2026-11-19
 
 When you connect a device nobody has confirmed on real hardware yet, PeriHub now offers once to send a test report for it with **Test my device**: one report is what moves a device up for everyone who has it. A device request sent from the app now carries everything needed to add the device, and a clean test report leads straight to the device being confirmed.

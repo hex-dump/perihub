@@ -5,6 +5,15 @@ description: Add support for a new device or brand to PeriHub, from sources to t
 
 # Adding a device to PeriHub
 
+**First check whether it is done already.** A request for an id that a generator writes (today: a Razer mouse
+OpenRazer lists; `tools/triage.py` `MECHANICAL`) is added by the Auto-add workflow with nobody doing anything: it
+makes the branch `test/auto-VVVV-PPPP` (`tools/auto_add.py`: the id in `tools/auto-add.json`, the generator, `cargo xtask
+gen`, the checks, a `Test: #N` commit), starts the test build and opens a draft pull request. Look for that branch
+and for the label `needs maintainer` on the issue: the label means the generator could not produce the id (a
+laptop, a keyboard, a mouse with no command PeriHub knows, an id newer than the pinned commit) or a check failed,
+so the rest of this page applies, by hand. Do not make a second branch for an id that has one. Never bump a
+generator's pinned commit just to add one id: it brings every new id and changed fact.
+
 Follow these steps in order. Ask the user before anything that publishes (push, issue comments,
 releases); the test build reply on an issue is already agreed.
 
@@ -101,7 +110,10 @@ confirmed ON THAT BRANCH (cargo xtask confirm) and a pull request from the branc
 - Put a line `Test: #N` (or `Tests: #N, #M`) in the body of a commit of the branch: that is what makes the
   build announce itself on the device request (a plain `#N` does nothing). A build with new commits
   posts a new comment on the open issue and deletes the earlier test build comments of the branch.
-  The triage answer to a "ready to add" request already tells the requester that this link will come.
+  The triage answer to a "ready to add" request already tells the requester that this link will come (for an
+  id the Auto-add workflow writes, it says the support is being made automatically).
+  The Auto-add workflow starts the build itself with `gh workflow run test-build.yml --ref test/auto-…`, because
+  its push is made with the workflow token and starts nothing; a push made by you does start it, so never do both.
 - The tester installs the test build, connects the device and runs **Test my device**.
 - No pull request to main is merged, and no release made, until the confirmation (step 7) is on the branch.
   A device that "needs captures" waits for them (`docs/captures.md`); once a driver is written from
