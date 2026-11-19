@@ -524,23 +524,32 @@ class DeviceRequestAnswers(unittest.TestCase):
         self.assertIn("openrazer", result["comment"])
         self.assertEqual(result["labels"], ["brand: Razer", "ready to add"])
 
-    def test_the_project_has_to_be_the_one_of_the_vendor(self):
-        # OpenRGB lists a Razer id, but its list says nothing about the protocol PeriHub's driver speaks.
+    def test_an_id_only_a_project_of_another_vendor_lists_is_ready_to_add_too(self):
+        # OpenRGB lists a Razer id: the protocol is documented, PeriHub's Razer driver is not needed to say so.
         result = run_req("1532:0098")
-        self.assertEqual(result["labels"][-1], "needs captures")
-        self.assertNotIn("openrazer", result["comment"])
-        self.assertIn("OpenRGB lists the id", result["comment"])
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("OpenRGB", result["comment"])
 
-    def test_the_vendor_needs_a_driver_in_perihub(self):
-        # libratbag lists it, but PeriHub only recognizes Acme, it has no driver for it.
-        result = run_req("abcd:0002")
-        self.assertIn("USB captures", result["comment"])
-        self.assertEqual(result["labels"][-1], "needs captures")
-        self.assertNotIn("ready to add", result["labels"])
+    def test_a_documented_id_without_a_driver_needs_a_new_one_and_no_captures(self):
+        # libratbag lists it, but PeriHub only recognizes Acme: a driver has to be written from the documentation.
+        for usb, project in (("abcd:0002", "libratbag"), ("beef:0777", "OpenRGB")):
+            with self.subTest(usb=usb):
+                upstream = dict(REQ_UPSTREAM, OpenRGB=REQ_UPSTREAM["OpenRGB"] + ["beef:0777"])
+                result = triage.triage(req(usb), "0.9.0", REQ_DEVICES, upstream=upstream)
+                self.assertIn("documents its protocol", result["comment"])
+                self.assertIn(project, result["comment"])
+                self.assertIn("no USB captures are needed", result["comment"])
+                self.assertIn("a little longer", result["comment"])
+                self.assertIn("test report", result["comment"])
+                self.assertNotIn(triage.CAPTURE_GUIDE, result["comment"])
+                self.assertEqual(result["labels"][-1], "ready to add")
+                self.assertNotIn("needs captures", result["labels"])
 
-    def test_an_id_nobody_documents_needs_captures_and_links_the_guide(self):
+    def test_an_id_nobody_lists_gets_optional_captures_and_links_the_guide(self):
         result = run_req("dead:beef")
-        self.assertIn("no public documentation", result["comment"])
+        self.assertIn("A maintainer will look for documentation", result["comment"])
+        self.assertIn("optional", result["comment"])
+        self.assertIn("never required", result["comment"])
         self.assertIn(triage.CAPTURE_GUIDE, result["comment"])
         self.assertEqual(result["labels"], ["needs captures"])
         self.assertNotIn("OpenRGB", result["comment"])

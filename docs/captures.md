@@ -5,6 +5,9 @@ sends for it. When there is no public documentation, those messages have to be r
 device, by its owner, while the official software changes one setting at a time. This guide shows how.
 It is the same method on every system; only the tool changes.
 
+**Captures are optional.** A device request counts without them: a maintainer first looks for public
+documentation of the device. This guide is for people comfortable with it who want to speed things up.
+
 You do not need to understand the recording. You need to change one thing at a time and write down what
 you changed and when.
 
