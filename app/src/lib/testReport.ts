@@ -1,3 +1,4 @@
+import { MAX_LINK, fitsGithubLink } from "./githubLink";
 import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
@@ -353,8 +354,9 @@ const BRANDS: Record<number, string> = {
   0x046d: "Logitech", 0x1038: "SteelSeries", 0x1b1c: "Corsair", 0x1532: "Razer", 0x0b05: "ASUS",
 };
 
-/** A link longer than this is not opened by GitHub (it answers 414 at about 8 KB). */
-export const MAX_URL = 8000;
+/** A link longer than this is not opened by GitHub (it answers 414 at about 8 KB); see also [fitsGithubLink],
+ * which every link is checked with. */
+export const MAX_URL = MAX_LINK;
 /** Said in the details when the link could not carry them all. */
 export const SHORTENED = "(shortened: Copy the details and paste them)";
 
@@ -475,12 +477,12 @@ export function deviceRequestLink(
     return DEVICE_REQUEST_FORM + "&" + query.join("&");
   };
   const full = link(deviceDetails(device, version, system, true, recording));
-  if (full.length <= MAX_URL) return { url: full, shortened: false };
+  if (fitsGithubLink(full)) return { url: full, shortened: false };
   const short = (details: string) => link([details, SHORTENED].join("\n"));
   // 1. The USB recording, as many of its lines as fit (none: the section is left out).
   if (recording) {
     const rows = recording.split("\n");
-    const fits = (n: number) => short(deviceDetails(device, version, system, true, rows.slice(0, n).join("\n"))).length <= MAX_URL;
+    const fits = (n: number) => fitsGithubLink(short(deviceDetails(device, version, system, true, rows.slice(0, n).join("\n"))));
     let lo = 0;
     let hi = rows.length - 1;
     while (lo < hi) {
@@ -492,8 +494,8 @@ export function deviceRequestLink(
   }
   // 2. The raw descriptors, 3. the feature reports, 4. the end of the details.
   const withFeatures = deviceDetails(device, version, system, false);
-  if (short(withFeatures).length <= MAX_URL) return { url: short(withFeatures), shortened: true };
+  if (fitsGithubLink(short(withFeatures))) return { url: short(withFeatures), shortened: true };
   const lines = deviceDetails(device, version, system, false, null, false).split("\n");
-  while (lines.length > 1 && link([...lines, SHORTENED].join("\n")).length > MAX_URL) lines.pop();
+  while (lines.length > 1 && !fitsGithubLink(link([...lines, SHORTENED].join("\n")))) lines.pop();
   return { url: link([...lines, SHORTENED].join("\n")), shortened: true };
 }
