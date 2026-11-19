@@ -30,6 +30,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIRMED_RS = ROOT / "crates/perihub-core/src/confirmed.rs"
@@ -151,6 +152,30 @@ AUTO_TEST_BUILD_STEPS = (
 )
 
 
+ON_BRANCH_STEPS = (
+    "A **test build** with it already exists, on the branch `{branch}`. To get it, open the "
+    "[test build runs of that branch]({url}), open the latest successful run, and download the file for your system "
+    "from the bottom of its page. Install it, connect the device, and try it with **Test my device**: it reads the "
+    "device, and the report says which test build it is from. Once a clean report comes in, the device is confirmed "
+    "and goes into the next release."
+)
+TEST_BUILD_RUNS = "https://github.com/hex-dump/perihub/actions/workflows/test-build.yml?query=branch%3A{branch}"
+# A Logitech device that has a vendor collection on usage page ff00 with usage 0001 or 0002 (HID++ short and long
+# reports) speaks HID++ 2.0, which is self-describing: the Logitech driver of PeriHub reads what the device has.
+HIDPP_COLLECTION = re.compile(r"usage page ff00, usage 000[12]\b", re.I)
+
+
+def speaks_hidpp(usb: str, saw: str) -> bool:
+    """Whether a Logitech device's "What PeriHub saw" block shows HID++ report collections."""
+    return usb.startswith("046d:") and bool(HIDPP_COLLECTION.search(saw or ""))
+
+
+def branch_with(usb: str, branches: dict[str, list[dict]] | None) -> str | None:
+    """The first test/* branch (by name) that has this id."""
+    having = sorted(b for b, ds in (branches or {}).items() if any(usb in d["usb_ids"] for d in ds))
+    return having[0] if having else None
+
+
 def auto_addable(usb: str, upstream: dict[str, list[str]], devices: list[dict], branches: dict[str, list[dict]] | None = None) -> bool:
     """Whether tools/auto_add.py can add this id without a person, from what is known without the sources: a project
     whose table a generator writes (MECHANICAL) lists it, and no device of the catalogue (the devices of main) or of
@@ -169,11 +194,20 @@ def next_steps(
     devices: list[dict],
     upstream: dict[str, list[str]],
     branches: dict[str, list[dict]] | None = None,
+    saw: str = "",
 ) -> tuple[str, str]:
     """What happens next for a device PeriHub does not know: the answer and the label.
-    Only the fact that a project lists the id is used from it."""
+    Only the fact that a project lists the id is used from it (or, for Logitech, that the device speaks HID++)."""
     projects = listed_by(usb, upstream)
     brand = driver_brand(usb.split(":")[0], devices)
+    branch = branch_with(usb, branches)
+    if branch:
+        url = TEST_BUILD_RUNS.format(branch=quote(branch, safe=""))
+        return (
+            f"Thanks! `{usb}` is not in PeriHub {latest} yet, but it is already added on a test branch. "
+            + ON_BRANCH_STEPS.format(branch=branch, url=url),
+            "ready to add",
+        )
     documented = [p for p in projects if brand and usb.split(":")[0] in PROJECT_VENDORS.get(p, ())]
     if documented:
         project = documented[0]
@@ -182,6 +216,13 @@ def next_steps(
             f"Thanks! `{usb}` is not in PeriHub {latest} yet, but [{project}]({UPSTREAM_URLS[project]}) lists it, and "
             f"PeriHub already has a driver for {brand} devices of that kind. So it **can be added directly**, as "
             f"**read-only or experimental**. {steps}",
+            "ready to add",
+        )
+    if brand and speaks_hidpp(usb, saw):
+        return (
+            f"Thanks! `{usb}` is not in PeriHub {latest} yet, but the device speaks **HID++** (Logitech's protocol, "
+            f"which PeriHub already supports for {brand} devices): it describes its own features, so it **can be added "
+            f"directly**, as **read-only or experimental**. {TEST_BUILD_STEPS}",
             "ready to add",
         )
     if projects:
@@ -535,7 +576,9 @@ def triage(
             )
         elif not any(found in d["usb_ids"] for d in current):
             # Only on main: no published version has it, so what to say is up to the maintainer.
-            result["comment"], label = next_steps(found, latest, current, upstream or {}, branches)
+            result["comment"], label = next_steps(
+                found, latest, current, upstream or {}, branches, answers.get("What PeriHub saw", "")
+            )
             result["labels"].append(label)
             # The workflow that writes and builds it (auto-add.yml) is started with the id and this issue.
             if label == "ready to add" and issue.get("number") and auto_addable(found, upstream or {}, current, branches):

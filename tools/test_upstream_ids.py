@@ -92,6 +92,22 @@ class OpenRazerReader(unittest.TestCase):
         self.assertEqual(sorted(found), ["1234:0001", "1532:00c0", "1532:00c1", "1532:00c2", "1532:00c3"])
 
 
+class LibratbagReader(unittest.TestCase):
+    def test_bluetooth_ids_are_read_with_the_usb_ones(self):
+        # The G604: its .device file has DeviceMatch=usb:046d:c539;bluetooth:046d:b024 style entries.
+        with tempfile.TemporaryDirectory() as tmp:
+            devices = Path(tmp) / "data/devices"
+            devices.mkdir(parents=True)
+            (devices / "logitech-g604.device").write_text(
+                "[Device]\nName=Logitech G604\nDeviceMatch=usb:046d:c539;bluetooth:046d:B024\nDriver=hidpp20\n"
+            )
+            found = {i for i, _, _ in upstream_ids.libratbag(Path(tmp))}
+        self.assertEqual(found, {"046d:c539", "046d:b024"})
+
+    def test_the_baseline_has_the_bluetooth_id_of_the_g604(self):
+        self.assertIn("046d:b024", json.loads(upstream_ids.SEEN.read_text())["libratbag"])
+
+
 class Baseline(unittest.TestCase):
     def test_the_baseline_has_the_ids_the_reader_used_to_miss(self):
         seen = json.loads(upstream_ids.SEEN.read_text())
