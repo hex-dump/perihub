@@ -57,6 +57,23 @@ class Git(unittest.TestCase):
                 self.assertEqual(notify.trailers(log), [31])
 
 
+    def test_a_dispatched_build_of_an_auto_add_branch_names_its_issue(self):
+        # A run started by hand (workflow_dispatch) has no "before" commit: the commits of the branch that are
+        # not on main count, which is the one commit tools/auto_add.py makes.
+        with tempfile.TemporaryDirectory() as self.d:
+            self.run_git("init", "-q", "-b", "main")
+            self.commit("base")
+            self.run_git("update-ref", "refs/remotes/origin/main", "HEAD")
+            self.run_git("checkout", "-q", "-b", "test/auto-1532-00c1")
+            tip = self.commit("Razer Viper V3 Pro (Wireless) (1532:00c1), added automatically\n\nTest: #85")
+            cwd = os.getcwd()
+            os.chdir(self.d)
+            self.addCleanup(os.chdir, cwd)
+            with mock.patch.object(notify, "git", lambda *a: self.run_git(*a) + "\n"):
+                log = notify.new_commits(tip, "origin/main", "", "test/auto-1532-00c1")
+            self.assertEqual(notify.trailers(log), [85])
+
+
 class Testbuild(unittest.TestCase):
     def run_tb(self, comments, branch="test/x", log="Test: #30"):
         calls = []
