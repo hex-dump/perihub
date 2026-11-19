@@ -5,7 +5,9 @@
 //! device and no interface is read from: only descriptors and metadata.
 
 use std::collections::HashMap;
+#[cfg(target_os = "linux")]
 use std::ffi::OsStr;
+#[cfg(target_os = "linux")]
 use std::path::Path;
 
 use hidapi::{BusType, DeviceInfo, HidApi};
@@ -147,6 +149,7 @@ fn read_node(api: &HidApi, d: &DeviceInfo, _path: &str) -> NodeDetails {
 /// A hidraw node's descriptor and the interface count of its USB device, from sysfs under
 /// `class_dir` (`/sys/class/hidraw`). The node's `device` is the HID device, whose parent is the
 /// USB interface, whose parent is the USB device.
+#[cfg(target_os = "linux")]
 fn read_sysfs(class_dir: &Path, node_path: &str) -> NodeDetails {
     let Some(name) = Path::new(node_path).file_name().and_then(OsStr::to_str).filter(|n| n.starts_with("hidraw"))
     else {
@@ -340,7 +343,7 @@ mod tests {
         );
     }
 
-    #[cfg(unix)]
+    #[cfg(target_os = "linux")]
     #[test]
     fn sysfs_gives_the_descriptor_and_the_interface_count_without_opening_the_node() {
         let root = std::env::temp_dir().join(format!("perihub-test-report-sysfs-{}", std::process::id()));
