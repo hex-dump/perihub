@@ -1,0 +1,48 @@
+<div class="get" id="get">
+            <div class="buttons os-buttons">
+              <a class="btn primary" data-os="windows" href="%%EXE_URL%%">
+                <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+                <span class="btn-text"><span class="btn-title">Download for Windows</span>
+                <span class="btn-sub">Installer · %%EXE_SIZE%%</span></span>
+              </a>
+              <a class="btn" data-os="linux" href="%%ROOT%%#linux">
+                <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+                <span class="btn-text"><span class="btn-title">Download for Linux</span>
+                <span class="btn-sub">.deb, .rpm<!--if FLATPAK-->, Flatpak<!--end FLATPAK--> or AppImage</span></span>
+              </a>
+            </div>
+            <div class="linux-choices" hidden>
+              <p class="choices-title">Download for Linux</p>
+              <div class="buttons choice-grid">
+                <a class="btn primary" href="%%DEB_URL%%">
+                  <span class="btn-text"><span class="btn-title">Debian, Ubuntu</span>
+                  <span class="btn-sub">.deb · %%DEB_SIZE%%</span></span>
+                </a>
+                <a class="btn primary" href="%%RPM_URL%%">
+                  <span class="btn-text"><span class="btn-title">Fedora, openSUSE</span>
+                  <span class="btn-sub">.rpm · %%RPM_SIZE%%</span></span>
+                </a>
+                <a class="btn" href="%%APPIMAGE_URL%%">
+                  <span class="btn-text"><span class="btn-title">Any distribution</span>
+                  <span class="btn-sub">AppImage · %%APPIMAGE_SIZE%%</span></span>
+                </a>
+                <!--if FLATPAK--><a class="btn" href="%%FLATPAK_URL%%">
+                  <span class="btn-text"><span class="btn-title">With Flatpak</span>
+                  <span class="btn-sub">.flatpak · %%FLATPAK_SIZE%%</span></span>
+                </a><!--end FLATPAK-->
+              </div>
+              <p class="small">The .deb and .rpm are smaller and set up USB access by themselves. On Arch and CachyOS, <a href="https://github.com/hex-dump/perihub#linux">build the package</a> from the repository.</p>
+            </div>
+            <div class="note mobile-note" hidden>
+              <p><b>PeriHub runs on Windows and Linux PCs.</b> Open this page on your computer to download it:</p>
+              <div class="copy-row">
+                <code class="url">%%PAGE_URL_SHORT%%</code>
+                <button type="button" class="copy" data-copy="%%PAGE_URL%%">Copy link</button>
+                <span class="copy-status" role="status"></span>
+              </div>
+            </div>
+            <div class="note mac-note" hidden>
+              <p><b>PeriHub is not available for macOS.</b> It runs on Windows and Linux.</p>
+            </div>
+            <p class="meta">Version %%VERSION%% · <a href="%%ROOT%%#download">Other packages and install notes</a></p>
+          </div>
