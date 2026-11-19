@@ -11,8 +11,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::{
     BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
-    check_settings, coolermaster, evga, logitech_g600, logitech_hidpp10, nordic, pulsar, qmk, razer, razer_keyboard,
-    roccat, sinowealth, steelseries, wraith, yjx,
+    check_settings, coolermaster, evga, evision, logitech_g600, logitech_hidpp10, nordic, pulsar, qmk, razer,
+    razer_keyboard, roccat, sinowealth, steelseries, wraith, yjx,
 };
 use crate::config;
 use crate::error::{Error, Result};
@@ -76,6 +76,7 @@ pub fn driver(model: &'static Model) -> Box<dyn Driver> {
         Protocol::CoolerMaster(params) => Box::new(coolermaster::CoolerMaster::new(params)),
         Protocol::Nordic(params) => Box::new(nordic::Nordic::new(params)),
         Protocol::Evga(params) => Box::new(evga::Evga::new(params)),
+        Protocol::Evision(params) => Box::new(evision::Evision::new(params)),
         Protocol::Yjx(params) => Box::new(yjx::Yjx::new(params)),
         Protocol::Wraith(params) => Box::new(wraith::Wraith::new(params)),
     }

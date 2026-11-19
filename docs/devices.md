@@ -35,6 +35,7 @@ the same format.
 - [EVGA mice](#evga-mice)
 - [YJX mice](#yjx-mice)
 - [Wraith W60](#wraith-w60)
+- [EVision keyboards](#evision-keyboards)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
 ## SteelSeries
@@ -773,6 +774,47 @@ colours, direction, full colour).
 | Keyboard | USB ID | Opened on Linux |
 |---|---|---|
 | W60 | `2e3c:c368` | — |
+<!-- end generated -->
+
+## EVision keyboards
+
+🧪 Experimental on `320f:505b`, 👁 read-only on the other ids, **on Windows only for now**: nobody has tried PeriHub on one yet.
+These are keyboards on an EVision controller, which many brands use (the Surmen V400 of
+[issue #80](https://github.com/hex-dump/perihub/issues/80) is a `320f:505b`). The protocol is described in
+[protocols/evision.md](protocols/evision.md) from facts found in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVision
+controllers and in [OpenEVision](https://github.com/iefedev/OpenEVision) (both GPL-2.0), a Windows app that tried it on
+a `320f:505b`: no code was copied. The ids are the ones OpenRGB lists; only `320f:505b` has been seen answering, so only
+it may be changed.
+
+- PeriHub reads the lighting in use (mode, brightness, speed, direction, random colour, colour) and, on the older layout,
+  counts the key table for the test report. On `320f:5041`, which stores three profiles, it reads the profile in use and
+  its lighting. A value outside what OpenRGB documents leaves the keyboard read-only, with the reason.
+- On `320f:505b` only, **Save to memory** changes the mode, brightness, colour and speed, after the **No warranty** box, with the
+  same backup, read-back and 15-second undo. Every change stays in the keyboard's flash, as the sources say.
+- Left out, waiting for captures from a tester (`docs/captures.md`): key remapping (the table's format is known, but not
+  which entry is which key), macros and onboard profiles (no source), per-key colours, the Fn layers and the polling rate.
+- **Not opened on Linux.** The vendor collection is on interface 1 together with a keyboard, a mouse and two more
+  collections, and Linux has one hidraw node per interface: opening it also gives access to what is typed, and a udev
+  rule would give that to any program running as you. **Send a report** lists the keyboard with its interfaces. Opening it
+  safely would take a rule you turn on yourself, with that warning, which PeriHub does not have yet.
+
+<!-- generated: table evision -->
+| Keyboard | USB ID | Opened on Linux | Level |
+|---|---|---|---|
+| RGB keyboard 320f 505b | `320f:505b` | — | 🧪 Experimental |
+| RGB keyboard 320f 5000 | `320f:5000` | — | 👁 Read-only |
+| RGB keyboard 320f 502a | `320f:502a` | — | 👁 Read-only |
+| RGB keyboard 320f 5064 | `320f:5064` | — | 👁 Read-only |
+| RGB keyboard 320f 5078 | `320f:5078` | — | 👁 Read-only |
+| RGB keyboard 320f 5084 | `320f:5084` | — | 👁 Read-only |
+| RGB keyboard 320f 5041 | `320f:5041` | — | 👁 Read-only |
+| RGB keyboard 0c45 5004 | `0c45:5004` | — | 👁 Read-only |
+| RGB keyboard 0c45 5104 | `0c45:5104` | — | 👁 Read-only |
+| RGB keyboard 0c45 5204 | `0c45:5204` | — | 👁 Read-only |
+| RGB keyboard 0c45 652f | `0c45:652f` | — | 👁 Read-only |
+| RGB keyboard 0c45 7672 | `0c45:7672` | — | 👁 Read-only |
+| RGB keyboard 0c45 7698 | `0c45:7698` | — | 👁 Read-only |
+| RGB keyboard 0c45 8520 | `0c45:8520` | — | 👁 Read-only |
 <!-- end generated -->
 
 ## Keyboards with QMK firmware (Vial, VIA)

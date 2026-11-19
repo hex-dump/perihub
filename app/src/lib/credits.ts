@@ -26,7 +26,7 @@ export const FACTS_ONLY =
   "These projects are under the GPL. PeriHub took only facts from them (commands, byte layouts, USB ids, interface numbers), described in its own words in docs/protocols, and wrote its own code. No code was copied.";
 
 export const NOT_AFFILIATED =
-  "PeriHub is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master or EVGA; product names belong to their owners.";
+  "PeriHub is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA or EVision; product names belong to their owners.";
 
 export const OWN_LICENSE = "PeriHub is released under the MIT license.";
 
@@ -162,6 +162,22 @@ export const creditGroups: CreditGroup[] = [
         license: "GPL-2.0-or-later",
         notes: [
           "The EVGA X12 and X20 USB ids, interfaces and lighting reports (docs/protocols/evga-mice.md). " + NO_CODE,
+        ],
+      },
+      {
+        name: "OpenRGB, EVision keyboard controllers (Controllers/EVisionKeyboardController)",
+        link: "https://gitlab.com/CalcProgrammer1/OpenRGB",
+        license: "GPL-2.0-or-later",
+        notes: [
+          "Commit 91714d1: the EVision keyboards' USB ids, interface and usage page, report format and checksum, the configuration read and write commands, the lighting header and its modes, and the layout of the newer controller's profiles (docs/protocols/evision.md). " + NO_CODE,
+        ],
+      },
+      {
+        name: "OpenEVision",
+        link: "https://github.com/iefedev/OpenEVision",
+        license: "GPL-2.0",
+        notes: [
+          "Commit 1cca304: what it checked on a 320f:505b: the reads and writes of the configuration memory, the layout of the lighting header and of the key table, the regions it never writes, and that every program with the collection open receives every answer (docs/protocols/evision.md). " + NO_CODE,
         ],
       },
       {

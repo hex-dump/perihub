@@ -152,6 +152,21 @@ fn udev_rule_never_opens_the_wraith_keyboard() {
 }
 
 #[test]
+fn udev_rule_never_opens_an_evision_keyboard() {
+    // Their vendor collection shares interface 1 with a keyboard collection: one hidraw node carries both.
+    use perihub_core::peripheral::{Protocol, models, opened_on_linux};
+    let keyboards: Vec<_> = models().filter(|m| matches!(m.protocol, Protocol::Evision(_))).collect();
+    assert!(keyboards.len() > 2);
+    for model in keyboards {
+        assert!(!opened_on_linux(model), "{}", model.name);
+        for id in model.product_ids {
+            let tag = format!(r#"ATTRS{{idVendor}}=="{:04x}", ATTRS{{idProduct}}=="{id:04x}""#, model.vendor_id);
+            assert!(!RULE.lines().any(|l| !l.trim_start().starts_with('#') && l.contains(&tag)), "{}", model.name);
+        }
+    }
+}
+
+#[test]
 fn udev_rule_never_opens_a_razer_keyboard_whose_interface_may_carry_typing() {
     use perihub_core::peripheral::{Protocol, models, opened_on_linux};
     let keyboards: Vec<_> = models().filter(|m| matches!(m.protocol, Protocol::RazerKeyboard(_))).collect();

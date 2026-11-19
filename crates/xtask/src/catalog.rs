@@ -98,6 +98,7 @@ pub fn family(protocol: &Protocol) -> Option<&'static str> {
         Protocol::CoolerMaster(_) => "coolermaster",
         Protocol::Nordic(_) => "nordic",
         Protocol::Evga(_) => "evga",
+        Protocol::Evision(_) => "evision",
         // Known by their collection and serial number, not by a USB id.
         Protocol::Qmk(_) => return None,
     })

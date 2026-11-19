@@ -491,6 +491,14 @@ was copied.
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its EVGA drivers
   (`Controllers/EVGAUSBController`): the EVGA X12 and X20 USB ids, interfaces and lighting reports (see
   `docs/protocols/evga-mice.md`).
+- [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its EVision keyboard controllers
+  (`Controllers/EVisionKeyboardController`, commit 91714d1): the EVision keyboards' USB ids, interface and usage page,
+  report format and checksum, the configuration read and write commands, the lighting header and its modes, and the
+  layout of the newer controller's profiles (see `docs/protocols/evision.md`).
+- [OpenEVision](https://github.com/iefedev/OpenEVision) (GPL-2.0), commit 1cca304 (`docs/PROTOCOL.md`): what it checked on
+  a `320f:505b`: the reads and writes of the configuration memory, the layout of the lighting header and of the key table,
+  the regions it never writes, and that every program with the collection open receives every answer (see
+  `docs/protocols/evision.md`). No code was copied.
 - The [Linux kernel](https://github.com/torvalds/linux) (GPL-2.0): that the Roccat Kone mice are configured
   through their boot mouse interface (`drivers/hid/hid-roccat-konepure.c`, `hid-roccat-koneplus.c`), and the
   product ids of the Logitech receivers (`drivers/hid/hid-logitech-dj.c`).

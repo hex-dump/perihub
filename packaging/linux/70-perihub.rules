@@ -669,6 +669,11 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="3842", ATTRS{idProduct}=="2422", ENV{ID_USB
 # EVGA X20 (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="3842", ATTRS{idProduct}=="2420", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 
+# EVision keyboards (read only, untested; facts from OpenRGB and OpenEVision): not opened on Linux. Their vendor
+# collection (usage page ff1c) is on interface 1, which also holds a keyboard collection, and Linux has one hidraw
+# node per interface: a rule that opened it would let any program running as the user read what is typed. Windows
+# only for now.
+
 # Mice on the YJX platform (MAMBASNAKE, Rajin, K-Snake, EWEADN…; read only, untested): only interface 2,
 # which holds the vendor configuration collection and nothing else.
 # YJX mouse (YJX receiver) (read only)

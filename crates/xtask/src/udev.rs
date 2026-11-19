@@ -78,6 +78,12 @@ which holds the vendor configuration collection and nothing else."#
             r#"Wraith W60 (read only, untested): not opened on Linux. Its configuration collection can carry how far
 each key is pressed, so it will need a rule the user turns on. Windows only for now."#
         }
+        "evision" => {
+            r#"EVision keyboards (read only, untested; facts from OpenRGB and OpenEVision): not opened on Linux. Their vendor
+collection (usage page ff1c) is on interface 1, which also holds a keyboard collection, and Linux has one hidraw
+node per interface: a rule that opened it would let any program running as the user read what is typed. Windows
+only for now."#
+        }
         "glorious" => {
             r#"Glorious mice (experimental, untested; protocol from libratbag): only the ids that belong to
 Glorious, not the generic SinoWealth ones, which other brands' devices share. No source names the
