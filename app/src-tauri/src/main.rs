@@ -301,6 +301,7 @@ fn main() {
             commands::app_open_log_folder,
             commands::app_open_test_form,
             commands::app_open_support_link,
+            commands::app_open_release_notes,
             soft_macros::soft_get,
             soft_macros::soft_save,
             soft_macros::soft_delete,

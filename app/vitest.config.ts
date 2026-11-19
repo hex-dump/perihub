@@ -1,9 +1,10 @@
 import { defineConfig } from "vitest/config";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { svelteTesting } from "@testing-library/svelte/vite";
+import { releaseNotes } from "./vite.changelog.ts";
 
 export default defineConfig({
-  plugins: [svelte(), svelteTesting()],
+  plugins: [svelte(), svelteTesting(), releaseNotes()],
   // THIRD-PARTY-NOTICES.md, at the root of the repository, is read by a test.
   server: { fs: { allow: [".."] } },
   // styles.css is read as text by theme.test.ts, so vitest must not blank it as it does the CSS it does not need.

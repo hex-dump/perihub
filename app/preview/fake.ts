@@ -134,6 +134,7 @@ export const answers: Record<string, unknown> = {
   app_write_log: [],
   update_available: null,
   update_just_installed: null,
+  app_open_release_notes: null,
 };
 
 // ?devices=more (with npm run screenshots untouched): also a low battery on the mouse, an experimental Corsair

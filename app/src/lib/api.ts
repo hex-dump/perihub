@@ -947,6 +947,8 @@ export const api = {
   clearWriteLog: () => invoke<void>("app_clear_write_log"),
   openLogFolder: () => invoke<void>("app_open_log_folder"),
   openTestForm: (url: string) => invoke<void>("app_open_test_form", { url }),
+  /** Opens the release notes of a version on GitHub. */
+  openReleaseNotes: (version: string) => invoke<void>("app_open_release_notes", { version }),
   openSupportLink: (url: string) => invoke<void>("app_open_support_link", { url }),
   softMacros: () => invoke<SoftMacrosInfo>("soft_get"),
   /** Saves a macro run by PeriHub; a new one (key 0) gets its trigger key. */

@@ -751,6 +751,18 @@ pub fn app_open_support_link(url: String) -> CmdResult<()> {
     perihub_core::softmacro::inject::open_target(&url).map_err(|e| e.to_string())
 }
 
+/// Opens the release notes of a version on GitHub, the link of the "What's new" dialog. A version number only.
+#[tauri::command]
+pub fn app_open_release_notes(version: String) -> CmdResult<()> {
+    if version.is_empty() || !version.chars().all(|c| c.is_ascii_digit() || c == '.') {
+        return Err("not a version number".to_string());
+    }
+    perihub_core::softmacro::inject::open_target(&format!(
+        "https://github.com/hex-dump/perihub/releases/tag/v{version}"
+    ))
+    .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn app_quit(app: AppHandle) {
     crate::window::quit(&app);
@@ -824,6 +836,7 @@ mod tests {
         "app_open_log_folder",
         "app_open_test_form",
         "app_open_support_link",
+        "app_open_release_notes",
         "app_quit",
         "games_installed",
     ];

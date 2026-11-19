@@ -18,6 +18,9 @@ const api = vi.hoisted(() => ({
 
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.5.2" }));
+vi.mock("virtual:perihub-release-notes", () => ({
+  default: { version: "0.5.2", date: "2026-11-01", summary: "Test reports.", sections: [{ name: "Added", titles: ["A report"] }] },
+}));
 vi.mock("@tauri-apps/api/window", () => ({ getCurrentWindow: () => ({ setTheme: async () => {} }) }));
 
 import type { AppSettings, DeviceStatus } from "../lib/api";
@@ -191,6 +194,18 @@ describe("Settings", () => {
     expect(document.body.textContent).toContain("installs the update without any window and opens again by itself");
     updates.available = null;
     updates.installing = false;
+  });
+
+  it("opens the release notes of this version from What's new, and Esc closes them", async () => {
+    render(Settings, { props: { status } });
+    const button = await screen.findByRole("button", { name: "What's new" });
+    button.focus();
+    await fireEvent.click(button);
+    const dialog = screen.getByRole("dialog", { name: "What's new in PeriHub 0.5.2" });
+    expect(dialog.textContent).toContain("A report");
+    await fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(button);
   });
 
   it("opens the credits in a dialog that Esc closes, and focus goes back to the button", async () => {
