@@ -4,6 +4,13 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+A device request can now carry a USB recording of what the device's official software sends it, made by PeriHub itself: on Windows USBPcap is installed only for the recording and removed after it, on Linux usbmon is read with your password. What you type, other devices and the serial number are never recorded.
+
+### Added
+- **Record the official software** on the **Send a report** page: tick what the device's official software can change, then go through the steps (one change at a time, with an optional note of what you changed) while PeriHub records what the software sends the device. The recording goes into the device request as text, one line per transfer, step by step, with repeats folded; a recording too long for the link is copied whole for you to paste. Only the device's own transfers are kept: every other device on the bus, sound and video, the string descriptors that can hold the serial number, and everything the device sends that is not vendor-defined (key presses, mouse movements, media keys, and whatever cannot be told apart from them) are left out. Nothing is sent by PeriHub: you send the request. On **Windows**, after one administrator prompt, PeriHub downloads USBPcap 1.5.4.0 from its GitHub release (refused unless its SHA-256 is the expected one), installs it for the recording only, and removes it completely when the recording ends, also after an error or a cancel; if the computer is turned off during a recording, PeriHub offers to finish the removal at its next start. USB devices disconnect for a couple of seconds when it starts and when it ends. A USBPcap you installed yourself is used and left installed. On **Linux**, the device's bus is read through usbmon after one password prompt (pkexec); usbmon is unloaded afterwards if PeriHub loaded it. This also records official software running in a Windows virtual machine or in Wine. Not available in the Flatpak. The manual ways stay in [docs/captures.md](docs/captures.md).
+
 ## 0.9.5 — 2026-11-19
 
 When you connect a device nobody has confirmed on real hardware yet, PeriHub now offers once to send a test report for it with **Test my device**: one report is what moves a device up for everyone who has it. A device request sent from the app now carries everything needed to add the device, and a clean test report leads straight to the device being confirmed.

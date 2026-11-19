@@ -6,7 +6,8 @@ device, by its owner, while the official software changes one setting at a time.
 It is the same method on every system; only the tool changes.
 
 **Captures are optional.** A device request counts without them: a maintainer first looks for public
-documentation of the device. This guide is for people comfortable with it who want to speed things up.
+documentation of the device. The easiest way is to let PeriHub record it (next section); the manual
+ways below remain for when that is not possible.
 
 You do not need to understand the recording. You need to change one thing at a time and write down what
 you changed and when.
@@ -14,7 +15,57 @@ you changed and when.
 What a recording is **not** used for: PeriHub does not read, copy or decompile the official software.
 Only the messages that travel between it and your device are used.
 
-## The method (all systems)
+## Let PeriHub record it
+
+PeriHub makes the recording itself, on Windows and on Linux: open **Send a report**, find the device and
+press **Record the official software**.
+
+1. Tick what the official software can change (DPI, polling rate, lighting, buttons, macros, profiles,
+   battery or sleep) and write anything else, one per line. Each becomes a step; the last step is
+   putting back what you changed.
+2. Read what will happen, tick that you understand, and press **Start recording**.
+3. Open the official software yourself. For each step, make the change, wait about 3 seconds and press
+   **Done, next step** (you can note what you changed, such as "800 to 1600"). **Cancel** stops at any time.
+4. At the end the recording goes into the request, as text you can read before you send it. **Request
+   support** opens the form with it; if it is too long for the link, PeriHub copies the whole report and
+   asks you to paste it into **What PeriHub saw**. PeriHub never sends anything itself.
+
+**On Windows** PeriHub uses [USBPcap](https://github.com/desowin/usbpcap) (a free USB capture driver by
+Tomasz Moń, GPL-2.0, with its BSD-2-Clause USBPcapCMD), installed for the recording only:
+
+- Windows asks once for administrator rights. An elevated copy of PeriHub downloads
+  `USBPcapSetup-1.5.4.0.exe` from the project's GitHub release into a folder only administrators can
+  write to, and runs it only if its SHA-256 is
+  `87a7edf9bbbcf07b5f4373d9a192a6770d2ff3add7aa1e276e82e38582ccb622`. USBPcap is never shipped with PeriHub.
+- It installs it, registers the filter driver (`USBPcap.inf`, DefaultInstall) and restarts the USB host
+  controllers, so no restart of Windows is needed: **USB devices disconnect for a couple of seconds**. A
+  keyboard or mouse on the same port works again right after.
+- It records the root hubs that have the device with USBPcapCMD, reading each capture through a pipe,
+  and keeps only the device.
+- At the end it removes USBPcap completely, whatever happened (also on an error or a cancel, or when
+  PeriHub closes): USBPcap out of the USB class's UpperFilters (other filters stay), the controllers
+  restarted again, its service deleted, `USBPcap.sys`, its Program Files folder and its Apps entry.
+  USBPcap's own uninstaller is not enough: it leaves the driver. If the computer was turned off during a
+  recording, PeriHub offers to finish the removal at its next start.
+- A USBPcap you installed yourself (with Wireshark, say) is used and left installed.
+
+**On Linux** PeriHub reads the device's bus with the kernel's usbmon, through `pkexec`, which asks for
+your password once. Nothing is installed: a short script run as root loads usbmon if needed, copies
+`/dev/usbmonN` to PeriHub until the recording stops, and unloads usbmon only if it loaded it. This is
+useful when the official software runs in a Windows virtual machine (with the device passed to it) or in
+Wine. It is not available in the Flatpak, whose sandbox cannot read USB traffic: use the AppImage or the
+`.deb` for the recording.
+
+**What goes into the request:** only the transfers between this device and the official software, one
+line each (`→` to the device, `←` from it), step by step, with repeats folded. Left out, always: every
+other device on the bus; sound and video; the string descriptors that can hold the serial number; and
+whatever the device sends that is not vendor-defined: key presses, mouse movements and media keys. A
+report from the device is kept only when its interface is vendor-specific, or its report id belongs to a
+vendor-defined collection of the interface's HID report descriptor; when that is not known, it is left
+out. The control requests (SET_REPORT, GET_REPORT, vendor requests) are kept: they are what the software
+sends. The raw capture is never written to disk.
+
+## Doing it by hand: the method (all systems)
 
 1. Close PeriHub, so that only the official software talks to the device.
 2. Start the recording.

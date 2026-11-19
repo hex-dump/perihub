@@ -517,3 +517,14 @@ was copied.
   (GPL-2.0) and [vial-gui](https://github.com/vial-kb/vial-gui) (GPL-2.0): the VIA and Vial commands, the
   lighting values and VialRGB's effect ids, the raw HID collection and interface of QMK keyboards, and the
   serial numbers Vial uses to find its keyboards (see `docs/protocols/qmk-via-vial.md`).
+
+## Downloaded at run time, not shipped
+
+Not part of PeriHub and not shipped with it: downloaded from the project's own release only when you
+use the feature that needs it, checked against a pinned SHA-256, and removed afterwards.
+
+- [USBPcap](https://github.com/desowin/usbpcap) (GPL-2.0 driver, BSD-2-Clause USBPcapCMD), version 1.5.4.0,
+  by Tomasz Moń: on Windows, **Send a report → Record the official software** downloads
+  `USBPcapSetup-1.5.4.0.exe` from the project's GitHub release, installs it for the recording only and
+  removes it completely after it (see `docs/captures.md`). PeriHub runs USBPcapCMD and reads what it
+  captures; none of USBPcap's code is copied into PeriHub.
