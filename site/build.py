@@ -252,7 +252,7 @@ def help_box(m: dict, full: str) -> str:
     return (
         '    <section class="section" id="help-test">\n      <div class="wrap">\n        <div class="help">\n'
         "          <h2>Own one? Help confirm it</h2>\n"
-        f"          <p>Nobody has confirmed the {esc(full)} with PeriHub on real hardware yet. A test report takes about 30 seconds "
+        f"          <p>Nobody has confirmed the {esc(full)} with PeriHub on real hardware yet. A test report takes a couple of minutes "
         f"and only reads the device. {one}</p>\n"
         '          <ol class="steps">\n'
         "            <li><b>Install PeriHub</b>, quit the maker's app (G HUB, GG, iCUE, Synapse…) and connect the device.</li>\n"
@@ -458,7 +458,7 @@ def main() -> None:
                 "TITLE": "Wanted: testers for gaming mice and keyboards | PeriHub",
                 "DESCRIPTION": (
                     f"{len(wanted_models)} mice, keyboards and receivers are recognized by PeriHub but nobody has tried them yet. "
-                    "If you own one, a test report of about 30 seconds confirms it for everyone."
+                    "If you own one, a test report of a couple of minutes confirms it for everyone."
                 ),
                 "COUNT": str(len(wanted_models)),
                 "WANTED": wanted(all_models),
