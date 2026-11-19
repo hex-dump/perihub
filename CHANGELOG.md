@@ -20,6 +20,9 @@ When you connect a device nobody has confirmed on real hardware yet, PeriHub now
 ### Changed
 - **SteelSeries Rival 5 tried on a real mouse** (cable, Windows, issue #71): the name, DPI, polling rate, lighting and changes (taking effect, and still there after unplugging) were confirmed. It stays experimental, and nothing about buttons or profiles was tested. The test report checklist no longer asks whether "the buttons and profiles match" for a mouse PeriHub shows none for, such as the SteelSeries ones, which cannot be read back.
 
+### Fixed
+- **Wireless and receiver variants of OpenRazer devices were never in the list of upstream ids**, so a request for one (the Razer Viper V3 Pro through its dongle, `1532:00c1`, issue #85) was answered "needs captures" although OpenRazer documents it. OpenRazer writes such a variant as a subclass of the wired class that sets only its product id, and the reader of `tools/upstream_ids.py` wanted both ids in the class itself. It now takes the vendor id from the base class. The baseline of ids looked at (`tools/upstream-seen.json`) was rebuilt: 43 OpenRazer ids it lacked are in it now (and 1 OpenRGB id upstream added since).
+
 ## 0.9.4 — 2026-11-17
 
 On Windows, games from Steam and the Epic Games Launcher now show up when you add a game profile, also when Steam is installed outside Program Files or the game keeps its program in a subfolder. PeriHub also recognises 67 more Razer keyboards, read only for now.

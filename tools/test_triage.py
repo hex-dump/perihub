@@ -587,6 +587,15 @@ class Catalogue(unittest.TestCase):
             self.assertIn(project, seen)
             self.assertIn(project, triage.UPSTREAM_URLS)
 
+    def test_a_wireless_variant_openrazer_lists_is_ready_to_add_with_the_real_baseline(self):
+        # Issue #85: 1532:00c1 (Viper V3 Pro, dongle) is a subclass of the wired class in OpenRazer and was
+        # missing from the baseline, so the request was answered "needs captures".
+        seen = json.loads((triage.ROOT / "tools/upstream-seen.json").read_text())
+        self.assertIn("openrazer", triage.listed_by("1532:00c1", seen))
+        result = triage.triage(req("1532:00c1"), "0.9.0", REQ_DEVICES, upstream=seen)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertNotIn("needs captures", result["labels"])
+
     def test_a_vendor_mapped_to_a_project_has_a_driver_in_the_catalogue(self):
         devices = json.loads((triage.ROOT / "site/devices.json").read_text())["devices"]
         for vendors in triage.PROJECT_VENDORS.values():
