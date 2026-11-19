@@ -111,6 +111,7 @@ const settings: AppSettings = {
   config_dir: "~/.config/perihub",
   system: "linux x86_64",
   no_tray_reason: null,
+  build: null,
 };
 
 /** Answers by command name. A command that is not here never answers, as in the tests: the page waits. */

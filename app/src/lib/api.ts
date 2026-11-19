@@ -754,6 +754,8 @@ export interface AppSettings {
   config_dir: string;
   /** Operating system and architecture, for test reports. */
   system: string;
+  /** The branch and commit of a test build ("test/x@abc1234"); null in a release. */
+  build: string | null;
   /** Why closing the window cannot keep PeriHub in the tray (no tray on this desktop); null when it can. */
   no_tray_reason: string | null;
 }

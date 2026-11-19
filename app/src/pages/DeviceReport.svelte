@@ -3,7 +3,7 @@
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type ReportDevice } from "../lib/api";
-  import { deviceDetails, deviceRequestUrl, reportDeviceName, reportUsbId as usbId } from "../lib/testReport";
+  import { deviceDetails, deviceRequestUrl, reportDeviceName, reportVersion, reportUsbId as usbId } from "../lib/testReport";
 
   interface Props {
     /** No supported device is connected: this page is all the sidebar shows. */
@@ -44,10 +44,13 @@
 
   onMount(() => {
     load();
-    getVersion().then((v) => (version = v));
+    getVersion().then((v) => (version = version || v));
     api
       .appSettings()
-      .then((s) => (system = s.system))
+      .then(async (s) => {
+        system = s.system;
+        version = reportVersion(await getVersion(), s.build);
+      })
       .catch(() => (system = "unknown system"));
     // Not while the window is minimized: nobody sees the list.
     const timer = setInterval(() => document.hidden || load(), REFRESH_MS);

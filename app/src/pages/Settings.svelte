@@ -337,6 +337,7 @@
     <div class="row wrap about">
       <div class="col about-text">
         <span>PeriHub {version}</span>
+        {#if settings?.build}<span class="small muted">Test build {settings.build}: its test reports say so.</span>{/if}
         <span class="small muted">Free and open source (MIT). It builds on the work of other projects: Credits lists every one, with its license.</span>
       </div>
       <div class="row">

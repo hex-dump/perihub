@@ -5,6 +5,7 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type DeviceStatus, type ReportDevice, type WriteEntry } from "../lib/api";
   import { userNames } from "../lib/redact";
+  import { reportVersion } from "../lib/testReport";
   import { stateStatus } from "../lib/status";
   import Status from "../components/Status.svelte";
   import { readOnly, writeLogLines } from "../lib/readOnly.svelte";
@@ -98,11 +99,12 @@
       pickedId = start;
       go("read");
     }
-    getVersion().then((v) => (version = v));
+    getVersion().then((v) => (version = version || v));
     api
       .appSettings()
-      .then((s) => {
+      .then(async (s) => {
         system = s.system;
+        version = reportVersion(await getVersion(), s.build);
         names = userNames([s.config_dir, s.log_dir]);
       })
       .catch(() => (system = "unknown system"));
