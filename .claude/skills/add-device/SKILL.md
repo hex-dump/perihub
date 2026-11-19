@@ -75,34 +75,50 @@ cargo xtask check
 python3 -I -m unittest discover -s tools -p "test_*.py"
 ```
 
-## 6. CHANGELOG and the test build
+## 6. CHANGELOG, the test branch and the test build
+
+**A new device is never merged into main, and never shipped in a release, before a tester has
+confirmed it on real hardware** (maintainer rule, always: also a device with a known source, such as
+one the triage answered "ready to add"). So the support always goes on a `test/<name>` branch, never
+straight to main:
+
+```
+device request -> (documented upstream / has a driver: "ready to add") -> support written on test/<name>,
+a commit with a "Test: #N" line -> test-build.yml builds it, tools/notify.py comments the link on the issue
+-> the tester installs that test build and runs Test my device -> a clean report -> the device is
+confirmed ON THAT BRANCH (cargo xtask confirm) and a pull request from the branch to main is opened
+-> the maintainer merges it -> it ships in the next release
+```
 
 - Under `## Unreleased`, in `### New devices` (sections and order: `tools/release.py`): what is
   supported, at which level, from which source.
-- A device with a known source (the triage answered a device request "ready to add": its id is in
-  `tools/upstream-seen.json` for a vendor PeriHub has a driver for) goes **straight into the next
-  release** as read-only or experimental: no test build round (maintainer decision, 2026-11-19). The
-  triage answer already tells the requester so. The app then asks the tester for a test report
-  (the one-time prompt starts **Test my device**), and a clean report opens the pull request that
-  confirms the device (step 7). A device that "needs captures" waits for them
-  (`docs/captures.md`); once a driver is written from them, it is tried the way the next bullet says.
-- A driver that has not been tried by anyone and has no source to lean on: commit on a local branch,
-  and with the user's OK push it as `test/<name>`. **The push already starts test-build.yml: never also
-  run `gh workflow run test-build.yml`**, its concurrency cancels the build that is running (and
-  cancelling the new one stops them all). Once the run is green, answer the issue with the link to
-  the run (artifacts need a GitHub account; the build still says the previous version).
-- To have the build announced on the device request, put a line `Test: #N` (or `Tests: #N, #M`) in the
-  body of a commit. A plain `#N` does nothing. A build with new commits posts a new comment on the
-  open issue and deletes the earlier test build comments of the branch.
-- No release until the tester confirms, or the user asks for one.
+- Commit on a local branch and, with the user's OK, push it as `test/<name>`. **The push already starts
+  test-build.yml: never also run `gh workflow run test-build.yml`**, its concurrency cancels the build
+  that is running (and cancelling the new one stops them all). The build says which branch and commit
+  it is (`PERIHUB_BUILD`): the test report starts `PeriHub 0.9.5 (test build test/<name>@abc1234) on ...`,
+  which triage reads (a test build is never told to update, and its report confirms the device on that
+  branch). The build still shows the previous release's number, that is expected.
+- Put a line `Test: #N` (or `Tests: #N, #M`) in the body of a commit of the branch: that is what makes the
+  build announce itself on the device request (a plain `#N` does nothing). A build with new commits
+  posts a new comment on the open issue and deletes the earlier test build comments of the branch.
+  The triage answer to a "ready to add" request already tells the requester that this link will come.
+- The tester installs the test build, connects the device and runs **Test my device**.
+- No pull request to main is merged, and no release made, until the confirmation (step 7) is on the branch.
+  A device that "needs captures" waits for them (`docs/captures.md`); once a driver is written from
+  them, it goes the same way.
 
 ## 7. When the tester confirms
 
-A clean report (made by the app, from the latest version, no error line, nothing under "Messages and
-errors" or "What is wrong or missing", the boxes ticked; the one from **Test my device** counts the
-same) is picked up by the triage workflow, which opens a pull request through confirm.yml: the
-maintainer only merges it (CI does not start on a pull request a workflow opens: close and reopen it).
-By hand, for a device of another brand or a Corsair one, or a Logitech memory format:
+A clean report (made by the app from the latest version, or from a test build of the branch; no error
+line, nothing under "Messages and errors" or "What is wrong or missing", the boxes ticked; the one
+from **Test my device** counts the same) is picked up by the triage workflow, which starts
+confirm.yml with the test branch as the base (it finds the branch by the device's USB id in the
+branch's `site/devices.json`, preferring the one the report's first line names). The workflow runs
+`cargo xtask confirm` on the branch, pushes the commit **to the branch** and opens (or reuses) the pull
+request from it to main, or comments the link when Actions may not open pull requests: the maintainer
+only merges it (CI does not start on a pull request a workflow opens: close and reopen it).
+By hand, on the `test/<name>` branch, for a device of another brand or a Corsair one, or a Logitech
+memory format:
 
 ```sh
 cargo xtask confirm 1532:00b7 --issue 40
@@ -110,7 +126,8 @@ cargo xtask confirm --memory-format 4:255 --issue 40
 cargo xtask confirm 1532:00b7 --issue 40 --report ISSUE_BODY.md   # also the replay fixture, if the report has a transcript
 ```
 
-It adds the entry to `crates/perihub-core/src/confirmed.rs`, runs `cargo xtask gen` and writes the
+then push the branch and open the pull request to main. It adds the entry to
+`crates/perihub-core/src/confirmed.rs`, runs `cargo xtask gen` and writes the
 CHANGELOG line under "New devices". Do not edit the device tables or the tested memory formats by hand
 (`mouse::support` reads `confirmed::MEMORY`). Then run the checks of step 5. A fixture made from a
 report only expects what the confirmation is about: add the values the tester confirmed
