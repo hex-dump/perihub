@@ -64,6 +64,30 @@
 
   /** Why the settings file was not used at start-up, until the user closes the message. */
   let configProblem = $state<string | null>(null);
+  /** A USB recording did not finish and left USBPcap installed (Windows): it is offered for removal. */
+  let usbLeftover = $state(false);
+  let usbCleanup = $state<string | null>(null);
+  let usbCleaning = $state(false);
+
+  async function removeUsbPcap() {
+    usbCleaning = true;
+    usbCleanup = null;
+    const unlisten = await api.onUsbRecord((p) => {
+      if (p.state === "cleanup") usbCleanup = p.text;
+      if (p.state === "failed") usbCleanup = p.text;
+      if (p.state === "ended" || p.state === "failed") {
+        usbCleaning = false;
+        usbLeftover = false;
+        unlisten();
+        api.usbRecordInfo().then((i) => (usbLeftover = i.leftover), () => {});
+      }
+    });
+    api.usbRecordCleanLeftover().catch((e) => {
+      usbCleanup = errorText(e);
+      usbCleaning = false;
+      unlisten();
+    });
+  }
   /** Why read-only mode could not be turned off from the bar. */
   let readOnlyError = $state<string | null>(null);
 
@@ -219,6 +243,7 @@
     getVersion().then((v) => (whatsNew = notesToShow(v)), () => {});
     api.status().then(received);
     api.configProblem().then((p) => (configProblem = p), () => {});
+    api.usbRecordInfo().then((i) => (usbLeftover = i.leftover), () => {});
     // PeriHub checks for updates in the background, also while this window is closed.
     api.updateAvailable().then((u) => u && (updates.available = u));
     api.updateJustInstalled().then((v) => v && (updates.installed = v));
@@ -434,6 +459,21 @@
         <div class="notice ok row updated">
           <span>PeriHub was updated to {updates.installed}.</span>
           <button class="tiny" onclick={() => (updates.installed = null)}>Close</button>
+        </div>
+      {/if}
+      {#if usbLeftover}
+        <div class="notice warn row usb-leftover" role="alert">
+          <span class="grow">
+            A USB recording did not finish, and USBPcap is still installed. PeriHub can remove it now (Windows asks for
+            administrator rights; USB devices disconnect for a couple of seconds).
+          </span>
+          <button class="tiny" disabled={usbCleaning} onclick={removeUsbPcap}>{usbCleaning ? "Removing…" : "Remove USBPcap"}</button>
+        </div>
+      {/if}
+      {#if usbCleanup}
+        <div class="notice row" class:ok={usbCleanup.startsWith("USBPcap was removed:")} class:warn={!usbCleanup.startsWith("USBPcap was removed:")}>
+          <span class="grow">{usbCleanup}</span>
+          <button class="tiny" onclick={() => (usbCleanup = null)}>Close</button>
         </div>
       {/if}
       {#if configProblem}

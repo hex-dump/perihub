@@ -17,6 +17,7 @@ mod system_theme;
 mod tray_support;
 mod unifying_access;
 mod updates;
+mod usb_record;
 mod window;
 
 use std::sync::{Arc, Mutex, OnceLock};
@@ -88,6 +89,14 @@ fn tell_it_keeps_running(app: &AppHandle) {
 }
 
 fn main() {
+    // Started as administrator by a USB recording (Windows): the helper's work, then nothing else.
+    #[cfg(windows)]
+    {
+        let args: Vec<String> = std::env::args().collect();
+        if args.get(1).map(String::as_str) == Some(perihub_core::usbcap::record::HELPER_ARG) {
+            std::process::exit(perihub_core::usbcap::record::helper_main(&args[2..]));
+        }
+    }
     // PeriHub's own messages at info level, other libraries only when something goes wrong.
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn,perihub=info,perihub_core=info"))
         .target(env_logger::Target::Pipe(Box::new(logfile::LogWriter::open())))
@@ -198,6 +207,7 @@ fn main() {
             });
 
             app.manage(updates::Available::default());
+            app.manage(usb_record::UsbRecorder::default());
             if args.iter().any(|a| a == AFTER_UPDATE_ARG) {
                 app.state::<updates::Available>().started_by_update();
             }
@@ -236,6 +246,8 @@ fn main() {
             // Closing the window destroys it (see window.rs). A DPI or LED preview the interface
             // could not cancel goes back to the saved settings.
             if let WindowEvent::Destroyed = event {
+                // A USB recording ends with its window (USBPcap is removed all the same).
+                usb_record::cancel_on_close(window.app_handle());
                 let manager = window.state::<AppState>().manager.clone();
                 std::thread::spawn(move || {
                     if let Ok(mouse) = manager.mouse() {
@@ -327,6 +339,11 @@ fn main() {
             updates::update_available,
             updates::update_install,
             updates::update_just_installed,
+            usb_record::usb_record_info,
+            usb_record::usb_record_start,
+            usb_record::usb_record_stop,
+            usb_record::usb_record_cancel,
+            usb_record::usb_record_clean_leftover,
         ])
         .build(tauri::generate_context!())
         .expect("failed to start PeriHub")

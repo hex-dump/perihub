@@ -376,7 +376,13 @@ function reportLengths(collections: DescriptorCollection[]): string {
 /** What PeriHub sees of a device, for the "What PeriHub saw" field: names, ids, release number, HID
  * collections and the shape of each interface's report descriptor (never a serial number or a path).
  * `raw`: also the descriptors in hex, which a maintainer can decode to the last byte. */
-export function deviceDetails(device: ReportDevice, version: string, system: string, raw = true): string {
+export function deviceDetails(
+  device: ReportDevice,
+  version: string,
+  system: string,
+  raw = true,
+  recording: string | null = null,
+): string {
   const collections = device.collections.map(
     (c) =>
       "  " + (c.interface < 0 ? "no interface number" : "interface " + c.interface) + ", usage page " + hex(c.usage_page) + ", usage " + hex(c.usage),
@@ -401,13 +407,29 @@ export function deviceDetails(device: ReportDevice, version: string, system: str
     "Report descriptors (lengths in bytes, with the id byte):",
     ...(descriptors.length ? descriptors : ["  not read"]),
     ...(rawLines.length ? ["Raw descriptors (hex):", ...(raw ? rawLines : ["  left out of the link: use Copy report"])] : []),
+    ...(recording ? [RECORDING_HEADING, recording] : []),
   ].join("\n");
 }
 
+/** Above a USB recording made by "Record the official software" (docs/captures.md). */
+export const RECORDING_HEADING =
+  "USB recording of the official software (made by PeriHub; key presses, other devices and the serial number left out):";
+
 /** The device request form, filled in with what PeriHub sees of `device`. GitHub fills in inputs,
  * text areas and dropdowns from the link, not checkboxes, so what the device can do is left to be
- * ticked. The link stays under [MAX_URL]: the raw descriptors go first, then the end of the details. */
-export function deviceRequestUrl(device: ReportDevice, version: string, system: string): string {
+ * ticked. The link stays under [MAX_URL]: the raw descriptors go first, then the end of the details
+ * (a USB recording, which comes last, before the rest). */
+export function deviceRequestUrl(device: ReportDevice, version: string, system: string, recording: string | null = null): string {
+  return deviceRequestLink(device, version, system, recording).url;
+}
+
+/** [deviceRequestUrl], and whether the details had to be shortened to fit the link. */
+export function deviceRequestLink(
+  device: ReportDevice,
+  version: string,
+  system: string,
+  recording: string | null = null,
+): { url: string; shortened: boolean } {
   const name = reportDeviceName(device);
   const link = (details: string) => {
     const kind = deviceKind(device);
@@ -423,9 +445,9 @@ export function deviceRequestUrl(device: ReportDevice, version: string, system: 
     const query = Object.entries(values).map(([field, value]) => field + "=" + encodeURIComponent(value));
     return DEVICE_REQUEST_FORM + "&" + query.join("&");
   };
-  const full = link(deviceDetails(device, version, system));
-  if (full.length <= MAX_URL) return full;
-  const lines = deviceDetails(device, version, system, false).split("\n");
+  const full = link(deviceDetails(device, version, system, true, recording));
+  if (full.length <= MAX_URL) return { url: full, shortened: false };
+  const lines = deviceDetails(device, version, system, false, recording).split("\n");
   while (lines.length > 1 && link([...lines, SHORTENED].join("\n")).length > MAX_URL) lines.pop();
-  return link([...lines, SHORTENED].join("\n"));
+  return { url: link([...lines, SHORTENED].join("\n")), shortened: true };
 }
