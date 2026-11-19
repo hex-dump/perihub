@@ -2867,6 +2867,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror 2.0.21",
  "windows-sys 0.61.2",
  "xkbcommon",
