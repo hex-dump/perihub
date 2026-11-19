@@ -11,6 +11,7 @@ mod metainfo;
 mod preview;
 mod select;
 mod site;
+mod transcript;
 mod udev;
 
 use std::path::{Path, PathBuf};

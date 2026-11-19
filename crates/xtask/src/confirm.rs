@@ -6,6 +6,11 @@
 //! It refuses what PeriHub does not know or has confirmed already, adds the entry to
 //! `perihub-core/src/confirmed.rs` (sorted, one per line), runs `cargo xtask gen` so the catalogue,
 //! README, docs and website follow, and adds the CHANGELOG line under "## Unreleased".
+//!
+//!   cargo xtask confirm 1532:00b7 --issue 40 --report ISSUE_BODY.md
+//!
+//! With `--report`, the file holds the issue's text, and the transcript at the end of its test report becomes a
+//! replay fixture when it can (see transcript.rs); when it cannot, the confirmation goes on and says why.
 
 use std::fs;
 use std::process::Command;
@@ -14,6 +19,7 @@ use perihub_core::confirmed;
 use perihub_core::mouse::{WRITABLE_PROFILE_FORMATS, WRITABLE_SECTOR_SIZES};
 
 use crate::catalog::{self, Device, Source};
+use crate::transcript;
 
 const TABLE_PATH: &str = "crates/perihub-core/src/confirmed.rs";
 const CHANGELOG_PATH: &str = "CHANGELOG.md";
@@ -80,7 +86,8 @@ pub fn parse(args: &[String]) -> Result<Request, String> {
 }
 
 /// What is being confirmed, in words, or why it cannot be.
-pub fn check(request: &Request, devices: &[Device]) -> Result<String, String> {
+/// `memory_tested(profile_format, sector_size)` says which memory formats are confirmed already.
+pub fn check(request: &Request, devices: &[Device], memory_tested: &dyn Fn(u8, u16) -> bool) -> Result<String, String> {
     match request.target {
         Target::Usb { vendor_id, product_id } => {
             let id = format!("{vendor_id:04x}:{product_id:04x}");
@@ -111,7 +118,7 @@ pub fn check(request: &Request, devices: &[Device]) -> Result<String, String> {
                     "PeriHub does not write {what}: only profile formats {WRITABLE_PROFILE_FORMATS:?} in sectors of {WRITABLE_SECTOR_SIZES:?} bytes"
                 ));
             }
-            if confirmed::memory_tested(profile_format, sector_size) {
+            if memory_tested(profile_format, sector_size) {
                 return Err(format!("{what} is tested already"));
             }
             Ok(what)
@@ -227,9 +234,25 @@ fn regenerate() -> Result<(), String> {
     }
 }
 
+/// `args` without `--report FILE`, and the file.
+fn split_report(args: &[String]) -> Result<(Vec<String>, Option<String>), String> {
+    let mut rest = Vec::new();
+    let mut report = None;
+    let mut it = args.iter();
+    while let Some(arg) = it.next() {
+        if arg == "--report" {
+            report = Some(it.next().ok_or("--report needs a file")?.clone());
+        } else {
+            rest.push(arg.clone());
+        }
+    }
+    Ok((rest, report))
+}
+
 pub fn run(args: &[String]) -> Result<(), String> {
-    let request = parse(args)?;
-    let label = check(&request, &catalog::devices())?;
+    let (args, report) = split_report(args)?;
+    let request = parse(&args)?;
+    let label = check(&request, &catalog::devices(), &confirmed::memory_tested)?;
     let (table, entry) = match request.target {
         Target::Usb { vendor_id, product_id } => {
             (USB_TABLE, format!("    usb({vendor_id:#06x}, {product_id:#06x}, {}),", request.issue))
@@ -250,6 +273,16 @@ pub fn run(args: &[String]) -> Result<(), String> {
         "confirmed {label} (issue #{}): {TABLE_PATH}, {CHANGELOG_PATH} and the generated files are updated",
         request.issue
     );
+    if let Some(report) = report {
+        let target = match request.target {
+            Target::Usb { vendor_id, product_id } => transcript::For::Usb(vendor_id, product_id),
+            Target::Memory { profile_format, sector_size } => transcript::For::Memory { profile_format, sector_size },
+        };
+        match transcript::add(&report, request.issue, target) {
+            Ok(path) => println!("replay fixture: {}", path.display()),
+            Err(why) => println!("no replay fixture: {why}"),
+        }
+    }
     Ok(())
 }
 
@@ -287,9 +320,20 @@ mod tests {
         }
     }
 
+    /// The memory formats confirmed before issues were used and in issue #15, whatever testers confirm later:
+    /// these tests do not depend on what the real table holds.
+    fn seeded(profile_format: u8, sector_size: u16) -> bool {
+        matches!((profile_format, sector_size), (2, 256) | (3, 255))
+    }
+
+    /// The catalogue as it is with nothing confirmed.
+    fn unconfirmed() -> Vec<Device> {
+        catalog::devices_with(&|_, _| false)
+    }
+
     /// A Razer mouse and a Corsair one from the tables, and what the catalogue says of them.
     fn known() -> (Device, Device) {
-        let devices = catalog::devices();
+        let devices = unconfirmed();
         let razer = devices.iter().find(|d| matches!(d.model, Source::Peripheral(_)) && d.brand == "Razer").unwrap();
         let corsair = devices.iter().find(|d| matches!(d.model, Source::Corsair)).unwrap();
         (razer.clone(), corsair.clone())
@@ -298,37 +342,50 @@ mod tests {
     #[test]
     fn only_known_unconfirmed_devices_are_confirmed() {
         let (razer, corsair) = known();
-        let devices = catalog::devices();
+        let devices = unconfirmed();
         for d in [&razer, &corsair] {
             let request = usb(d.vendor_id, d.product_ids[0]);
-            assert_eq!(check(&request, &devices), Ok(format!("{} {}", d.brand, d.name)));
+            assert_eq!(check(&request, &devices, &seeded), Ok(format!("{} {}", d.brand, d.name)));
             // Once confirmed, the catalogue says supported and a second confirmation is refused.
             let id = (d.vendor_id, d.product_ids[0]);
             let after = catalog::devices_with(&|v, p| (v, p) == id);
-            assert!(check(&request, &after).unwrap_err().contains("supported already"));
+            assert!(check(&request, &after, &seeded).unwrap_err().contains("supported already"));
         }
-        assert!(check(&usb(0x1234, 0x5678), &devices).unwrap_err().contains("does not know"));
+        assert!(check(&usb(0x1234, 0x5678), &devices, &seeded).unwrap_err().contains("does not know"));
         // A Logitech mouse is confirmed by its memory format; the G300 is supported already.
         let g502 = devices.iter().find(|d| d.name == "G502 Proteus Core").unwrap();
-        assert!(check(&usb(g502.vendor_id, g502.product_ids[0]), &devices).unwrap_err().contains("--memory-format"));
+        assert!(
+            check(&usb(g502.vendor_id, g502.product_ids[0]), &devices, &seeded)
+                .unwrap_err()
+                .contains("--memory-format")
+        );
+    }
+
+    #[test]
+    fn the_report_file_is_not_an_argument_of_the_confirmation() {
+        let (rest, report) = split_report(&args(&["1532:00b7", "--report", "body.md", "--issue", "40"])).unwrap();
+        assert_eq!(report.as_deref(), Some("body.md"));
+        assert_eq!(parse(&rest), Ok(usb(0x1532, 0x00b7)));
+        assert!(split_report(&args(&["--report"])).is_err());
+        assert_eq!(split_report(&args(&["1532:00b7", "--issue", "40"])).unwrap().1, None);
     }
 
     #[test]
     fn memory_formats_must_be_writable_and_untested() {
         let memory =
             |profile_format, sector_size| Request { target: Target::Memory { profile_format, sector_size }, issue: 40 };
-        assert!(check(&memory(2, 255), &[]).is_ok());
-        assert!(check(&memory(3, 256), &[]).is_ok());
-        assert!(check(&memory(2, 256), &[]).unwrap_err().contains("tested already"));
-        assert!(check(&memory(3, 255), &[]).unwrap_err().contains("tested already"));
-        assert!(check(&memory(4, 255), &[]).unwrap_err().contains("does not write"));
-        assert!(check(&memory(2, 512), &[]).unwrap_err().contains("does not write"));
+        assert!(check(&memory(2, 255), &[], &seeded).is_ok());
+        assert!(check(&memory(3, 256), &[], &seeded).is_ok());
+        assert!(check(&memory(2, 256), &[], &seeded).unwrap_err().contains("tested already"));
+        assert!(check(&memory(3, 255), &[], &seeded).unwrap_err().contains("tested already"));
+        assert!(check(&memory(4, 255), &[], &seeded).unwrap_err().contains("does not write"));
+        assert!(check(&memory(2, 512), &[], &seeded).unwrap_err().contains("does not write"));
     }
 
     #[test]
     fn a_confirmed_peripheral_or_corsair_id_is_supported_in_the_catalogue() {
         let (razer, corsair) = known();
-        let before = catalog::devices();
+        let before = unconfirmed();
         for d in [&razer, &corsair] {
             let id = (d.vendor_id, d.product_ids[0]);
             let after = catalog::devices_with(&|v, p| (v, p) == id);
@@ -359,10 +416,15 @@ mod tests {
     #[test]
     fn the_real_table_takes_an_entry_and_keeps_its_shape() {
         let source = fs::read_to_string(crate::root().join(TABLE_PATH)).unwrap();
-        let after = add_entry(&source, USB_TABLE, "    usb(0x1532, 0x00b7, 40),").unwrap();
-        assert!(after.contains("pub const USB: &[UsbConfirmation] = &[\n    usb(0x1532, 0x00b7, 40),\n];"));
-        let after = add_entry(&after, MEMORY_TABLE, "    memory(2, 255, 50),").unwrap();
-        assert!(after.contains("    memory(2, 255, 50),\n    memory(2, 256, 0),\n    memory(3, 255, 15),\n];"));
+        // Ids below every real one go first, whatever the tables hold when this runs.
+        let after = add_entry(&source, USB_TABLE, "    usb(0x0001, 0x0001, 40),").unwrap();
+        assert!(after.contains("pub const USB: &[UsbConfirmation] = &[\n    usb(0x0001, 0x0001, 40),\n"));
+        let after = add_entry(&after, MEMORY_TABLE, "    memory(1, 1, 50),").unwrap();
+        assert!(after.contains("pub const MEMORY: &[MemoryConfirmation] = &[\n    memory(1, 1, 50),\n"));
+        // Everything that was there still is, in order.
+        for line in source.lines().filter(|l| l.trim_start().starts_with("memory(") && l.ends_with("),")) {
+            assert!(after.contains(line), "{line}");
+        }
     }
 
     const LOG: &str = "# Changelog\n\n## Unreleased\n\nSummary.\n\n### Added\n- A thing.\n\n### Changed\n- Another.\n\n## 0.8.4 — 2026-11-15\n\n### New devices\n- Old.\n";

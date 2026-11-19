@@ -74,13 +74,16 @@ mod tests {
     use crate::peripheral;
 
     #[test]
-    fn the_tested_memories_are_the_two_known_ones() {
-        let tested: Vec<_> = (0..=8u8)
-            .flat_map(|format| (0..=512u16).map(move |size| (format, size)))
-            .filter(|&(format, size)| memory_tested(format, size))
+    fn the_two_memories_tested_before_the_table_are_in_it() {
+        // Later confirmations add entries: these two stay.
+        assert!(memory_tested(2, 256) && memory_tested(3, 255));
+        assert!(!memory_tested(2, 0) && !memory_tested(0, 256));
+        let issues: Vec<_> = MEMORY
+            .iter()
+            .filter(|c| (c.profile_format, c.sector_size) == (2, 256) || (c.profile_format, c.sector_size) == (3, 255))
+            .map(|c| c.issue)
             .collect();
-        assert_eq!(tested, [(2, 256), (3, 255)]);
-        assert_eq!(MEMORY.iter().map(|c| c.issue).collect::<Vec<_>>(), [0, 15]);
+        assert_eq!(issues, [0, 15]);
     }
 
     #[test]
