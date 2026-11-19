@@ -29,6 +29,7 @@ const info: PeripheralInfo = {
   model: "ROG Keris",
   kind: "mouse",
   source: "libratbag (MIT)",
+  tested: false,
   profiles: 3,
   firmware: "1.02.03",
   battery: null,
@@ -144,6 +145,15 @@ describe("a mouse of another brand", () => {
       (screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement)
         .disabled,
     ).toBe(true);
+  });
+
+  it("says a tester confirmed it, keeps the safety checks and still offers the test report", async () => {
+    render(Peripheral, { props: { info: { ...info, tested: true }, error: null } });
+    await wait(0);
+    expect(screen.getByText("Tested")).toBeTruthy();
+    expect(document.body.textContent).toContain("A tester confirmed the ASUS ROG Keris on real hardware");
+    expect(document.body.textContent).not.toContain("Nobody has tried");
+    expect(screen.getByRole("button", { name: "Apply" })).toBeTruthy();
   });
 
   it("always shows the warning next to Apply, without asking for anything more", async () => {
@@ -309,6 +319,7 @@ const rival3: PeripheralInfo = {
   brand: "SteelSeries",
   model: "Rival 3",
   source: "rivalcfg (WTFPL)",
+  tested: false,
   profiles: 1,
   firmware: "1.37",
   active_profile: null,
@@ -431,6 +442,7 @@ describe("a mouse that stores every change", () => {
     brand: "Razer",
     model: "DeathAdder V2",
     source: "OpenRazer (facts only)",
+    tested: false,
     profiles: 1,
     active_profile: null,
     active_dpi: null,
@@ -482,6 +494,7 @@ describe("the lights of a Razer mouse", () => {
     brand: "Razer",
     model: "DeathAdder V2",
     source: "OpenRazer (facts only)",
+    tested: false,
     profiles: 1,
     active_profile: null,
     active_dpi: null,
@@ -563,6 +576,7 @@ describe("a QMK keyboard", () => {
     model: "Q1 Pro",
     kind: "keyboard",
     source: "the QMK and Vial firmware sources (no code copied)",
+    tested: false,
     profiles: 1,
     firmware: "VIA protocol 13, 4 layers, 16 macros",
     active_profile: null,

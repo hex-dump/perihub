@@ -297,6 +297,8 @@ pub struct PeripheralInfo {
     pub kind: Kind,
     /// Where PeriHub knows the protocol from, for the page and the test report.
     pub source: &'static str,
+    /// A tester confirmed this model on real hardware (see `confirmed`).
+    pub tested: bool,
     pub profiles: u8,
     pub firmware: Option<String>,
     pub battery: Option<Battery>,

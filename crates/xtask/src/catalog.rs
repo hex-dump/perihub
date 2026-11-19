@@ -1,6 +1,7 @@
 //! Every device PeriHub recognizes by its USB id, gathered from the drivers' own tables. Each
 //! generated file (udev rule, device list, website, AppStream metadata) is written from this list.
 
+use perihub_core::confirmed;
 use perihub_core::corsair::models as corsair;
 use perihub_core::hidpp::{models as hidpp, receiver};
 use perihub_core::manager;
@@ -102,9 +103,12 @@ pub fn family(protocol: &Protocol) -> Option<&'static str> {
     })
 }
 
-/// The level of a device in a driver's table: experimental if the driver may send anything but reads.
-pub fn peripheral_level(model: &'static peripheral::Model) -> Level {
-    if task::driver(model).commands().iter().all(|c| c.effect == Effect::Read) {
+/// The level of a device in a driver's table: supported once a tester confirmed it (see
+/// `perihub_core::confirmed`), else experimental if the driver may send anything but reads.
+pub fn peripheral_level(model: &'static peripheral::Model, confirmed: &dyn Fn(u16, u16) -> bool) -> Level {
+    if model.product_ids.iter().any(|&id| confirmed(model.vendor_id, id)) {
+        Level::Supported
+    } else if task::driver(model).commands().iter().all(|c| c.effect == Effect::Read) {
         Level::ReadOnly
     } else {
         Level::Experimental
@@ -138,7 +142,13 @@ fn device(
 }
 
 pub fn devices() -> Vec<Device> {
+    devices_with(&confirmed::usb_confirmed)
+}
+
+/// The catalogue, with `confirmed(vendor, product)` saying which USB ids testers confirmed.
+pub fn devices_with(confirmed: &dyn Fn(u16, u16) -> bool) -> Vec<Device> {
     let mut list = Vec::new();
+    let corsair_level = |id: u16| if confirmed(CORSAIR, id) { Level::Supported } else { Level::Experimental };
 
     list.push(device(
         "apex",
@@ -224,7 +234,7 @@ pub fn devices() -> Vec<Device> {
                 kind,
                 CORSAIR,
                 vec![m.product_id],
-                Level::Experimental,
+                corsair_level(m.product_id),
                 Access::Interface(perihub_core::corsair::CONTROL_INTERFACE),
                 Source::Corsair,
             ));
@@ -238,7 +248,7 @@ pub fn devices() -> Vec<Device> {
             Kind::Receiver,
             CORSAIR,
             vec![id],
-            Level::Experimental,
+            corsair_level(id),
             Access::Interface(perihub_core::corsair::CONTROL_INTERFACE),
             Source::Corsair,
         ));
@@ -265,7 +275,7 @@ pub fn devices() -> Vec<Device> {
             kind,
             m.vendor_id,
             m.product_ids.to_vec(),
-            peripheral_level(m),
+            peripheral_level(m, confirmed),
             access,
             Source::Peripheral(m),
         ));

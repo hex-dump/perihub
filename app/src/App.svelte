@@ -288,7 +288,10 @@
         <Icon name={device.kind} />
         <span class="col tight">
           <span class="name">Corsair {device.model}</span>
-          <Status kind="experimental" label={device.receiver ? "Experimental · wireless" : "Experimental"} />
+          <Status
+            kind={device.tested ? "ok" : "experimental"}
+            label={`${device.tested ? "Tested" : "Experimental"}${device.receiver ? " · wireless" : ""}`}
+          />
         </span>
       </button>
     {/each}
@@ -301,7 +304,11 @@
         <Icon name={device.kind} />
         <span class="col tight">
           <span class="name">{device.brand} {device.model}</span>
-          <Status kind={device.editable ? "experimental" : "readonly"} label={device.editable ? "Experimental" : "Read-only"} />
+          {#if device.tested}
+            <Status kind="ok" label="Tested" />
+          {:else}
+            <Status kind={device.editable ? "experimental" : "readonly"} label={device.editable ? "Experimental" : "Read-only"} />
+          {/if}
         </span>
       </button>
     {/each}

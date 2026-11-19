@@ -668,6 +668,8 @@ export interface PeripheralInfo {
   kind: "mouse" | "keyboard";
   /** Where PeriHub knows the protocol from, e.g. "libratbag (MIT)". */
   source: string;
+  /** A tester confirmed this model on real hardware (the core's confirmed.rs). */
+  tested: boolean;
   profiles: number;
   firmware: string | null;
   battery: { level: number; charging: boolean } | null;
@@ -705,6 +707,8 @@ export interface CorsairInfo {
   product_id: number;
   model: string;
   kind: "mouse" | "keyboard";
+  /** A tester confirmed this model on real hardware (the core's confirmed.rs). */
+  tested: boolean;
   /** Connected through its wireless receiver: the receiver's USB product id. */
   receiver: number | null;
   leds: number;

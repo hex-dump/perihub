@@ -41,6 +41,9 @@ cargo test --workspace          # includes tests on sectors read from a real G50
 cargo clippy --workspace --all-targets
 cd app && npm run check         # frontend type check
 cd app && npx vitest run        # frontend tests
+python3 -I -m unittest discover -s tools -p "test_*.py"   # the scripts in tools/ (triage, notify)
+cargo xtask check               # generated files up to date
+python3 tools/release.py lint   # CHANGELOG sections
 ```
 
 `cargo test` also replays the transcripts in `crates/perihub-core/tests/fixtures/transcripts`:
@@ -85,6 +88,7 @@ crates/xtask            generates the device lists from the driver tables (cargo
 app/                    UI: Tauri 2 + Svelte 5
 packaging/linux         udev rules
 docs/protocols          protocols described in our own words, written before the code
+docs/captures.md        how a tester records what the official software sends to a device
 ```
 
 - Device communication goes through [hidapi](https://github.com/libusb/hidapi). On Linux the
@@ -122,6 +126,25 @@ The text around the generated blocks is written by hand. What a block lists is a
 family needs a header in `crates/xtask/src/udev.rs`, which says what the rule opens and why: the
 generator stops until it is there. The level is worked out from the driver: read-only when it may
 send only read commands, experimental otherwise.
+
+## Confirming a device
+
+A device becomes supported when a tester's report shows it works. The confirmations are data, in one
+table: `crates/perihub-core/src/confirmed.rs`, which lists the USB ids of devices of other brands and
+Corsair devices, and the Logitech memory formats (profile format and sector size), each with the
+issue whose report confirmed it. The catalogue (`cargo xtask gen`) lists a confirmed id as supported,
+the interface shows it as tested, and `mouse::support` reads the formats from the same table.
+
+```sh
+cargo xtask confirm 1532:00b7 --issue 40                 # a device of another brand, or a Corsair device
+cargo xtask confirm --memory-format 4:255 --issue 40     # a Logitech memory format (profile format:sector size)
+```
+
+It refuses an id PeriHub does not know, a Logitech mouse by USB id (its memory format decides), a
+memory format PeriHub does not write, and anything confirmed already. Otherwise it adds the entry
+(sorted, one per line), runs `cargo xtask gen`, and adds the line under "New devices" in
+`CHANGELOG.md`. A confirmed device keeps the safety checks of an experimental one (No warranty box,
+backup, read-back, undo) for now.
 
 ## Releasing
 

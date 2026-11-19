@@ -358,6 +358,7 @@ describe("the transcript at the end of a test report", () => {
       product_id: 0x1b93,
       model: "KATAR PRO",
       kind: "mouse",
+      tested: false,
       receiver: null,
       leds: 1,
       firmware: "5.2.65",

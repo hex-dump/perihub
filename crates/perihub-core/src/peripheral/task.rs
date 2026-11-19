@@ -193,6 +193,7 @@ impl PeripheralTask {
             model: who.name,
             kind: model.kind,
             source: driver.source(),
+            tested: crate::confirmed::model_confirmed(who.vendor_id, model.product_ids),
             profiles: driver.profiles(),
             firmware: None,
             battery: None,

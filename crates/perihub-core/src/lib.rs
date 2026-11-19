@@ -5,6 +5,7 @@ pub mod app_profiles;
 pub mod battery;
 pub mod color;
 pub mod config;
+pub mod confirmed;
 pub mod conflicts;
 pub mod corsair;
 pub mod effects;
