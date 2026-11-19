@@ -6,6 +6,9 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
+### Added
+- **A device request carries everything needed to add the device**: the "Send a report" page now also reads each interface's HID report descriptor (from sysfs on Linux, which needs no rule and no administrator rights; through hidapi without read or write access on Windows) and sends the report ids with the length of their input, output and feature reports, the raw descriptor when the link has room for it, the release number (bcdDevice) and the number of USB interfaces. Whatever cannot be read says "not read". Nothing is sent to the device, no interface is read from, and there is still no serial number or path. The form fills in the device type and the brand, and asks, with checkboxes, what the device can do in its official software (DPI, polling rate, lighting, button remapping, macros, onboard profiles, battery), which software it uses and whether you can make a USB capture. GitHub cannot fill in checkboxes from a link, so those are left to tick. A long link drops the raw descriptors first, then the end of the details, and says so; **Copy report** always copies everything.
+
 ### Changed
 - **SteelSeries Rival 5 tried on a real mouse** (cable, Windows, issue #71): the name, DPI, polling rate, lighting and changes (taking effect, and still there after unplugging) were confirmed. It stays experimental, and nothing about buttons or profiles was tested. The test report checklist no longer asks whether "the buttons and profiles match" for a mouse PeriHub shows none for, such as the SteelSeries ones, which cannot be read back.
 

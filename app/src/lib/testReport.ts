@@ -1,7 +1,7 @@
 import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
-import type { HidppFeature, MouseInfo, ReportDevice } from "./api";
+import type { DescriptorCollection, DescriptorReports, HidppFeature, MouseInfo, ReportDevice } from "./api";
 import { kindName } from "./logitechFeatures";
 import { layoutReport } from "./keyboardLayout.svelte";
 
@@ -321,21 +321,105 @@ export function reportDeviceName(device: ReportDevice): string {
 
 export const reportUsbId = (device: ReportDevice) => `${hex(device.vendor_id)}:${hex(device.product_id)}`;
 
-/** The device request form, filled in with what PeriHub sees of `device`: no serial number, no path. */
-export function deviceRequestUrl(device: ReportDevice, version: string, system: string): string {
-  const name = reportDeviceName(device);
+/** What the device request form takes for "Kind of device": the labels of its options. */
+export type DeviceKind = "Mouse" | "Keyboard" | "Headset" | "Other";
+
+const GENERIC_DESKTOP = 0x01;
+const TELEPHONY = 0x0b;
+
+/** What a device is, from its name when it says so, else from its collections: the first mouse or
+ * keyboard one by interface number (a mouse often has a keyboard interface for its macros, and a
+ * keyboard a mouse one), or the telephony page headsets use. */
+export function deviceKind(device: ReportDevice): DeviceKind {
+  const name = reportDeviceName(device).toLowerCase();
+  if (/headset|headphone|earbud/.test(name)) return "Headset";
+  if (/mouse/.test(name)) return "Mouse";
+  if (/keyboard/.test(name)) return "Keyboard";
+  const input = [...device.collections]
+    .sort((a, b) => a.interface - b.interface)
+    .find((c) => c.usage_page === GENERIC_DESKTOP && (c.usage === 0x02 || c.usage === 0x06));
+  if (input) return input.usage === 0x02 ? "Mouse" : "Keyboard";
+  return device.collections.some((c) => c.usage_page === TELEPHONY) ? "Headset" : "Other";
+}
+
+/** The brands the forms list, by USB vendor id. */
+const BRANDS: Record<number, string> = {
+  0x046d: "Logitech", 0x1038: "SteelSeries", 0x1b1c: "Corsair", 0x1532: "Razer", 0x0b05: "ASUS",
+};
+
+/** A link longer than this is not opened by GitHub (it answers 414 at about 8 KB). */
+export const MAX_URL = 8000;
+/** Said in the details when the link could not carry them all. */
+export const SHORTENED = "(shortened: Copy the details and paste them)";
+
+/** The reports of an interface's collections: "usage page ff00, usage 0001: id 10 (in 7, out 7), id 11 (in 20)". */
+function reportLengths(collections: DescriptorCollection[]): string {
+  const lengths = (r: DescriptorReports) =>
+    [["in", r.input], ["out", r.output], ["feature", r.feature]]
+      .filter(([, n]) => n)
+      .map(([kind, n]) => `${kind} ${n}`)
+      .join(", ");
+  return collections
+    .map((c) => {
+      const ids = c.reports.map((r) => `${r.id === 0 ? "no id" : "id " + r.id.toString(16).padStart(2, "0")} (${lengths(r)})`);
+      return `usage page ${hex(c.usage_page)}, usage ${hex(c.usage)}: ${ids.join(", ") || "no reports"}`;
+    })
+    .join("; ");
+}
+
+/** What PeriHub sees of a device, for the "What PeriHub saw" field: names, ids, release number, HID
+ * collections and the shape of each interface's report descriptor (never a serial number or a path).
+ * `raw`: also the descriptors in hex, which a maintainer can decode to the last byte. */
+export function deviceDetails(device: ReportDevice, version: string, system: string, raw = true): string {
   const collections = device.collections.map(
     (c) =>
-      `  ${c.interface < 0 ? "no interface number" : `interface ${c.interface}`}, usage page ${hex(c.usage_page)}, usage ${hex(c.usage)}`,
+      "  " + (c.interface < 0 ? "no interface number" : "interface " + c.interface) + ", usage page " + hex(c.usage_page) + ", usage " + hex(c.usage),
   );
-  const details = [
-    `PeriHub ${version} on ${system}`,
-    `Device: ${name}`,
-    `USB ID: ${reportUsbId(device)} (${device.bus})`,
+  const descriptors = device.descriptors.map((d) => {
+    const where = d.interface < 0 ? "no interface number" : "interface " + d.interface;
+    if (d.hex === null) return "  " + where + ": not read";
+    return "  " + where + ", " + d.hex.length / 2 + " bytes: " + (d.collections ? reportLengths(d.collections) : "read, not understood");
+  });
+  const rawLines = device.descriptors
+    .filter((d) => d.hex !== null)
+    .map((d) => "  " + (d.interface < 0 ? "no interface number" : "interface " + d.interface) + ": " + d.hex);
+  return [
+    "PeriHub " + version + " on " + system,
+    "Device: " + reportDeviceName(device),
+    "Kind: " + deviceKind(device),
+    "USB ID: " + reportUsbId(device) + " (" + device.bus + ")",
+    "Release number (bcdDevice): " + (device.release === null ? "not read" : "0x" + hex(device.release)),
+    "USB interfaces: " + (device.usb_interfaces ?? "not read"),
     "HID collections:",
     ...collections,
+    "Report descriptors (lengths in bytes, with the id byte):",
+    ...(descriptors.length ? descriptors : ["  not read"]),
+    ...(rawLines.length ? ["Raw descriptors (hex):", ...(raw ? rawLines : ["  left out of the link: use Copy report"])] : []),
   ].join("\n");
-  const values = { title: `Device request: ${name}`, model: name, "usb-id": reportUsbId(device), details };
-  const query = Object.entries(values).map(([field, value]) => `${field}=${encodeURIComponent(value)}`);
-  return `${DEVICE_REQUEST_FORM}&${query.join("&")}`;
+}
+
+/** The device request form, filled in with what PeriHub sees of `device`. GitHub fills in inputs,
+ * text areas and dropdowns from the link, not checkboxes, so what the device can do is left to be
+ * ticked. The link stays under [MAX_URL]: the raw descriptors go first, then the end of the details. */
+export function deviceRequestUrl(device: ReportDevice, version: string, system: string): string {
+  const name = reportDeviceName(device);
+  const link = (details: string) => {
+    const kind = deviceKind(device);
+    const values = {
+      title: "Device request: " + name,
+      model: name,
+      // The form's own dropdowns (the triage sets its labels from them): no device type for a headset.
+      ...(kind === "Mouse" || kind === "Keyboard" ? { "device-type": kind } : {}),
+      brand: BRANDS[device.vendor_id] ?? "Other",
+      "usb-id": reportUsbId(device),
+      details,
+    };
+    const query = Object.entries(values).map(([field, value]) => field + "=" + encodeURIComponent(value));
+    return DEVICE_REQUEST_FORM + "&" + query.join("&");
+  };
+  const full = link(deviceDetails(device, version, system));
+  if (full.length <= MAX_URL) return full;
+  const lines = deviceDetails(device, version, system, false).split("\n");
+  while (lines.length > 1 && link([...lines, SHORTENED].join("\n")).length > MAX_URL) lines.pop();
+  return link([...lines, SHORTENED].join("\n"));
 }

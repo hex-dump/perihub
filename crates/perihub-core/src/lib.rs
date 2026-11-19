@@ -12,6 +12,7 @@ pub mod error;
 pub mod focus;
 pub mod g300;
 pub mod games;
+pub mod hid_descriptor;
 pub mod hidpp;
 pub mod kblayout;
 pub mod keyboard;

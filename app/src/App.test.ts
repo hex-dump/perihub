@@ -49,6 +49,9 @@ const ite: ReportDevice = {
     { interface: 0, usage_page: 0xff89, usage: 0x10 },
     { interface: 0, usage_page: 0xff89, usage: 0xcc },
   ],
+  release: 0x0100,
+  usb_interfaces: 1,
+  descriptors: [{ interface: 0, hex: null, collections: null }],
 };
 
 const wait = (ms = 0) => vi.advanceTimersByTimeAsync(ms);
@@ -240,17 +243,22 @@ describe("Device request", () => {
     expect(url.searchParams.get("template")).toBe("device_request.yml");
     expect(url.searchParams.get("model")).toBe("ITE Device");
     expect(url.searchParams.get("usb-id")).toBe("048d:5702");
-    expect(url.searchParams.get("details")).toBe(
+    expect(url.searchParams.get("details")).toContain(
       [
         "PeriHub 0.8.0 on Windows 11 x86_64",
         "Device: ITE Device",
+        "Kind: Other",
         "USB ID: 048d:5702 (USB)",
+        "Release number (bcdDevice): 0x0100",
+        "USB interfaces: 1",
         "HID collections:",
         "  interface 0, usage page ff89, usage 0010",
         "  interface 0, usage page ff89, usage 00cc",
+        "Report descriptors (lengths in bytes, with the id byte):",
+        "  interface 0: not read",
       ].join("\n"),
     );
-    expect([...url.searchParams.keys()]).toEqual(["template", "title", "model", "usb-id", "details"]);
+    expect([...url.searchParams.keys()]).toEqual(["template", "title", "model", "brand", "usb-id", "details"]);
   });
 
   it("keeps a name that already starts with its maker", () => {

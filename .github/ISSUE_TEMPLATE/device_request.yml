@@ -45,14 +45,34 @@ body:
     id: details
     attributes:
       label: What PeriHub saw
-      description: Filled in by PeriHub's "Send a report" page, if you came from there. No serial numbers.
+      description: Filled in by PeriHub's "Send a report" page, if you came from there. It holds the report ids and lengths of each interface. No serial numbers.
       render: text
+  - type: checkboxes
+    id: can-do
+    attributes:
+      label: What the device can do in its official software
+      description: Tick everything its official software can change on it, even what you don't use. PeriHub aims to support all of it.
+      options:
+        - label: DPI
+        - label: Polling rate
+        - label: Lighting
+        - label: Button remapping
+        - label: Macros
+        - label: Onboard profiles
+        - label: Battery level
+        - label: Something else (say what below)
   - type: textarea
     id: features
     attributes:
-      label: What the device can do in its official software
-      description: Everything the official software can change on it, even what you don't use. PeriHub aims to support all of it.
-      placeholder: DPI levels, polling rate, lighting, button remapping, macros, onboard profiles, battery…
+      label: Anything else it can do
+      description: What the boxes above do not cover, or details such as the number of DPI levels or lighting zones.
+      placeholder: Sensor settings, lift-off distance, sidetone, equalizer…
+  - type: input
+    id: software
+    attributes:
+      label: Official software it uses
+      description: The program that changes its settings on Windows, if any, with its version if you know it.
+      placeholder: e.g. Logitech G HUB, Razer Synapse 4, Corsair iCUE, a web app
   - type: dropdown
     id: os
     attributes:
@@ -67,3 +87,4 @@ body:
       label: Testing
       options:
         - label: I can run read-only diagnostic commands and share their output.
+        - label: I can make a USB capture of the official software with the [capture guide](https://github.com/hex-dump/perihub/blob/main/docs/captures.md)

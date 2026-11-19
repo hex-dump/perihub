@@ -430,6 +430,8 @@ struct Slots {
     report_devices: Vec<ReportDevice>,
     /// The first detection pass is over.
     scanned: bool,
+    /// What was read from the nodes of those devices (their report descriptors), once each.
+    report_details: report_devices::DetailsCache,
     /// Keys of the connected keyboard's map that start software macros, kept by its thread.
     keyboard_macro_keys: Option<Arc<Mutex<Vec<u8>>>>,
 }
@@ -533,8 +535,13 @@ impl Manager {
             log::warn!("HID enumeration failed: {error}");
             return false;
         }
-        let report = report_devices::unknown_devices(api.device_list().filter_map(report_devices::Entry::from_hid));
-        self.slots.lock_recover().report_devices = report;
+        // Reading descriptors can take a while (Windows opens each node): not under the lock.
+        let mut cache = std::mem::take(&mut self.slots.lock_recover().report_details);
+        let report = report_devices::unknown_devices(report_devices::entries(api, &mut cache));
+        let mut slots = self.slots.lock_recover();
+        slots.report_devices = report;
+        slots.report_details = cache;
+        drop(slots);
         let keyboard = api.device_list().find(|d| is_keyboard_config_interface(d)).cloned();
         let key_interface = |number| {
             api.device_list()
