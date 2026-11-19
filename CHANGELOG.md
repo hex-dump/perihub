@@ -4,6 +4,13 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+A device request now also carries, read only, what the device's vendor-defined feature reports hold at the moment, so that a known controller chip and its protocol can often be recognized without a USB capture.
+
+### Added
+- **A device request carries the feature reports the device declares, read only**: while the **Send a report** page is open, PeriHub reads once, for each interface that declares vendor-defined feature reports (usage page 0xFF00 and above), the current contents of each declared feature report, and the request has them in a section "Feature reports (read only)". Only GET_FEATURE is sent, once per declared id with the declared length, never SET_FEATURE, never an output report, never an input report (nothing typed can be captured); interfaces with a mouse or keyboard collection are never opened; on Linux only an interface the user can already open is read (nothing is asked for), on Windows hidapi opens the collection; the reading stops at the first error or after 1.5 seconds without an answer, and is limited to 32 reports and 1 KiB per interface. A long link drops the raw descriptors first, then this section; **Copy report** always has it. [docs/device-request.md](docs/device-request.md) says what a request carries and why this is safe.
+
 ## 0.9.5 — 2026-11-19
 
 When you connect a device nobody has confirmed on real hardware yet, PeriHub now offers once to send a test report for it with **Test my device**: one report is what moves a device up for everyone who has it. A device request sent from the app now carries everything needed to add the device, and a clean test report leads straight to the device being confirmed.

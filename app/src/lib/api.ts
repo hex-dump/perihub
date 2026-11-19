@@ -376,6 +376,25 @@ export interface ReportDevice {
   usb_interfaces: number | null;
   /** The report descriptor of each interface. */
   descriptors: InterfaceDescriptor[];
+  /** The feature reports of the interfaces that declare vendor-defined ones, read only. `null`: not read (yet). */
+  feature_reports: InterfaceFeatures[] | null;
+}
+
+/** How reading one interface's feature reports went. */
+export type FeatureOutcome = "nothing_to_read" | "not_opened" | "read" | "stopped_after_error" | "timed_out";
+
+export interface FeatureReport {
+  id: number;
+  /** The declared length, with the id byte when the id is not 0. */
+  length: number;
+  /** What came back, as hex (the first byte is the report id); `null`: no answer. */
+  hex: string | null;
+}
+
+export interface InterfaceFeatures {
+  interface: number;
+  outcome: FeatureOutcome;
+  reports: FeatureReport[];
 }
 
 /** The lengths in bytes of one report id's reports, with the id byte; 0: there is none. */
