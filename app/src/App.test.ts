@@ -8,6 +8,14 @@ const api = vi.hoisted(
 );
 vi.mock("./lib/api", async (original) => ({ ...(await original<typeof import("./lib/api")>()), api }));
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.8.0" }));
+vi.mock("virtual:perihub-release-notes", () => ({
+  default: {
+    version: "0.8.0",
+    date: "2026-11-12",
+    summary: "A new look.",
+    sections: [{ name: "Fixed", titles: ["Something fixed"] }],
+  },
+}));
 // jsdom has no matchMedia, which svelte/motion reads when the keyboard page is imported.
 vi.hoisted(() => {
   window.matchMedia ??= ((query: string) =>
@@ -70,6 +78,44 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+});
+
+describe("What's new", () => {
+  it("opens once after a version change, and replaces the updated notice", async () => {
+    localStorage.setItem("perihub.lastSeenVersion", "0.7.0");
+    calls.status = vi.fn(async () => empty());
+    calls.updateJustInstalled = vi.fn(async () => "0.8.0");
+    render(App);
+    await wait();
+    expect(screen.getByRole("dialog", { name: "What's new in PeriHub 0.8.0" })).toBeTruthy();
+    expect(screen.getByText("Something fixed")).toBeTruthy();
+    expect(screen.queryByText("PeriHub was updated to 0.8.0.")).toBeNull();
+    (screen.getByRole("button", { name: "Close" }) as HTMLButtonElement).click();
+    await wait();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByText("PeriHub was updated to 0.8.0.")).toBeNull();
+    cleanup();
+    render(App);
+    await wait();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("is not shown on a fresh install", async () => {
+    calls.status = vi.fn(async () => empty());
+    render(App);
+    await wait();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("closes with Esc", async () => {
+    localStorage.setItem("perihub.lastSeenVersion", "0.7.0");
+    calls.status = vi.fn(async () => empty());
+    render(App);
+    await wait();
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await wait();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
 });
 
 describe("Sidebar", () => {

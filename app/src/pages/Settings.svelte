@@ -2,6 +2,8 @@
   import { deviceLines } from "../lib/deviceLines";
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
+  import WhatsNewDialog from "../components/WhatsNewDialog.svelte";
+  import { currentNotes } from "../lib/whatsNew";
   import { api, errorText, type AppSettings, type BatteryAlerts, type DeviceStatus, type WriteEntry } from "../lib/api";
   import { readOnly, setReadOnly, writeTime } from "../lib/readOnly.svelte";
   import { INSTALL_NOTE, checkForUpdate, installUpdate, installingText, updates } from "../lib/updates.svelte";
@@ -20,6 +22,7 @@
   let error = $state<string | null>(null);
   let version = $state("");
   let showCredits = $state(false);
+  let showNotes = $state(false);
 
   // Autostart can also change outside PeriHub, for example in Task Manager.
   async function refresh() {
@@ -336,7 +339,12 @@
         <span>PeriHub {version}</span>
         <span class="small muted">Free and open source (MIT). It builds on the work of other projects: Credits lists every one, with its license.</span>
       </div>
-      <button onclick={() => (showCredits = true)}>Credits</button>
+      <div class="row">
+        {#if currentNotes && currentNotes.version === version}
+          <button onclick={() => (showNotes = true)}>What's new</button>
+        {/if}
+        <button onclick={() => (showCredits = true)}>Credits</button>
+      </div>
     </div>
   </div>
 
@@ -344,6 +352,10 @@
     <button class="danger" onclick={() => api.quit()}>Quit PeriHub</button>
   </div>
 </div>
+
+{#if showNotes && currentNotes}
+  <WhatsNewDialog notes={currentNotes} onclose={() => (showNotes = false)} />
+{/if}
 
 <!-- Loaded when first opened: most people never open the credits. -->
 {#if showCredits}

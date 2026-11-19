@@ -20,6 +20,10 @@
   import Icon from "./components/Icon.svelte";
   import Status from "./components/Status.svelte";
   import Support from "./components/Support.svelte";
+  import WhatsNewDialog from "./components/WhatsNewDialog.svelte";
+  import type { ReleaseNotes } from "./lib/changelog";
+  import { notesToShow } from "./lib/whatsNew";
+  import { getVersion } from "@tauri-apps/api/app";
   import { markPrompted, nextToPrompt, unconfirmedDevices } from "./lib/confirmPrompt";
   import logo from "../icon.svg";
 
@@ -202,7 +206,17 @@
     go("wizard");
   }
 
+  /** The release notes of a version that just replaced another, until the dialog is closed. */
+  let whatsNew = $state<ReleaseNotes | null>(null);
+
+  /** The dialog says what the "PeriHub was updated" notice says, so closing it closes the notice too. */
+  function closeWhatsNew() {
+    whatsNew = null;
+    updates.installed = null;
+  }
+
   onMount(() => {
+    getVersion().then((v) => (whatsNew = notesToShow(v)), () => {});
     api.status().then(received);
     api.configProblem().then((p) => (configProblem = p), () => {});
     // PeriHub checks for updates in the background, also while this window is closed.
@@ -416,7 +430,7 @@
           <button class="ghost tiny" aria-label="Dismiss" onclick={() => (promptKey = null)}><Icon name="close" /></button>
         </div>
       {/if}
-      {#if updates.installed}
+      {#if updates.installed && !whatsNew}
         <div class="notice ok row updated">
           <span>PeriHub was updated to {updates.installed}.</span>
           <button class="tiny" onclick={() => (updates.installed = null)}>Close</button>
@@ -497,6 +511,10 @@
     </div>
   </main>
 </div>
+
+{#if whatsNew}
+  <WhatsNewDialog notes={whatsNew} onclose={closeWhatsNew} />
+{/if}
 
 <style>
   .shell {
