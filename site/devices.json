@@ -7,6 +7,7 @@
       "name": "Apex 3 TKL",
       "kind": "keyboard",
       "level": "supported",
+      "page": "devices/steelseries-apex-3-tkl.html",
       "usb_ids": [
         "1038:1622"
       ],
@@ -21,6 +22,7 @@
       "name": "Apex 3",
       "kind": "keyboard",
       "level": "recognized",
+      "page": "devices/steelseries-apex-3.html",
       "usb_ids": [
         "1038:161a"
       ],
@@ -34,6 +36,7 @@
       "name": "G502 HERO",
       "kind": "mouse",
       "level": "supported",
+      "page": "devices/logitech-g502-hero.html",
       "usb_ids": [
         "046d:c08b"
       ],
@@ -47,6 +50,7 @@
       "name": "G502 Proteus Core",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g502-proteus-core.html",
       "usb_ids": [
         "046d:c07d"
       ],
@@ -60,6 +64,7 @@
       "name": "G502 Proteus Spectrum",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g502-proteus-spectrum.html",
       "usb_ids": [
         "046d:c332"
       ],
@@ -73,6 +78,7 @@
       "name": "G502 HERO Wireless",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g502-hero-wireless.html",
       "usb_ids": [
         "046d:c08d"
       ],
@@ -87,6 +93,7 @@
       "name": "G502 X",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g502-x.html",
       "usb_ids": [
         "046d:c099"
       ],
@@ -100,6 +107,7 @@
       "name": "G502 X Wireless",
       "kind": "mouse",
       "level": "supported",
+      "page": "devices/logitech-g502-x-wireless.html",
       "usb_ids": [
         "046d:c098"
       ],
@@ -114,6 +122,7 @@
       "name": "G502 X PLUS",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g502-x-plus.html",
       "usb_ids": [
         "046d:c095"
       ],
@@ -128,6 +137,7 @@
       "name": "G Pro",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g-pro.html",
       "usb_ids": [
         "046d:c085"
       ],
@@ -141,6 +151,7 @@
       "name": "G Pro",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g-pro.html",
       "usb_ids": [
         "046d:c08c"
       ],
@@ -154,6 +165,7 @@
       "name": "G Pro Wireless",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g-pro-wireless.html",
       "usb_ids": [
         "046d:c088"
       ],
@@ -168,6 +180,7 @@
       "name": "G Pro X Superlight",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g-pro-x-superlight.html",
       "usb_ids": [
         "046d:c094"
       ],
@@ -182,6 +195,7 @@
       "name": "G102/G103/G203",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g102-g103-g203.html",
       "usb_ids": [
         "046d:c084"
       ],
@@ -195,6 +209,7 @@
       "name": "G102/G103/G203",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g102-g103-g203.html",
       "usb_ids": [
         "046d:c092"
       ],
@@ -208,6 +223,7 @@
       "name": "G102/G103/G203",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g102-g103-g203.html",
       "usb_ids": [
         "046d:c09d"
       ],
@@ -221,6 +237,7 @@
       "name": "G302",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g302.html",
       "usb_ids": [
         "046d:c07f"
       ],
@@ -234,6 +251,7 @@
       "name": "G303",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g303.html",
       "usb_ids": [
         "046d:c080"
       ],
@@ -247,6 +265,7 @@
       "name": "G303 Shroud Edition",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g303-shroud-edition.html",
       "usb_ids": [
         "046d:c097"
       ],
@@ -261,6 +280,7 @@
       "name": "G402",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g402.html",
       "usb_ids": [
         "046d:c07e"
       ],
@@ -274,6 +294,7 @@
       "name": "G403",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g403.html",
       "usb_ids": [
         "046d:c083"
       ],
@@ -287,6 +308,7 @@
       "name": "G403 HERO",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g403-hero.html",
       "usb_ids": [
         "046d:c08f"
       ],
@@ -300,6 +322,7 @@
       "name": "G403 Wireless",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g403-wireless.html",
       "usb_ids": [
         "046d:c082"
       ],
@@ -314,6 +337,7 @@
       "name": "G703",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g703.html",
       "usb_ids": [
         "046d:c087"
       ],
@@ -328,6 +352,7 @@
       "name": "G703 HERO",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g703-hero.html",
       "usb_ids": [
         "046d:c090"
       ],
@@ -342,6 +367,7 @@
       "name": "G705",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g705.html",
       "usb_ids": [
         "046d:c096"
       ],
@@ -356,6 +382,7 @@
       "name": "G900",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g900.html",
       "usb_ids": [
         "046d:c081"
       ],
@@ -370,6 +397,7 @@
       "name": "G903",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g903.html",
       "usb_ids": [
         "046d:c086"
       ],
@@ -384,6 +412,7 @@
       "name": "G903 HERO",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g903-hero.html",
       "usb_ids": [
         "046d:c091"
       ],
@@ -398,6 +427,7 @@
       "name": "MX518",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-mx518.html",
       "usb_ids": [
         "046d:c08e"
       ],
@@ -411,6 +441,7 @@
       "name": "PRO 2 LIGHTSPEED",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-pro-2-lightspeed.html",
       "usb_ids": [
         "046d:c09a"
       ],
@@ -425,6 +456,7 @@
       "name": "PRO X 2 DEX",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-pro-x-2-dex.html",
       "usb_ids": [
         "046d:c0a0"
       ],
@@ -439,6 +471,7 @@
       "name": "G305",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g305.html",
       "usb_ids": [],
       "wireless_id": "4074",
       "linux": {
@@ -451,6 +484,7 @@
       "name": "G603",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g603.html",
       "usb_ids": [],
       "wireless_id": "406c",
       "linux": {
@@ -463,6 +497,7 @@
       "name": "G604",
       "kind": "mouse",
       "level": "by_memory_format",
+      "page": "devices/logitech-g604.html",
       "usb_ids": [],
       "wireless_id": "4085",
       "linux": {
@@ -475,6 +510,7 @@
       "name": "LIGHTSPEED receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-lightspeed-receiver.html",
       "usb_ids": [
         "046d:c539"
       ],
@@ -488,6 +524,7 @@
       "name": "LIGHTSPEED receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-lightspeed-receiver.html",
       "usb_ids": [
         "046d:c53a"
       ],
@@ -501,6 +538,7 @@
       "name": "LIGHTSPEED receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-lightspeed-receiver.html",
       "usb_ids": [
         "046d:c53d"
       ],
@@ -514,6 +552,7 @@
       "name": "LIGHTSPEED receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-lightspeed-receiver.html",
       "usb_ids": [
         "046d:c53f"
       ],
@@ -527,6 +566,7 @@
       "name": "LIGHTSPEED receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-lightspeed-receiver.html",
       "usb_ids": [
         "046d:c541"
       ],
@@ -540,6 +580,7 @@
       "name": "LIGHTSPEED receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-lightspeed-receiver.html",
       "usb_ids": [
         "046d:c543"
       ],
@@ -553,6 +594,7 @@
       "name": "LIGHTSPEED receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-lightspeed-receiver.html",
       "usb_ids": [
         "046d:c545"
       ],
@@ -566,6 +608,7 @@
       "name": "LIGHTSPEED receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-lightspeed-receiver.html",
       "usb_ids": [
         "046d:c547"
       ],
@@ -579,6 +622,7 @@
       "name": "LIGHTSPEED receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-lightspeed-receiver.html",
       "usb_ids": [
         "046d:c54d"
       ],
@@ -592,6 +636,7 @@
       "name": "Logi Bolt receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-logi-bolt-receiver.html",
       "usb_ids": [
         "046d:c548"
       ],
@@ -605,6 +650,7 @@
       "name": "Unifying receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-unifying-receiver.html",
       "usb_ids": [
         "046d:c52b"
       ],
@@ -618,6 +664,7 @@
       "name": "Unifying receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/logitech-unifying-receiver.html",
       "usb_ids": [
         "046d:c532"
       ],
@@ -631,6 +678,7 @@
       "name": "G300",
       "kind": "mouse",
       "level": "supported",
+      "page": "devices/logitech-g300.html",
       "usb_ids": [
         "046d:c246"
       ],
@@ -645,6 +693,7 @@
       "name": "KATAR PRO",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-katar-pro.html",
       "usb_ids": [
         "1b1c:1b93"
       ],
@@ -659,6 +708,7 @@
       "name": "KATAR PRO XT",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-katar-pro-xt.html",
       "usb_ids": [
         "1b1c:1bac"
       ],
@@ -673,6 +723,7 @@
       "name": "M55 RGB PRO",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-m55-rgb-pro.html",
       "usb_ids": [
         "1b1c:1b70"
       ],
@@ -687,6 +738,7 @@
       "name": "M65 RGB ULTRA",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-m65-rgb-ultra.html",
       "usb_ids": [
         "1b1c:1b9e"
       ],
@@ -701,6 +753,7 @@
       "name": "M75",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-m75.html",
       "usb_ids": [
         "1b1c:1bf0"
       ],
@@ -715,6 +768,7 @@
       "name": "SABRE RGB PRO",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-sabre-rgb-pro.html",
       "usb_ids": [
         "1b1c:1b79"
       ],
@@ -729,6 +783,7 @@
       "name": "SABRE PRO CS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-sabre-pro-cs.html",
       "usb_ids": [
         "1b1c:1b7a"
       ],
@@ -743,6 +798,7 @@
       "name": "IRONCLAW RGB WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-ironclaw-rgb-wireless.html",
       "usb_ids": [
         "1b1c:1b4c"
       ],
@@ -757,6 +813,7 @@
       "name": "IRONCLAW WIRELESS SE",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-ironclaw-wireless-se.html",
       "usb_ids": [
         "1b1c:2b32"
       ],
@@ -771,6 +828,7 @@
       "name": "DARK CORE RGB PRO",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-dark-core-rgb-pro.html",
       "usb_ids": [
         "1b1c:1b80"
       ],
@@ -785,6 +843,7 @@
       "name": "DARK CORE RGB PRO SE",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-dark-core-rgb-pro-se.html",
       "usb_ids": [
         "1b1c:1b7e"
       ],
@@ -799,6 +858,7 @@
       "name": "HARPOON RGB WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-harpoon-rgb-wireless.html",
       "usb_ids": [
         "1b1c:1b5e"
       ],
@@ -813,6 +873,7 @@
       "name": "HARPOON V2",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-harpoon-v2.html",
       "usb_ids": [
         "1b1c:2b2e"
       ],
@@ -827,6 +888,7 @@
       "name": "M65 RGB ULTRA WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-m65-rgb-ultra-wireless.html",
       "usb_ids": [
         "1b1c:1bb5"
       ],
@@ -841,6 +903,7 @@
       "name": "M65 RGB ULTRA WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-m65-rgb-ultra-wireless.html",
       "usb_ids": [
         "1b1c:1bd6"
       ],
@@ -855,6 +918,7 @@
       "name": "M75 WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-m75-wireless.html",
       "usb_ids": [
         "1b1c:1bf1"
       ],
@@ -869,6 +933,7 @@
       "name": "M75 WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-m75-wireless.html",
       "usb_ids": [
         "1b1c:2b08"
       ],
@@ -883,6 +948,7 @@
       "name": "M75 AIR WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-m75-air-wireless.html",
       "usb_ids": [
         "1b1c:1bf2"
       ],
@@ -897,6 +963,7 @@
       "name": "NIGHTSABRE WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-nightsabre-wireless.html",
       "usb_ids": [
         "1b1c:1bb8"
       ],
@@ -911,6 +978,7 @@
       "name": "SCIMITAR RGB ELITE WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-scimitar-rgb-elite-wireless.html",
       "usb_ids": [
         "1b1c:1bdb"
       ],
@@ -925,6 +993,7 @@
       "name": "SCIMITAR ELITE WIRELESS SE",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-scimitar-elite-wireless-se.html",
       "usb_ids": [
         "1b1c:2b22"
       ],
@@ -939,6 +1008,7 @@
       "name": "SABRE RGB PRO WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-sabre-rgb-pro-wireless.html",
       "usb_ids": [
         "1b1c:1b98"
       ],
@@ -953,6 +1023,7 @@
       "name": "DARKSTAR RGB WIRELESS",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-darkstar-rgb-wireless.html",
       "usb_ids": [
         "1b1c:1bb2"
       ],
@@ -967,6 +1038,7 @@
       "name": "SABRE V2 PRO",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-sabre-v2-pro.html",
       "usb_ids": [
         "1b1c:2b28"
       ],
@@ -981,6 +1053,7 @@
       "name": "SABRE V2 PRO MG",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-sabre-v2-pro-mg.html",
       "usb_ids": [
         "1b1c:2b29"
       ],
@@ -995,6 +1068,7 @@
       "name": "SABRE V2 PRO CF",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-sabre-v2-pro-cf.html",
       "usb_ids": [
         "1b1c:2b25"
       ],
@@ -1009,6 +1083,7 @@
       "name": "SCIMITAR RGB ELITE",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-scimitar-rgb-elite.html",
       "usb_ids": [
         "1b1c:1be3"
       ],
@@ -1023,6 +1098,7 @@
       "name": "M55",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/corsair-m55.html",
       "usb_ids": [
         "1b1c:2b03"
       ],
@@ -1037,6 +1113,7 @@
       "name": "K55 PRO RGB",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k55-pro-rgb.html",
       "usb_ids": [
         "1b1c:1ba4"
       ],
@@ -1051,6 +1128,7 @@
       "name": "K55 RGB PRO XT",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k55-rgb-pro-xt.html",
       "usb_ids": [
         "1b1c:1ba1"
       ],
@@ -1065,6 +1143,7 @@
       "name": "K55 CORE RGB",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k55-core-rgb.html",
       "usb_ids": [
         "1b1c:1bfe"
       ],
@@ -1079,6 +1158,7 @@
       "name": "K55 CORE RGB",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k55-core-rgb.html",
       "usb_ids": [
         "1b1c:2b05"
       ],
@@ -1093,6 +1173,7 @@
       "name": "K55 CORE TKL RGB",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k55-core-tkl-rgb.html",
       "usb_ids": [
         "1b1c:2b20"
       ],
@@ -1107,6 +1188,7 @@
       "name": "K57 RGB WIRELESS",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k57-rgb-wireless.html",
       "usb_ids": [
         "1b1c:1b6e"
       ],
@@ -1121,6 +1203,7 @@
       "name": "K60 RGB PRO",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k60-rgb-pro.html",
       "usb_ids": [
         "1b1c:1ba0"
       ],
@@ -1135,6 +1218,7 @@
       "name": "K60 RGB PRO LP",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k60-rgb-pro-lp.html",
       "usb_ids": [
         "1b1c:1bad"
       ],
@@ -1149,6 +1233,7 @@
       "name": "K65 PLUS WIRELESS",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k65-plus-wireless.html",
       "usb_ids": [
         "1b1c:2b10"
       ],
@@ -1163,6 +1248,7 @@
       "name": "K65 PLUS WIRELESS",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k65-plus-wireless.html",
       "usb_ids": [
         "1b1c:2b11"
       ],
@@ -1177,6 +1263,7 @@
       "name": "K65 PLUS WIRELESS",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k65-plus-wireless.html",
       "usb_ids": [
         "1b1c:2b23"
       ],
@@ -1191,6 +1278,7 @@
       "name": "K65 PRO MINI",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k65-pro-mini.html",
       "usb_ids": [
         "1b1c:1bd7"
       ],
@@ -1205,6 +1293,7 @@
       "name": "K65 RGB MINI",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k65-rgb-mini.html",
       "usb_ids": [
         "1b1c:1baf"
       ],
@@ -1219,6 +1308,7 @@
       "name": "K65 RGB MINI",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k65-rgb-mini.html",
       "usb_ids": [
         "1b1c:1bc3"
       ],
@@ -1233,6 +1323,7 @@
       "name": "K65 RGB MINI",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k65-rgb-mini.html",
       "usb_ids": [
         "1b1c:1bcf"
       ],
@@ -1247,6 +1338,7 @@
       "name": "K70 CORE RGB",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-core-rgb.html",
       "usb_ids": [
         "1b1c:1bfd"
       ],
@@ -1261,6 +1353,7 @@
       "name": "K70 CORE RGB",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-core-rgb.html",
       "usb_ids": [
         "1b1c:1bff"
       ],
@@ -1275,6 +1368,7 @@
       "name": "K70 CORE RGB",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-core-rgb.html",
       "usb_ids": [
         "1b1c:2b0a"
       ],
@@ -1289,6 +1383,7 @@
       "name": "K70 CORE TKL",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-core-tkl.html",
       "usb_ids": [
         "1b1c:2b01"
       ],
@@ -1303,6 +1398,7 @@
       "name": "K70 CORE TKL WIRELESS",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-core-tkl-wireless.html",
       "usb_ids": [
         "1b1c:2b02"
       ],
@@ -1317,6 +1413,7 @@
       "name": "K70 MAX",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-max.html",
       "usb_ids": [
         "1b1c:1bc0"
       ],
@@ -1331,6 +1428,7 @@
       "name": "K70 PRO",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-pro.html",
       "usb_ids": [
         "1b1c:1bb3"
       ],
@@ -1345,6 +1443,7 @@
       "name": "K70 PRO",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-pro.html",
       "usb_ids": [
         "1b1c:1bc4"
       ],
@@ -1359,6 +1458,7 @@
       "name": "K70 PRO",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-pro.html",
       "usb_ids": [
         "1b1c:1bc6"
       ],
@@ -1373,6 +1473,7 @@
       "name": "K70 PRO",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-pro.html",
       "usb_ids": [
         "1b1c:1bd4"
       ],
@@ -1387,6 +1488,7 @@
       "name": "K70 PRO MINI WIRELESS",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-pro-mini-wireless.html",
       "usb_ids": [
         "1b1c:1bb6"
       ],
@@ -1401,6 +1503,7 @@
       "name": "K70 PRO MINI WIRELESS",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-pro-mini-wireless.html",
       "usb_ids": [
         "1b1c:1bd3"
       ],
@@ -1415,6 +1518,7 @@
       "name": "K70 PRO TKL",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-pro-tkl.html",
       "usb_ids": [
         "1b1c:2b14"
       ],
@@ -1429,6 +1533,7 @@
       "name": "K70 RGB TKL",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-rgb-tkl.html",
       "usb_ids": [
         "1b1c:1b73"
       ],
@@ -1443,6 +1548,7 @@
       "name": "K70 RGB TKL CS",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k70-rgb-tkl-cs.html",
       "usb_ids": [
         "1b1c:1bb9"
       ],
@@ -1457,6 +1563,7 @@
       "name": "K95 RGB PLATINUM XT",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k95-rgb-platinum-xt.html",
       "usb_ids": [
         "1b1c:1b89"
       ],
@@ -1471,6 +1578,7 @@
       "name": "K100 RGB",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k100-rgb.html",
       "usb_ids": [
         "1b1c:1b7c"
       ],
@@ -1485,6 +1593,7 @@
       "name": "K100 RGB",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k100-rgb.html",
       "usb_ids": [
         "1b1c:1b7d"
       ],
@@ -1499,6 +1608,7 @@
       "name": "K100 RGB",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k100-rgb.html",
       "usb_ids": [
         "1b1c:1bc5"
       ],
@@ -1513,6 +1623,7 @@
       "name": "K100 AIR WIRELESS",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-k100-air-wireless.html",
       "usb_ids": [
         "1b1c:1bab"
       ],
@@ -1527,6 +1638,7 @@
       "name": "MAKR 75",
       "kind": "keyboard",
       "level": "experimental",
+      "page": "devices/corsair-makr-75.html",
       "usb_ids": [
         "1b1c:2b04"
       ],
@@ -1541,6 +1653,7 @@
       "name": "SLIPSTREAM WIRELESS USB Receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/corsair-slipstream-wireless-usb-receiver.html",
       "usb_ids": [
         "1b1c:1ba6"
       ],
@@ -1555,6 +1668,7 @@
       "name": "SLIPSTREAM WIRELESS USB Receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/corsair-slipstream-wireless-usb-receiver.html",
       "usb_ids": [
         "1b1c:1bdc"
       ],
@@ -1569,6 +1683,7 @@
       "name": "SLIPSTREAM WIRELESS USB Receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/corsair-slipstream-wireless-usb-receiver.html",
       "usb_ids": [
         "1b1c:2b00"
       ],
@@ -1583,6 +1698,7 @@
       "name": "HARPOON RGB WIRELESS receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/corsair-harpoon-rgb-wireless-receiver.html",
       "usb_ids": [
         "1b1c:1b65"
       ],
@@ -1597,6 +1713,7 @@
       "name": "DARK CORE RGB PRO SE receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/corsair-dark-core-rgb-pro-se-receiver.html",
       "usb_ids": [
         "1b1c:1b7f"
       ],
@@ -1611,6 +1728,7 @@
       "name": "DARK CORE RGB PRO receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/corsair-dark-core-rgb-pro-receiver.html",
       "usb_ids": [
         "1b1c:1b81"
       ],
@@ -1625,6 +1743,7 @@
       "name": "IRONCLAW RGB WIRELESS receiver",
       "kind": "receiver",
       "level": "experimental",
+      "page": "devices/corsair-ironclaw-rgb-wireless-receiver.html",
       "usb_ids": [
         "1b1c:1b66"
       ],
@@ -1639,12 +1758,14 @@
       "name": "ROG GX860 Buzzard",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-gx860-buzzard.html",
       "usb_ids": [
         "0b05:1816"
       ],
       "linux": {
         "kind": "whole"
-      }
+      },
+      "note": "no lighting"
     },
     {
       "family": "asus",
@@ -1652,6 +1773,7 @@
       "name": "ROG Chakram Core",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-chakram-core.html",
       "usb_ids": [
         "0b05:1958"
       ],
@@ -1666,6 +1788,7 @@
       "name": "ROG Chakram",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-chakram.html",
       "usb_ids": [
         "0b05:18e3",
         "0b05:18e5"
@@ -1681,6 +1804,7 @@
       "name": "ROG Chakram X",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-chakram-x.html",
       "usb_ids": [
         "0b05:1a18",
         "0b05:1a1a"
@@ -1688,7 +1812,8 @@
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI shown, not changed (separate X and Y); LED brightness kept as it is"
     },
     {
       "family": "asus",
@@ -1696,6 +1821,7 @@
       "name": "ROG Gladius II",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-gladius-ii.html",
       "usb_ids": [
         "0b05:1845"
       ],
@@ -1710,6 +1836,7 @@
       "name": "ROG Gladius II Origin",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-gladius-ii-origin.html",
       "usb_ids": [
         "0b05:1877"
       ],
@@ -1724,6 +1851,7 @@
       "name": "ROG Gladius II Origin PNK LTD",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-gladius-ii-origin-pnk-ltd.html",
       "usb_ids": [
         "0b05:18cd"
       ],
@@ -1738,6 +1866,7 @@
       "name": "ROG Harpe Wireless",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-harpe-wireless.html",
       "usb_ids": [
         "0b05:1a92"
       ],
@@ -1751,6 +1880,7 @@
       "name": "ROG Keris",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-keris.html",
       "usb_ids": [
         "0b05:195c"
       ],
@@ -1765,6 +1895,7 @@
       "name": "ROG Keris Wireless AimPoint",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-keris-wireless-aimpoint.html",
       "usb_ids": [
         "0b05:1a66",
         "0b05:1a68"
@@ -1780,6 +1911,7 @@
       "name": "ROG Keris Wireless",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-keris-wireless.html",
       "usb_ids": [
         "0b05:195e",
         "0b05:1960"
@@ -1795,6 +1927,7 @@
       "name": "ROG Pugio",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-pugio.html",
       "usb_ids": [
         "0b05:1846"
       ],
@@ -1809,6 +1942,7 @@
       "name": "ROG Spatha X",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-spatha-x.html",
       "usb_ids": [
         "0b05:1979",
         "0b05:1977"
@@ -1824,12 +1958,14 @@
       "name": "ROG Strix Carry",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-strix-carry.html",
       "usb_ids": [
         "0b05:18b4"
       ],
       "linux": {
         "kind": "whole"
-      }
+      },
+      "note": "no lighting"
     },
     {
       "family": "asus",
@@ -1837,6 +1973,7 @@
       "name": "ROG Strix Impact II",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-strix-impact-ii.html",
       "usb_ids": [
         "0b05:18e1"
       ],
@@ -1851,6 +1988,7 @@
       "name": "ROG Strix Impact II Wireless",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-strix-impact-ii-wireless.html",
       "usb_ids": [
         "0b05:1947",
         "0b05:1949"
@@ -1866,6 +2004,7 @@
       "name": "ROG Strix Impact III",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-strix-impact-iii.html",
       "usb_ids": [
         "0b05:1a88"
       ],
@@ -1880,6 +2019,7 @@
       "name": "ROG Strix Impact",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-rog-strix-impact.html",
       "usb_ids": [
         "0b05:1847"
       ],
@@ -1894,6 +2034,7 @@
       "name": "TUF Gaming M3 Gen II",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-tuf-gaming-m3-gen-ii.html",
       "usb_ids": [
         "0b05:1a9b"
       ],
@@ -1908,12 +2049,14 @@
       "name": "TUF Gaming M4 Air",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-tuf-gaming-m4-air.html",
       "usb_ids": [
         "0b05:1a03"
       ],
       "linux": {
         "kind": "whole"
-      }
+      },
+      "note": "no lighting"
     },
     {
       "family": "asus",
@@ -1921,13 +2064,15 @@
       "name": "TUF Gaming Mini WL Mouse Miku",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/asus-tuf-gaming-mini-wl-mouse-miku.html",
       "usb_ids": [
         "0b05:1c56",
         "0b05:1c57"
       ],
       "linux": {
         "kind": "whole"
-      }
+      },
+      "note": "DPI shown, not changed (separate X and Y); LED brightness kept as it is"
     },
     {
       "family": "steelseries-mice",
@@ -1935,6 +2080,7 @@
       "name": "Aerox 3",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-aerox-3.html",
       "usb_ids": [
         "1038:1836"
       ],
@@ -1949,6 +2095,7 @@
       "name": "Aerox 3 Wireless",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-aerox-3-wireless.html",
       "usb_ids": [
         "1038:183a",
         "1038:187a"
@@ -1964,6 +2111,7 @@
       "name": "Aerox 5",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-aerox-5.html",
       "usb_ids": [
         "1038:1850"
       ],
@@ -1978,6 +2126,7 @@
       "name": "Aerox 5 Wireless",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-aerox-5-wireless.html",
       "usb_ids": [
         "1038:1854",
         "1038:185e",
@@ -1994,6 +2143,7 @@
       "name": "Aerox 9 Wireless",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-aerox-9-wireless.html",
       "usb_ids": [
         "1038:185a",
         "1038:1876"
@@ -2009,6 +2159,7 @@
       "name": "Kana v2",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-kana-v2.html",
       "usb_ids": [
         "1038:137a"
       ],
@@ -2023,6 +2174,7 @@
       "name": "Kinzu v2",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-kinzu-v2.html",
       "usb_ids": [
         "1038:1366",
         "1038:1378"
@@ -2038,6 +2190,7 @@
       "name": "Prime",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-prime.html",
       "usb_ids": [
         "1038:182e",
         "1038:182a",
@@ -2054,6 +2207,7 @@
       "name": "Prime Mini",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-prime-mini.html",
       "usb_ids": [
         "1038:184d"
       ],
@@ -2068,6 +2222,7 @@
       "name": "Prime+",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-prime-plus.html",
       "usb_ids": [
         "1038:182c"
       ],
@@ -2082,6 +2237,7 @@
       "name": "Prime Wireless",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-prime-wireless.html",
       "usb_ids": [
         "1038:1842",
         "1038:184a"
@@ -2097,6 +2253,7 @@
       "name": "Rival 100 / Rival 105",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-100-rival-105.html",
       "usb_ids": [
         "1038:1702",
         "1038:170a",
@@ -2115,6 +2272,7 @@
       "name": "Rival 110 / Rival 106",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-110-rival-106.html",
       "usb_ids": [
         "1038:1729",
         "1038:1816"
@@ -2130,6 +2288,7 @@
       "name": "Rival 3",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-3.html",
       "usb_ids": [
         "1038:1824",
         "1038:184c"
@@ -2145,6 +2304,7 @@
       "name": "Rival 300 / Rival",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-300-rival.html",
       "usb_ids": [
         "1038:1384",
         "1038:1392",
@@ -2168,6 +2328,7 @@
       "name": "Rival 300S",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-300s.html",
       "usb_ids": [
         "1038:1810"
       ],
@@ -2182,6 +2343,7 @@
       "name": "Rival 310",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-310.html",
       "usb_ids": [
         "1038:1720",
         "1038:171e",
@@ -2198,6 +2360,7 @@
       "name": "Rival 3 Gen 2",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-3-gen-2.html",
       "usb_ids": [
         "1038:1870"
       ],
@@ -2212,6 +2375,7 @@
       "name": "Rival 3 Wireless",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-3-wireless.html",
       "usb_ids": [
         "1038:1830"
       ],
@@ -2226,6 +2390,7 @@
       "name": "Rival 3 Wireless Gen 2",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-3-wireless-gen-2.html",
       "usb_ids": [
         "1038:1872"
       ],
@@ -2240,6 +2405,7 @@
       "name": "Rival 5",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-5.html",
       "usb_ids": [
         "1038:183c",
         "1038:183e"
@@ -2255,6 +2421,7 @@
       "name": "Rival 500",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-500.html",
       "usb_ids": [
         "1038:170e"
       ],
@@ -2269,6 +2436,7 @@
       "name": "Rival 600",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-600.html",
       "usb_ids": [
         "1038:1724",
         "1038:172e"
@@ -2284,6 +2452,7 @@
       "name": "Rival 650 Wireless",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-650-wireless.html",
       "usb_ids": [
         "1038:172b",
         "1038:1726"
@@ -2299,6 +2468,7 @@
       "name": "Rival 700 / Rival 710",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-700-rival-710.html",
       "usb_ids": [
         "1038:1700",
         "1038:1730"
@@ -2314,6 +2484,7 @@
       "name": "Rival 95 / Rival 100 PC Bang",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-rival-95-rival-100-pc-bang.html",
       "usb_ids": [
         "1038:1706",
         "1038:1707",
@@ -2331,6 +2502,7 @@
       "name": "Sensei 310",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-sensei-310.html",
       "usb_ids": [
         "1038:1722"
       ],
@@ -2345,6 +2517,7 @@
       "name": "Sensei [RAW]",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-sensei-raw.html",
       "usb_ids": [
         "1038:1369",
         "1038:1362",
@@ -2364,6 +2537,7 @@
       "name": "Sensei TEN",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-sensei-ten.html",
       "usb_ids": [
         "1038:1832",
         "1038:1834"
@@ -2379,6 +2553,7 @@
       "name": "Aerox 3 Wireless (through its receiver)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-aerox-3-wireless-through-its-receiver.html",
       "usb_ids": [
         "1038:1838",
         "1038:1878"
@@ -2394,6 +2569,7 @@
       "name": "Aerox 5 Wireless (through its receiver)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-aerox-5-wireless-through-its-receiver.html",
       "usb_ids": [
         "1038:1852",
         "1038:185c",
@@ -2410,6 +2586,7 @@
       "name": "Aerox 9 Wireless (through its receiver)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-aerox-9-wireless-through-its-receiver.html",
       "usb_ids": [
         "1038:1858",
         "1038:1874"
@@ -2425,6 +2602,7 @@
       "name": "Prime Wireless (through its receiver)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/steelseries-prime-wireless-through-its-receiver.html",
       "usb_ids": [
         "1038:1840",
         "1038:1848"
@@ -2440,13 +2618,15 @@
       "name": "Orochi 2011",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-orochi-2011.html",
       "usb_ids": [
         "1532:0013"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "polling rate shown"
     },
     {
       "family": "razer",
@@ -2454,13 +2634,15 @@
       "name": "Naga",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga.html",
       "usb_ids": [
         "1532:0015"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "polling rate"
     },
     {
       "family": "razer",
@@ -2468,13 +2650,15 @@
       "name": "Naga Epic",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-epic.html",
       "usb_ids": [
         "1532:001f"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "polling rate; brightness of scroll wheel"
     },
     {
       "family": "razer",
@@ -2482,13 +2666,15 @@
       "name": "Abyssus 1800",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-abyssus-1800.html",
       "usb_ids": [
         "1532:0020"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "polling rate"
     },
     {
       "family": "razer",
@@ -2496,13 +2682,15 @@
       "name": "Mamba 2012 (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-mamba-2012-wired.html",
       "usb_ids": [
         "1532:0024"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 6400, polling rate; brightness of scroll wheel"
     },
     {
       "family": "razer",
@@ -2510,13 +2698,15 @@
       "name": "Naga 2012",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-2012.html",
       "usb_ids": [
         "1532:002e"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "polling rate"
     },
     {
       "family": "razer",
@@ -2524,13 +2714,15 @@
       "name": "Imperator 2012",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-imperator-2012.html",
       "usb_ids": [
         "1532:002f"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 6400, polling rate"
     },
     {
       "family": "razer",
@@ -2538,13 +2730,15 @@
       "name": "Ouroboros",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-ouroboros.html",
       "usb_ids": [
         "1532:0032"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 8200, polling rate; brightness of scroll wheel"
     },
     {
       "family": "razer",
@@ -2552,13 +2746,15 @@
       "name": "Taipan",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-taipan.html",
       "usb_ids": [
         "1532:0034"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 8200, polling rate"
     },
     {
       "family": "razer",
@@ -2566,13 +2762,15 @@
       "name": "Naga Hex (Red)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-hex-red.html",
       "usb_ids": [
         "1532:0036"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "polling rate"
     },
     {
       "family": "razer",
@@ -2580,13 +2778,15 @@
       "name": "DeathAdder 2013",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-2013.html",
       "usb_ids": [
         "1532:0037"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "polling rate"
     },
     {
       "family": "razer",
@@ -2594,13 +2794,15 @@
       "name": "DeathAdder 1800",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-1800.html",
       "usb_ids": [
         "1532:0038"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "polling rate"
     },
     {
       "family": "razer",
@@ -2608,13 +2810,15 @@
       "name": "Orochi 2013",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-orochi-2013.html",
       "usb_ids": [
         "1532:0039"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 6400, polling rate"
     },
     {
       "family": "razer",
@@ -2622,13 +2826,15 @@
       "name": "Naga Epic Chroma (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-epic-chroma-wired.html",
       "usb_ids": [
         "1532:003e"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 8200, polling rate; brightness of scroll wheel and backlight"
     },
     {
       "family": "razer",
@@ -2636,13 +2842,15 @@
       "name": "Naga 2014",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-2014.html",
       "usb_ids": [
         "1532:0040"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 8200, polling rate"
     },
     {
       "family": "razer",
@@ -2650,13 +2858,15 @@
       "name": "Naga Hex",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-hex.html",
       "usb_ids": [
         "1532:0041"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "polling rate"
     },
     {
       "family": "razer",
@@ -2664,13 +2874,15 @@
       "name": "Abyssus",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-abyssus.html",
       "usb_ids": [
         "1532:0042"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "polling rate"
     },
     {
       "family": "razer",
@@ -2678,13 +2890,15 @@
       "name": "DeathAdder Chroma",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-chroma.html",
       "usb_ids": [
         "1532:0043"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 10000, polling rate; brightness of logo and scroll wheel"
     },
     {
       "family": "razer",
@@ -2692,13 +2906,15 @@
       "name": "Mamba Chroma (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-mamba-chroma-wired.html",
       "usb_ids": [
         "1532:0044"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate shown"
     },
     {
       "family": "razer",
@@ -2706,13 +2922,15 @@
       "name": "Mamba Tournament Edition",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-mamba-tournament-edition.html",
       "usb_ids": [
         "1532:0046"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000; brightness of backlight"
     },
     {
       "family": "razer",
@@ -2720,13 +2938,15 @@
       "name": "Orochi (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-orochi-wired.html",
       "usb_ids": [
         "1532:0048"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 8200, polling rate; brightness of scroll wheel"
     },
     {
       "family": "razer",
@@ -2734,13 +2954,15 @@
       "name": "Diamondback Chroma",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-diamondback-chroma.html",
       "usb_ids": [
         "1532:004c"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000; brightness of backlight"
     },
     {
       "family": "razer",
@@ -2748,13 +2970,15 @@
       "name": "DeathAdder 2000",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-2000.html",
       "usb_ids": [
         "1532:004f"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 2000, polling rate; brightness of logo and scroll wheel"
     },
     {
       "family": "razer",
@@ -2762,13 +2986,15 @@
       "name": "Naga Hex V2",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-hex-v2.html",
       "usb_ids": [
         "1532:0050"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel and backlight"
     },
     {
       "family": "razer",
@@ -2776,13 +3002,15 @@
       "name": "Naga Chroma",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-chroma.html",
       "usb_ids": [
         "1532:0053"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel and backlight; one colour, not saved"
     },
     {
       "family": "razer",
@@ -2790,13 +3018,15 @@
       "name": "DeathAdder 3500",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-3500.html",
       "usb_ids": [
         "1532:0054"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 3500, polling rate; brightness of logo and scroll wheel"
     },
     {
       "family": "razer",
@@ -2804,13 +3034,15 @@
       "name": "Lancehead (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-lancehead-wired.html",
       "usb_ids": [
         "1532:0059"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
     },
     {
       "family": "razer",
@@ -2818,13 +3050,15 @@
       "name": "Abyssus V2",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-abyssus-v2.html",
       "usb_ids": [
         "1532:005b"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 5000, polling rate; brightness of logo and scroll wheel"
     },
     {
       "family": "razer",
@@ -2832,13 +3066,15 @@
       "name": "DeathAdder Elite",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-elite.html",
       "usb_ids": [
         "1532:005c"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -2846,13 +3082,15 @@
       "name": "Abyssus 2000",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-abyssus-2000.html",
       "usb_ids": [
         "1532:005e"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 2000, polling rate"
     },
     {
       "family": "razer",
@@ -2860,13 +3098,15 @@
       "name": "Lancehead Tournament Edition",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-lancehead-tournament-edition.html",
       "usb_ids": [
         "1532:0060"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
     },
     {
       "family": "razer",
@@ -2874,13 +3114,15 @@
       "name": "Basilisk",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-basilisk.html",
       "usb_ids": [
         "1532:0064"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -2888,13 +3130,15 @@
       "name": "Basilisk Essential",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-basilisk-essential.html",
       "usb_ids": [
         "1532:0065"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 6400, polling rate; brightness of logo; one colour, not saved"
     },
     {
       "family": "razer",
@@ -2902,13 +3146,15 @@
       "name": "Naga Trinity",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-trinity.html",
       "usb_ids": [
         "1532:0067"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate"
     },
     {
       "family": "razer",
@@ -2916,13 +3162,15 @@
       "name": "Abyssus Elite (D.Va Edition)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-abyssus-elite-d-va-edition.html",
       "usb_ids": [
         "1532:006a"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 7200, polling rate; brightness of logo"
     },
     {
       "family": "razer",
@@ -2930,13 +3178,15 @@
       "name": "Abyssus Essential",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-abyssus-essential.html",
       "usb_ids": [
         "1532:006b"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 7200, polling rate; brightness of logo"
     },
     {
       "family": "razer",
@@ -2944,13 +3194,15 @@
       "name": "Mamba Elite",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-mamba-elite.html",
       "usb_ids": [
         "1532:006c"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
     },
     {
       "family": "razer",
@@ -2958,13 +3210,15 @@
       "name": "DeathAdder Essential",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-essential.html",
       "usb_ids": [
         "1532:006e"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 6400, polling rate; brightness of logo and scroll wheel"
     },
     {
       "family": "razer",
@@ -2972,13 +3226,15 @@
       "name": "Lancehead Wireless (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-lancehead-wireless-wired.html",
       "usb_ids": [
         "1532:0070"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
     },
     {
       "family": "razer",
@@ -2986,13 +3242,15 @@
       "name": "DeathAdder Essential (White Edition)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-essential-white-edition.html",
       "usb_ids": [
         "1532:0071"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 6400, polling rate; brightness of logo and scroll wheel"
     },
     {
       "family": "razer",
@@ -3000,13 +3258,15 @@
       "name": "Mamba Wireless (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-mamba-wireless-wired.html",
       "usb_ids": [
         "1532:0073"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3014,13 +3274,15 @@
       "name": "Viper",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-viper.html",
       "usb_ids": [
         "1532:0078"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate; brightness of logo; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3028,13 +3290,15 @@
       "name": "Viper Ultimate (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-viper-ultimate-wired.html",
       "usb_ids": [
         "1532:007a"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 20000, polling rate; brightness of logo; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3042,13 +3306,15 @@
       "name": "DeathAdder V2 Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-v2-pro-wired.html",
       "usb_ids": [
         "1532:007c"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 20000, polling rate; brightness of logo; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3056,13 +3322,15 @@
       "name": "Pro Click (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-pro-click-wired.html",
       "usb_ids": [
         "1532:0080"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 16000, polling rate"
     },
     {
       "family": "razer",
@@ -3070,13 +3338,15 @@
       "name": "DeathAdder V2",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-v2.html",
       "usb_ids": [
         "1532:0084"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3084,13 +3354,15 @@
       "name": "Basilisk V2",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-basilisk-v2.html",
       "usb_ids": [
         "1532:0085"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3098,13 +3370,15 @@
       "name": "Basilisk Ultimate",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-basilisk-ultimate.html",
       "usb_ids": [
         "1532:0086"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3112,13 +3386,15 @@
       "name": "Viper Mini",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-viper-mini.html",
       "usb_ids": [
         "1532:008a"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 8500, polling rate; brightness of logo; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3126,13 +3402,15 @@
       "name": "DeathAdder V2 Mini",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-v2-mini.html",
       "usb_ids": [
         "1532:008c"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 8500, polling rate; brightness of logo; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3140,13 +3418,15 @@
       "name": "Naga Left Handed Edition 2020",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-left-handed-edition-2020.html",
       "usb_ids": [
         "1532:008d"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 20000, polling rate; brightness of logo, scroll wheel and right side; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3154,13 +3434,15 @@
       "name": "Naga Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-pro-wired.html",
       "usb_ids": [
         "1532:008f"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3168,13 +3450,15 @@
       "name": "Viper 8KHz",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-viper-8khz.html",
       "usb_ids": [
         "1532:0091"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 20000; brightness of logo"
     },
     {
       "family": "razer",
@@ -3182,13 +3466,15 @@
       "name": "Naga X",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-x.html",
       "usb_ids": [
         "1532:0096"
       ],
       "linux": {
         "kind": "interface",
         "interface": 3
-      }
+      },
+      "note": "DPI up to 18000, polling rate; brightness of scroll wheel and left side; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3196,13 +3482,15 @@
       "name": "DeathAdder Essential (2021)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-essential-2021.html",
       "usb_ids": [
         "1532:0098"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 6400, polling rate; brightness of logo"
     },
     {
       "family": "razer",
@@ -3210,13 +3498,15 @@
       "name": "Basilisk V3",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-basilisk-v3.html",
       "usb_ids": [
         "1532:0099"
       ],
       "linux": {
         "kind": "interface",
         "interface": 3
-      }
+      },
+      "note": "DPI up to 26000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3224,13 +3514,15 @@
       "name": "Viper Mini SE (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-viper-mini-se-wired.html",
       "usb_ids": [
         "1532:009e"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 30000"
     },
     {
       "family": "razer",
@@ -3238,13 +3530,15 @@
       "name": "DeathAdder V2 Lite",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-v2-lite.html",
       "usb_ids": [
         "1532:00a1"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 8500, polling rate; brightness of logo; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3252,13 +3546,15 @@
       "name": "Cobra",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-cobra.html",
       "usb_ids": [
         "1532:00a3"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 8500, polling rate; brightness of logo"
     },
     {
       "family": "razer",
@@ -3266,13 +3562,15 @@
       "name": "Viper V2 Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-viper-v2-pro-wired.html",
       "usb_ids": [
         "1532:00a5"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 30000, polling rate"
     },
     {
       "family": "razer",
@@ -3280,13 +3578,15 @@
       "name": "Naga V2 Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-naga-v2-pro-wired.html",
       "usb_ids": [
         "1532:00a7"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 30000, polling rate; brightness of logo; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3294,13 +3594,15 @@
       "name": "Basilisk V3 Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-basilisk-v3-pro-wired.html",
       "usb_ids": [
         "1532:00aa"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3308,13 +3610,15 @@
       "name": "Cobra Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-cobra-pro-wired.html",
       "usb_ids": [
         "1532:00af"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 30000, polling rate; brightness of logo and scroll wheel"
     },
     {
       "family": "razer",
@@ -3322,13 +3626,15 @@
       "name": "DeathAdder V3",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-v3.html",
       "usb_ids": [
         "1532:00b2"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 30000"
     },
     {
       "family": "razer",
@@ -3336,13 +3642,15 @@
       "name": "DeathAdder V3 Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-v3-pro-wired.html",
       "usb_ids": [
         "1532:00b6"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 35000, polling rate"
     },
     {
       "family": "razer",
@@ -3350,13 +3658,15 @@
       "name": "DeathAdder V4 Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-v4-pro-wired.html",
       "usb_ids": [
         "1532:00be"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 45000"
     },
     {
       "family": "razer",
@@ -3364,13 +3674,15 @@
       "name": "Viper V3 Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-viper-v3-pro-wired.html",
       "usb_ids": [
         "1532:00c0"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 35000, polling rate"
     },
     {
       "family": "razer",
@@ -3378,13 +3690,15 @@
       "name": "DeathAdder V3 Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-deathadder-v3-pro-wired.html",
       "usb_ids": [
         "1532:00c2"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 35000, polling rate"
     },
     {
       "family": "razer",
@@ -3392,13 +3706,15 @@
       "name": "Pro Click V2 Vertical Edition (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-pro-click-v2-vertical-edition-wired.html",
       "usb_ids": [
         "1532:00c7"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 30000, polling rate"
     },
     {
       "family": "razer",
@@ -3406,13 +3722,15 @@
       "name": "Basilisk V3 35K",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-basilisk-v3-35k.html",
       "usb_ids": [
         "1532:00cb"
       ],
       "linux": {
         "kind": "interface",
         "interface": 3
-      }
+      },
+      "note": "DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3420,13 +3738,15 @@
       "name": "Basilisk V3 Pro 35K (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-basilisk-v3-pro-35k-wired.html",
       "usb_ids": [
         "1532:00cc"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3434,13 +3754,15 @@
       "name": "Pro Click V2 (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-pro-click-v2-wired.html",
       "usb_ids": [
         "1532:00d0"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 30000, polling rate"
     },
     {
       "family": "razer",
@@ -3448,13 +3770,15 @@
       "name": "Basilisk Mobile (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-basilisk-mobile-wired.html",
       "usb_ids": [
         "1532:00d3"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 18000, polling rate"
     },
     {
       "family": "razer",
@@ -3462,13 +3786,15 @@
       "name": "Basilisk V3 Pro 35K Phantom Green Edition (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-basilisk-v3-pro-35k-phantom-green-edition-wired.html",
       "usb_ids": [
         "1532:00d6"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved"
     },
     {
       "family": "razer",
@@ -3476,13 +3802,15 @@
       "name": "Viper V3 Pro SE (Wired)",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/razer-viper-v3-pro-se-wired.html",
       "usb_ids": [
         "1532:00de"
       ],
       "linux": {
         "kind": "interface",
         "interface": 0
-      }
+      },
+      "note": "DPI up to 35000, polling rate"
     },
     {
       "family": "razer-keyboard",
@@ -3490,6 +3818,7 @@
       "name": "BlackWidow Ultimate 2012",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-ultimate-2012.html",
       "usb_ids": [
         "1532:010d"
       ],
@@ -3503,6 +3832,7 @@
       "name": "BlackWidow Stealth Edition",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-stealth-edition.html",
       "usb_ids": [
         "1532:010e"
       ],
@@ -3516,6 +3846,7 @@
       "name": "Anansi",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-anansi.html",
       "usb_ids": [
         "1532:010f"
       ],
@@ -3529,6 +3860,7 @@
       "name": "DeathStalker/DeathStalker Essential",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-deathstalker-deathstalker-essential.html",
       "usb_ids": [
         "1532:0118"
       ],
@@ -3542,6 +3874,7 @@
       "name": "BlackWidow Ultimate 2013",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-ultimate-2013.html",
       "usb_ids": [
         "1532:011a"
       ],
@@ -3555,6 +3888,7 @@
       "name": "BlackWidow (Classic)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-classic.html",
       "usb_ids": [
         "1532:011b"
       ],
@@ -3568,6 +3902,7 @@
       "name": "BlackWidow Tournament Edition 2014",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-tournament-edition-2014.html",
       "usb_ids": [
         "1532:011c"
       ],
@@ -3581,6 +3916,7 @@
       "name": "DeathStalker Expert",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-deathstalker-expert.html",
       "usb_ids": [
         "1532:0202"
       ],
@@ -3594,6 +3930,7 @@
       "name": "BlackWidow Chroma",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-chroma.html",
       "usb_ids": [
         "1532:0203"
       ],
@@ -3607,6 +3944,7 @@
       "name": "DeathStalker Chroma",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-deathstalker-chroma.html",
       "usb_ids": [
         "1532:0204"
       ],
@@ -3620,6 +3958,7 @@
       "name": "BlackWidow Tournament Edition Chroma",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-tournament-edition-chroma.html",
       "usb_ids": [
         "1532:0209"
       ],
@@ -3633,6 +3972,7 @@
       "name": "BlackWidow Chroma (Overwatch)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-chroma-overwatch.html",
       "usb_ids": [
         "1532:0211"
       ],
@@ -3646,6 +3986,7 @@
       "name": "BlackWidow Ultimate 2016",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-ultimate-2016.html",
       "usb_ids": [
         "1532:0214"
       ],
@@ -3659,6 +4000,7 @@
       "name": "BlackWidow X Chroma",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-x-chroma.html",
       "usb_ids": [
         "1532:0216"
       ],
@@ -3672,6 +4014,7 @@
       "name": "BlackWidow X Ultimate",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-x-ultimate.html",
       "usb_ids": [
         "1532:0217"
       ],
@@ -3685,6 +4028,7 @@
       "name": "BlackWidow X Tournament Edition Chroma",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-x-tournament-edition-chroma.html",
       "usb_ids": [
         "1532:021a"
       ],
@@ -3698,6 +4042,7 @@
       "name": "Ornata Chroma",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-ornata-chroma.html",
       "usb_ids": [
         "1532:021e"
       ],
@@ -3711,6 +4056,7 @@
       "name": "Ornata",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-ornata.html",
       "usb_ids": [
         "1532:021f"
       ],
@@ -3724,6 +4070,7 @@
       "name": "BlackWidow Chroma V2",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-chroma-v2.html",
       "usb_ids": [
         "1532:0221"
       ],
@@ -3737,6 +4084,7 @@
       "name": "Huntsman Elite",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-elite.html",
       "usb_ids": [
         "1532:0226"
       ],
@@ -3750,6 +4098,7 @@
       "name": "Huntsman",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman.html",
       "usb_ids": [
         "1532:0227"
       ],
@@ -3763,6 +4112,7 @@
       "name": "BlackWidow Elite",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-elite.html",
       "usb_ids": [
         "1532:0228"
       ],
@@ -3776,6 +4126,7 @@
       "name": "Cynosa Chroma",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-cynosa-chroma.html",
       "usb_ids": [
         "1532:022a"
       ],
@@ -3789,6 +4140,7 @@
       "name": "Cynosa Chroma Pro",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-cynosa-chroma-pro.html",
       "usb_ids": [
         "1532:022c"
       ],
@@ -3802,6 +4154,7 @@
       "name": "BlackWidow Lite",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-lite.html",
       "usb_ids": [
         "1532:0235"
       ],
@@ -3815,6 +4168,7 @@
       "name": "BlackWidow Essential",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-essential.html",
       "usb_ids": [
         "1532:0237"
       ],
@@ -3828,6 +4182,7 @@
       "name": "Cynosa Lite",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-cynosa-lite.html",
       "usb_ids": [
         "1532:023f"
       ],
@@ -3841,6 +4196,7 @@
       "name": "BlackWidow 2019",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-2019.html",
       "usb_ids": [
         "1532:0241"
       ],
@@ -3854,6 +4210,7 @@
       "name": "Huntsman Tournament Edition",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-tournament-edition.html",
       "usb_ids": [
         "1532:0243"
       ],
@@ -3867,6 +4224,7 @@
       "name": "BlackWidow V3",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v3.html",
       "usb_ids": [
         "1532:024e"
       ],
@@ -3880,6 +4238,7 @@
       "name": "Huntsman Mini",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-mini.html",
       "usb_ids": [
         "1532:0257"
       ],
@@ -3893,6 +4252,7 @@
       "name": "BlackWidow V3 Mini HyperSpeed (Wired)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v3-mini-hyperspeed-wired.html",
       "usb_ids": [
         "1532:0258"
       ],
@@ -3906,6 +4266,7 @@
       "name": "BlackWidow V3 Pro Wired",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v3-pro-wired.html",
       "usb_ids": [
         "1532:025a"
       ],
@@ -3919,6 +4280,7 @@
       "name": "BlackWidow V3 Pro 2.4 Ghz Wireless",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v3-pro-2-4-ghz-wireless.html",
       "usb_ids": [
         "1532:025c"
       ],
@@ -3932,6 +4294,7 @@
       "name": "Ornata V2",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-ornata-v2.html",
       "usb_ids": [
         "1532:025d"
       ],
@@ -3945,6 +4308,7 @@
       "name": "Cynosa V2",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-cynosa-v2.html",
       "usb_ids": [
         "1532:025e"
       ],
@@ -3958,6 +4322,7 @@
       "name": "Huntsman V2 Analog",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-v2-analog.html",
       "usb_ids": [
         "1532:0266"
       ],
@@ -3971,6 +4336,7 @@
       "name": "Huntsman Mini JP",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-mini-jp.html",
       "usb_ids": [
         "1532:0269"
       ],
@@ -3984,6 +4350,7 @@
       "name": "Huntsman V2 Tenkeyless",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-v2-tenkeyless.html",
       "usb_ids": [
         "1532:026b"
       ],
@@ -3997,6 +4364,7 @@
       "name": "Huntsman V2",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-v2.html",
       "usb_ids": [
         "1532:026c"
       ],
@@ -4010,6 +4378,7 @@
       "name": "BlackWidow V3 Mini HyperSpeed (Wireless)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v3-mini-hyperspeed-wireless.html",
       "usb_ids": [
         "1532:0271"
       ],
@@ -4023,6 +4392,7 @@
       "name": "Huntsman Mini Analog",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-mini-analog.html",
       "usb_ids": [
         "1532:0282"
       ],
@@ -4036,6 +4406,7 @@
       "name": "BlackWidow V4",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v4.html",
       "usb_ids": [
         "1532:0287"
       ],
@@ -4049,6 +4420,7 @@
       "name": "BlackWidow V4 Pro",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v4-pro.html",
       "usb_ids": [
         "1532:028d"
       ],
@@ -4062,6 +4434,7 @@
       "name": "Ornata V3 (Alternate)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-ornata-v3-alternate.html",
       "usb_ids": [
         "1532:028f"
       ],
@@ -4075,6 +4448,7 @@
       "name": "DeathStalker V2 Pro (Wireless)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-deathstalker-v2-pro-wireless.html",
       "usb_ids": [
         "1532:0290"
       ],
@@ -4088,6 +4462,7 @@
       "name": "DeathStalker V2 Pro (Wired)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-deathstalker-v2-pro-wired.html",
       "usb_ids": [
         "1532:0292"
       ],
@@ -4101,6 +4476,7 @@
       "name": "BlackWidow V4 X",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v4-x.html",
       "usb_ids": [
         "1532:0293"
       ],
@@ -4114,6 +4490,7 @@
       "name": "Ornata V3 X",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-ornata-v3-x.html",
       "usb_ids": [
         "1532:0294"
       ],
@@ -4127,6 +4504,7 @@
       "name": "DeathStalker V2",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-deathstalker-v2.html",
       "usb_ids": [
         "1532:0295"
       ],
@@ -4140,6 +4518,7 @@
       "name": "DeathStalker V2 Pro TKL (Wireless)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-deathstalker-v2-pro-tkl-wireless.html",
       "usb_ids": [
         "1532:0296"
       ],
@@ -4153,6 +4532,7 @@
       "name": "DeathStalker V2 Pro TKL (Wired)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-deathstalker-v2-pro-tkl-wired.html",
       "usb_ids": [
         "1532:0298"
       ],
@@ -4166,6 +4546,7 @@
       "name": "Ornata V3",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-ornata-v3.html",
       "usb_ids": [
         "1532:02a1"
       ],
@@ -4179,6 +4560,7 @@
       "name": "Ornata V3 X (Alternate)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-ornata-v3-x-alternate.html",
       "usb_ids": [
         "1532:02a2"
       ],
@@ -4192,6 +4574,7 @@
       "name": "Ornata V3 Tenkeyless",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-ornata-v3-tenkeyless.html",
       "usb_ids": [
         "1532:02a3"
       ],
@@ -4205,6 +4588,7 @@
       "name": "BlackWidow V4 75%",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v4-75.html",
       "usb_ids": [
         "1532:02a5"
       ],
@@ -4218,6 +4602,7 @@
       "name": "Huntsman V3 Pro",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-v3-pro.html",
       "usb_ids": [
         "1532:02a6"
       ],
@@ -4231,6 +4616,7 @@
       "name": "Huntsman V3 Pro TKL",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-v3-pro-tkl.html",
       "usb_ids": [
         "1532:02a7"
       ],
@@ -4244,6 +4630,7 @@
       "name": "Huntsman V3 Pro Mini",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-v3-pro-mini.html",
       "usb_ids": [
         "1532:02b0"
       ],
@@ -4257,6 +4644,7 @@
       "name": "BlackWidow V4 Mini HyperSpeed",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v4-mini-hyperspeed.html",
       "usb_ids": [
         "1532:02b9"
       ],
@@ -4271,6 +4659,7 @@
       "name": "BlackWidow V4 Mini HyperSpeed (wireless)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v4-mini-hyperspeed-wireless.html",
       "usb_ids": [
         "1532:02ba"
       ],
@@ -4285,6 +4674,7 @@
       "name": "Joro",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-joro.html",
       "usb_ids": [
         "1532:02cd"
       ],
@@ -4298,6 +4688,7 @@
       "name": "Huntsman V3 Pro 8KHz",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-v3-pro-8khz.html",
       "usb_ids": [
         "1532:02cf"
       ],
@@ -4311,6 +4702,7 @@
       "name": "BlackWidow V4 Low-profile Tenkeyless HyperSpeed (Wireless)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v4-low-profile-tenkeyless-hyperspeed-wireless.html",
       "usb_ids": [
         "1532:02d2"
       ],
@@ -4324,6 +4716,7 @@
       "name": "BlackWidow V4 Low-profile Tenkeyless HyperSpeed (Wired)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v4-low-profile-tenkeyless-hyperspeed-wired.html",
       "usb_ids": [
         "1532:02d4"
       ],
@@ -4337,6 +4730,7 @@
       "name": "BlackWidow V4 Tenkeyless HyperSpeed (Wireless)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v4-tenkeyless-hyperspeed-wireless.html",
       "usb_ids": [
         "1532:02d5"
       ],
@@ -4350,6 +4744,7 @@
       "name": "BlackWidow V4 Tenkeyless HyperSpeed (Wired)",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v4-tenkeyless-hyperspeed-wired.html",
       "usb_ids": [
         "1532:02d7"
       ],
@@ -4363,6 +4758,7 @@
       "name": "Huntsman V3 HE Magnetic Tenkeyless 8KHz",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-huntsman-v3-he-magnetic-tenkeyless-8khz.html",
       "usb_ids": [
         "1532:02ea"
       ],
@@ -4376,6 +4772,7 @@
       "name": "BlackWidow V3 TK",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/razer-blackwidow-v3-tk.html",
       "usb_ids": [
         "1532:0a24"
       ],
@@ -4389,6 +4786,7 @@
       "name": "Model O/O-",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/glorious-model-o-o.html",
       "usb_ids": [
         "258a:0036"
       ],
@@ -4402,6 +4800,7 @@
       "name": "Model D",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/glorious-model-d.html",
       "usb_ids": [
         "258a:0033"
       ],
@@ -4415,6 +4814,7 @@
       "name": "Model O Eternal",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/glorious-model-o-eternal.html",
       "usb_ids": [
         "3794:a000"
       ],
@@ -4428,6 +4828,7 @@
       "name": "G600",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/logitech-g600.html",
       "usb_ids": [
         "046d:c24a"
       ],
@@ -4442,6 +4843,7 @@
       "name": "G9",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/logitech-g9.html",
       "usb_ids": [
         "046d:c048"
       ],
@@ -4456,6 +4858,7 @@
       "name": "G9x",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/logitech-g9x.html",
       "usb_ids": [
         "046d:c066"
       ],
@@ -4470,6 +4873,7 @@
       "name": "G9x (Call of Duty MW3 Edition)",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/logitech-g9x-call-of-duty-mw3-edition.html",
       "usb_ids": [
         "046d:c249"
       ],
@@ -4484,6 +4888,7 @@
       "name": "G500",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/logitech-g500.html",
       "usb_ids": [
         "046d:c068"
       ],
@@ -4498,6 +4903,7 @@
       "name": "G500s",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/logitech-g500s.html",
       "usb_ids": [
         "046d:c24e"
       ],
@@ -4512,6 +4918,7 @@
       "name": "G700",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/logitech-g700.html",
       "usb_ids": [
         "046d:c06b"
       ],
@@ -4526,6 +4933,7 @@
       "name": "G700s",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/logitech-g700s.html",
       "usb_ids": [
         "046d:c07c"
       ],
@@ -4540,6 +4948,7 @@
       "name": "Kone Pure",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/roccat-kone-pure.html",
       "usb_ids": [
         "1e7d:2dbe",
         "1e7d:2dc2"
@@ -4555,6 +4964,7 @@
       "name": "Kone XTD",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/roccat-kone-xtd.html",
       "usb_ids": [
         "1e7d:2e22"
       ],
@@ -4569,6 +4979,7 @@
       "name": "Kone EMP",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/roccat-kone-emp.html",
       "usb_ids": [
         "1e7d:2e24"
       ],
@@ -4583,6 +4994,7 @@
       "name": "Xlite Wired",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/pulsar-xlite-wired.html",
       "usb_ids": [
         "3710:1401"
       ],
@@ -4597,6 +5009,7 @@
       "name": "X2 Wired",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/pulsar-x2-wired.html",
       "usb_ids": [
         "3710:1402"
       ],
@@ -4611,6 +5024,7 @@
       "name": "X2H Wired Medium",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/pulsar-x2h-wired-medium.html",
       "usb_ids": [
         "3710:1403"
       ],
@@ -4625,6 +5039,7 @@
       "name": "X2A Medium Wired",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/pulsar-x2a-medium-wired.html",
       "usb_ids": [
         "3710:1404"
       ],
@@ -4639,6 +5054,7 @@
       "name": "Xlite v4",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/pulsar-xlite-v4.html",
       "usb_ids": [
         "3710:3401"
       ],
@@ -4653,6 +5069,7 @@
       "name": "X3",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/pulsar-x3.html",
       "usb_ids": [
         "3710:3409"
       ],
@@ -4667,6 +5084,7 @@
       "name": "X3 LHD",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/pulsar-x3-lhd.html",
       "usb_ids": [
         "3710:3410"
       ],
@@ -4681,6 +5099,7 @@
       "name": "MM530",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/cooler-master-mm530.html",
       "usb_ids": [
         "2516:0065"
       ],
@@ -4695,6 +5114,7 @@
       "name": "MM711",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/cooler-master-mm711.html",
       "usb_ids": [
         "2516:0101"
       ],
@@ -4709,6 +5129,7 @@
       "name": "MM720",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/cooler-master-mm720.html",
       "usb_ids": [
         "2516:0141"
       ],
@@ -4723,6 +5144,7 @@
       "name": "MM730",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/cooler-master-mm730.html",
       "usb_ids": [
         "2516:0165"
       ],
@@ -4737,6 +5159,7 @@
       "name": "X2 CrazyLight",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/pulsar-x2-crazylight.html",
       "usb_ids": [
         "3710:3414"
       ],
@@ -4751,6 +5174,7 @@
       "name": "X3 LHD CrazyLight",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/pulsar-x3-lhd-crazylight.html",
       "usb_ids": [
         "3710:3527"
       ],
@@ -4765,6 +5189,7 @@
       "name": "Atlantis",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/lamzu-atlantis.html",
       "usb_ids": [
         "3554:f50f"
       ],
@@ -4779,6 +5204,7 @@
       "name": "X12",
       "kind": "mouse",
       "level": "experimental",
+      "page": "devices/evga-x12.html",
       "usb_ids": [
         "3842:2422"
       ],
@@ -4793,6 +5219,7 @@
       "name": "X20",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/evga-x20.html",
       "usb_ids": [
         "3842:2420"
       ],
@@ -4807,6 +5234,7 @@
       "name": "mouse (YJX receiver)",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/yjx-mouse-yjx-receiver.html",
       "usb_ids": [
         "a8a5:2255"
       ],
@@ -4821,6 +5249,7 @@
       "name": "mouse (YJX, on its cable)",
       "kind": "mouse",
       "level": "read_only",
+      "page": "devices/yjx-mouse-yjx-on-its-cable.html",
       "usb_ids": [
         "a8a4:2255"
       ],
@@ -4835,6 +5264,7 @@
       "name": "W60",
       "kind": "keyboard",
       "level": "read_only",
+      "page": "devices/wraith-w60.html",
       "usb_ids": [
         "2e3c:c368"
       ],

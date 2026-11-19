@@ -145,6 +145,20 @@ pub fn devices() -> Vec<Device> {
     devices_with(&confirmed::usb_confirmed)
 }
 
+/// The model's page on the website, relative to its root: `devices/razer-viper-v2-pro.html`. Lowercase
+/// ASCII, so the address stays the same whatever the name's punctuation.
+pub fn page(brand: &str, name: &str) -> String {
+    let mut slug = String::new();
+    for c in format!("{brand} {}", name.replace('+', " plus ")).chars() {
+        if c.is_ascii_alphanumeric() {
+            slug.push(c.to_ascii_lowercase());
+        } else if !slug.is_empty() && !slug.ends_with('-') {
+            slug.push('-');
+        }
+    }
+    format!("devices/{}.html", slug.trim_end_matches('-'))
+}
+
 /// The catalogue, with `confirmed(vendor, product)` saying which USB ids testers confirmed.
 pub fn devices_with(confirmed: &dyn Fn(u16, u16) -> bool) -> Vec<Device> {
     let mut list = Vec::new();
