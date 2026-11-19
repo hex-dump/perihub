@@ -58,6 +58,7 @@ const wait = (ms = 0) => vi.advanceTimersByTimeAsync(ms);
 const nav = () => document.querySelector("nav") as HTMLElement;
 
 beforeEach(() => {
+  localStorage.clear();
   vi.useFakeTimers();
   for (const name of Object.keys(calls)) delete calls[name];
   calls.devicesForReport = vi.fn(async () => [ite]);
@@ -264,6 +265,77 @@ describe("Device request", () => {
   it("keeps a name that already starts with its maker", () => {
     const device = { ...ite, manufacturer: "Logitech", product: "Logitech G Pro" };
     expect(new URL(deviceRequestUrl(device, "0.8.0", "linux")).searchParams.get("model")).toBe("Logitech G Pro");
+  });
+});
+
+describe("Test report prompt", () => {
+  const mouse = (verified: boolean) =>
+    ({ product_id: 0xc08d, model: "G403", name: "G403", verified, experimental: false, receiver: false, link: null,
+      firmware: [], onboard: {}, led_zones: [], features: [], report_rates_ms: [], dpi: { list: [800], min: 0, max: 0, step: 0 },
+      profile_list: "own" }) as unknown as DeviceStatus["mouse"];
+  // The prompt sits above any page: open one that needs no mouse data.
+  beforeEach(() => (location.hash = "#profiles"));
+  const prompt = () => screen.queryByText(/isn't confirmed yet/);
+
+  it("appears once for an unverified mouse, and not again after it is dismissed and the app restarts", async () => {
+    calls.status = vi.fn(async () => ({ ...empty(), mouse: mouse(false), scanned: true }));
+    const first = render(App);
+    await wait();
+    expect(prompt()?.textContent).toContain("Your Logitech G403 isn't confirmed yet. Sending a test report takes 30 seconds");
+    (screen.getByRole("button", { name: "Dismiss" }) as HTMLButtonElement).click();
+    await wait();
+    expect(prompt()).toBeNull();
+    first.unmount();
+    render(App);
+    await wait();
+    expect(prompt()).toBeNull();
+  });
+
+  it("is not shown again after a restart even if it was never dismissed", async () => {
+    calls.status = vi.fn(async () => ({ ...empty(), mouse: mouse(false), scanned: true }));
+    const first = render(App);
+    await wait();
+    expect(prompt()).not.toBeNull();
+    first.unmount();
+    render(App);
+    await wait();
+    expect(prompt()).toBeNull();
+  });
+
+  it("starts the Test my device wizard with that device, already read, and hides the notice", async () => {
+    calls.status = vi.fn(async () => ({ ...empty(), mouse: mouse(false), scanned: true }));
+    render(App);
+    await wait();
+    (screen.getByRole("button", { name: "Send test report" }) as HTMLButtonElement).click();
+    await wait();
+    expect(location.hash).toBe("#wizard");
+    expect(document.body.textContent).toContain("PeriHub only reads Logitech G403 here");
+    expect(prompt()).toBeNull();
+    expect(calls.openTestForm).not.toHaveBeenCalled();
+  });
+
+  it("does not appear for a verified mouse", async () => {
+    calls.status = vi.fn(async () => ({ ...empty(), mouse: mouse(true), scanned: true }));
+    render(App);
+    await wait();
+    expect(prompt()).toBeNull();
+  });
+
+  it("does not appear before the first scan is over, nor use up the device", async () => {
+    calls.status = vi.fn(async () => ({ ...empty(), mouse: mouse(false), scanned: false }));
+    render(App);
+    await wait();
+    expect(prompt()).toBeNull();
+    expect(localStorage.getItem("perihub.confirmPrompted")).toBeNull();
+  });
+
+  it("opens the wizard from the sidebar without a device picked", async () => {
+    calls.status = vi.fn(async () => ({ ...empty(), mouse: mouse(false), scanned: true }));
+    render(App);
+    await wait();
+    (screen.getByRole("button", { name: "Test my device" }) as HTMLButtonElement).click();
+    await wait();
+    expect(document.body.textContent).toContain("Pick the mouse, keyboard or receiver you want to test");
   });
 });
 

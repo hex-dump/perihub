@@ -1,7 +1,7 @@
 <script lang="ts">
   // Line icons for the sidebar, drawn on a 24×24 grid.
   interface Props {
-    name: "keyboard" | "mouse" | "profiles" | "settings" | "report" | "heart" | "star" | "coffee";
+    name: "keyboard" | "mouse" | "profiles" | "settings" | "report" | "heart" | "star" | "coffee" | "close";
   }
 
   let { name }: Props = $props();
@@ -26,6 +26,8 @@
   {:else if name === "coffee"}
     <path d="M4.5 9h12v5.5a4.5 4.5 0 0 1-4.5 4.5h-3a4.5 4.5 0 0 1-4.5-4.5z" />
     <path d="M16.5 10.5h1.5a2.5 2.5 0 0 1 0 5h-1.8M8 3.5v2.5M12 3.5v2.5" />
+  {:else if name === "close"}
+    <path d="M6 6l12 12M18 6 6 18" />
   {:else if name === "report"}
     <path d="M21 3 3 10.5l7 3 3 7.5z" />
     <path d="M10 13.5 21 3" />

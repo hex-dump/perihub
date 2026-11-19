@@ -20,6 +20,7 @@
   import Icon from "./components/Icon.svelte";
   import Status from "./components/Status.svelte";
   import Support from "./components/Support.svelte";
+  import { markPrompted, nextToPrompt, unconfirmedDevices } from "./lib/confirmPrompt";
   import logo from "../icon.svg";
 
   type Page =
@@ -75,7 +76,11 @@
   let page = $state<Page | null>(initialPage);
   let tab = $state<string | undefined>(initialTab);
 
+  /** The device the "Test my device" wizard starts with, when the prompt for an unconfirmed device opened it. */
+  let wizardStart = $state<string | null>(null);
+
   function go(next: Page, nextTab?: string) {
+    if (next !== "wizard") wizardStart = null;
     page = next;
     tab = nextTab;
     history.replaceState(null, "", nextTab ? `#${next}:${nextTab}` : `#${next}`);
@@ -171,6 +176,30 @@
     // The backend answers at once, with empty lists, before its first pass has looked at the devices.
     loaded = next.scanned;
     if (loaded && page === null) page = firstPage();
+  }
+
+  // A one-time prompt for a device nobody has confirmed yet: one at a time, remembered as soon as it
+  // is shown. It stays until dismissed or used, and goes away if the device does. Not before the first
+  // scan is over (see `unconfirmedDevices`).
+  let promptKey = $state<string | null>(null);
+  const seenPrompts = new Set<string>();
+  const prompt = $derived(unconfirmedDevices(status).find((d) => d.key === promptKey) ?? null);
+  $effect(() => {
+    if (prompt) return;
+    const next = nextToPrompt(status, seenPrompts);
+    promptKey = next?.key ?? null;
+    if (next) {
+      seenPrompts.add(next.key);
+      markPrompted(next.key);
+    }
+  });
+
+  /** The wizard is the guided way to send the report: it opens with the device picked and read. */
+  function testPrompted() {
+    if (!prompt) return;
+    wizardStart = prompt.candidate.id;
+    promptKey = null;
+    go("wizard");
   }
 
   onMount(() => {
@@ -349,7 +378,14 @@
 
     <div class="grow"></div>
     <h3>Tools</h3>
-    <button class:active={page === "wizard"} aria-current={page === "wizard" ? "page" : undefined} onclick={() => go("wizard")}>
+    <button
+      class:active={page === "wizard"}
+      aria-current={page === "wizard" ? "page" : undefined}
+      onclick={() => {
+        wizardStart = null;
+        go("wizard");
+      }}
+    >
       <Icon name="report" />
       <span class="name">Test my device</span>
     </button>
@@ -371,6 +407,15 @@
 
   <main>
     <div class="content">
+      {#if prompt}
+        <div class="notice info row confirm" role="region" aria-label="Test report">
+          <span class="grow">
+            Your {prompt.name} isn't confirmed yet. Sending a test report takes 30 seconds and unlocks it for everyone.
+          </span>
+          <button class="tiny" onclick={testPrompted}>Send test report</button>
+          <button class="ghost tiny" aria-label="Dismiss" onclick={() => (promptKey = null)}><Icon name="close" /></button>
+        </div>
+      {/if}
       {#if updates.installed}
         <div class="notice ok row updated">
           <span>PeriHub was updated to {updates.installed}.</span>
@@ -441,7 +486,7 @@
         <!-- Until the devices were looked at, "no device found" would be a guess. -->
         {#if loaded}<DeviceReport alone={!anyDevice} shown={status.qmk.map((k) => k.key)} />{/if}
       {:else if page === "wizard"}
-        <TestWizard {status} />
+        {#key wizardStart}<TestWizard {status} start={wizardStart} />{/key}
       {:else if page === "tester"}
         <MouseTester />
       {:else if page === "profiles"}
@@ -532,6 +577,12 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .confirm {
+    align-items: center;
+    gap: 10px;
     margin-bottom: 18px;
   }
 

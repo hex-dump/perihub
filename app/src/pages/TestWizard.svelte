@@ -15,6 +15,8 @@
 
   interface Props {
     status: DeviceStatus;
+    /** A device of the list to start with, as the prompt for an unconfirmed device asks: it is read at once. */
+    start?: string | null;
   }
 
   type Step = "pick" | "read" | "preview" | "tried" | "send";
@@ -43,7 +45,7 @@
   const REFRESH_MS = 2000;
   const COPIED_MS = 3000;
 
-  let { status }: Props = $props();
+  let { status, start = null }: Props = $props();
   let step = $state<Step>("pick");
   let unknown = $state<ReportDevice[] | null>(null);
   let pickedId = $state<string | null>(null);
@@ -91,6 +93,11 @@
 
   onMount(() => {
     loadUnknown();
+    // Asked for one device that is there: nothing to pick, the first reading starts.
+    if (start && list.some((c) => c.id === start)) {
+      pickedId = start;
+      go("read");
+    }
     getVersion().then((v) => (version = v));
     api
       .appSettings()
