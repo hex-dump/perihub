@@ -5,8 +5,9 @@
                                            plus {"confirm": {...}, "issue": N} when the report confirms something
 
 A request for a device the latest release recognizes gets an answer with its level; one for a device
-another project documents, for a protocol PeriHub has a driver for, is told it can be added directly
-("ready to add"); any other is told it needs USB captures ("needs captures"). A test report from an
+that any project lists is "ready to add": added directly if PeriHub has a driver for it, else by writing a driver from
+the documentation, no captures needed. One nobody lists is told a maintainer will look for documentation, and that
+USB captures are optional help ("needs captures"). A test report from an
 older version gets asked to try the latest one. A test report from the latest version with nothing
 wrong in it, for a device or a Logitech memory format nobody had confirmed, says so in "confirm"
 ({"usb": "1532:00b7"} or {"memory_format": [4, 255]}): the confirm workflow takes it from there, and
@@ -117,15 +118,22 @@ def next_steps(usb: str, latest: str, devices: list[dict], upstream: dict[str, l
             "connect it. That report is what moves it up for everyone who has it. Nothing more is needed from you now.",
             "ready to add",
         )
-    listed = ""
     if projects:
-        names = " and ".join(projects)
-        listed = f" ({names} lists the id, but that gives PeriHub no protocol to build on: it has no driver for it)"
+        project = projects[0]
+        return (
+            f"Thanks! `{usb}` is not in PeriHub {latest} yet, but [{project}]({UPSTREAM_URLS[project]}) documents its "
+            "protocol, so a new driver can be written from that documentation: **no USB captures are needed**. It may "
+            "take a little longer than a device PeriHub already has a driver for. When it is in, it will be "
+            "**read-only or experimental**, and the app will ask you for a test report when you connect it. That report "
+            "is what moves it up for everyone who has it. Nothing more is needed from you now.",
+            "ready to add",
+        )
     return (
-        f"Thanks! `{usb}` is not in PeriHub {latest}, and no public documentation of its protocol that PeriHub can "
-        f"build on was found{listed}. So we need **USB captures** of its official software changing each setting: the "
-        f"[capture guide]({CAPTURE_GUIDE}) says how. With captures the device can be added; until then PeriHub sends "
-        "nothing to it.",
+        f"Thanks! `{usb}` is not in PeriHub {latest}, and no public documentation of its protocol was found in the "
+        "projects PeriHub learns from. A maintainer will look for documentation of it; you do not need to do anything "
+        "for the request to count. If you are comfortable with it, **USB captures** of its official software changing "
+        f"each setting would help a lot (see the [capture guide]({CAPTURE_GUIDE})), but they are optional and never "
+        "required. Until the device is added, PeriHub sends nothing to it.",
         "needs captures",
     )
 
