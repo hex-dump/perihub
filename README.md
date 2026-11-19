@@ -270,7 +270,7 @@ If you own a device marked 🧪 or 👁:
 2. Open the device's page in PeriHub and press **Open test form**. It opens a report on GitHub with what PeriHub read already filled in: no key presses, apps or log lines.
 3. Check that what PeriHub shows matches your device, and send it. You need a free GitHub account.
 
-Once someone confirms a model, it becomes fully supported for everyone. For a Logitech mouse, the confirmation counts for its memory format, so for every other mouse that uses it too.
+The models that need a test, each with its own page, are on [Wanted: testers](https://hex-dump.github.io/perihub/help-test.html). Once someone confirms a model, it becomes fully supported for everyone. For a Logitech mouse, the confirmation counts for its memory format, so for every other mouse that uses it too.
 
 ## Download and install
 
