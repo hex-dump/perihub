@@ -282,7 +282,7 @@ details summary:hover { color: var(--accent); }
 .dev .models-list summary { font-size: 0.9rem; }
 .models-title { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin: var(--space-4) 0 var(--space-2); }
 .models { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0 0 var(--space-1); }
-.models li { padding: 2px var(--space-3); border-radius: 999px; border: 1px solid var(--line-strong); background: var(--panel-2); font-size: 0.82rem; }
+.models li { padding: 0; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--panel-2); font-size: 0.82rem; }
 
 .matrix-wrap { container-type: inline-size; max-width: 48rem; margin: var(--space-5) 0; }
 .matrix { width: 100%; border-collapse: separate; border-spacing: var(--space-2); margin: calc(-1 * var(--space-2)); table-layout: fixed; }
@@ -374,6 +374,33 @@ details summary:hover { color: var(--accent); }
 .prose li { margin-bottom: 6px; }
 .prose code { font-size: 0.9em; overflow-wrap: anywhere; }
 .summary { border: 1px solid rgba(60, 207, 145, 0.4); background: var(--ok-soft); border-radius: 12px; padding: var(--space-4); }
+
+/* Pages of the models, and Wanted: testers */
+.device-top { padding: var(--space-6) 0 var(--space-6); }
+.device-top h1 { font-size: clamp(1.8rem, 1.3rem + 2.2vw, 2.7rem); }
+.crumbs { margin-bottom: var(--space-4); font-size: 0.9rem; color: var(--muted); }
+.level-line { display: flex; align-items: center; margin: 0 0 var(--space-4); font-weight: 650; }
+.device-top .steps { max-width: 62ch; }
+.device-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); }
+.device-cols p { color: var(--muted); max-width: 62ch; }
+.device-cols p b { color: var(--text); }
+.spec { margin: 0; }
+.spec > div { padding: var(--space-3) 0; border-top: 1px solid var(--line); }
+.spec > div:first-child { border-top: 0; padding-top: 0; }
+.spec dt { font-size: 0.88rem; color: var(--faint); }
+.spec dd { margin: 2px 0 0; color: var(--text); }
+.spec code { margin-right: var(--space-2); }
+.help h2, .device-top ~ .section h2 { font-size: clamp(1.35rem, 1.2rem + 0.6vw, 1.6rem); }
+.help .get { width: 100%; margin-top: var(--space-2); }
+.url { overflow-wrap: anywhere; }
+.models a { display: block; padding: 0.3rem var(--space-3); color: var(--text); text-decoration: none; }
+.models li:hover { border-color: var(--accent); }
+.models li:has(a:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.models a:focus-visible { outline: none; }
+.brand-body > .models { padding-top: var(--space-3); }
+@media (max-width: 860px) {
+  .device-cols { grid-template-columns: 1fr; }
+}
 
 /* Tablets and narrow windows */
 @media (max-width: 860px) {

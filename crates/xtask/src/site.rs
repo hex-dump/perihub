@@ -1,7 +1,7 @@
 //! site/index.html: the counts and model lists of the device catalogue, and the names the search
-//! looks for (`data-models` of a row with `data-catalog="SELECTOR"`).
+//! looks for (`data-models` of a row with `data-catalog="SELECTOR"`). Every model name links to its page.
 
-use crate::catalog::Device;
+use crate::catalog::{self, Device};
 use crate::select::{self, block, fill};
 
 pub const PATH: &str = "site/index.html";
@@ -33,11 +33,23 @@ fn search_names(html: &str, devices: &[Device]) -> String {
     out + rest
 }
 
+fn link(name: &str, devices: &[Device]) -> String {
+    let brand = devices.iter().find(|d| d.name == name).map(|d| d.brand).expect("a name from the catalogue");
+    format!("<a href=\"{}\">{}</a>", catalog::page(brand, name), escape(name))
+}
+
 pub fn render(old: &str, devices: &[Device]) -> String {
     let html = fill(old, PATH, |kind, selector, indent| match kind {
         "count" => select::names(devices, selector).len().to_string(),
-        "list" => {
-            block(select::names(devices, selector).into_iter().map(|n| format!("<li>{}</li>", escape(n))), indent)
+        "list" => block(
+            select::names(devices, selector).into_iter().map(|n| format!("<li>{}</li>", link(n, devices))),
+            indent,
+        ),
+        // One model, picked by its name: the name of a row that has only one.
+        "link" => {
+            let names = select::names(devices, selector);
+            assert_eq!(names.len(), 1, "{PATH}: link {selector:?} must take exactly one model");
+            link(names[0], devices)
         }
         _ => panic!("{PATH}: unknown generated block {kind:?}"),
     });

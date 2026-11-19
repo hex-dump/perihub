@@ -115,9 +115,9 @@ cargo xtask check   # fails if one is out of date (cargo test runs it too, so CI
 |---|---|
 | `packaging/linux/70-perihub.rules` | the whole file: one rule per USB id, with the interface the table names |
 | `docs/devices.md`, `README.md` | the tables, lists and counts between `<!-- generated: … -->` and `<!-- end generated -->` |
-| `site/index.html` | the same, and the `data-models` the search uses after each `data-catalog` |
+| `site/index.html` | the same, with a link to each model's page, and the `data-models` the search uses after each `data-catalog` |
 | `packaging/linux/…metainfo.xml` | `<modalias>` entries, so software centres suggest PeriHub for a supported device |
-| `site/devices.json` | every device, its level and USB ids, published with the website |
+| `site/devices.json` | every device, its level, USB ids and page address, published with the website; `site/build.py` writes one page per model from it (`site/templates/device.html`) and `help-test.html`, then checks every link |
 | `app/src/lib/devices.generated.json` | the brands and models Settings lists, imported by the app at build time |
 
 The text around the generated blocks is written by hand. What a block lists is a selector, described in
