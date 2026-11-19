@@ -4,7 +4,7 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
-## Unreleased
+## 0.9.6 — 2026-11-20
 
 A device request can now carry two more things: what the device's vendor-defined feature reports hold at the moment (read only), so that a known controller chip and its protocol can often be recognized without a USB capture, and a USB recording of what the device's official software sends it, made by PeriHub itself (on Windows USBPcap is installed only for the recording and removed after it, on Linux usbmon is read with your password; what you type, other devices and the serial number are never recorded). A Razer mouse OpenRazer documents can also be added without a person, and device requests are answered more accurately.
 
