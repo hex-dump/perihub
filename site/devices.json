@@ -3687,6 +3687,22 @@
     {
       "family": "razer",
       "brand": "Razer",
+      "name": "Viper V3 Pro (Wireless)",
+      "kind": "mouse",
+      "level": "experimental",
+      "page": "devices/razer-viper-v3-pro-wireless.html",
+      "usb_ids": [
+        "1532:00c1"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      },
+      "note": "DPI up to 35000"
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
       "name": "DeathAdder V3 Pro (Wired)",
       "kind": "mouse",
       "level": "experimental",
@@ -3805,6 +3821,22 @@
       "page": "devices/razer-viper-v3-pro-se-wired.html",
       "usb_ids": [
         "1532:00de"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      },
+      "note": "DPI up to 35000, polling rate"
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper V3 Pro SE (Wireless)",
+      "kind": "mouse",
+      "level": "experimental",
+      "page": "devices/razer-viper-v3-pro-se-wireless.html",
+      "usb_ids": [
+        "1532:00df"
       ],
       "linux": {
         "kind": "interface",

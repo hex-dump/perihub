@@ -8,6 +8,9 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 When you connect a device nobody has confirmed on real hardware yet, PeriHub now offers once to send a test report for it with **Test my device**: one report is what moves a device up for everyone who has it. A device request sent from the app now carries everything needed to add the device, and a clean test report leads straight to the device being confirmed.
 
+### New devices
+- **Razer Viper V3 Pro and Viper V3 Pro SE over their wireless dongle** (1532:00C1 and 1532:00DF, issue #85), experimental like the same mice on their cable: PeriHub reads the firmware and the DPI and can change the DPI (the Viper V3 Pro's polling rate over the dongle uses a command PeriHub does not send yet, so it is not shown; the SE's polling rate is read and set). Nothing about lighting or battery is read or changed yet. The ids, the transaction id and the longer wait of the dongle are facts found in OpenRazer (GPL-2.0; no code copied), written by `tools/openrazer_facts.py`. Nobody has tried them yet: **Test my device** sends a report that moves them up for everyone.
+
 ### Added
 - **A "What's new" dialog after each update**: the first time PeriHub starts on a new version it shows that version's release notes (the summary and the title of each entry, with a link to the full notes), once. **Settings → About → What's new** opens it again. A first install shows nothing, and the "PeriHub was updated" notice is not shown next to it.
 - **A one-time prompt to send a test report**: when you connect a device nobody has confirmed on real hardware yet, a notice offers to start **Test my device** for it, already picked and read (it only reads). It is shown once per device, can be dismissed, and never before the first scan of the devices is over.

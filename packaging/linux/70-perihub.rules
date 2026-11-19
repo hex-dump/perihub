@@ -550,6 +550,8 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00b6", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00be", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # Razer Viper V3 Pro (Wired)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00c0", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper V3 Pro (Wireless)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00c1", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # Razer DeathAdder V3 Pro (Wired)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00c2", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # Razer Pro Click V2 Vertical Edition (Wired)
@@ -566,6 +568,8 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d3", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d6", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # Razer Viper V3 Pro SE (Wired)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00de", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper V3 Pro SE (Wireless)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00df", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 
 # Razer keyboards (read only, untested; facts from OpenRazer): only the BlackWidow V4 Mini HyperSpeed's
 # interface 3, the one OpenRazer sends to. Through the receiver it holds only the media keys. PeriHub also

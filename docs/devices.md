@@ -327,7 +327,7 @@ rivalcfg's own tests expect (616 reports compared).
 
 ## Razer mice
 
-🧪 Experimental: <!-- generated: count razer -->74<!-- end generated --> Razer mice, on their USB cable. Nobody has tried PeriHub on one yet. Their protocol
+🧪 Experimental: <!-- generated: count razer -->76<!-- end generated --> Razer mice, on their USB cable. Nobody has tried PeriHub on one yet. Their protocol
 is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts found in
 [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): no code was copied.
 
@@ -416,6 +416,7 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 | DeathAdder V3 Pro (Wired) | `1532:00b6`, `1532:00c2` | interface 0 | DPI up to 35000, polling rate |
 | DeathAdder V4 Pro (Wired) | `1532:00be` | interface 0 | DPI up to 45000 |
 | Viper V3 Pro (Wired) | `1532:00c0` | interface 0 | DPI up to 35000, polling rate |
+| Viper V3 Pro (Wireless) | `1532:00c1` | interface 0 | DPI up to 35000 |
 | Pro Click V2 Vertical Edition (Wired) | `1532:00c7` | interface 0 | DPI up to 30000, polling rate |
 | Basilisk V3 35K | `1532:00cb` | interface 3 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
 | Basilisk V3 Pro 35K (Wired) | `1532:00cc` | interface 0 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
@@ -423,6 +424,7 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 | Basilisk Mobile (Wired) | `1532:00d3` | interface 0 | DPI up to 18000, polling rate |
 | Basilisk V3 Pro 35K Phantom Green Edition (Wired) | `1532:00d6` | interface 0 | DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved |
 | Viper V3 Pro SE (Wired) | `1532:00de` | interface 0 | DPI up to 35000, polling rate |
+| Viper V3 Pro SE (Wireless) | `1532:00df` | interface 0 | DPI up to 35000, polling rate |
 <!-- end generated -->
 
 ## Razer keyboards

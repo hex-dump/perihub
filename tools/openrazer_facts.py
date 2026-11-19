@@ -114,6 +114,11 @@ BRIGHTNESS = {"razer_chroma_extended_matrix_get_brightness": ("razer_chroma_exte
               "razer_chroma_standard_get_led_brightness": ("razer_chroma_standard_set_led_brightness", "true")}
 
 
+# Wireless ids that are the mouse itself behind its own dongle (nothing else shares the dongle), so a
+# mouse entry is right for them; OpenRazer documents them as a Viper V3 Pro with the dongle's wait.
+MOUSE_DONGLES = {"USB_DEVICE_ID_RAZER_VIPER_V3_PRO_WIRELESS", "USB_DEVICE_ID_RAZER_VIPER_V3_PRO_SE_WIRELESS"}
+
+
 def daemon_mice(path):
     tree = ast.parse(path.read_text())
     classes = {}
@@ -194,7 +199,7 @@ def main():
     for define, pid in sorted(ids.items(), key=lambda kv: kv[1]):
         if pid not in mice:
             continue
-        if re.search(r"RECEIVER|DOCK|HYPERSPEED|DONGLE|BLUETOOTH|_WIRELESS(_ALT)?$", define):
+        if define not in MOUSE_DONGLES and re.search(r"RECEIVER|DOCK|HYPERSPEED|DONGLE|BLUETOOTH|_WIRELESS(_ALT)?$", define):
             left_out.append(f"{define} (receiver or wireless dongle)")
             continue
         m = mice[pid]

@@ -1148,6 +1148,23 @@ pub const MODELS: &[Model] = &[
     },
     Model {
         vendor_id: 0x1532,
+        product_ids: &[0x00C1],
+        brand: "Razer",
+        name: "Viper V3 Pro (Wireless)",
+        kind: Kind::Mouse,
+        interface: Some(0),
+        usage_page: None,
+        protocol: Protocol::Razer(Params {
+            wait_us: 59900,
+            dpi_max: 35000,
+            tid: Tid { firmware: Some(0x1F), dpi_get: Some(0x1F), dpi_set: Some(0x1F), poll_get: None, poll_set: None },
+            dpi_read_stored: false,
+            brightness: None,
+            frame: None,
+        }),
+    },
+    Model {
+        vendor_id: 0x1532,
         product_ids: &[0x00C2],
         brand: "Razer",
         name: "DeathAdder V3 Pro (Wired)",
@@ -1282,6 +1299,23 @@ pub const MODELS: &[Model] = &[
             frame: None,
         }),
     },
+    Model {
+        vendor_id: 0x1532,
+        product_ids: &[0x00DF],
+        brand: "Razer",
+        name: "Viper V3 Pro SE (Wireless)",
+        kind: Kind::Mouse,
+        interface: Some(0),
+        usage_page: None,
+        protocol: Protocol::Razer(Params {
+            wait_us: 59900,
+            dpi_max: 35000,
+            tid: Tid { firmware: Some(0x1F), dpi_get: Some(0x1F), dpi_set: Some(0x1F), poll_get: Some(0x1F), poll_set: Some(0x1F) },
+            dpi_read_stored: false,
+            brightness: None,
+            frame: None,
+        }),
+    },
 ];
 
 /// OpenRazer mice PeriHub leaves out, and why.
@@ -1316,7 +1350,6 @@ pub const LEFT_OUT: &[&str] = &[
     "USB_DEVICE_ID_RAZER_VIPER_V3_HYPERSPEED (receiver or wireless dongle)",
     "USB_DEVICE_ID_RAZER_BASILISK_V3_X_HYPERSPEED (receiver or wireless dongle)",
     "USB_DEVICE_ID_RAZER_DEATHADDER_V4_PRO_WIRELESS (receiver or wireless dongle)",
-    "USB_DEVICE_ID_RAZER_VIPER_V3_PRO_WIRELESS (receiver or wireless dongle)",
     "USB_DEVICE_ID_RAZER_DEATHADDER_V3_PRO_WIRELESS_ALT (receiver or wireless dongle)",
     "USB_DEVICE_ID_RAZER_DEATHADDER_V3_HYPERSPEED_WIRED (receiver or wireless dongle)",
     "USB_DEVICE_ID_RAZER_DEATHADDER_V3_HYPERSPEED_WIRELESS (receiver or wireless dongle)",
@@ -1327,5 +1360,4 @@ pub const LEFT_OUT: &[&str] = &[
     "USB_DEVICE_ID_RAZER_BASILISK_V3_PRO_35K_PHANTOM_GREEN_EDITION_WIRELESS (receiver or wireless dongle)",
     "USB_DEVICE_ID_RAZER_COBRA_HYPERSPEED_WIRED (receiver or wireless dongle)",
     "USB_DEVICE_ID_RAZER_COBRA_HYPERSPEED_WIRELESS (receiver or wireless dongle)",
-    "USB_DEVICE_ID_RAZER_VIPER_V3_PRO_SE_WIRELESS (receiver or wireless dongle)",
 ];

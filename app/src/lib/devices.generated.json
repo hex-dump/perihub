@@ -1080,6 +1080,11 @@
           "level": "experimental"
         },
         {
+          "name": "Viper V3 Pro (Wireless)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
           "name": "Pro Click V2 Vertical Edition (Wired)",
           "kind": "mouse",
           "level": "experimental"
@@ -1111,6 +1116,11 @@
         },
         {
           "name": "Viper V3 Pro SE (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Viper V3 Pro SE (Wireless)",
           "kind": "mouse",
           "level": "experimental"
         },
