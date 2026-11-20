@@ -237,6 +237,7 @@ describe("Sidebar", () => {
     collections: ["interface 2, usage page ff00, usage 0001", "interface 2, usage page ff00, usage 0002"],
     bolt: false,
     unifying: false,
+    direct: false,
     reachable: true,
     denied: false,
     slots: ["slot 1: no answer", "slot 2: no answer"],
@@ -274,6 +275,11 @@ describe("Sidebar", () => {
       dpi: null,
       report_rates_ms: [],
       onboard: null,
+      lighting: null,
+      led_zones: [],
+      battery: null,
+      battery_reply: null,
+      read_only: false,
       read_errors: [],
     };
     const bolt = { ...receiver, product_id: 0xc548, name: "Logi Bolt receiver", bolt: true, unsupported: [device] };

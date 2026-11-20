@@ -426,7 +426,7 @@ fn hidpp_effect(index: &BTreeMap<u8, u16>, data: &[u8]) -> Option<Effect> {
         return Some(if function <= 1 { Effect::Read } else { Effect::Change });
     }
     let feature = *index.get(&at)?;
-    Some(if crate::hidpp::is_read_request(feature, function) { Effect::Read } else { Effect::Change })
+    Some(if crate::hidpp::is_read_request(feature, function, &data[4..]) { Effect::Read } else { Effect::Change })
 }
 
 /// Learns from a root feature answer (function 0) which feature `request` found at which index.

@@ -71,6 +71,10 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c09a", TAG+="uacc
 # Logitech PRO X 2 DEX
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c0a0", TAG+="uaccess"
 
+# Logitech keyboards and headsets with HID++ on their own USB connection, without a receiver (read only,
+# untested): only the interface with their HID++ collections (usage page ff43). A keyboard whose HID++
+# collections share an interface with what is typed on it is left out: one hidraw node holds both.
+
 # LIGHTSPEED receivers, for wireless Logitech mice (read-only until they are tested): only the
 # receiver's own HID++ interface (02). Movements and typing arrive on its other interfaces, which
 # stay closed, and so do the devices that Linux creates for the mice paired with it.
@@ -245,6 +249,8 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b7f", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b81", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair IRONCLAW RGB WIRELESS receiver
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b66", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair KATAR PRO WIRELESS Gaming Dongle
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b94", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 
 # ASUS ROG and TUF mice (experimental, untested; protocol from libratbag). The configuration collection
 # shares its interface with the mouse's movements and the keys assigned to its buttons, as on the
@@ -550,6 +556,8 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00b6", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00be", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # Razer Viper V3 Pro (Wired)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00c0", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper V3 Pro (Wireless)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00c1", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # Razer DeathAdder V3 Pro (Wired)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00c2", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # Razer Pro Click V2 Vertical Edition (Wired)
@@ -566,6 +574,8 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d3", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00d6", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 # Razer Viper V3 Pro SE (Wired)
 KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00de", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
+# Razer Viper V3 Pro SE (Wireless)
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", ATTRS{idProduct}=="00df", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess"
 
 # Razer keyboards (read only, untested; facts from OpenRazer): only the BlackWidow V4 Mini HyperSpeed's
 # interface 3, the one OpenRazer sends to. Through the receiver it holds only the media keys. PeriHub also
@@ -588,6 +598,11 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="0036", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="0033", TAG+="uaccess"
 # Glorious Model O Eternal
 KERNEL=="hidraw*", ATTRS{idVendor}=="3794", ATTRS{idProduct}=="a000", TAG+="uaccess"
+
+# Logitech G213 Prodigy (experimental lighting, untested; facts from OpenRGB, g810-led, G213Colors and gdevd): not
+# opened on Linux. Its HID++ collection (usage page ff43) is on interface 1, which also holds two keyboard collections,
+# and Linux has one hidraw node per interface: a rule that opened it would let any program running as the user read
+# what is typed. Windows only for now.
 
 # Logitech G600 (experimental, untested; protocol from libratbag, interface from OpenRGB): interface 1,
 # which holds its profiles. It also carries the keys the mouse's own side buttons send, never what is
@@ -668,6 +683,11 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f50f", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="3842", ATTRS{idProduct}=="2422", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # EVGA X20 (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="3842", ATTRS{idProduct}=="2420", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
+
+# EVision keyboards (read only, untested; facts from OpenRGB and OpenEVision): not opened on Linux. Their vendor
+# collection (usage page ff1c) is on interface 1, which also holds a keyboard collection, and Linux has one hidraw
+# node per interface: a rule that opened it would let any program running as the user read what is typed. Windows
+# only for now.
 
 # Mice on the YJX platform (MAMBASNAKE, Rajin, K-Snake, EWEADN…; read only, untested): only interface 2,
 # which holds the vendor configuration collection and nothing else.

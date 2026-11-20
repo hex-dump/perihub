@@ -117,6 +117,7 @@
       <dt>Firmware</dt><dd>{info.firmware ?? "not read"}</dd>
       <dt>Polling rate</dt><dd>{info.polling_hz ? `${info.polling_hz} Hz` : "not read"}</dd>
       {#if info.kind === "mouse"}<dt>DPI</dt><dd>{info.dpi ?? "not read"}</dd>{/if}
+      {#if info.receiver}<dt>Battery</dt><dd>{info.battery != null ? `${info.battery}%` : "not read"}</dd>{/if}
       <dt>LEDs</dt><dd>{info.leds}</dd>
     </dl>
     {#if info.read_errors.length}
@@ -129,7 +130,10 @@
 
   <section class="card">
     <h2>Lighting (experimental)</h2>
-    {#if info.leds === 0}
+    {#if info.leds === 0 && info.receiver === info.product_id}
+      <!-- A mouse known by its own receiver (KATAR PRO WIRELESS): read only until someone tests it. -->
+      <p class="muted">PeriHub does not change the lighting of the {info.model} yet: it only reads it.</p>
+    {:else if info.leds === 0}
       <p class="muted">The {info.model} has no lighting.</p>
     {:else if on}
       <p>PeriHub drives the lighting until you turn it off or quit PeriHub. It is not saved in the {noun}.</p>

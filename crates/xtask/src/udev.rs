@@ -22,6 +22,11 @@ fn header(family: &str) -> &'static str {
 The interfaces that report key presses stay closed: see 71-perihub-keys.rules."#
         }
         "logitech-onboard" => r#"Logitech mice (the G502 HERO is tested, the others are read-only until they are)"#,
+        "logitech-direct" => {
+            r#"Logitech keyboards and headsets with HID++ on their own USB connection, without a receiver (read only,
+untested): only the interface with their HID++ collections (usage page ff43). A keyboard whose HID++
+collections share an interface with what is typed on it is left out: one hidraw node holds both."#
+        }
         "lightspeed" => {
             r#"LIGHTSPEED receivers, for wireless Logitech mice (read-only until they are tested): only the
 receiver's own HID++ interface (02). Movements and typing arrive on its other interfaces, which
@@ -78,12 +83,24 @@ which holds the vendor configuration collection and nothing else."#
             r#"Wraith W60 (read only, untested): not opened on Linux. Its configuration collection can carry how far
 each key is pressed, so it will need a rule the user turns on. Windows only for now."#
         }
+        "evision" => {
+            r#"EVision keyboards (read only, untested; facts from OpenRGB and OpenEVision): not opened on Linux. Their vendor
+collection (usage page ff1c) is on interface 1, which also holds a keyboard collection, and Linux has one hidraw
+node per interface: a rule that opened it would let any program running as the user read what is typed. Windows
+only for now."#
+        }
         "glorious" => {
             r#"Glorious mice (experimental, untested; protocol from libratbag): only the ids that belong to
 Glorious, not the generic SinoWealth ones, which other brands' devices share. No source names the
 interface, so the whole mouse is opened, as for the ASUS mice above. Besides the configuration,
 it carries the mouse's movements, clicks and the keys assigned to its own buttons, never what is
 typed on a keyboard."#
+        }
+        "g213" => {
+            r#"Logitech G213 Prodigy (experimental lighting, untested; facts from OpenRGB, g810-led, G213Colors and gdevd): not
+opened on Linux. Its HID++ collection (usage page ff43) is on interface 1, which also holds two keyboard collections,
+and Linux has one hidraw node per interface: a rule that opened it would let any program running as the user read
+what is typed. Windows only for now."#
         }
         "g600" => {
             r#"Logitech G600 (experimental, untested; protocol from libratbag, interface from OpenRGB): interface 1,

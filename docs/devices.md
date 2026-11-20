@@ -20,12 +20,14 @@ the same format.
 - [SteelSeries](#steelseries)
 - [Logitech mice with onboard profiles](#logitech-mice-with-onboard-profiles)
 - [Logitech G300](#logitech-g300)
+- [Logitech keyboards and headsets on their own USB connection](#logitech-keyboards-and-headsets-on-their-own-usb-connection)
 - [Corsair](#corsair)
 - [ASUS](#asus)
 - [SteelSeries mice](#steelseries-mice)
 - [Razer mice](#razer-mice)
 - [Razer keyboards](#razer-keyboards)
 - [Glorious mice](#glorious-mice)
+- [Logitech G213 Prodigy](#logitech-g213-prodigy)
 - [Logitech G600](#logitech-g600)
 - [Older Logitech mice: G9, G9x, G500, G500s, G700, G700s](#older-logitech-mice-g9-g9x-g500-g500s-g700-g700s)
 - [Roccat mice](#roccat-mice)
@@ -35,6 +37,7 @@ the same format.
 - [EVGA mice](#evga-mice)
 - [YJX mice](#yjx-mice)
 - [Wraith W60](#wraith-w60)
+- [EVision keyboards](#evision-keyboards)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
 ## SteelSeries
@@ -101,6 +104,20 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
     the **No warranty** box. Nobody has tried it on a real device yet: the MX Master 3S of
     [issue #17](https://github.com/hex-dump/perihub/issues/17) is the first candidate.
   - 👁 Everything else is only read.
+  - 👁 **Lighting**, on a device with the HID++ lighting features of the newer keyboards (0x8040
+    brightness, 0x8071 effects by zone, 0x8081 per-key colours, 0x4540 layout): the brightness now, who
+    drives the lights (the device or a program such as G HUB), the effects each zone offers, how many
+    keys have their own colour, the startup and shutdown effects and when the lights dim. The test report
+    carries every reply. The first one is a G915 X LS through a `c547` receiver on Windows
+    ([issue #30](https://github.com/hex-dump/perihub/issues/30)), see
+    [protocols/logitech-keyboard-lighting.md](protocols/logitech-keyboard-lighting.md).
+  - 🧪 **Lights driven by PeriHub (experimental)**, on a keyboard that also has 0x8101 profile management:
+    an effect per zone, colours per group of keys and the brightness, in host mode as G HUB does with its
+    on-board memory mode off. Everything but the brightness stays in the keyboard's RAM; PeriHub dims and
+    turns the lights off when the keyboard is idle, and gives them back on request, from the tray, when
+    G HUB or Solaar starts and when it quits. Once asked, it takes them again at every start and when
+    G HUB or Solaar quit, until you give them back. Tried on a G915 X LS ([issue #30](https://github.com/hex-dump/perihub/issues/30));
+    **No warranty** box first.
   - **Solaar and logiops** set their own DPI and may undo PeriHub's: the device page says so when
     one of them runs.
   - Logitech devices PeriHub does not know behind a **LIGHTSPEED** receiver get the same page,
@@ -189,6 +206,26 @@ they were still there after the mouse was unplugged and plugged back in, and a s
 kept was undone. No G300 has been tried on Linux yet. Something does not work on yours? Send a
 [test report](https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml).
 
+## Logitech keyboards and headsets on their own USB connection
+
+👁 Read-only: Logitech devices with HID++ 2.0 on a USB connection of their own, without a receiver,
+whose HID++ collections use the newer vendor usage page `ff43`
+([how PeriHub finds them](protocols/logitech-usb-hidpp.md)). Nobody has tried PeriHub on one yet.
+Each gets the page of a device PeriHub knows by its features: its name, firmware, the features it
+lists, its battery if it has one, and the lighting it reports (zones and effects, brightness, who
+drives the lights). Nothing is changed, not even in RAM: the DPI and **Drive the lights** are not
+offered, and the connection refuses anything but reads. The test report has every answer as it came.
+
+- **PRO K/DA** keyboard ([issue #40](https://github.com/hex-dump/perihub/issues/40)): on Windows
+  only. Its HID++ collections share USB interface 1 with what is typed on it, so on Linux, where
+  one device node holds both, PeriHub neither opens it nor asks for a udev rule.
+
+<!-- generated: table logitech-direct -->
+| Keyboard | USB ID | Opened on Linux |
+|---|---|---|
+| PRO K/DA | `046d:c339` | — |
+<!-- end generated -->
+
 ## Corsair
 
 🧪 Experimental: <!-- generated: count corsair-mouse -->26<!-- end generated --> mice and <!-- generated: count corsair-keyboard -->23<!-- end generated --> keyboards of Corsair's newer generation, on their USB cable, and
@@ -200,6 +237,9 @@ HARPOON, DARK CORE RGB PRO and IRONCLAW receivers; not yet the Slipstream V2).
   The device goes back to its own settings when you turn it off, when PeriHub quits and as soon as
   anything fails. Nothing is written to its memory.
 - With more than one device on the same receiver, PeriHub shows the first one only, for now.
+- Through a receiver PeriHub also reads the battery level.
+- **KATAR PRO WIRELESS** (receiver `1b1c:1b94`): read only, through its own receiver (it has no USB
+  data cable). No lighting until someone tests it.
 
 **Mice:**
 <!-- generated: names corsair-mouse -->
@@ -327,7 +367,7 @@ rivalcfg's own tests expect (616 reports compared).
 
 ## Razer mice
 
-🧪 Experimental: <!-- generated: count razer -->74<!-- end generated --> Razer mice, on their USB cable. Nobody has tried PeriHub on one yet. Their protocol
+🧪 Experimental: <!-- generated: count razer -->76<!-- end generated --> Razer mice, on their USB cable. Nobody has tried PeriHub on one yet. Their protocol
 is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts found in
 [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): no code was copied.
 
@@ -351,23 +391,23 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 |---|---|---|---|
 | Orochi 2011 | `1532:0013` | interface 0 | polling rate shown |
 | Naga | `1532:0015` | interface 0 | polling rate |
-| Naga Epic | `1532:001f` | interface 0 | polling rate; brightness of scroll wheel |
+| Naga Epic | `1532:001f` | interface 0 | polling rate; brightness of scroll wheel; battery shown |
 | Abyssus 1800 | `1532:0020` | interface 0 | polling rate |
-| Mamba 2012 (Wired) | `1532:0024` | interface 0 | DPI up to 6400, polling rate; brightness of scroll wheel |
+| Mamba 2012 (Wired) | `1532:0024` | interface 0 | DPI up to 6400, polling rate; brightness of scroll wheel; battery shown |
 | Naga 2012 | `1532:002e` | interface 0 | polling rate |
 | Imperator 2012 | `1532:002f` | interface 0 | DPI up to 6400, polling rate |
-| Ouroboros | `1532:0032` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel |
+| Ouroboros | `1532:0032` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel; battery shown |
 | Taipan | `1532:0034` | interface 0 | DPI up to 8200, polling rate |
 | Naga Hex (Red) | `1532:0036` | interface 0 | polling rate |
 | DeathAdder 2013 | `1532:0037` | interface 0 | polling rate |
 | DeathAdder 1800 | `1532:0038` | interface 0 | polling rate |
 | Orochi 2013 | `1532:0039` | interface 0 | DPI up to 6400, polling rate |
-| Naga Epic Chroma (Wired) | `1532:003e` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel and backlight |
+| Naga Epic Chroma (Wired) | `1532:003e` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel and backlight; battery shown |
 | Naga 2014 | `1532:0040` | interface 0 | DPI up to 8200, polling rate |
 | Naga Hex | `1532:0041` | interface 0 | polling rate |
 | Abyssus | `1532:0042` | interface 0 | polling rate |
 | DeathAdder Chroma | `1532:0043` | interface 0 | DPI up to 10000, polling rate; brightness of logo and scroll wheel |
-| Mamba Chroma (Wired) | `1532:0044` | interface 0 | DPI up to 16000, polling rate shown |
+| Mamba Chroma (Wired) | `1532:0044` | interface 0 | DPI up to 16000, polling rate shown; battery shown |
 | Mamba Tournament Edition | `1532:0046` | interface 0 | DPI up to 16000; brightness of backlight |
 | Orochi (Wired) | `1532:0048` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel |
 | Diamondback Chroma | `1532:004c` | interface 0 | DPI up to 16000; brightness of backlight |
@@ -375,7 +415,7 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 | Naga Hex V2 | `1532:0050` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel and backlight |
 | Naga Chroma | `1532:0053` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel and backlight; one colour, not saved |
 | DeathAdder 3500 | `1532:0054` | interface 0 | DPI up to 3500, polling rate; brightness of logo and scroll wheel |
-| Lancehead (Wired) | `1532:0059` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| Lancehead (Wired) | `1532:0059` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown |
 | Abyssus V2 | `1532:005b` | interface 0 | DPI up to 5000, polling rate; brightness of logo and scroll wheel |
 | DeathAdder Elite | `1532:005c` | interface 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
 | Abyssus 2000 | `1532:005e` | interface 0 | DPI up to 2000, polling rate |
@@ -387,42 +427,44 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 | Abyssus Essential | `1532:006b` | interface 0 | DPI up to 7200, polling rate; brightness of logo |
 | Mamba Elite | `1532:006c` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
 | DeathAdder Essential | `1532:006e` | interface 0 | DPI up to 6400, polling rate; brightness of logo and scroll wheel |
-| Lancehead Wireless (Wired) | `1532:0070` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| Lancehead Wireless (Wired) | `1532:0070` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown |
 | DeathAdder Essential (White Edition) | `1532:0071` | interface 0 | DPI up to 6400, polling rate; brightness of logo and scroll wheel |
-| Mamba Wireless (Wired) | `1532:0073` | interface 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Mamba Wireless (Wired) | `1532:0073` | interface 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown |
 | Viper | `1532:0078` | interface 0 | DPI up to 16000, polling rate; brightness of logo; one colour, not saved |
-| Viper Ultimate (Wired) | `1532:007a` | interface 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved |
-| DeathAdder V2 Pro (Wired) | `1532:007c` | interface 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved |
-| Pro Click (Wired) | `1532:0080` | interface 0 | DPI up to 16000, polling rate |
+| Viper Ultimate (Wired) | `1532:007a` | interface 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved; battery shown |
+| DeathAdder V2 Pro (Wired) | `1532:007c` | interface 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved; battery shown |
+| Pro Click (Wired) | `1532:0080` | interface 0 | DPI up to 16000, polling rate; battery shown |
 | DeathAdder V2 | `1532:0084` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
 | Basilisk V2 | `1532:0085` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Basilisk Ultimate | `1532:0086` | interface 0 | DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| Basilisk Ultimate | `1532:0086` | interface 0 | DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown |
 | Viper Mini | `1532:008a` | interface 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
 | DeathAdder V2 Mini | `1532:008c` | interface 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
 | Naga Left Handed Edition 2020 | `1532:008d` | interface 0 | DPI up to 20000, polling rate; brightness of logo, scroll wheel and right side; one colour, not saved |
-| Naga Pro (Wired) | `1532:008f` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Viper 8KHz | `1532:0091` | interface 0 | DPI up to 20000; brightness of logo |
+| Naga Pro (Wired) | `1532:008f` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown |
+| Viper 8KHz | `1532:0091` | interface 0 | DPI up to 20000, polling rate; brightness of logo |
 | Naga X | `1532:0096` | interface 3 | DPI up to 18000, polling rate; brightness of scroll wheel and left side; one colour, not saved |
 | DeathAdder Essential (2021) | `1532:0098` | interface 0 | DPI up to 6400, polling rate; brightness of logo |
 | Basilisk V3 | `1532:0099` | interface 3 | DPI up to 26000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Viper Mini SE (Wired) | `1532:009e` | interface 0 | DPI up to 30000 |
+| Viper Mini SE (Wired) | `1532:009e` | interface 0 | DPI up to 30000, polling rate; battery shown |
 | DeathAdder V2 Lite | `1532:00a1` | interface 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
 | Cobra | `1532:00a3` | interface 0 | DPI up to 8500, polling rate; brightness of logo |
-| Viper V2 Pro (Wired) | `1532:00a5` | interface 0 | DPI up to 30000, polling rate |
-| Naga V2 Pro (Wired) | `1532:00a7` | interface 0 | DPI up to 30000, polling rate; brightness of logo; one colour, not saved |
-| Basilisk V3 Pro (Wired) | `1532:00aa` | interface 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Cobra Pro (Wired) | `1532:00af` | interface 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel |
-| DeathAdder V3 | `1532:00b2` | interface 0 | DPI up to 30000 |
-| DeathAdder V3 Pro (Wired) | `1532:00b6`, `1532:00c2` | interface 0 | DPI up to 35000, polling rate |
-| DeathAdder V4 Pro (Wired) | `1532:00be` | interface 0 | DPI up to 45000 |
-| Viper V3 Pro (Wired) | `1532:00c0` | interface 0 | DPI up to 35000, polling rate |
-| Pro Click V2 Vertical Edition (Wired) | `1532:00c7` | interface 0 | DPI up to 30000, polling rate |
+| Viper V2 Pro (Wired) | `1532:00a5` | interface 0 | DPI up to 30000, polling rate; battery shown |
+| Naga V2 Pro (Wired) | `1532:00a7` | interface 0 | DPI up to 30000, polling rate; brightness of logo; one colour, not saved; battery shown |
+| Basilisk V3 Pro (Wired) | `1532:00aa` | interface 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown |
+| Cobra Pro (Wired) | `1532:00af` | interface 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel; battery shown |
+| DeathAdder V3 | `1532:00b2` | interface 0 | DPI up to 30000, polling rate |
+| DeathAdder V3 Pro (Wired) | `1532:00b6`, `1532:00c2` | interface 0 | DPI up to 35000, polling rate; battery shown |
+| DeathAdder V4 Pro (Wired) | `1532:00be` | interface 0 | DPI up to 45000, polling rate; battery shown |
+| Viper V3 Pro (Wired) | `1532:00c0` | interface 0 | DPI up to 35000, polling rate; battery shown |
+| Viper V3 Pro (Wireless) | `1532:00c1` | interface 0 | DPI up to 35000, polling rate; what the dongle light shows; battery shown |
+| Pro Click V2 Vertical Edition (Wired) | `1532:00c7` | interface 0 | DPI up to 30000, polling rate; battery shown |
 | Basilisk V3 35K | `1532:00cb` | interface 3 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Basilisk V3 Pro 35K (Wired) | `1532:00cc` | interface 0 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Pro Click V2 (Wired) | `1532:00d0` | interface 0 | DPI up to 30000, polling rate |
+| Basilisk V3 Pro 35K (Wired) | `1532:00cc` | interface 0 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown |
+| Pro Click V2 (Wired) | `1532:00d0` | interface 0 | DPI up to 30000, polling rate; battery shown |
 | Basilisk Mobile (Wired) | `1532:00d3` | interface 0 | DPI up to 18000, polling rate |
-| Basilisk V3 Pro 35K Phantom Green Edition (Wired) | `1532:00d6` | interface 0 | DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved |
-| Viper V3 Pro SE (Wired) | `1532:00de` | interface 0 | DPI up to 35000, polling rate |
+| Basilisk V3 Pro 35K Phantom Green Edition (Wired) | `1532:00d6` | interface 0 | DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved; battery shown |
+| Viper V3 Pro SE (Wired) | `1532:00de` | interface 0 | DPI up to 35000, polling rate; battery shown |
+| Viper V3 Pro SE (Wireless) | `1532:00df` | interface 0 | DPI up to 35000, polling rate; battery shown |
 <!-- end generated -->
 
 ## Razer keyboards
@@ -546,6 +588,36 @@ described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md
 | Model O/O- | `258a:0036` | whole mouse | `V103` |
 | Model D | `258a:0033` | whole mouse | `V102` |
 | Model O Eternal | `3794:a000` | whole mouse | `1009` |
+<!-- end generated -->
+
+## Logitech G213 Prodigy
+
+🧪 Experimental, on Windows only for now: nobody has tried PeriHub on one yet ([issue #96](https://github.com/hex-dump/perihub/issues/96)).
+It is a keyboard that speaks Logitech's HID++ 2.0 on a vendor collection of its own. Its protocol comes from facts in
+[OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) and [g810-led](https://github.com/MatMoul/g810-led) (GPL: no code was copied)
+and in [G213Colors](https://github.com/SebiTimeWaster/G213Colors) and [gdevd](https://github.com/R1tschY/gdevd) (MIT), and is
+described in [protocols/logitech-g213.md](protocols/logitech-g213.md).
+
+- PeriHub asks the keyboard for its HID++ version and for where it lists its lighting (the colour LED effects, feature `8070`)
+  and a few other features, for the test report. If the lighting is not where every source sends it, the page stays read-only,
+  and says why.
+- **The lighting, one setting at a time, never stored**: one colour for the whole keyboard or for each of its five areas (left,
+  middle, right, arrows and home keys, numpad), off, breathing in a colour, a colour cycle and waves in five directions, with the
+  time of one cycle and a brightness for the effects that move. The keyboard cannot report its lighting, so PeriHub cannot show
+  it, check a change or undo one: the page says so, and the sources say the keyboard forgets what was sent when it is unplugged
+  (**to go back to its own lighting, unplug it and plug it in again**). Nothing asks for the No warranty box, because nothing is saved.
+- Left out: the **startup effect** (whether the keyboard starts with its colour cycle). The keyboard stores it, no source reads
+  it, and the two that send it disagree on the command, so PeriHub could neither check nor undo it. It will come after a test
+  report shows which feature the lighting is, and someone has tried the command on a real G213.
+- The G213 has no per-key colours, and PeriHub changes nothing else on it.
+- Its HID++ collection (usage page `ff43`) is on interface 1 with two keyboard collections. Windows gives each collection a path of
+  its own, and PeriHub opens only the vendor one. On Linux they share one node that also carries what is typed, so PeriHub does not
+  open the keyboard there, and the udev rule does not list it.
+
+<!-- generated: table g213 -->
+| Keyboard | USB ID | Opened on Linux |
+|---|---|---|
+| G213 Prodigy | `046d:c336` | — |
 <!-- end generated -->
 
 ## Logitech G600
@@ -773,6 +845,47 @@ colours, direction, full colour).
 | Keyboard | USB ID | Opened on Linux |
 |---|---|---|
 | W60 | `2e3c:c368` | — |
+<!-- end generated -->
+
+## EVision keyboards
+
+🧪 Experimental on `320f:505b`, 👁 read-only on the other ids, **on Windows only for now**: nobody has tried PeriHub on one yet.
+These are keyboards on an EVision controller, which many brands use (the Surmen V400 of
+[issue #80](https://github.com/hex-dump/perihub/issues/80) is a `320f:505b`). The protocol is described in
+[protocols/evision.md](protocols/evision.md) from facts found in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVision
+controllers and in [OpenEVision](https://github.com/iefedev/OpenEVision) (both GPL-2.0), a Windows app that tried it on
+a `320f:505b`: no code was copied. The ids are the ones OpenRGB lists; only `320f:505b` has been seen answering, so only
+it may be changed.
+
+- PeriHub reads the lighting in use (mode, brightness, speed, direction, random colour, colour) and, on the older layout,
+  counts the key table for the test report. On `320f:5041`, which stores three profiles, it reads the profile in use and
+  its lighting. A value outside what OpenRGB documents leaves the keyboard read-only, with the reason.
+- On `320f:505b` only, **Save to memory** changes the mode, brightness, colour and speed, after the **No warranty** box, with the
+  same backup, read-back and 15-second undo. Every change stays in the keyboard's flash, as the sources say.
+- Left out, waiting for captures from a tester (`docs/captures.md`): key remapping (the table's format is known, but not
+  which entry is which key), macros and onboard profiles (no source), per-key colours, the Fn layers and the polling rate.
+- **Not opened on Linux.** The vendor collection is on interface 1 together with a keyboard, a mouse and two more
+  collections, and Linux has one hidraw node per interface: opening it also gives access to what is typed, and a udev
+  rule would give that to any program running as you. **Send a report** lists the keyboard with its interfaces. Opening it
+  safely would take a rule you turn on yourself, with that warning, which PeriHub does not have yet.
+
+<!-- generated: table evision -->
+| Keyboard | USB ID | Opened on Linux | Level |
+|---|---|---|---|
+| RGB keyboard 320f 505b | `320f:505b` | — | 🧪 Experimental |
+| RGB keyboard 320f 5000 | `320f:5000` | — | 👁 Read-only |
+| RGB keyboard 320f 502a | `320f:502a` | — | 👁 Read-only |
+| RGB keyboard 320f 5064 | `320f:5064` | — | 👁 Read-only |
+| RGB keyboard 320f 5078 | `320f:5078` | — | 👁 Read-only |
+| RGB keyboard 320f 5084 | `320f:5084` | — | 👁 Read-only |
+| RGB keyboard 320f 5041 | `320f:5041` | — | 👁 Read-only |
+| RGB keyboard 0c45 5004 | `0c45:5004` | — | 👁 Read-only |
+| RGB keyboard 0c45 5104 | `0c45:5104` | — | 👁 Read-only |
+| RGB keyboard 0c45 5204 | `0c45:5204` | — | 👁 Read-only |
+| RGB keyboard 0c45 652f | `0c45:652f` | — | 👁 Read-only |
+| RGB keyboard 0c45 7672 | `0c45:7672` | — | 👁 Read-only |
+| RGB keyboard 0c45 7698 | `0c45:7698` | — | 👁 Read-only |
+| RGB keyboard 0c45 8520 | `0c45:8520` | — | 👁 Read-only |
 <!-- end generated -->
 
 ## Keyboards with QMK firmware (Vial, VIA)

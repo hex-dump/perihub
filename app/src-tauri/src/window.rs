@@ -78,7 +78,7 @@ enum Entry {
 struct MenuFacts {
     update: Option<String>,
     batteries: Vec<String>,
-    /// A Corsair device has experimental lighting on.
+    /// A Corsair device has experimental lighting on, or PeriHub drives a Logitech keyboard's lights.
     experimental: bool,
     read_only: bool,
     /// The mouse's name and what it can be switched to.
@@ -106,7 +106,8 @@ fn entries(facts: &MenuFacts) -> Vec<Entry> {
         entries.extend(quick_submenus(facts));
     }
     entries.push(item("stop", "Stop software macros", true));
-    // A way out that does not need the window, in case a Corsair mouse stops clicking.
+    // A way out that does not need the window, in case a Corsair mouse stops clicking, or to give a
+    // Logitech keyboard its own lights back.
     if facts.experimental {
         entries.push(item("experimental-off", "Turn off experimental lighting", true));
     }
@@ -154,7 +155,8 @@ fn menu_facts(app: &AppHandle) -> MenuFacts {
     };
     if let Some(state) = app.try_state::<crate::AppState>() {
         let status = state.manager.status();
-        facts.experimental = status.corsair.iter().any(|d| d.lighting.is_some());
+        facts.experimental =
+            status.corsair.iter().any(|d| d.lighting.is_some()) || state.manager.drives_logitech_lights();
         if let (Some(mouse), Some(choices)) = (&status.mouse, crate::quick::mouse_choices()) {
             facts.mouse = Some((mouse.model.clone(), choices));
         }
@@ -235,11 +237,12 @@ pub fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Quits PeriHub after releasing the keys a running software macro holds, and giving a Corsair
-/// mouse with experimental lighting back to its own settings.
+/// Quits PeriHub after releasing the keys a running software macro holds, giving a Corsair mouse
+/// with experimental lighting back to its own settings, and a Logitech keyboard its own lights.
 pub fn quit(app: &AppHandle) {
     app.state::<crate::AppState>().soft.stop_all_and_wait();
     app.state::<crate::AppState>().manager.release_corsair();
+    app.state::<crate::AppState>().manager.release_logitech(false);
     app.exit(0);
 }
 

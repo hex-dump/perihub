@@ -5,7 +5,7 @@ use std::ffi::{CStr, CString};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use hidapi::{DeviceInfo, HidApi};
 use serde::Serialize;
@@ -17,10 +17,13 @@ use crate::corsair::device::{CorsairInfo, CorsairTask};
 use crate::corsair::{self, BragiDevice};
 use crate::error::{Error, Result};
 use crate::g300::{self, G300Info, G300Task};
+use crate::hidpp::direct::{self, DirectModel};
+use crate::hidpp::host::Look;
 use crate::hidpp::models::{self, MouseModel};
 use crate::hidpp::receiver::{self, Presence, UnsupportedDevice};
 use crate::hidpp::{HidppDevice, Transport};
 use crate::keyboard::{KeyInterfaces, KeyboardInfo, KeyboardTask};
+use crate::logitech::LightsMemory;
 use crate::logitech::LogitechTask;
 use crate::mouse::{MouseInfo, MouseTask, ReceiverLink};
 use crate::peripheral::qmk::{self, Found};
@@ -184,12 +187,110 @@ fn hidpp10_collection<'a>(devices: &'a [DeviceInfo], of: &DeviceInfo, usage: u16
     })
 }
 
+/// The collection of a Logitech G213 that takes HID++ long reports, of the same interface as `of`. Its other vendor
+/// collection has reports of another length. On Windows each has a path of its own.
+fn g213_collection<'a>(devices: &'a [DeviceInfo], of: &DeviceInfo) -> Option<&'a DeviceInfo> {
+    devices.iter().find(|d| {
+        d.vendor_id() == of.vendor_id()
+            && d.product_id() == of.product_id()
+            && d.serial_number() == of.serial_number()
+            && d.interface_number() == of.interface_number()
+            && peripheral::logitech_g213::is_command_collection(d.usage_page(), d.usage())
+    })
+}
+
 /// HID++ collection of a receiver: usage 2 is the long one, 1 the short one. On Linux both are the
 /// same hidraw node.
 fn receiver_collection(d: &DeviceInfo, usage: u16) -> bool {
     d.vendor_id() == LOGITECH
         && receiver::is_receiver(d.product_id())
         && ((d.usage_page() == 0xFF00 && d.usage() == usage) || (d.usage_page() == 0 && d.interface_number() == 2))
+}
+
+/// A Logitech device PeriHub reads on its own USB connection (see [`direct`]).
+struct DirectPaths {
+    model: &'static DirectModel,
+    /// What it is kept under: the path of its first HID++ collection, or of its first collection.
+    key: CString,
+    /// Its HID++ collections, in the order they are tried.
+    collections: Vec<DeviceInfo>,
+    /// Every collection of the device, for the test report.
+    listed: Vec<String>,
+    /// Why PeriHub does not open it, if it does not.
+    closed: Option<String>,
+}
+
+/// While a device on its own USB connection has not answered, it is asked again this often: each
+/// try waits up to a second for each collection and index.
+const DIRECT_RETRY: Duration = Duration::from_secs(30);
+/// How often a device that answered before, and whose thread ended, is opened again.
+const DIRECT_REOPEN: Duration = Duration::from_secs(10);
+
+fn collection_text(d: &DeviceInfo) -> String {
+    format!("interface {}, usage page {:04x}, usage {:04x}", d.interface_number(), d.usage_page(), d.usage())
+}
+
+/// The Logitech devices of [`direct::DIRECT`] connected, one per device. A collection whose path
+/// also carries a keyboard's typing is never opened: on Linux one node holds every collection of an
+/// interface, and hidapi lists the keyboard collection with the same path (or, when it reads no
+/// usage, cannot tell).
+fn direct_devices(devices: &[DeviceInfo]) -> Vec<DirectPaths> {
+    let mut found: Vec<DirectPaths> = Vec::new();
+    let mut seen: Vec<(u16, Option<String>)> = Vec::new();
+    for d in devices {
+        let Some(model) = (d.vendor_id() == LOGITECH).then(|| direct::find(d.product_id())).flatten() else { continue };
+        let id = (d.product_id(), d.serial_number().map(str::to_owned));
+        if seen.contains(&id) {
+            continue;
+        }
+        seen.push(id.clone());
+        let same: Vec<&DeviceInfo> = devices
+            .iter()
+            .filter(|o| o.vendor_id() == LOGITECH && (o.product_id(), o.serial_number().map(str::to_owned)) == id)
+            .collect();
+        let mut listed: Vec<String> = same.iter().map(|o| collection_text(o)).collect();
+        listed.sort();
+        listed.dedup();
+        let typing = |o: &DeviceInfo| {
+            same.iter().any(|k| k.path() == o.path() && k.usage_page() == 1 && k.usage() == 6)
+                || (model.typing && o.usage_page() == 0)
+        };
+        let hidpp: Vec<&DeviceInfo> = same
+            .iter()
+            .copied()
+            .filter(|o| o.interface_number() == model.interface && direct::hidpp_collection(o.usage_page()))
+            .collect();
+        let mut collections: Vec<DeviceInfo> = Vec::new();
+        for o in hidpp.iter().filter(|o| !typing(o)) {
+            if !collections.iter().any(|c| c.path() == o.path()) {
+                collections.push((*o).clone());
+            }
+        }
+        collections.sort_by_key(|c| direct::try_order(c.usage_page(), c.usage()));
+        let closed = if !collections.is_empty() {
+            None
+        } else if hidpp.is_empty() {
+            Some(format!("no HID++ collection (usage page ff43 or ff00) on interface {}", model.interface))
+        } else {
+            Some("its HID++ collection shares a device node with the keyboard's typing (Linux): PeriHub does not open it".into())
+        };
+        let key = collections.first().map_or_else(|| d.path().to_owned(), |c| c.path().to_owned());
+        found.push(DirectPaths { model, key, collections, listed, closed });
+    }
+    found
+}
+
+/// What PeriHub knows of a device on its own USB connection.
+struct DirectState {
+    /// What it read, once the device answered.
+    device: Option<UnsupportedDevice>,
+    /// The collection and device index it answered on.
+    reached: Option<(CString, u8)>,
+    /// What each collection and index answered, for the test report.
+    answers: Vec<String>,
+    last_try: Option<Instant>,
+    /// The system refused to open it (on Linux, no udev rule gives access to it).
+    denied: bool,
 }
 
 /// A receiver's long HID++ collection, and its short one when that has a path of its own (Windows).
@@ -200,8 +301,8 @@ type ReceiverPaths = (DeviceInfo, Option<DeviceInfo>);
 struct Probe {
     /// Slots whose device answers.
     online: Vec<u8>,
-    /// A paired device is turned off or asleep.
-    asleep: bool,
+    /// Slots whose paired device is turned off or asleep.
+    asleep: Vec<u8>,
     /// What each slot answered, for test reports.
     answers: Vec<String>,
 }
@@ -225,7 +326,7 @@ fn probe(api: &HidApi, (long, short): &ReceiverPaths) -> Result<Probe> {
         found.answers.push(format!("slot {slot}: {answer}"));
         match presence {
             Some(Presence::Online) => found.online.push(slot),
-            Some(Presence::Asleep) => found.asleep = true,
+            Some(Presence::Asleep) => found.asleep.push(slot),
             Some(Presence::Empty) => {}
             None => {
                 // A receiver that does not answer twice: nothing more to ask it in this pass.
@@ -311,6 +412,10 @@ pub struct ReceiverReport {
     pub open_slots: Vec<u8>,
     /// Paired devices that answer and that PeriHub does not support yet.
     pub unsupported: Vec<UnsupportedDevice>,
+    /// Not a receiver: a device on its own USB connection (see [`direct`]). `name` says how it
+    /// connects, `slots` what its HID++ collections answered, and `unsupported` holds the device
+    /// itself, always, with what PeriHub could read of it; its "slot" is the HID++ device index.
+    pub direct: bool,
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -424,8 +529,11 @@ struct Slots {
     /// Slots that answered the last time each receiver was asked (by path).
     receiver_online: HashMap<CString, Vec<u8>>,
     /// Devices PeriHub knows by their features, open on their own thread, by receiver path and slot,
-    /// with the receiver's product id.
+    /// with the receiver's product id. A device on its own USB connection is here too, by the path of
+    /// its HID++ collection and its device index, with its own product id.
     logitech: HashMap<(CString, u8), (Worker<LogitechTask>, u16)>,
+    /// Logitech devices on their own USB connection, by [`DirectPaths::key`].
+    direct: HashMap<CString, DirectState>,
     logitech_programs: Vec<&'static str>,
     /// Interfaces of the connected keyboard that report key presses.
     key_interfaces: KeyInterfaces,
@@ -452,6 +560,10 @@ pub struct Manager {
     untested_saves: bool,
     /// The DPI to set on the devices PeriHub knows by their features, by settings key.
     logitech_dpi: Arc<Mutex<HashMap<String, u16>>>,
+    /// The lights of the keyboards PeriHub knows by their features, by settings key: the look it
+    /// shows again every time such a keyboard connects (this session only), the last look shown
+    /// (saved in the settings), and how host mode went.
+    logitech_lights: Arc<Mutex<HashMap<String, LightsMemory>>>,
     /// Keyboards with a raw HID collection the user turned on as VIA keyboards, by "vvvv:pppp".
     qmk_enabled: Arc<Mutex<HashSet<String>>>,
 }
@@ -462,11 +574,15 @@ impl Manager {
     /// unless the user keeps it. Only the interface asks that; the command line never saves to one.
     /// `logitech_dpi`: the DPI to set on the devices PeriHub knows by their features every time they
     /// connect, by settings key (see [`Manager::set_logitech_dpi`]). `qmk_keyboards`: the keyboards
-    /// the user turned on as VIA keyboards (see [`Manager::set_qmk_enabled`]).
+    /// the user turned on as VIA keyboards (see [`Manager::set_qmk_enabled`]). `logitech_looks`: the
+    /// last look shown on each keyboard whose lights PeriHub drove; `logitech_drive`: the keyboards
+    /// whose lights the user wants PeriHub to drive, taken with that look whenever they connect.
     pub fn start(
         keyboard_config: KeyboardConfig,
         untested_saves: bool,
         logitech_dpi: HashMap<String, u16>,
+        logitech_looks: HashMap<String, Look>,
+        logitech_drive: Vec<String>,
         qmk_keyboards: Vec<String>,
         listener: Listener,
     ) -> Self {
@@ -475,6 +591,17 @@ impl Manager {
             keyboard_config: Arc::new(Mutex::new(keyboard_config)),
             untested_saves,
             logitech_dpi: Arc::new(Mutex::new(logitech_dpi)),
+            logitech_lights: Arc::new(Mutex::new(
+                logitech_looks
+                    .into_iter()
+                    .map(|(key, look)| {
+                        let wanted = logitech_drive.contains(&key);
+                        let memory = LightsMemory { saved: Some(look), ..LightsMemory::default() };
+                        memory.wanted.store(wanted, std::sync::atomic::Ordering::SeqCst);
+                        (key, memory)
+                    })
+                    .collect(),
+            )),
             qmk_enabled: Arc::new(Mutex::new(qmk_keyboards.into_iter().collect())),
         };
         let background = manager.clone();
@@ -676,8 +803,12 @@ impl Manager {
                 changed |= slots.mouse_asleep.take().is_some() | slots.receiver_note.take().is_some();
             }
         }
+        let direct =
+            direct_devices(&api.device_list().filter(|d| d.vendor_id() == LOGITECH).cloned().collect::<Vec<_>>());
+        changed |= self.poll_direct(api, &direct);
         changed |= self.poll_logitech(api, &receivers, scan);
-        let reports = self.receiver_reports(api, &receivers);
+        let mut reports = self.receiver_reports(api, &receivers);
+        reports.extend(self.direct_reports(&direct));
         {
             let mut slots = self.slots.lock_recover();
             if slots.receivers != reports {
@@ -795,6 +926,7 @@ impl Manager {
                     denied: paths.iter().any(|path| slots.receiver_denied.contains(*path)),
                     slots: answers,
                     unsupported,
+                    direct: false,
                 }
             })
             .collect()
@@ -816,7 +948,7 @@ impl Manager {
             {
                 let mut slots = self.slots.lock_recover();
                 let online = found.as_ref().map(|f| f.online.clone()).unwrap_or_default();
-                let sleeping = found.as_ref().is_ok_and(|f| f.asleep);
+                let sleeping = found.as_ref().is_ok_and(|f| !f.asleep.is_empty());
                 // Once per change: what the slots of a receiver with nothing to open answered.
                 let previous = slots.receiver_answers.insert(path.clone(), answers.clone());
                 if online.is_empty() && !sleeping && previous.as_ref() != Some(&answers) {
@@ -841,7 +973,12 @@ impl Manager {
                 }
             };
             let receiver = format!("{} {:04x}", receiver::name(paths.0.product_id()), paths.0.product_id());
-            if found.asleep {
+            // A device with a page of its own (a keyboard, say) asleep is not a mouse asleep (issue #30).
+            let mouse_asleep = {
+                let slots = self.slots.lock_recover();
+                found.asleep.iter().any(|&slot| !slots.receiver_unsupported.contains_key(&(path.clone(), slot)))
+            };
+            if mouse_asleep {
                 let seen = self.slots.lock_recover().receiver_models.get(&path).copied();
                 if asleep.is_none() {
                     asleep = Some((seen.unwrap_or(WIRELESS_MOUSE).to_string(), receiver.clone()));
@@ -855,8 +992,9 @@ impl Manager {
                 };
                 let model = match identity {
                     Ok(Ok(model)) => model,
+                    // It gets a page of its own (see `poll_logitech`): no note on the mouse entry, which
+                    // would list a mouse that is not there (issue #30).
                     Ok(Err(device)) => {
-                        note = Some(format!("{receiver}, slot {slot}: {} is not supported yet", device.label()));
                         self.slots.lock_recover().receiver_unsupported.insert((path.clone(), slot), device);
                         continue;
                     }
@@ -909,7 +1047,8 @@ impl Manager {
         let mut changed = false;
         let mouse_link = {
             let mut slots = self.slots.lock_recover();
-            slots.logitech.retain(|(path, _), (worker, _)| worker.is_alive() && present(path));
+            let direct: Vec<(CString, u8)> = slots.direct.values().filter_map(|s| s.reached.clone()).collect();
+            slots.logitech.retain(|key, (worker, _)| worker.is_alive() && (present(&key.0) || direct.contains(key)));
             slots.mouse.as_ref().map(|(_, info)| (slots.mouse_path.clone(), info.link.as_ref().map(|l| l.slot)))
         };
         if scan && let Some((mouse_path, mouse_slot)) = mouse_link {
@@ -947,8 +1086,9 @@ impl Manager {
         };
         for (paths, slot, device) in to_open {
             let saved = self.logitech_dpi.lock_recover().get(&device.settings_key()).copied();
+            let lights = self.logitech_lights.lock_recover().entry(device.settings_key()).or_default().clone();
             let receiver_id = paths.0.product_id();
-            match open_behind(api, &paths, slot, true).and_then(|dev| LogitechTask::open(dev, device, saved)) {
+            match open_behind(api, &paths, slot, true).and_then(|dev| LogitechTask::open(dev, device, saved, lights)) {
                 Ok(task) => {
                     log::info!(
                         "{} connected through the {}, slot {slot} (read by its features)",
@@ -972,6 +1112,157 @@ impl Manager {
         changed
     }
 
+    /// Reads the Logitech devices on their own USB connection that have not answered yet, and opens a
+    /// read-only thread for each one that answers (see [`direct`]). Returns `true` if anything changed.
+    fn poll_direct(&self, api: &HidApi, direct: &[DirectPaths]) -> bool {
+        let mut changed = false;
+        {
+            let mut slots = self.slots.lock_recover();
+            let before = slots.direct.len();
+            slots.direct.retain(|key, _| direct.iter().any(|d| d.key == *key));
+            changed |= slots.direct.len() != before;
+        }
+        for paths in direct.iter().filter(|p| !p.collections.is_empty()) {
+            let (known, reached) = {
+                let mut guard = self.slots.lock_recover();
+                let slots = &mut *guard;
+                let state = slots.direct.entry(paths.key.clone()).or_insert_with(|| {
+                    changed = true;
+                    DirectState { device: None, reached: None, answers: Vec::new(), last_try: None, denied: false }
+                });
+                let open =
+                    state.reached.as_ref().and_then(|r| slots.logitech.get(r)).is_some_and(|(w, _)| w.is_alive());
+                let wait = if state.device.is_some() { DIRECT_REOPEN } else { DIRECT_RETRY };
+                if open || state.last_try.is_some_and(|t| t.elapsed() < wait) {
+                    continue;
+                }
+                state.last_try = Some(Instant::now());
+                (state.device.clone(), state.reached.clone())
+            };
+            let name = paths.model.name;
+            let mut answers = Vec::new();
+            let mut denied = false;
+            let mut found: Option<(CString, HidppDevice, u8)> = None;
+            match (&known, &reached) {
+                // Read before: opened again where it answered.
+                (Some(_), Some((path, index))) => {
+                    let info = paths.collections.iter().find(|c| c.path() == path.as_c_str());
+                    let opened = info
+                        .ok_or(Error::NotConnected)
+                        .and_then(|info| open_channel(api, info))
+                        .and_then(|dev| HidppDevice::new(dev, *index, true));
+                    match opened {
+                        Ok(dev) => found = Some((path.clone(), dev, *index)),
+                        Err(error) => log::debug!("Logitech {name}: {error}"),
+                    }
+                }
+                _ => {
+                    for info in &paths.collections {
+                        let label = format!("usage page {:04x}, usage {:04x}", info.usage_page(), info.usage());
+                        if let Err(error) = open_channel(api, info) {
+                            denied |= is_permission_error(&error);
+                            answers.push(format!("{label}: could not open it: {}", open_error_message(error)));
+                            continue;
+                        }
+                        let mut open = || open_channel(api, info).map(|d| Box::new(d) as Box<dyn Transport>);
+                        if let Some((dev, index)) = direct::connect(&mut open, &label, &mut answers) {
+                            found = Some((info.path().to_owned(), dev, index));
+                            break;
+                        }
+                    }
+                }
+            }
+            let mut device = known;
+            let mut opened = None;
+            if let Some((path, mut dev, index)) = found {
+                if device.is_none() {
+                    match UnsupportedDevice::read(&mut dev, index) {
+                        Ok(mut read) => {
+                            read.read_only = true;
+                            log::info!(
+                                "Logitech {name} ({:04x}) on its {}: {}, read by its features, read-only",
+                                paths.model.product_id,
+                                paths.model.connection,
+                                read.label()
+                            );
+                            device = Some(read);
+                        }
+                        Err(error) => answers.push(format!("reading it: {error}")),
+                    }
+                }
+                if let Some(read) = &device {
+                    match LogitechTask::open(dev, read.clone(), None, LightsMemory::default()) {
+                        Ok(task) => opened = Some((path.clone(), index, task)),
+                        // Another device of the same model: read again before anything else.
+                        Err(Error::OtherDevice) => device = None,
+                        Err(error) => answers.push(format!("opening it: {error}")),
+                    }
+                }
+                let mut slots = self.slots.lock_recover();
+                if let Some(state) = slots.direct.get_mut(&paths.key) {
+                    state.reached = Some((path, index));
+                }
+            }
+            let mut slots = self.slots.lock_recover();
+            if let Some((path, index, task)) = opened {
+                let worker = Worker::spawn("perihub-logitech", task);
+                slots.logitech.insert((path, index), (worker, paths.model.product_id));
+                changed = true;
+            }
+            let Some(state) = slots.direct.get_mut(&paths.key) else { continue };
+            if state.device != device {
+                state.device = device;
+                changed = true;
+            }
+            // A device opened again where it answered keeps what it answered the first time.
+            if !answers.is_empty() && state.answers != answers {
+                if state.answers.is_empty() || state.device.is_none() {
+                    log::info!("Logitech {name}: {}", answers.join("; "));
+                }
+                state.answers = answers;
+                changed = true;
+            }
+            if state.denied != denied {
+                state.denied = denied;
+                changed = true;
+            }
+        }
+        changed
+    }
+
+    /// The Logitech devices on their own USB connection, in the shape of a receiver's report: the
+    /// page and the test report show them as a device behind one.
+    fn direct_reports(&self, direct: &[DirectPaths]) -> Vec<ReceiverReport> {
+        let slots = self.slots.lock_recover();
+        direct
+            .iter()
+            .map(|paths| {
+                let state = slots.direct.get(&paths.key);
+                let open = |r: &(CString, u8)| slots.logitech.get(r).is_some_and(|(w, _)| w.is_alive());
+                let open_slots = state.and_then(|s| s.reached.clone()).filter(open).map(|(_, i)| vec![i]);
+                let mut answers: Vec<String> = paths.closed.iter().cloned().collect();
+                answers.extend(state.iter().flat_map(|s| s.answers.iter().cloned()));
+                let device = state.and_then(|s| s.device.clone()).unwrap_or_else(|| {
+                    let why = paths.closed.clone().unwrap_or_else(|| "no HID++ answer yet".into());
+                    direct::not_read(paths.model, why)
+                });
+                ReceiverReport {
+                    product_id: paths.model.product_id,
+                    name: paths.model.connection,
+                    collections: paths.listed.clone(),
+                    bolt: false,
+                    unifying: false,
+                    reachable: !paths.collections.is_empty(),
+                    denied: state.is_some_and(|s| s.denied),
+                    slots: answers,
+                    open_slots: open_slots.unwrap_or_default(),
+                    unsupported: vec![device],
+                    direct: true,
+                }
+            })
+            .collect()
+    }
+
     /// The device PeriHub knows by its features in `slot` of a connected receiver.
     pub fn logitech(&self, receiver_id: u16, slot: u8) -> Result<Worker<LogitechTask>> {
         let slots = self.slots.lock_recover();
@@ -991,6 +1282,52 @@ impl Manager {
             Some(dpi) => saved.insert(key, dpi),
             None => saved.remove(&key),
         };
+    }
+
+    /// The user drove a keyboard's lights with `look` (`Some`): PeriHub takes them with it every
+    /// time the keyboard connects, at every start too. `None`: the user gave them back; PeriHub no
+    /// longer takes them (the look stays, for the editor).
+    pub fn set_logitech_look(&self, key: String, look: Option<Look>) {
+        let mut lights = self.logitech_lights.lock_recover();
+        let memory = lights.entry(key).or_default();
+        memory.wanted.store(look.is_some(), std::sync::atomic::Ordering::SeqCst);
+        if look.is_some() {
+            memory.saved = look;
+        }
+    }
+
+    /// The user wants PeriHub to drive the lights of a keyboard.
+    pub fn drives_logitech_lights(&self) -> bool {
+        self.logitech_lights.lock_recover().values().any(|m| m.wanted.load(std::sync::atomic::Ordering::SeqCst))
+    }
+
+    /// Gives the lights of every keyboard PeriHub drives back to the keyboard. `forget` (the tray's
+    /// "Turn off experimental lighting"): PeriHub no longer takes them, as with "Give the lights
+    /// back". Otherwise (quitting PeriHub, installing an update) they are taken again at the next
+    /// start.
+    pub fn release_logitech(&self, forget: bool) {
+        let workers: Vec<_> = self.slots.lock_recover().logitech.values().map(|(w, _)| w.clone()).collect();
+        if forget {
+            for memory in self.logitech_lights.lock_recover().values() {
+                memory.wanted.store(false, std::sync::atomic::Ordering::SeqCst);
+            }
+        }
+        for worker in workers {
+            let _ = if forget {
+                worker.call(|d| d.give_back_lights().map(|_| ()))
+            } else {
+                worker.call(|d| d.give_back_for_now())
+            };
+        }
+    }
+
+    /// Gives the lights of every keyboard PeriHub drives back before read-only mode goes on. PeriHub
+    /// takes them again once it is off.
+    pub fn release_logitech_for_read_only(&self) {
+        let workers: Vec<_> = self.slots.lock_recover().logitech.values().map(|(w, _)| w.clone()).collect();
+        for worker in workers {
+            let _ = worker.call(|d| d.give_back_for_read_only());
+        }
     }
 
     /// Turns a keyboard with a raw HID collection on or off as a VIA keyboard, by "vvvv:pppp". It is
@@ -1150,6 +1487,19 @@ impl Manager {
                 *d = long.clone();
             }
         }
+        // The G213 is opened by its collection of HID++ long reports, and not at all where there is none.
+        found.retain_mut(|(d, model)| {
+            if !matches!(model.protocol, Protocol::LogitechG213) {
+                return true;
+            }
+            match g213_collection(&devices, d) {
+                Some(long) => {
+                    *d = long.clone();
+                    true
+                }
+                None => false,
+            }
+        });
         let enabled = self.qmk_enabled.lock_recover().clone();
         let mut keyboards: Vec<(CString, QmkKeyboard)> = Vec::new();
         for d in &devices {
@@ -1191,8 +1541,8 @@ impl Manager {
         // system keeps typed keys away from programs). QMK keyboards were checked above, more strictly.
         found.retain(|(d, model)| {
             // On Linux a model 70-perihub.rules does not open is not opened at all: the Wraith's collection
-            // can carry how far each key is pressed (it will need a rule the user turns on), and most Razer
-            // keyboards' interface also carries typed keys.
+            // can carry how far each key is pressed (it will need a rule the user turns on), most Razer
+            // keyboards' interface also carries typed keys, and so does the G213's.
             if cfg!(target_os = "linux") && !peripheral::opened_on_linux(model) {
                 return false;
             }
@@ -1418,7 +1768,15 @@ impl Manager {
                         continue;
                     }
                 };
-                match corsair::models::find(id) {
+                // A receiver that belongs to one mouse: that mouse, whatever id it reports.
+                let own = corsair::models::behind_own_receiver(receiver.product_id());
+                if own.is_some() {
+                    log::info!(
+                        "Corsair receiver {:04x}, channel {channel}: the mouse reports {id:04x}",
+                        receiver.product_id()
+                    );
+                }
+                match own.or_else(|| corsair::models::find(id)) {
                     Some(model) => {
                         return CorsairTask::open_behind(dev, model, receiver.product_id(), channel).map(Some);
                     }

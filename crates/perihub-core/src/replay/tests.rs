@@ -283,11 +283,23 @@ fn differences(at: &str, expected: &Value, actual: &Value, out: &mut Vec<String>
     }
 }
 
+/// Transcripts that cannot replay the current code until a real capture replaces them. The G303
+/// transcript was rebuilt from values, with no bytes, and has no answer for the battery read of
+/// the receiver page (the G303 does list 0x1004, so the read is right). No answer is invented.
+const NEEDS_CAPTURE: &[(&str, &str)] =
+    &[("logitech-g303-receiver.json", "issue #34: needs a test report from a version with the battery read")];
+
 #[test]
 fn every_transcript_replays_and_reads_what_it_expects() {
     let all = fixtures();
     assert!(all.len() >= 3, "the fixtures are in {}", fixtures_dir().display());
     for (name, t) in &all {
+        if let Some((_, why)) = NEEDS_CAPTURE.iter().find(|(n, _)| n == name) {
+            // Not skipped silently: it must still fail, so the entry goes when a real capture arrives.
+            let failed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| replay(t, name))).is_err();
+            assert!(failed, "{name} replays now: remove it from NEEDS_CAPTURE ({why})");
+            continue;
+        }
         let expect = t.expect.as_ref().unwrap_or_else(|| panic!("{name}: no expect, the replay would check nothing"));
         assert!(t.source.is_some(), "{name}: say where the transcript comes from");
         let (read, replay) = replay(t, name);

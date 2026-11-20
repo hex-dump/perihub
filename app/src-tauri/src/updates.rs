@@ -234,9 +234,14 @@ pub async fn update_install(app: AppHandle) -> Result<(), String> {
     let path = download(&app, &update).await?;
     let bytes = std::fs::read(&path).map_err(|e| format!("cannot read the installer: {e}"))?;
     log::info!("installing PeriHub {}", update.version);
-    // The installer closes PeriHub without asking: give a Corsair mouse back first.
+    // The installer closes PeriHub without asking: give a Corsair mouse and a Logitech keyboard's
+    // lights back first.
     let manager = app.state::<crate::AppState>().manager.clone();
-    let _ = tauri::async_runtime::spawn_blocking(move || manager.release_corsair()).await;
+    let _ = tauri::async_runtime::spawn_blocking(move || {
+        manager.release_corsair();
+        manager.release_logitech(false);
+    })
+    .await;
     // The signature is checked again before the installer runs.
     update.install(bytes).map_err(|e| format!("update failed: {e}"))?;
     // On Windows the installer has already closed PeriHub; elsewhere start the new version.

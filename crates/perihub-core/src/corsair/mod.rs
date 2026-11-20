@@ -32,6 +32,8 @@ mod command {
 
 pub mod property {
     pub const POLLING: u8 = 0x01;
+    /// Battery level in tenths of a percent (0–1000).
+    pub const BATTERY: u8 = 0x0F;
     pub const PRODUCT_ID: u8 = 0x12;
     /// On a receiver: bit n set while the device on channel n is connected.
     pub const CHANNELS: u8 = 0x36;
@@ -39,6 +41,9 @@ pub mod property {
     pub const FIRMWARE: u8 = 0x13;
     pub const DPI_X: u8 = 0x21;
     pub const DPI_Y: u8 = 0x22;
+    /// DPI on both axes, on mice that have no separate X and Y (OpenLinkHub writes it there on the
+    /// KATAR PRO WIRELESS and some other wireless mice).
+    pub const DPI: u8 = 0x20;
     /// On a keyboard: its physical layout (see [`crate::kblayout::corsair`]).
     pub const PHYSICAL_LAYOUT: u8 = 0x41;
 }

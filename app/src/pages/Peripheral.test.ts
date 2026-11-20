@@ -433,6 +433,122 @@ describe("a mouse that cannot report its settings", () => {
   });
 });
 
+const g213: PeripheralInfo = {
+  ...info,
+  key: "046d:c336",
+  vendor_id: 0x046d,
+  product_id: 0xc336,
+  brand: "Logitech",
+  model: "G213 Prodigy",
+  kind: "keyboard",
+  source: "OpenRGB, g810-led, G213Colors and gdevd",
+  profiles: 1,
+  firmware: null,
+  active_profile: null,
+  active_dpi: null,
+  readable: false,
+  can_save: false,
+  settings: { dpi_levels: [], polling_hz: null, options: {}, leds: [] },
+  limits: { dpi: null, polling_hz: [], options: [], leds: [] },
+  buttons: [],
+  details: [
+    ["HID++ version", "4.2"],
+    ["Colour LED effects (8070)", "at index 0c, version 0"],
+  ],
+  blind: [
+    { id: "area-4", label: "Arrows and home keys", kind: { type: "color" }, last: null },
+    {
+      id: "effect",
+      label: "Effect",
+      kind: { type: "choice", values: ["Off", "Colour cycle", "Wave, left to right"] },
+      last: null,
+    },
+    {
+      id: "speed",
+      label: "Time of one cycle (ms), for the effect sent last",
+      kind: { type: "range", min: 1000, max: 20000, step: 100 },
+      last: null,
+    },
+  ],
+};
+
+describe("a keyboard that cannot report its lighting", () => {
+  it("warns about a keyboard, not a mouse, and says how to go back", () => {
+    render(Peripheral, { props: { info: g213, error: null } });
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("The Logitech G213 Prodigy cannot report its settings");
+    expect(text).toContain("until the keyboard is unplugged");
+    expect(text).toContain("its sources say the keyboard forgets what was sent");
+    expect(text).toContain("saved in the keyboard, unplug it and plug it back in");
+    expect(text).not.toContain("mouse");
+    expect(text).not.toContain("rivalcfg");
+    expect(text).toContain("Colour LED effects (8070)");
+    expect(screen.queryByRole("button", { name: "Save to memory…" })).toBeNull();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+  });
+
+  it("sends a colour, an effect and a time one at a time, and refuses a time out of range", async () => {
+    api.peripheralSetBlind.mockResolvedValue(g213);
+    render(Peripheral, { props: { info: g213, error: null } });
+    const send = () => screen.getAllByRole("button", { name: "Send" });
+    await fireEvent.click(send()[0]);
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenLastCalledWith("046d:c336", "area-4", {
+      type: "color",
+      value: "#ffffff",
+    });
+    const effect = screen.getByRole("combobox", { name: "Effect" }) as HTMLSelectElement;
+    effect.value = "Wave, left to right";
+    await fireEvent.change(effect);
+    await fireEvent.click(send()[1]);
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenLastCalledWith("046d:c336", "effect", {
+      type: "choice",
+      value: "Wave, left to right",
+    });
+    const time = screen.getByRole("textbox", {
+      name: "Time of one cycle (ms), for the effect sent last",
+    }) as HTMLInputElement;
+    time.value = "1050";
+    await fireEvent.change(time);
+    await fireEvent.click(send()[2]);
+    expect(document.body.textContent).toContain("from 1000 to 20000 in steps of 100");
+    expect(api.peripheralSetBlind).toHaveBeenCalledTimes(2);
+    time.value = "2500";
+    await fireEvent.change(time);
+    await fireEvent.click(send()[2]);
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenLastCalledWith("046d:c336", "speed", { type: "number", value: 2500 });
+  });
+
+  it("offers nothing to send when the lighting is not where the sources send it", () => {
+    render(Peripheral, {
+      props: {
+        info: { ...g213, editable: false, problem: "the keyboard lists the colour LED effects (8070) at index 0d" },
+        error: null,
+      },
+    });
+    expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
+    expect(document.body.textContent).toContain("at index 0d");
+  });
+
+  it("puts what was sent and the version into the test report", () => {
+    const report = peripheralTest(
+      {
+        ...g213,
+        blind: [{ ...g213.blind[1], last: { type: "choice", value: "Colour cycle" } }],
+      },
+      "0.9.7",
+      "Windows",
+    ).report;
+    expect(report).toContain("Device: Logitech G213 Prodigy (keyboard), USB ID 046d:c336, protocol from OpenRGB, g810-led, G213Colors and gdevd");
+    expect(report).toContain("Settings: this device cannot be read back; PeriHub sends them one at a time");
+    expect(report).toContain("Sent: Effect = Colour cycle");
+    expect(report).toContain("HID++ version: 4.2");
+    expect(report).toContain("Changes: available (experimental)");
+  });
+});
+
 describe("a mouse that stores every change", () => {
   const razer: PeripheralInfo = {
     ...info,

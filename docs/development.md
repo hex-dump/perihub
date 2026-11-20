@@ -132,7 +132,10 @@ send only read commands, experimental otherwise.
 
 ## Confirming a device
 
-A device becomes supported when a tester's report shows it works. The confirmations are data, in one
+A device written from public documentation does not wait for a tester: it goes into main and the next release as
+experimental (read-only where the documentation does not allow checking it, its changes behind the No warranty
+box, the read-back and the undo). It becomes supported when a tester's report shows it works. A test build
+(a `test/…` branch) lets a tester try it earlier; nothing waits for it. The confirmations are data, in one
 table: `crates/perihub-core/src/confirmed.rs`, which lists the USB ids of devices of other brands and
 Corsair devices, and the Logitech memory formats (profile format and sector size), each with the
 issue whose report confirmed it. The catalogue (`cargo xtask gen`) lists a confirmed id as supported,
@@ -165,18 +168,20 @@ boxes that say what PeriHub shows matches are ticked (for a Logitech mouse also 
 Anything doubtful confirms nothing, and a person handles the issue as before. The `Confirm a device`
 workflow (`.github/workflows/confirm.yml`) then runs `cargo xtask confirm`, the core and xtask tests
 and `cargo xtask check`, pushes `confirm/<id>` and opens a pull request that says "Closes #N"; merging
-it is the maintainer's one click. For a device that is only on a test branch it takes that branch as the
-base (input `branch`): the confirmation is pushed to the branch itself and the pull request from it to
-main is opened, or the one open already is reused (a new device is never merged before a tester has
-confirmed it; `tools/test-branch-devices.sh` lists the devices of the test branches). A pull request opened with `GITHUB_TOKEN` does not start CI, which
+it is the maintainer's one click. A new device goes into main and the next release as experimental without
+waiting for a tester, so this is the normal case; a device that only a test branch has (a test build made it
+available before it was merged) takes that branch as the base (input `branch`): the confirmation is pushed to
+the branch itself and the pull request from it to main is opened, or the one open already is reused
+(`tools/test-branch-devices.sh` lists the devices of the test branches). A pull request opened with `GITHUB_TOKEN` does not start CI, which
 main's ruleset requires: close and reopen it. If Actions may not create pull requests in the
 repository, it pushes the branch and comments with the link to open it. To run it by hand:
 **Actions → Confirm a device → Run workflow** with the issue number. `tools/test_triage.py` tests the
 decision.
 
 A device request gets its answer from the same script: the level when the latest release knows the
-device, "can be added directly" (label `ready to add`: a test build will be posted on the issue to try with
-**Test my device**, and a clean report puts the device into the next release) when the id is in
+device, "can be added directly" (label `ready to add`: the device goes into the next release as experimental, with a
+test build earlier if one is made, posted on the issue to try with **Test my device**; a clean report makes it
+supported) when the id is in
 `tools/upstream-seen.json` for a vendor PeriHub has a driver for (libratbag for Logitech, OpenRazer for
 Razer, rivalcfg for SteelSeries), and "needs USB captures" (label `needs captures`, linking [captures.md](captures.md))
 otherwise.
@@ -207,7 +212,7 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 |---|---|---|
 | CI | every push and pull request | tests, formatting, clippy, generated files, CHANGELOG sections; dependency licenses and advisories (`deny.toml`, `tools/check_npm_licenses.py`) |
 | Changelog | pull requests | a change to what PeriHub does needs a CHANGELOG line, or the `no changelog` label |
-| Test build | every push to `test/…`, or by hand | Windows installer, AppImage, .deb and Flatpak as run artifacts, which know their branch and commit (`PERIHUB_BUILD`, shown in the test report's first line; the Flatpak build tries twice); then one comment with the run link on each open issue the branch's commits name (`#30`), unless one already has it |
+| Test build | every push to `test/…`, or by hand; for early testing, nothing waits for it | Windows installer, AppImage, .deb and Flatpak as run artifacts, which know their branch and commit (`PERIHUB_BUILD`, shown in the test report's first line; the Flatpak build tries twice); then one comment with the run link on each open issue the branch's commits name (`#30`), unless one already has it |
 | Tag a release | by hand, on main | tags the version once CI is green, starts Release |
 | Release | the tag | draft release, signature and `latest.json` checks, `SHA256SUMS.txt`, notes from CHANGELOG.md; publishing opens an Announcements discussion |
 | Release comment | a release is published | one comment on each open issue the notes or commits name, saying the version is out; nothing is closed |
@@ -215,7 +220,7 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 | Website | main, a published release | builds and publishes `site/` |
 | Triage | a new issue | answers requests (the device's level, "ready to add" or "needs captures"), asks old test reports to retry, labels brand and kind; a clean test report starts Confirm a device |
 | Refresh test branches | a release is published, or by hand (one `test/…` branch or all) | every `test/…` branch whose own commits name an open issue with `Test: #N` gets main merged in (`tools/refresh-test-branches.sh`: generated files from main and `cargo xtask gen`, files with generated blocks keep both sides' lines, the branch's CHANGELOG entries move under Unreleased with `tools/changelog_carry.py`), then its Test build is started, whose notify job posts the new link and deletes the old one. A branch with any other conflict is left alone and named in the run's summary (the run fails) |
-| Auto-add a device | triage when a request is "ready to add" with an id a generator can write, or by hand (`issue` and `usb`) | for OpenRazer's mice (`tools/triage.py` `MECHANICAL`, `tools/auto_add.py` `GENERATORS`): the id goes in `tools/auto-add.json`, `tools/openrazer_facts.py` writes the table from the source at the commit the table names, `cargo xtask gen` and the checks run, and the commit (`Test: #N`) goes on `test/auto-VVVV-PPPP`; the branch is pushed, Test build is started by hand (a push made with the workflow token starts nothing), and a draft pull request to main is opened. If the generator cannot produce the id or a check fails, nothing is commented and the issue gets the label `needs maintainer`. Nothing is pushed to main, and nothing is merged before a tester has confirmed it |
+| Auto-add a device | triage when a request is "ready to add" with an id a generator can write, or by hand (`issue` and `usb`) | for OpenRazer's mice (`tools/triage.py` `MECHANICAL`, `tools/auto_add.py` `GENERATORS`): the id goes in `tools/auto-add.json`, `tools/openrazer_facts.py` writes the table from the source at the commit the table names, `cargo xtask gen` and the checks run, and the commit (`Test: #N`) goes on `test/auto-VVVV-PPPP`; the branch is pushed, Test build is started by hand (a push made with the workflow token starts nothing), and a pull request to main (not a draft) is opened for the maintainer to merge after CI, so the device is in the next release as experimental; a clean test report makes it supported. If the generator cannot produce the id or a check fails, nothing is commented and the issue gets the label `needs maintainer`. Nothing is pushed to main |
 | Confirm a device | triage, or by hand | `cargo xtask confirm` for the report in an issue, checks, and a pull request that makes the device supported; for a device only on a `test/…` branch, the commit goes to that branch and the pull request is from it to main |
 | Status board | issues, releases, main's catalogue, daily, or by hand | `tools/status_board.py` keeps the pinned, locked issue "Device support: where every request stands": every open device request grouped by where it stands (latest release, next release, test build, being written, needs a recording), edited only when something moved |
 | Reminders | every day | `tools/remind.py`: one reminder when an author has not answered the maintainer's question for 7 days (device requests, test reports and unlabeled issues). Where closing is surely right it says so, and the issue is closed as "not planned" with the label `no answer` 14 days after the question and at least 7 after that warning. Only then: the label `waiting for reporter`, no label but device request, test report, needs captures, mouse, keyboard, question and `brand: …` (so never `ready to add`, `needs maintainer`, `keep open`, bugs, packaging), no open pull request or `test/…` branch names it, not the maintainer's own. When its author comments, Waiting for reporter reopens it |

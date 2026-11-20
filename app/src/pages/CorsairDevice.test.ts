@@ -107,6 +107,14 @@ describe("a Corsair mouse", () => {
     expect(screen.getByText("The SABRE V2 PRO has no lighting.")).toBeTruthy();
   });
 
+  it("only reads a mouse known by its own receiver, and shows its battery", () => {
+    const katar = { ...info, product_id: 0x1b94, receiver: 0x1b94, model: "KATAR PRO WIRELESS", leds: 0, battery: 85 };
+    render(CorsairDevice, { props: { info: katar, error: null } });
+    expect(screen.queryByRole("button", { name: "Try experimental lighting…" })).toBeNull();
+    expect(screen.getByText("PeriHub does not change the lighting of the KATAR PRO WIRELESS yet: it only reads it.")).toBeTruthy();
+    expect(screen.getByText("85%")).toBeTruthy();
+  });
+
   it("talks about keys on a keyboard", async () => {
     render(CorsairDevice, { props: { info: { ...info, model: "K70 CORE RGB", kind: "keyboard", dpi: null }, error: null } });
     await fireEvent.click(screen.getByRole("button", { name: "Try experimental lighting…" }));

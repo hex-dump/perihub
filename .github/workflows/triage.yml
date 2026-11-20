@@ -9,7 +9,8 @@ name: Triage
 # Confirm workflow (confirm.yml); for a device that only a test/* branch has (a report of that branch's test
 # build), with that branch as the base, found by tools/test-branch-devices.sh. A request that is "ready to add"
 # with an id a generator can add without a person (OpenRazer's mice) starts Auto-add (auto-add.yml): the
-# test branch, the test build and a draft pull request are made without anyone. The issue text is only read
+# test branch, the test build and a pull request for the maintainer to merge are made without anyone: the
+# device then goes into the next release as experimental, without waiting for a tester. The issue text is only read
 # by the script, never put in a command.
 on:
   issues:
@@ -96,7 +97,8 @@ jobs:
       branch: ${{ needs.triage.outputs.branch }}
 
   # The id is ready to add and a generator can write it: the support is made on a test branch, built, and
-  # its link is posted on the issue by the test build, with nobody doing anything until the tester's report.
+  # its link is posted on the issue by the test build, and a pull request is opened, with nobody doing anything
+  # until the maintainer merges it (the device ships as experimental, whether or not a tester tries the build).
   auto-add:
     needs: triage
     if: needs.triage.outputs.auto_add != ''

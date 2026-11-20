@@ -335,9 +335,19 @@
           "level": "by_memory_format"
         },
         {
+          "name": "PRO K/DA",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
           "name": "G300",
           "kind": "mouse",
           "level": "supported"
+        },
+        {
+          "name": "G213 Prodigy",
+          "kind": "keyboard",
+          "level": "experimental"
         },
         {
           "name": "G600",
@@ -1080,6 +1090,11 @@
           "level": "experimental"
         },
         {
+          "name": "Viper V3 Pro (Wireless)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
           "name": "Pro Click V2 Vertical Edition (Wired)",
           "kind": "mouse",
           "level": "experimental"
@@ -1111,6 +1126,11 @@
         },
         {
           "name": "Viper V3 Pro SE (Wired)",
+          "kind": "mouse",
+          "level": "experimental"
+        },
+        {
+          "name": "Viper V3 Pro SE (Wireless)",
           "kind": "mouse",
           "level": "experimental"
         },
@@ -1597,6 +1617,81 @@
         {
           "name": "X20",
           "kind": "mouse",
+          "level": "read_only"
+        }
+      ]
+    },
+    {
+      "brand": "EVision",
+      "models": [
+        {
+          "name": "RGB keyboard 320f 505b",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "RGB keyboard 320f 5000",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 320f 502a",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 320f 5064",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 320f 5078",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 320f 5084",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 320f 5041",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 5004",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 5104",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 5204",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 652f",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 7672",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 7698",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 8520",
+          "kind": "keyboard",
           "level": "read_only"
         }
       ]
