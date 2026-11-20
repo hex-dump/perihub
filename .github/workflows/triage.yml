@@ -66,6 +66,10 @@ jobs:
           if [ -s "$RUNNER_TEMP/comment.md" ]; then
             gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"
           fi
+          # A kind label the device is not (the form's dropdown said otherwise than the report or the catalogue).
+          jq -r '.remove_labels // [] | .[]' "$RUNNER_TEMP/triage.json" | while IFS= read -r label; do
+            gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --remove-label "$label" || true
+          done
           jq -r '.labels[]' "$RUNNER_TEMP/triage.json" | while IFS= read -r label; do
             # Brand labels are made the first time a brand comes up. tools/labels-migrate.sh makes the others.
             case "$label" in
