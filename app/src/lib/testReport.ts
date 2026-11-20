@@ -72,8 +72,12 @@ function transcriptLines(transcript: string | undefined): string[] {
   return transcript ? ["Transcript (every request and answer, for a replay test):", transcript.trimEnd()] : [];
 }
 
+/** Connected over Bluetooth Low Energy (the core says which id the mouse has there). */
+const overBluetooth = (mouse: MouseInfo) => typeof mouse.bluetooth === "number";
+
+/** The id a report names: the cable's, the receiver's, or the one the mouse has over Bluetooth. */
 function usbId(mouse: MouseInfo): string {
-  return `${LOGITECH}:${hex(mouse.link?.receiver_id ?? mouse.product_id)}`;
+  return `${LOGITECH}:${hex(mouse.bluetooth ?? mouse.link?.receiver_id ?? mouse.product_id)}`;
 }
 
 /** What a Logitech receiver is called, from its USB product id (as the core names it). */
@@ -84,6 +88,7 @@ export function receiverName(productId: number | undefined): string {
 }
 
 function connection(mouse: MouseInfo): string {
+  if (overBluetooth(mouse)) return "Bluetooth";
   if (!mouse.receiver) return "USB cable";
   if (!mouse.link) return receiverName(undefined);
   const { receiver_id, slot, wireless_id } = mouse.link;
@@ -91,6 +96,7 @@ function connection(mouse: MouseInfo): string {
 }
 
 function support(mouse: MouseInfo): string {
+  if (overBluetooth(mouse)) return "read-only over Bluetooth (nothing is written to a mouse that way yet)";
   if (mouse.experimental) return "experimental (memory format not tested yet)";
   if (mouse.verified) return mouse.writable ? "tested" : "tested, no saves on this connection";
   return mouse.writable_format ? "read-only on this connection" : "read-only (memory format PeriHub cannot write)";
@@ -185,7 +191,7 @@ export function testFormUrl(
     brand: "Logitech",
     model: mouse.model,
     "usb-id": usbId(mouse),
-    connection: mouse.receiver ? receiverName(mouse.link?.receiver_id) : "USB cable",
+    connection: overBluetooth(mouse) ? "Bluetooth" : mouse.receiver ? receiverName(mouse.link?.receiver_id) : "USB cable",
     version,
     os: system.toLowerCase().startsWith("windows") ? "Windows" : "Linux",
     report,

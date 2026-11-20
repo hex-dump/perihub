@@ -23,6 +23,11 @@ Sources studied (read only, for the protocol facts):
 - Issues [#15](https://github.com/hex-dump/perihub/issues/15) and
   [#20](https://github.com/hex-dump/perihub/issues/20): the memory formats of a G502 X Wireless and
   of a G502 HERO with newer firmware.
+- libratbag's `data/devices/logitech-g604.device` (MIT) and its issue
+  [#1477](https://github.com/libratbag/libratbag/issues/1477), which holds the debug log of a G604
+  behind a LIGHTSPEED receiver (every request and answer): everything marked **(G604)**.
+- [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0), `base.py`: how a Bluetooth Low Energy
+  device is addressed and how it answers.
 
 What is not marked **(G502)** comes from the two projects above and has not been seen by PeriHub
 on a real mouse. In particular, PeriHub has never met a mouse without a profile list.
@@ -186,3 +191,72 @@ numbered 0 to 6: 125, 250, 500, 1000, 2000, 4000 and 8000 Hz.
   same): the factory profiles are then shown.
 - Saves wait until a tester confirms the readings, and then follow the memory format, not the
   model, like the others.
+
+## The G604, and a mouse over Bluetooth Low Energy
+
+Issue [#43](https://github.com/hex-dump/perihub/issues/43) asks for a G604, with the id it has over
+Bluetooth.
+
+### Its ids
+
+libratbag's device file names the G604 (driver `hidpp20`) with `usb:046d:4085;bluetooth:046d:b024`.
+`4085` is the id the mouse reports through a LIGHTSPEED receiver (PeriHub's *wireless id*, as for the
+other wireless mice); `b024` is the id of its Bluetooth HID device. The G604 has no data cable, so it
+has no USB id of its own. A mouse that PeriHub names with a Bluetooth id is found by it, and by nothing
+else.
+
+### What a G604 answers **(G604)**
+
+From the debug log of libratbag's issue #1477 (Linux, a G604 behind a `c539` receiver, which PeriHub
+reads the same way as the receiver of any other mouse):
+
+- HID++ 4.2, with 33 features in its table, the root included. The log lists them all, the hidden ones
+  too (`0x0020` reset and `0x00C2` firmware update among them, which PeriHub never calls).
+- `0x1000` battery: `5A 32 00` is 90 %, the next level 50 %, state 0 (discharging).
+- `0x8060` polling rate: the list byte `8B` is 1, 2, 4 and 8 ms; 1 ms (1000 Hz) in use.
+- `0x2201` DPI: 100 to 25600 in steps of 50 (list `0064 E032 6400 0000`); 4750 now, 800 the default.
+- `0x8070` colour LEDs: one zone, the logo, with four effects.
+- `0x8100` onboard profiles: `01 03 01 05 01 10 10 00FF 0A 04` is memory model 1, profile format 3, macro
+  format 1, 5 profiles of which 1 is a factory profile, 16 buttons, 16 sectors of 255 bytes. That is the
+  memory format a G502 X Wireless confirmed in issue #15 (format 3, 255 bytes), so a G604 is read and
+  written like the other mice that use it, by its memory format and not by its name.
+- The profile list (sector 0) enables profiles 1 to 3 and not 4 and 5; profile 3 is the active one
+  (`0x8100` function 4 answers 3). The first profile (sector 1) has 4000 DPI, 1 ms and the name
+  "Firefox", and its 16 buttons are left, right and middle click, a G-shift button, the two side
+  buttons, seven macros (all in sector 6) and three slots with a function PeriHub has no name for
+  (`90 10 FF 00`, `90 11 FF 00`, `90 00 FF 00`): PeriHub keeps those bytes as they are.
+- `crates/perihub-core/tests/fixtures/g604/` holds the first eight sectors of that log, as the mouse
+  answered them, and the tests build the simulated mouse from them. The log has no unit id; the one the
+  tests give the mouse is made up and stays out of the transcript like the others.
+
+Nothing from this list is a PeriHub finding: nobody has run PeriHub on a G604 yet.
+
+### Over Bluetooth
+
+The request of issue #43 (PeriHub 0.9.0 on Windows) lists the Bluetooth G604 as `046d:b024` with four
+HID collections: the mouse (`0001/0002`), a keyboard (`0001/0006`, for the keys the mouse's own buttons
+send), consumer keys (`000C/0001`) and a vendor one, usage page `FF43` usage `0202`. That last one is
+the HID++ collection: Logitech devices that speak HID++ over Bluetooth Low Energy have it.
+
+- **Which node.** Windows gives every collection a path of its own: PeriHub opens `FF43/0202` and not
+  the mouse or keyboard ones. Linux has one hidraw node for the whole device, whose parent HID device is
+  named `0005:046D:B024.NNNN` (the kernel's number for the Bluetooth bus is 5): PeriHub's udev rule
+  opens that node to the user (`KERNELS=="0005:046D:B024.*"`), not by a USB attribute, which a Bluetooth
+  device does not have.
+- **Addressing.** A device that is connected directly is asked on device index `0xFF`, as with its
+  cable. Solaar accepts an answer whose device number is the request's or its complement (`0xFF`
+  asked, `0x00` answered; its comment says "BT device returning 0x00"): PeriHub accepts those too, over
+  Bluetooth only. PeriHub sends only long reports (`0x11`) on every connection.
+- **Asleep, away or silent.** A Bluetooth mouse that stops answering, or that the system can no longer
+  write to, is asleep or out of range, as a mouse behind a receiver that does not answer is: PeriHub asks
+  again when it is back. If its node is there and nothing answers when PeriHub opens it, the mouse's page
+  says that it is connected but does not answer, so that it does not simply stay out of sight.
+- **What is read.** Everything that is read through a receiver: the memory model and its sectors, the
+  profile list, the active profile, DPI, polling rate, LEDs, battery and the feature table. The
+  extended polling rate (`0x8061`) numbers two connections only, the cable and the receiver, so it is
+  not asked over Bluetooth (the G604 has `0x8060`, which has no connection parameter).
+- **Nothing is written.** No call that changes anything is sent over Bluetooth, not even to RAM: no
+  save, no profile switch, no DPI, no change of the onboard mode. Nobody has tried a write that way, and
+  the transport (a Bluetooth HID report, a link that can drop in the middle of a transfer) is not one
+  PeriHub has seen. The mouse page says so and points to the receiver. The test report names the
+  Bluetooth id and the connection, so that a clean report can lift this later.

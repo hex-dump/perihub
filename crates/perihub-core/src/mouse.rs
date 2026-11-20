@@ -62,6 +62,10 @@ pub struct MouseInfo {
     pub pending_undo: bool,
     /// Connected through a LIGHTSPEED receiver instead of its cable.
     pub receiver: bool,
+    /// Connected over Bluetooth Low Energy: the id the mouse has there (the G604's `b024`). PeriHub only reads
+    /// such a mouse (see [`MouseTask::open`]): none of the changes the other connections allow is tried over
+    /// Bluetooth yet.
+    pub bluetooth: Option<u16>,
     /// Which receiver and slot, for test reports.
     pub link: Option<ReceiverLink>,
     /// Another program left the mouse under software control, so its onboard profiles are not in use.
@@ -92,6 +96,14 @@ pub struct MouseInfo {
     pub transcript: String,
 }
 
+impl MouseInfo {
+    /// Connected by radio, through a receiver or over Bluetooth: it has a battery to watch, and the
+    /// polling rate of its wireless connection counts.
+    fn over_radio(&self) -> bool {
+        self.receiver || self.bluetooth.is_some()
+    }
+}
+
 /// What mice with the extended DPI and polling features (0x2202, 0x8061) and format 7 profiles
 /// tell, read-only, for the mouse page and the test report. A read that failed is in `errors`.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
@@ -116,6 +128,9 @@ impl ExtendedReads {
     /// away are kept in the result.
     fn read(dev: &mut HidppDevice) -> Result<Self> {
         let wireless = dev.is_behind_receiver();
+        // The polling rate feature numbers two connections, the cable and the LIGHTSPEED receiver: it says
+        // nothing about Bluetooth, so nothing is asked of it there.
+        let rates = !dev.is_over_bluetooth();
         let mut out = Self::default();
         let noted = |errors: &mut Vec<String>, what: &str, error: Error| match error {
             Error::Unreachable => Err(Error::Unreachable),
@@ -136,7 +151,7 @@ impl ExtendedReads {
                 Err(error) => noted(&mut out.errors, "DPI (0x2202)", error)?,
             }
         }
-        if dev.has_feature(feature::EXTENDED_REPORT_RATE) {
+        if rates && dev.has_feature(feature::EXTENDED_REPORT_RATE) {
             for (name, on_receiver) in [("cable", false), ("receiver", true)] {
                 match dev.extended_report_rates(on_receiver) {
                     Ok((rates, raw)) => {
@@ -205,6 +220,10 @@ pub struct MouseState {
     /// which are then the ones in `profiles`.
     pub profile_list: ProfileList,
 }
+
+/// Said when a change is asked of a mouse connected over Bluetooth.
+const BLUETOOTH_READ_ONLY: &str =
+    "PeriHub only reads a mouse connected over Bluetooth: use its LIGHTSPEED receiver to change it";
 
 /// What changes without PeriHub: the active profile and DPI, which the mouse's own buttons
 /// change, and the battery of a wireless mouse.
@@ -381,7 +400,12 @@ impl MouseTask {
         if onboard.memory_model != 1 || onboard.macro_format != 1 {
             return Err(Error::Protocol("onboard profile memory uses an unknown format".into()));
         }
-        let support = support(model, &onboard, dev.is_behind_receiver(), untested_saves);
+        let mut support = support(model, &onboard, dev.is_behind_receiver(), untested_saves);
+        if dev.is_over_bluetooth() {
+            // Nothing has been written to a mouse over Bluetooth: the connection stays read-only, whatever the
+            // memory format. The profiles, DPI, rates and battery are all read as on the other connections.
+            support = Support { tested: false, experimental: false, writable: false, ..support };
+        }
         dev.grant(support.access());
         dev.set_label(model.name.to_string());
         let info = MouseInfo {
@@ -392,6 +416,7 @@ impl MouseTask {
             experimental: support.experimental,
             pending_undo: false,
             receiver: dev.is_behind_receiver(),
+            bluetooth: if dev.is_over_bluetooth() { model.bluetooth_id } else { None },
             link: None,
             host_mode: false,
             switches_back: model.verified,
@@ -438,7 +463,7 @@ impl MouseTask {
         }
         let device = crate::replay::Device {
             vendor_id: "046d".into(),
-            product_id: format!("{:04x}", model.product_id),
+            product_id: format!("{:04x}", task.info.bluetooth.unwrap_or(model.product_id)),
             name: format!("Logitech {}", model.name),
         };
         task.info.transcript = task.dev.transcript(device, crate::replay::Family::HidppMouse).to_json();
@@ -471,7 +496,7 @@ impl MouseTask {
     fn parse_profile(&self, sector: &[u8]) -> Result<ProfileSettings> {
         let buttons = self.info.onboard.button_count as usize;
         if ExtendedProfile::is_format(self.info.onboard.profile_format) {
-            Ok(ExtendedProfile::parse(sector, buttons)?.settings(self.info.receiver))
+            Ok(ExtendedProfile::parse(sector, buttons)?.settings(self.info.over_radio()))
         } else {
             ProfileSettings::parse(sector, buttons)
         }
@@ -540,6 +565,8 @@ impl MouseTask {
         crate::writes::refuse_if_read_only()?;
         if self.info.writable {
             Ok(())
+        } else if self.info.bluetooth.is_some() {
+            Err(Error::Invalid(BLUETOOTH_READ_ONLY.into()))
         } else {
             Err(Error::Invalid("saving is not supported on this mouse model yet".into()))
         }
@@ -551,6 +578,8 @@ impl MouseTask {
         crate::writes::refuse_if_read_only()?;
         if self.info.verified || self.info.experimental {
             Ok(())
+        } else if self.info.bluetooth.is_some() {
+            Err(Error::Invalid(BLUETOOTH_READ_ONLY.into()))
         } else {
             Err(Error::Invalid("PeriHub only reads this mouse: its memory format is not one it can write yet".into()))
         }
@@ -1355,7 +1384,7 @@ impl DeviceTask for MouseTask {
         }
         // Only a mouse on its receiver has a battery to watch. An error, a sleeping mouse included,
         // waits for the next time: the mode check above ends the thread if the mouse is gone.
-        if self.info.receiver && !self.no_battery && self.battery_read.due(Instant::now()) {
+        if self.info.over_radio() && !self.no_battery && self.battery_read.due(Instant::now()) {
             match self.dev.battery() {
                 Ok(Some(battery)) => {
                     crate::battery::report(&self.battery_id(), &self.info.model, Some(battery.reading()))
@@ -1670,6 +1699,14 @@ mod tests {
         dpi_now: Vec<u8>,
         /// The 0x8061 polling rate index in use, on the cable and through the receiver.
         rate_in_use: [u8; 2],
+        /// 0x2201 function 2: the DPI now and the default one.
+        dpi_sensor: [u16; 2],
+        /// 0x1000 function 0, if the mouse has that battery feature.
+        battery: Vec<u8>,
+        /// 0x8070 functions 0 and 1 (the zones, the first zone), and function 2 for each of its effects.
+        led_info: Vec<u8>,
+        led_zone: Vec<u8>,
+        led_effects: Vec<Vec<u8>>,
     }
 
     impl Sim {
@@ -1717,6 +1754,11 @@ mod tests {
                 dpi_list: vec![0x00, 0x64, 0xE0, 0x32, 0x64, 0x00],
                 dpi_now: vec![0, 0x04, 0xB0, 0x03, 0x20, 0x04, 0xB0, 0x03, 0x20, 2],
                 rate_in_use: [3, 4],
+                dpi_sensor: [800, 800],
+                battery: Vec::new(),
+                led_info: Vec::new(),
+                led_zone: Vec::new(),
+                led_effects: Vec::new(),
             }
         }
 
@@ -1795,7 +1837,14 @@ mod tests {
                 }
                 // 100 to 25600 DPI in steps of 50.
                 (feature::ADJUSTABLE_DPI, 1) => vec![0, 0x00, 0x64, 0xE0, 0x32, 0x64, 0x00],
-                (feature::ADJUSTABLE_DPI, 2) => vec![0, 0x03, 0x20, 0x03, 0x20],
+                (feature::ADJUSTABLE_DPI, 2) => {
+                    let [now, default] = self.dpi_sensor;
+                    vec![0, (now >> 8) as u8, now as u8, (default >> 8) as u8, default as u8]
+                }
+                (feature::BATTERY_STATUS, 0) if !self.battery.is_empty() => self.battery.clone(),
+                (feature::COLOR_LED_EFFECTS, 0) => self.led_info.clone(),
+                (feature::COLOR_LED_EFFECTS, 1) => self.led_zone.clone(),
+                (feature::COLOR_LED_EFFECTS, 2) => self.led_effects.get(p[1] as usize).ok_or(INVALID_ARGUMENT)?.clone(),
                 (feature::ADJUSTABLE_DPI, 3) => vec![],
                 // 1, 2, 4 and 8 ms.
                 (feature::REPORT_RATE, 0) => vec![0x8B],
@@ -1882,6 +1931,38 @@ mod tests {
     const G502_X_WIRELESS: u16 = 0xC098;
     const G502_X_PLUS: u16 = 0xC095;
 
+    /// The simulated mouse as a HID connection. `reply_index`: the device index its answers carry, when it is
+    /// not the one it was asked on (a Bluetooth mouse asked on 0xFF may answer on 0x00).
+    fn sim_transport(sim: Sim, reply_index: Option<u8>) -> (FakeDevice, Arc<Mutex<Sim>>) {
+        let features = sim.features;
+        let sim = Arc::new(Mutex::new(sim));
+        let mouse = sim.clone();
+        let fake = FakeDevice::new(move |request| {
+            let (index, function) = (request[2] as usize, request[3] >> 4);
+            let mut replies = if index == 0 && function == 1 {
+                vec![reply(request, &[4, 2, request[6]])]
+            } else if index == 0 && function == 0 {
+                let id = u16::from_be_bytes([request[4], request[5]]);
+                let found = features.iter().position(|&f| f == id).map_or(0, |i| i as u8);
+                vec![reply(request, &[found])]
+            } else {
+                match mouse.lock().unwrap().answer(features[index], function, &request[4..]) {
+                    Ok(payload) => vec![reply(request, &payload)],
+                    Err(code) => {
+                        let mut error = reply(request, &[]);
+                        error[2..6].copy_from_slice(&[0xFF, request[2], request[3], code]);
+                        vec![error]
+                    }
+                }
+            };
+            if let Some(index) = reply_index {
+                replies.iter_mut().for_each(|r| r[1] = index);
+            }
+            replies
+        });
+        (fake, sim)
+    }
+
     /// PeriHub's connection to the simulated mouse, with its cable.
     fn open_sim(sim: Sim, product_id: u16, untested_saves: bool) -> (MouseTask, Arc<Mutex<Sim>>) {
         open_sim_through(sim, product_id, untested_saves, false)
@@ -1895,28 +1976,7 @@ mod tests {
         untested_saves: bool,
         receiver: bool,
     ) -> (MouseTask, Arc<Mutex<Sim>>) {
-        let features = sim.features;
-        let sim = Arc::new(Mutex::new(sim));
-        let mouse = sim.clone();
-        let fake = FakeDevice::new(move |request| {
-            let (index, function) = (request[2] as usize, request[3] >> 4);
-            if index == 0 && function == 1 {
-                return vec![reply(request, &[4, 2, request[6]])];
-            }
-            if index == 0 && function == 0 {
-                let id = u16::from_be_bytes([request[4], request[5]]);
-                let found = features.iter().position(|&f| f == id).map_or(0, |i| i as u8);
-                return vec![reply(request, &[found])];
-            }
-            match mouse.lock().unwrap().answer(features[index], function, &request[4..]) {
-                Ok(payload) => vec![reply(request, &payload)],
-                Err(code) => {
-                    let mut error = reply(request, &[]);
-                    error[2..6].copy_from_slice(&[0xFF, request[2], request[3], code]);
-                    vec![error]
-                }
-            }
-        });
+        let (fake, sim) = sim_transport(sim, None);
         let dev = if receiver {
             HidppDevice::behind_receiver(fake, None, 1, true).unwrap()
         } else {
@@ -2684,5 +2744,220 @@ mod tests {
         assert!(sim.lock().unwrap().written.is_empty());
         assert!(!task.pending_undo_path().exists());
         forget_test_files();
+    }
+
+    // ---- The G604, from the answers of a real one ----
+
+    const G604: u16 = 0x4085;
+
+    /// The feature table of a G604 through its LIGHTSPEED receiver, as the debug log of libratbag's issue #1477
+    /// (a G604 on Linux, May 2023) shows it: 32 features after the root, hidden ones included. PeriHub never
+    /// calls those that are not in `ALLOWED_FEATURES`: 0x0020 (reset) and 0x00C2 (firmware update) are there.
+    const G604_FEATURES: &[u16] = &[
+        feature::ROOT,
+        0x0001,
+        0x0003,
+        0x0005,
+        0x1D4B,
+        0x0020,
+        feature::BATTERY_STATUS,
+        feature::COLOR_LED_EFFECTS,
+        0x1300,
+        feature::ONBOARD_PROFILES,
+        0x8110,
+        feature::REPORT_RATE,
+        feature::ADJUSTABLE_DPI,
+        0x00C2,
+        0x1802,
+        0x1803,
+        0x1805,
+        0x1806,
+        0x1813,
+        0x1830,
+        0x1890,
+        0x1891,
+        0x1861,
+        0x1801,
+        0x18B1,
+        0x1DF3,
+        0x1E00,
+        0x1EB0,
+        0x1E22,
+        0x2121,
+        0x18C0,
+        0x1814,
+        0x1815,
+    ];
+    /// The type (flags) and version of each G604 feature after the root.
+    const G604_TABLE: &[(u8, u8)] = &[
+        (0, 1),
+        (0, 2),
+        (0, 0),
+        (0, 0),
+        (0, 0),
+        (0, 0),
+        (0, 4),
+        (0, 0),
+        (0, 0),
+        (0, 0),
+        (0, 0),
+        (0, 1),
+        (0, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 4),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 5),
+        (0x60, 5),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0x40, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0, 0),
+        (0x60, 0),
+        (0, 1),
+        (0, 1),
+    ];
+
+    /// A G604 as that log shows it: memory format 3 in 255-byte sectors, 5 profiles with one factory profile,
+    /// 16 buttons, the profile list and profiles 1 to 5 and the macro sectors 6 and 7 as the mouse held them
+    /// (profile 3 active, profiles 4 and 5 disabled), 100 to 25600 DPI in steps of 50 (4750 now, 800 the default), the
+    /// polling intervals 1, 2, 4 and 8 ms, one logo LED zone with four effects, and 90 % of battery. The log
+    /// has no name, firmware or unit id: those are made up (and the unit id stays out of the transcript).
+    fn g604() -> Sim {
+        let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/g604");
+        let mut user: Vec<Vec<u8>> =
+            (0..8).map(|s| std::fs::read(format!("{dir}/sector_{s:04x}.bin")).unwrap()).collect();
+        // The sectors the log did not read.
+        user.resize(16, vec![0xFF; 255]);
+        let onboard = OnboardInfo {
+            memory_model: 1,
+            profile_format: 3,
+            macro_format: 1,
+            profile_count: 5,
+            rom_profile_count: 1,
+            button_count: 16,
+            sector_count: 16,
+            sector_size: 255,
+            has_gshift: true,
+            has_dpi_shift: true,
+        };
+        let mut sim = Sim::new(user, onboard);
+        sim.features = G604_FEATURES;
+        sim.table = G604_TABLE.to_vec();
+        sim.name = "G604 LIGHTSPEED";
+        sim.device_info = vec![0x01, 0x12, 0x34, 0x56, 0x78, 0x00, 0x06, 0xB0, 0x24, 0x40, 0x85, 0, 0, 0, 0, 0];
+        sim.active = [0, 3];
+        sim.dpi_sensor = [4750, 800];
+        sim.battery = vec![0x5A, 0x32, 0x00];
+        sim.led_info = vec![1, 0, 3, 0, 4];
+        sim.led_zone = vec![0, 0, 1, 4];
+        sim.led_effects = vec![
+            vec![0, 0, 0, 0, 0, 0, 0, 0],
+            vec![0, 1, 0, 1, 0, 0, 0, 0],
+            vec![0, 2, 0, 3, 0xC0, 5, 3, 0xE8],
+            vec![0, 3, 0, 0x0A, 0xC1, 5, 0, 0x3C],
+        ];
+        sim
+    }
+
+    #[test]
+    fn a_g604_is_read_through_its_receiver_as_its_own_answers_describe_it() {
+        let (mut task, _) = open_sim_through(g604(), G604, true, true);
+        let info = task.info.clone();
+        assert_eq!((info.model.as_str(), info.product_id), ("G604", 0x4085));
+        assert_eq!((info.onboard.profile_format, info.onboard.sector_size, info.onboard.button_count), (3, 255, 16));
+        assert_eq!((info.dpi.min, info.dpi.max, info.dpi.step), (100, 25600, 50));
+        assert_eq!(info.report_rates_ms, [1, 2, 4, 8]);
+        assert_eq!(info.led_zones.len(), 1);
+        assert_eq!((info.led_zones[0].location, info.led_zones[0].effects.clone()), (1, vec![0, 1, 3, 10]));
+        assert_eq!(info.features.len(), 32, "the whole feature table is listed for the test report");
+        assert!(info.extended.is_none(), "no extended DPI or polling rate: it has 0x2201 and 0x8060");
+        assert_eq!(info.profile_list, ProfileList::Own);
+        // Format 3 in 255-byte sectors is a tested memory: over the radio saves are experimental, with the undo.
+        assert!(info.verified && info.writable && info.experimental && info.receiver && info.bluetooth.is_none());
+
+        let state = task.state().unwrap();
+        assert_eq!(state.active_profile, 3, "the mouse says 3, as the G502 HERO does: a profile number from 1");
+        assert_eq!(state.profiles.iter().map(|p| p.enabled).collect::<Vec<_>>(), [true, true, true, false, false]);
+        let first = &state.profiles[0].settings;
+        assert_eq!((first.report_rate_ms, first.dpi_levels.clone(), first.default_dpi_index), (1, vec![4000], 0));
+        assert_eq!(first.buttons.len(), 16);
+        assert_eq!(first.buttons[0], ButtonAction::Mouse { button: 1 });
+        assert_eq!(first.buttons[2], ButtonAction::Mouse { button: 3 });
+        assert_eq!(first.buttons[3], ButtonAction::Special { function: profile::SpecialFunction::GShift });
+        assert!(matches!(first.buttons[6], ButtonAction::Macro { sector: 6, offset: 0, .. }));
+        // The last three slots hold functions PeriHub has no name for: they are kept as they are.
+        assert_eq!(first.buttons[13], ButtonAction::Raw { bytes: [0x90, 0x10, 0xFF, 0x00] });
+        assert!(first.gshift_buttons.iter().all(|b| *b == ButtonAction::Disabled));
+        assert_eq!(state.profiles[2].settings.dpi_levels, [4750]);
+        assert_eq!(state.profiles[4].settings.dpi_levels, [400, 800, 1600, 3200]);
+        assert_eq!(state.profiles[4].settings.default_dpi_index, 1);
+        assert_eq!(state.profiles[1].settings.buttons[6], ButtonAction::Key { modifiers: 0x00, key: 0x6C });
+
+        let live = task.live().unwrap();
+        assert_eq!(live.battery, Some(Battery { percent: 90, estimated: false, state: BatteryState::Discharging }));
+        assert_eq!((live.active_profile, live.active_dpi_index, live.current_dpi), (3, 0, 4750));
+        forget_test_files();
+    }
+
+    /// Opens the simulated mouse over Bluetooth Low Energy, where its answers come on device index 0x00.
+    fn open_sim_over_bluetooth(sim: Sim, product_id: u16, untested_saves: bool) -> (MouseTask, Arc<Mutex<Sim>>) {
+        let (fake, sim) = sim_transport(sim, Some(0x00));
+        let dev = HidppDevice::over_bluetooth(fake, true).unwrap();
+        let task = MouseTask::open(dev, model_of(product_id), untested_saves).unwrap();
+        (task, sim)
+    }
+
+    #[test]
+    fn a_g604_over_bluetooth_is_read_like_through_its_receiver_and_never_changed() {
+        let model = models::find_bluetooth(0xB024).unwrap();
+        assert_eq!(model.product_id, G604);
+        // Even with saves allowed in the interface, and a memory format that was tested.
+        let (mut task, sim) = open_sim_over_bluetooth(g604(), G604, true);
+        let info = task.info.clone();
+        assert_eq!((info.model.as_str(), info.bluetooth, info.receiver), ("G604", Some(0xB024), false));
+        assert!(!info.verified && !info.writable && !info.experimental);
+        assert!(info.writable_format, "the memory is one PeriHub can write: only the connection is the reason");
+        assert_eq!((info.dpi.min, info.dpi.max, info.dpi.step), (100, 25600, 50));
+        assert_eq!(info.report_rates_ms, [1, 2, 4, 8]);
+        assert_eq!(info.profile_list, ProfileList::Own);
+        let state = task.state().unwrap();
+        assert_eq!((state.active_profile, state.profiles.len()), (3, 5));
+        assert_eq!(state.profiles[0].settings.dpi_levels, [4000]);
+        // The battery is read, as through a receiver.
+        let live = task.live().unwrap();
+        assert_eq!(live.battery.map(|b| b.percent), Some(90));
+        assert_eq!(live.current_dpi, 4750);
+
+        // The transcript for the test report names the Bluetooth id, and holds no unit id.
+        assert!(info.transcript.contains("b024") && !info.transcript.contains("12 34 56 78"));
+
+        // Nothing is changed, and what is asked is refused before it is sent.
+        assert!(task.set_active_profile(2).unwrap_err().to_string().contains("Bluetooth"));
+        assert!(task.set_active_dpi_index(1).is_err());
+        assert!(task.preview_dpi(1600).is_err());
+        assert!(task.save_profile(1, &edited(&state, 1)).is_err());
+        assert!(task.set_profile_enabled(2, false).is_err());
+        {
+            let mouse = sim.lock().unwrap();
+            assert!(mouse.written.is_empty() && mouse.selected.is_empty());
+        }
+        // Not even the DPI is written to the sensor, or the mode of the mouse switched.
+        assert!(task.dev.set_sensor_dpi(0, 1600).is_err());
+        assert!(task.dev.set_onboard_mode(HOST_MODE).is_err());
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_mouse_over_bluetooth_that_does_not_answer_is_asleep_not_broken() {
+        let silent = FakeDevice::new(|_| Vec::new());
+        // The ping of the connection finds nobody: not an error to show, the manager asks again.
+        assert!(matches!(HidppDevice::over_bluetooth(silent, true), Err(Error::Unreachable)));
     }
 }

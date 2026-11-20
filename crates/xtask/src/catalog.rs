@@ -58,6 +58,8 @@ pub struct Device {
     pub product_ids: Vec<u16>,
     /// The id a Logitech mouse reports through a LIGHTSPEED receiver.
     pub wireless_id: Option<u16>,
+    /// The id a Logitech mouse has over Bluetooth Low Energy, where Linux has a hidraw node of its own for it.
+    pub bluetooth_id: Option<u16>,
     pub level: Level,
     pub access: Access,
     /// The driver's own description of the model, for the device list.
@@ -137,6 +139,7 @@ fn device(
         vendor_id,
         product_ids,
         wireless_id: None,
+        bluetooth_id: None,
         level,
         access,
         model,
@@ -203,7 +206,9 @@ pub fn devices_with(confirmed: &dyn Fn(u16, u16) -> bool) -> Vec<Device> {
             access,
             Source::Logitech,
         ));
-        list.last_mut().unwrap().wireless_id = m.wireless_id;
+        let last = list.last_mut().unwrap();
+        last.wireless_id = m.wireless_id;
+        last.bluetooth_id = m.bluetooth_id;
     }
     for m in direct::DIRECT {
         let kind = match m.kind {
