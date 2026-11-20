@@ -41,11 +41,12 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      # cargo xtask gen builds perihub-core, which needs libudev.
+      # cargo xtask gen builds perihub-core and links what the app links (libudev, xkbcommon...): the same
+      # packages as CI, so a new system library in main needs no change here.
       - name: System dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libudev-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libudev-dev libxkbcommon-dev patchelf
 
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
