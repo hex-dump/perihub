@@ -3,8 +3,9 @@
 How PeriHub talks to the Logitech G213 Prodigy gaming keyboard (`046d:c336`). The keyboard speaks Logitech's HID++ 2.0 on a
 vendor collection of its own; its lighting has five areas, a few effects built into the keyboard, and no per-key colours.
 The code is `crates/perihub-core/src/peripheral/logitech_g213.rs`, written from this page alone. None of it has been
-tried on a real keyboard yet: a test build of PeriHub for [issue #96](https://github.com/hex-dump/perihub/issues/96) is
-meant to show whether it matches.
+tried on a real keyboard yet, so the keyboard ships as experimental: the first test report for
+[issue #96](https://github.com/hex-dump/perihub/issues/96) (from a test build, or from the release that has it) is meant
+to show whether it matches.
 
 ## Sources
 
@@ -148,9 +149,9 @@ brightness sends the effect that moved last again with the new value. Each setti
 sent (range and steps), by the core as well as by the page. In read-only mode, or on a connection that may not change
 anything, none is sent.
 
-## What the test build is meant to answer
+## What the first test report is meant to answer
 
-The test report of the build carries every request and answer. It should show: that the keyboard answers the version
+The test report carries every request and answer. It should show: that the keyboard answers the version
 request on this collection, at which index it lists `8070` and the others, what it answers to each lighting command (an
 error code would show in the answer), and, from the person who tried it, what each effect did and whether the brightness
 and the time had any effect.

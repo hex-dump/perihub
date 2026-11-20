@@ -525,7 +525,7 @@ def build_run(issue, branches=BRANCHES, latest="0.9.4", devices=NO_KERIS, curren
 
 
 class TestBuilds(unittest.TestCase):
-    """A new device is on a test/* branch until a tester confirms it with that branch's test build."""
+    """A device only a test/* branch has (not on main yet) is confirmed on it by a clean report of its test build."""
 
     def test_the_first_line_of_a_test_build_parses(self):
         self.assertEqual(BUILT.splitlines()[0], f"PeriHub 0.9.5 (test build {BUILD}) on linux x86_64")
@@ -785,6 +785,52 @@ class OnTestBranch(unittest.TestCase):
         self.assertIn("built automatically", self.run_branch("1532:0099")["comment"])
 
 
+class ReleaseRule(unittest.TestCase):
+    """A device written from public documentation goes into the next release as experimental, without waiting for a
+    tester: a test build comes earlier when one is made, and a clean report makes the device supported."""
+
+    TEXTS = {
+        "a maintainer writes it": triage.TEST_BUILD_STEPS,
+        "written automatically": triage.AUTO_TEST_BUILD_STEPS,
+        "already on a test branch": triage.ON_BRANCH_STEPS,
+    }
+
+    def test_every_answer_says_it_goes_into_the_next_release_without_waiting(self):
+        for name, text in self.TEXTS.items():
+            with self.subTest(name):
+                self.assertIn("next release", text)
+                self.assertIn("experimental", text)
+                self.assertIn("**supported**", text)
+                self.assertIn("**Test my device**", text)
+                self.assertIn("test build", text)
+
+    def test_no_answer_says_a_tester_must_confirm_it_first(self):
+        for name, text in self.TEXTS.items():
+            with self.subTest(name):
+                for old in ("draft", "never merged", "until a tester", "before a tester", "goes into the next release. Nothing more"):
+                    self.assertNotIn(old, text)
+                # The next release comes before the confirmation, not after it.
+                self.assertLess(text.index("next release"), text.index("confirmed"))
+
+    def test_the_answers_to_a_request_carry_it(self):
+        # A Logitech id libratbag lists (a maintainer writes it), an OpenRazer one (written automatically) and one a
+        # test branch has already.
+        branches = {"test/evision": [{"usb_ids": ["320f:505b"]}]}
+        for usb in ("046d:4099", "1532:0099", "320f:505b"):
+            with self.subTest(usb=usb):
+                comment = triage.triage(req(usb), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM, branches=branches)["comment"]
+                self.assertIn("next release", comment)
+                self.assertIn("experimental", comment)
+                self.assertNotIn("draft", comment)
+                self.assertNotIn("until a tester", comment)
+
+    def test_the_module_says_what_ready_to_add_means(self):
+        doc = " ".join(triage.__doc__.split())
+        self.assertIn('"Ready to add" means it is added to the next release as experimental', doc)
+        self.assertIn("nothing waits for a tester", doc)
+        self.assertNotIn("never merged before a tester", doc)
+
+
 class AutoAdd(unittest.TestCase):
     """"Mechanically addable": a project whose table a generator writes lists the id, nobody has it yet."""
 
@@ -812,7 +858,7 @@ class AutoAdd(unittest.TestCase):
                 self.assertNotIn("written and built automatically", result["comment"])
                 self.assertIn("posted on this issue automatically", result["comment"])
                 # No promise of an automatic build: a maintainer writes these.
-                self.assertIn("A maintainer adds it on a test branch", result["comment"])
+                self.assertIn("A maintainer adds it, as read-only or experimental, to the **next release**", result["comment"])
 
     def test_known_ids_and_ids_nobody_lists_are_not(self):
         for usb in ("1532:0078", "dead:beef"):

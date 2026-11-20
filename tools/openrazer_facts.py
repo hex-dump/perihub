@@ -28,7 +28,7 @@ ALLOW_FILE = Path(__file__).with_name("auto-add.json")
 def allowed_pids(path=ALLOW_FILE):
     """Razer mice (product ids) the allow list tools/auto-add.json asks for even though they are receivers,
     docks or wireless dongles, which are otherwise left out: tools/auto_add.py adds an id there when a
-    request for it is ready to add, and a test build with it is made."""
+    request for it is ready to add (the pull request it makes puts the device into the next release as experimental)."""
     if not path.exists():
         return set()
     ids = json.loads(path.read_text())["allow"]
