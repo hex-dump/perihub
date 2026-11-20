@@ -131,7 +131,13 @@
 
 <header class="page-head">
   <h1>{info ? name : "Device"}</h1>
-  {#if info}<Status kind={info.editable ? "experimental" : "readonly"} label={info.editable ? "Experimental" : "Read-only"} chip />{/if}
+  {#if info}
+    {#if info.tested}
+      <Status kind="ok" label="Tested" chip />
+    {:else}
+      <Status kind={info.editable ? "experimental" : "readonly"} label={info.editable ? "Experimental" : "Read-only"} chip />
+    {/if}
+  {/if}
 </header>
 
 {#if connectError && !info}<div class="notice error" role="alert">{connectError}</div>{/if}
@@ -144,9 +150,15 @@
     </div>
   {/if}
   <div class="notice info">
-    <b>Nobody has tried PeriHub on the {name} yet.</b> PeriHub knows its protocol from {info.source}: what is below was
-    read from the device{#if info.editable}, and changing it is experimental{/if}. Whether it matches your device or
-    not, please send a test report.
+    {#if info.tested}
+      <b>A tester confirmed the {name} on real hardware.</b> PeriHub knows its protocol from {info.source}. Changes keep
+      their safety checks for now: a backup, a read-back, and the 15-second undo. If something does not match your
+      device, please send a test report.
+    {:else}
+      <b>Nobody has tried PeriHub on the {name} yet.</b> PeriHub knows its protocol from {info.source}: what is below was
+      read from the device{#if info.editable}, and changing it is experimental{/if}. Whether it matches your device or
+      not, please send a test report.
+    {/if}
     {#if info.pending_undo}
       <p class="small"><b>A change to this device was not kept</b> before PeriHub closed or it was unplugged.</p>
     {/if}

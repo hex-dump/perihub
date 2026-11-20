@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use serde::Serialize;
 
 use crate::config::{self, BackupEntry, write_backup};
+use crate::confirmed;
 use crate::conflicts;
 use crate::error::{Error, HidppErrorCode, Result};
 use crate::hidpp::macros::{self, Macro, Packer};
@@ -21,17 +22,17 @@ use crate::worker::DeviceTask;
 
 /// Profile formats PeriHub writes, with one layout for both, as libratbag and Solaar do. The others
 /// can be read but not written.
-const WRITABLE_PROFILE_FORMATS: &[u8] = &[2, 3];
+pub const WRITABLE_PROFILE_FORMATS: &[u8] = &[2, 3];
 /// Sector sizes PeriHub writes: 256 bytes, or 255 with the CRC one byte earlier (other mice, and
 /// newer G502 HERO firmware: issue #20).
-const WRITABLE_SECTOR_SIZES: std::ops::RangeInclusive<usize> =
+pub const WRITABLE_SECTOR_SIZES: std::ops::RangeInclusive<usize> =
     profile::MIN_WRITE_SECTOR_SIZE..=profile::VERIFIED_SECTOR_SIZE;
-/// Memories PeriHub has saved to on real mice, with their USB cable: (profile format, sector size).
-/// Format 2 in 256-byte sectors on the G502 HERO, format 3 in 255-byte sectors on the G502 X
-/// Wireless of issue #15. The memory format decides how a save is laid out, not the model: any
-/// mouse whose memory reports one of these counts as tested. The same model can change format
-/// with its firmware, so it is read from the mouse every time.
-const TESTED_MEMORY: &[(u8, u16)] = &[(2, 256), (3, 255)];
+/// Whether a memory format (profile format, sector size) was saved to on a real mouse, with its USB
+/// cable: the table is `confirmed::MEMORY`, where `cargo xtask confirm` adds the formats testers
+/// confirm. The memory format decides how a save is laid out, not the model.
+fn tested_memory(profile_format: u8, sector_size: u16) -> bool {
+    confirmed::memory_tested(profile_format, sector_size)
+}
 const ONBOARD_MODE: u8 = 1;
 const HOST_MODE: u8 = 2;
 /// How often the mouse is checked for another program having taken control of it.
@@ -273,7 +274,7 @@ impl Support {
 }
 
 /// What PeriHub does with a mouse, from the memory format it reports:
-/// - a tested memory (see [`TESTED_MEMORY`]), or a model tested as a whole: supported;
+/// - a tested memory (see [`tested_memory`]), or a model tested as a whole: supported;
 /// - another memory PeriHub can write: experimental saves, if `untested_saves` (the interface asks
 ///   whether to keep each one; the command line never saves to such a mouse);
 /// - any other memory: read-only.
@@ -284,7 +285,7 @@ impl Support {
 pub fn support(model: &MouseModel, onboard: &OnboardInfo, receiver: bool, untested_saves: bool) -> Support {
     let known = WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
         && WRITABLE_SECTOR_SIZES.contains(&(onboard.sector_size as usize));
-    let tested = model.verified || (known && TESTED_MEMORY.contains(&(onboard.profile_format, onboard.sector_size)));
+    let tested = model.verified || (known && tested_memory(onboard.profile_format, onboard.sector_size));
     let writable = known && if receiver { tested && untested_saves } else { tested || untested_saves };
     Support { tested, experimental: writable && (!tested || receiver), writable, writable_format: known }
 }

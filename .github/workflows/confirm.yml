@@ -1,0 +1,273 @@
+name: Confirm a device
+
+# A test report with nothing wrong in it confirms a device (or a Logitech memory format): this opens
+# a pull request that makes it supported, for the maintainer to look at and merge with one click.
+# Started by the triage workflow when tools/triage.py says a new report confirms something, or by
+# hand (Actions → Confirm a device → Run workflow) with the number of the issue.
+#
+# The decision is made again here from the issue, by the same script: the only thing passed in is the
+# issue number. What the script finds (a USB id or a memory format) is checked for its shape before
+# it is used, and the issue text is never put in a command. The pull request says what was confirmed
+# and quotes nothing from the issue.
+#
+# A pull request made with GITHUB_TOKEN does not start CI, so the checks run here before anything is
+# pushed. If the repository does not let Actions create pull requests (Settings → Actions → General),
+# the branch is pushed and the issue gets a comment with the link to open it.
+#
+# A new device is never merged before a tester has confirmed it, so it is on a test/<name> branch, not on
+# main, until then. For a report of that branch's test build, the base is that branch (input "branch", which
+# triage.py finds again here and which must agree): the confirmation is committed and pushed to the
+# branch itself, and the pull request from it to main is opened (or the one open already is reused, or its
+# link is commented), for the maintainer to merge. Everything else is as above, with main as the base and
+# a confirm/<id> branch.
+on:
+  workflow_call:
+    inputs:
+      issue:
+        description: Number of the issue with the test report
+        type: string
+        required: true
+      branch:
+        description: The test/… branch that has the device, when it is only there (empty for a device on main or in a release)
+        type: string
+        required: false
+        default: ""
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Number of the issue with the test report
+        type: string
+        required: true
+      branch:
+        description: The test/… branch that has the device, when it is only there (empty for a device on main or in a release)
+        type: string
+        required: false
+        default: ""
+
+permissions: {}
+
+jobs:
+  decide:
+    name: Does the report confirm something?
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      kind: ${{ steps.decide.outputs.kind }}
+      target: ${{ steps.decide.outputs.target }}
+      name: ${{ steps.decide.outputs.name }}
+      branch: ${{ steps.decide.outputs.branch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          sparse-checkout: |
+            tools/triage.py
+            tools/upstream-seen.json
+            tools/test-branch-devices.sh
+            site/devices.json
+            crates/perihub-core/src/confirmed.rs
+          sparse-checkout-cone-mode: false
+
+      - name: Read the report
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ inputs.issue }}
+          ASKED_BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          case "$ISSUE" in ''|*[!0-9]*) echo "::error::The issue must be a number."; exit 1 ;; esac
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE" > "$RUNNER_TEMP/issue.json"
+          if jq -e '.pull_request != null' "$RUNNER_TEMP/issue.json" > /dev/null; then
+            echo "::error::#$ISSUE is a pull request."
+            exit 1
+          fi
+          jq '{issue: .}' "$RUNNER_TEMP/issue.json" > "$RUNNER_TEMP/event.json"
+          latest=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          # The devices the latest release knows, as the triage workflow does.
+          gh api "repos/$GITHUB_REPOSITORY/contents/site/devices.json?ref=$latest" -H "Accept: application/vnd.github.raw" > "$RUNNER_TEMP/released.json"
+          bash tools/test-branch-devices.sh "$RUNNER_TEMP/branches.json"
+          python3 tools/triage.py "$RUNNER_TEMP/event.json" "${latest#v}" "$RUNNER_TEMP/released.json" "$RUNNER_TEMP/branches.json" > "$RUNNER_TEMP/triage.json"
+
+          # The branch the device is on, found again here: the input only has to agree with it.
+          branch=$(jq -r '.confirm.branch // empty' "$RUNNER_TEMP/triage.json")
+          if [ -n "$branch" ]; then
+            [[ "$branch" =~ ^test/[A-Za-z0-9._/-]+$ ]] || { echo "::error::Not a test branch."; exit 1; }
+          fi
+          if [ -n "$ASKED_BRANCH" ] && [ "$ASKED_BRANCH" != "$branch" ]; then
+            echo "::error::The report points at ${branch:-no test branch}, not at $ASKED_BRANCH: nothing is done."
+            exit 1
+          fi
+
+          usb=$(jq -r '.confirm.usb // empty' "$RUNNER_TEMP/triage.json")
+          memory=$(jq -r '(.confirm.memory_format // empty) | map(tostring) | join(":")' "$RUNNER_TEMP/triage.json")
+          if [ -n "$usb" ]; then
+            [[ "$usb" =~ ^[0-9a-f]{4}:[0-9a-f]{4}$ ]] || { echo "::error::Not a USB id."; exit 1; }
+            name=$(jq -r --arg id "$usb" '[.devices[] | select(.usb_ids | index($id))][0] | "\(.brand) \(.name)"' site/devices.json)
+            [ -z "$branch" ] || name=$(jq -r --arg id "$usb" '[.[][] | select(.usb_ids | index($id))][0] | "\(.brand) \(.name)"' "$RUNNER_TEMP/branches.json")
+            { echo "kind=usb"; echo "target=$usb"; echo "name=$name"; echo "branch=$branch"; } >> "$GITHUB_OUTPUT"
+          elif [ -n "$memory" ]; then
+            [[ "$memory" =~ ^[0-9]{1,3}:[0-9]{1,4}$ ]] || { echo "::error::Not a memory format."; exit 1; }
+            { echo "kind=memory"; echo "target=$memory"; echo "name=Logitech memory format $memory"; } >> "$GITHUB_OUTPUT"
+          else
+            echo "The report in #$ISSUE confirms nothing: nothing to do."
+          fi
+
+  open:
+    name: Open the pull request
+    needs: decide
+    if: needs.decide.outputs.target != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    concurrency:
+      group: confirm-${{ inputs.issue }}
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE: ${{ inputs.issue }}
+      KIND: ${{ needs.decide.outputs.kind }}
+      TARGET: ${{ needs.decide.outputs.target }}
+      NAME: ${{ needs.decide.outputs.name }}
+      # The test/… branch that has the device, if it is only there: the base, and where the commit goes.
+      BASE_BRANCH: ${{ needs.decide.outputs.branch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.decide.outputs.branch || 'main' }}
+
+      # Someone else's confirmation of the same thing is already waiting: nothing is made twice.
+      - name: Branch name
+        id: branch
+        run: |
+          set -euo pipefail
+          case "$ISSUE" in ''|*[!0-9]*) echo "::error::The issue must be a number."; exit 1 ;; esac
+          shape='^([0-9a-f]{4}:[0-9a-f]{4}|[0-9]{1,3}:[0-9]{1,4})$'
+          [[ "$TARGET" =~ $shape ]] || { echo "::error::Not a USB id or a memory format."; exit 1; }
+          if [ -n "$BASE_BRANCH" ]; then
+            # The device is on a test branch: the commit goes there, nothing else is made.
+            [[ "$BASE_BRANCH" =~ ^test/[A-Za-z0-9._/-]+$ ]] || { echo "::error::Not a test branch."; exit 1; }
+            [ "$KIND" = usb ] || { echo "::error::Only a device is confirmed on a test branch."; exit 1; }
+            echo "name=$BASE_BRANCH" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          slug=$(printf '%s' "$TARGET" | tr ':' '-')
+          if [ "$KIND" = memory ]; then slug="memory-$slug"; fi
+          echo "name=confirm/$slug" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --heads origin "confirm/$slug" > /dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "confirm/$slug is already there: nothing to open."
+          fi
+
+      - name: System dependencies
+        if: steps.branch.outputs.exists != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libudev-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        if: steps.branch.outputs.exists != 'true'
+        with:
+          components: rustfmt
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        if: steps.branch.outputs.exists != 'true'
+
+      # The issue's text goes into a file, never into a command: xtask reads the transcript of the test
+      # report from it (docs/replay.md), and makes a replay fixture when the transcript is whole, read-only
+      # and the device's own.
+      - name: Confirm
+        if: steps.branch.outputs.exists != 'true'
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE" --jq '.body // ""' > "$RUNNER_TEMP/body.md"
+          if [ "$KIND" = usb ]; then
+            cargo xtask confirm "$TARGET" --issue "$ISSUE" --report "$RUNNER_TEMP/body.md"
+          else
+            cargo xtask confirm --memory-format "$TARGET" --issue "$ISSUE" --report "$RUNNER_TEMP/body.md"
+          fi
+
+      # What CI would check, since it does not start for a pull request opened here. A replay fixture that
+      # does not replay is left out (it is the only new file there can be): the confirmation stands without it.
+      - name: Checks
+        if: steps.branch.outputs.exists != 'true'
+        run: |
+          set -euo pipefail
+          cargo fmt --all --check
+          if ! cargo test -p perihub-core -p xtask; then
+            fixtures=$(git ls-files --others --exclude-standard -- crates/perihub-core/tests/fixtures/transcripts)
+            [ -n "$fixtures" ] || exit 1
+            echo "::warning::The replay fixture from the report does not replay: it is left out."
+            printf '%s\n' "$fixtures" | while IFS= read -r f; do rm -f -- "$f"; done
+            cargo test -p perihub-core -p xtask
+          fi
+          cargo xtask check
+          python3 tools/release.py lint
+
+      - name: Push the branch and open the pull request
+        if: steps.branch.outputs.exists != 'true'
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # A device on a test branch is confirmed on that branch, which is checked out; the rest on a branch of its own.
+          [ -n "$BASE_BRANCH" ] || git switch -c "$BRANCH"
+          git add -A
+          fixture=$(git diff --cached --name-only -- crates/perihub-core/tests/fixtures/transcripts | head -n 1)
+          git commit -m "Confirm $NAME (#$ISSUE)" \
+            -m "The test report in #$ISSUE had no errors, and what PeriHub shows matched. Made by the confirm workflow: cargo xtask confirm."
+          git push origin "HEAD:refs/heads/$BRANCH"
+
+          {
+            if [ -n "$BASE_BRANCH" ]; then
+              echo "Adds **$NAME** (\`$TARGET\`), confirmed on real hardware by a tester with the test build of this branch: the test report is in #$ISSUE. The branch has the device's support; the last commit confirms it, so it is supported in the next release once this is merged. A new device is not merged before a tester has confirmed it."
+            else
+              echo "Confirms **$NAME** (\`$TARGET\`) on real hardware, from the test report in #$ISSUE."
+            fi
+            echo
+            echo "The triage script found a report made by PeriHub's own form, from the latest version, with no error or problem line, nothing under \"Messages and errors\" or \"What is wrong or missing\", and the boxes ticked that say what PeriHub shows matches. It is not proof: look at the report before merging. If it is wrong, close this pull request."
+            echo
+            echo "Changed by \`cargo xtask confirm\`: \`crates/perihub-core/src/confirmed.rs\`, the files \`cargo xtask gen\` writes, and the line under \"New devices\" in \`CHANGELOG.md\`. The workflow ran the formatting check, the core and xtask tests, \`cargo xtask check\` and the CHANGELOG lint before pushing; CI does not start on a pull request made by a workflow (and main's ruleset needs it): close and reopen the pull request, or push to the branch, to start it."
+            if [ -n "$fixture" ]; then
+              echo
+              echo "It also adds a replay test from the transcript at the end of the report: \`$fixture\`. Its \`expect\` holds only what the confirmation is about. Before merging, read it for anything that tells the tester's unit apart, and add the values the tester confirmed ([docs/replay.md](https://github.com/$GITHUB_REPOSITORY/blob/main/docs/replay.md))."
+            fi
+            echo
+            echo "Closes #$ISSUE"
+          } > "$RUNNER_TEMP/pr.md"
+
+          title="Confirm $NAME (#$ISSUE)"
+          [ -z "$BASE_BRANCH" ] || title="Add $NAME, confirmed by a tester (#$ISSUE)"
+          # A pull request from the test branch may be open already: it is reused (the commit is on it now).
+          existing=""
+          [ -z "$BASE_BRANCH" ] || existing=$(gh pr list --base main --head "$BRANCH" --state open --json url --jq '.[0].url // empty')
+          if [ -n "$existing" ]; then
+            echo "$existing is open already: reused."
+            url="$existing"
+          else
+            url=$(gh pr create --base main --head "$BRANCH" --title "$title" --body-file "$RUNNER_TEMP/pr.md" 2> "$RUNNER_TEMP/pr-error.txt") || url=""
+          fi
+          if [ -n "$url" ]; then
+            echo "Pull request: $url"
+            {
+              echo "Thanks for testing! Your report had no errors and what PeriHub showed matched your device, so **$NAME** is confirmed: $url makes it supported, and it will be in the next release once that is merged."
+              echo
+              echo "<sub>Automatic comment from the repository's confirm workflow.</sub>"
+            } > "$RUNNER_TEMP/comment.md"
+          else
+            # Actions may not be allowed to create pull requests in this repository: the branch is there.
+            cat "$RUNNER_TEMP/pr-error.txt" || true
+            echo "::warning::The pull request could not be created: the issue gets the link to open it."
+            {
+              echo "Thanks for testing! Your report had no errors and what PeriHub showed matched your device, so **$NAME** is ready to be confirmed: the change is on the branch \`$BRANCH\`. [Open the pull request](https://github.com/$GITHUB_REPOSITORY/compare/main...$BRANCH?expand=1), and it will be supported in the next release once it is merged."
+              echo
+              echo "<sub>Automatic comment from the repository's confirm workflow.</sub>"
+            } > "$RUNNER_TEMP/comment.md"
+          fi
+          gh issue comment "$ISSUE" --body-file "$RUNNER_TEMP/comment.md"

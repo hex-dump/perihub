@@ -6,3 +6,4 @@ __pycache__/
 app/preview-dist/
 docs/screenshots/
 docs/social-preview.png
+.perihub-build

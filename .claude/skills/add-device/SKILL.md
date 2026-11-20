@@ -5,6 +5,15 @@ description: Add support for a new device or brand to PeriHub, from sources to t
 
 # Adding a device to PeriHub
 
+**First check whether it is done already.** A request for an id that a generator writes (today: a Razer mouse
+OpenRazer lists; `tools/triage.py` `MECHANICAL`) is added by the Auto-add workflow with nobody doing anything: it
+makes the branch `test/auto-VVVV-PPPP` (`tools/auto_add.py`: the id in `tools/auto-add.json`, the generator, `cargo xtask
+gen`, the checks, a `Test: #N` commit), starts the test build and opens a draft pull request. Look for that branch
+and for the label `needs maintainer` on the issue: the label means the generator could not produce the id (a
+laptop, a keyboard, a mouse with no command PeriHub knows, an id newer than the pinned commit) or a check failed,
+so the rest of this page applies, by hand. Do not make a second branch for an id that has one. Never bump a
+generator's pinned commit just to add one id: it brings every new id and changed fact.
+
 Follow these steps in order. Ask the user before anything that publishes (push, issue comments,
 releases); the test build reply on an issue is already agreed.
 
@@ -17,7 +26,8 @@ releases); the test build reply on an issue is already agreed.
 
 ## 2. Sources, and how to use them
 
-- Allowed: answers from the device, USB captures (USBPcap/Wireshark) by testers or published by other
+- Allowed: answers from the device, USB captures (USBPcap/Wireshark; testers follow `docs/captures.md`,
+  link it to them) by testers or published by other
   projects, projects that tried the commands on hardware, the maker's published specifications.
 - Never: facts from decompiling or reading the official software or its web drivers, even when a
   third party did it.
@@ -70,16 +80,67 @@ two once those versions are no longer in use.
 cargo fmt --all && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace
 cd app && npm run check && npx vitest run
 python3 tools/release.py lint
+cargo xtask check
+python3 -I -m unittest discover -s tools -p "test_*.py"
 ```
 
-## 6. CHANGELOG and the test build
+## 6. CHANGELOG, the test branch and the test build
+
+**A new device is never merged into main, and never shipped in a release, before a tester has
+confirmed it on real hardware** (maintainer rule, always: also a device with a known source, such as
+one the triage answered "ready to add"). So the support always goes on a `test/<name>` branch, never
+straight to main:
+
+```
+device request -> (documented upstream / has a driver: "ready to add") -> support written on test/<name>,
+a commit with a "Test: #N" line -> test-build.yml builds it, tools/notify.py comments the link on the issue
+-> the tester installs that test build and runs Test my device -> a clean report -> the device is
+confirmed ON THAT BRANCH (cargo xtask confirm) and a pull request from the branch to main is opened
+-> the maintainer merges it -> it ships in the next release
+```
 
 - Under `## Unreleased`, in `### New devices` (sections and order: `tools/release.py`): what is
   supported, at which level, from which source.
-- Commit on a local branch. With the user's OK: push it as `test/<name>`, run
-  `gh workflow run test-build.yml --ref test/<name>`, and once it is green answer the issue with the
-  link to the run (artifacts need a GitHub account; the build still says the previous version).
-- To have the build announced on the device request, put a line `Test: #N` (or `Tests: #N, #M`) in the
-  body of a commit. A plain `#N` does nothing. The first build comments on the open issue, later
-  pushes edit that comment.
-- No release until the tester confirms, or the user asks for one.
+- Commit on a local branch and, with the user's OK, push it as `test/<name>`. **The push already starts
+  test-build.yml: never also run `gh workflow run test-build.yml`**, its concurrency cancels the build
+  that is running (and cancelling the new one stops them all). The build says which branch and commit
+  it is (`PERIHUB_BUILD`): the test report starts `PeriHub 0.9.5 (test build test/<name>@abc1234) on ...`,
+  which triage reads (a test build is never told to update, and its report confirms the device on that
+  branch). The build still shows the previous release's number, that is expected.
+- Put a line `Test: #N` (or `Tests: #N, #M`) in the body of a commit of the branch: that is what makes the
+  build announce itself on the device request (a plain `#N` does nothing). A build with new commits
+  posts a new comment on the open issue and deletes the earlier test build comments of the branch.
+  The triage answer to a "ready to add" request already tells the requester that this link will come (for an
+  id the Auto-add workflow writes, it says the support is being made automatically).
+  The Auto-add workflow starts the build itself with `gh workflow run test-build.yml --ref test/auto-…`, because
+  its push is made with the workflow token and starts nothing; a push made by you does start it, so never do both.
+- The tester installs the test build, connects the device and runs **Test my device**.
+- No pull request to main is merged, and no release made, until the confirmation (step 7) is on the branch.
+  A device that "needs captures" waits for them (`docs/captures.md`); once a driver is written from
+  them, it goes the same way.
+
+## 7. When the tester confirms
+
+A clean report (made by the app from the latest version, or from a test build of the branch; no error
+line, nothing under "Messages and errors" or "What is wrong or missing", the boxes ticked; the one
+from **Test my device** counts the same) is picked up by the triage workflow, which starts
+confirm.yml with the test branch as the base (it finds the branch by the device's USB id in the
+branch's `site/devices.json`, preferring the one the report's first line names). The workflow runs
+`cargo xtask confirm` on the branch, pushes the commit **to the branch** and opens (or reuses) the pull
+request from it to main, or comments the link when Actions may not open pull requests: the maintainer
+only merges it (CI does not start on a pull request a workflow opens: close and reopen it).
+By hand, on the `test/<name>` branch, for a device of another brand or a Corsair one, or a Logitech
+memory format:
+
+```sh
+cargo xtask confirm 1532:00b7 --issue 40
+cargo xtask confirm --memory-format 4:255 --issue 40
+cargo xtask confirm 1532:00b7 --issue 40 --report ISSUE_BODY.md   # also the replay fixture, if the report has a transcript
+```
+
+then push the branch and open the pull request to main. It adds the entry to
+`crates/perihub-core/src/confirmed.rs`, runs `cargo xtask gen` and writes the
+CHANGELOG line under "New devices". Do not edit the device tables or the tested memory formats by hand
+(`mouse::support` reads `confirmed::MEMORY`). Then run the checks of step 5. A fixture made from a
+report only expects what the confirmation is about: add the values the tester confirmed
+(`docs/replay.md`).

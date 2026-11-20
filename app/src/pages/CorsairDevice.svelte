@@ -78,16 +78,26 @@
 
 <header class="page-head">
   <h1>{info ? `Corsair ${info.model}` : "Corsair device"}</h1>
-  <Status kind="experimental" label="Experimental" chip />
+  {#if info?.tested}
+    <Status kind="ok" label="Tested" chip />
+  {:else}
+    <Status kind="experimental" label="Experimental" chip />
+  {/if}
 </header>
 
 {#if connectError && !info}<div class="notice error" role="alert">{connectError}</div>{/if}
 
 {#if info}
   <div class="notice info">
-    <b>Experimental support.</b> Nobody has tested PeriHub on a Corsair {noun} yet. PeriHub reads the {info.model} and
-    changes nothing, except the lighting if you turn it on below. A test report on PeriHub's GitHub page with what you see
-    here helps make it fully supported.
+    {#if info.tested}
+      <b>A tester confirmed the {info.model} on real hardware.</b> PeriHub reads it and changes nothing, except the
+      lighting if you turn it on below, which is still experimental. If something does not match your {noun}, please send
+      a test report.
+    {:else}
+      <b>Experimental support.</b> Nobody has tested PeriHub on a Corsair {noun} yet. PeriHub reads the {info.model} and
+      changes nothing, except the lighting if you turn it on below. A test report on PeriHub's GitHub page with what you see
+      here helps make it fully supported.
+    {/if}
     <div class="row report">
       <DeviceTestReport fields={(version, system) => corsairTest(info!, version, system)} />
     </div>

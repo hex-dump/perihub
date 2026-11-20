@@ -97,7 +97,7 @@ How PeriHub changes the devices of each brand: [Mice and keyboards of other bran
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
 
-Not on the list? Open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml): any brand can be asked for. PeriHub fills one in for you: with no supported device connected its sidebar shows **Send a report**, which lists your USB and Bluetooth devices with their USB ids (Settings → Devices links to it too).
+Not on the list? Open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml): any brand can be asked for. PeriHub fills one in for you: with no supported device connected its sidebar shows **Send a report**, which lists your USB and Bluetooth devices with their USB ids (Settings → Devices links to it too). Its **Record the official software** button records what the device's own software sends it while you change one setting at a time (USBPcap installed only for the recording on Windows, usbmon on Linux) and puts it in the request, without what you type or the serial number ([docs/captures.md](docs/captures.md)). What it reads and sends is in [docs/device-request.md](docs/device-request.md).
 
 ## What PeriHub can do
 
@@ -270,7 +270,7 @@ If you own a device marked 🧪 or 👁:
 2. Open the device's page in PeriHub and press **Open test form**. It opens a report on GitHub with what PeriHub read already filled in: no key presses, apps or log lines.
 3. Check that what PeriHub shows matches your device, and send it. You need a free GitHub account.
 
-Once someone confirms a model, it becomes fully supported for everyone. For a Logitech mouse, the confirmation counts for its memory format, so for every other mouse that uses it too.
+The models that need a test, each with its own page, are on [Wanted: testers](https://hex-dump.github.io/perihub/help-test.html). Once someone confirms a model, it becomes fully supported for everyone. For a Logitech mouse, the confirmation counts for its memory format, so for every other mouse that uses it too.
 
 ## Download and install
 
@@ -321,11 +321,11 @@ PeriHub is not on Flathub, so the Flatpak does not update by itself: install the
 
 #### USB permissions
 
-The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage** or the **Flatpak**, if PeriHub shows "permission denied", install it by hand (this is the rule of release 0.9.4: if you have another version, change the version in the address), and again after an update that adds devices:
+The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage** or the **Flatpak**, if PeriHub shows "permission denied", install it by hand (this is the rule of release 0.9.6: if you have another version, change the version in the address), and again after an update that adds devices:
 
 ```sh
 sudo curl -o /etc/udev/rules.d/70-perihub.rules \
-  https://raw.githubusercontent.com/hex-dump/perihub/v0.9.4/packaging/linux/70-perihub.rules
+  https://raw.githubusercontent.com/hex-dump/perihub/v0.9.6/packaging/linux/70-perihub.rules
 sudo udevadm control --reload && sudo udevadm trigger
 ```
 

@@ -426,6 +426,16 @@
   </provides>
 
   <releases>
+    <release version="0.9.6" date="2026-11-20">
+      <description>
+        <p>A device request can now carry two more things: what the device's vendor-defined feature reports hold at the moment (read only), so that a known controller chip and its protocol can often be recognized without a USB capture, and a USB recording of what the device's official software sends it, made by PeriHub itself (on Windows USBPcap is installed only for the recording and removed after it, on Linux usbmon is read with your password; what you type, other devices and the serial number are never recorded). A Razer mouse OpenRazer documents can also be added without a person, and device requests are answered more accurately.</p>
+      </description>
+    </release>
+    <release version="0.9.5" date="2026-11-19">
+      <description>
+        <p>When you connect a device nobody has confirmed on real hardware yet, PeriHub now offers once to send a test report for it with Test my device: one report is what moves a device up for everyone who has it. A device request sent from the app now carries everything needed to add the device, and a clean test report leads straight to the device being confirmed.</p>
+      </description>
+    </release>
     <release version="0.9.4" date="2026-11-17">
       <description>
         <p>On Windows, games from Steam and the Epic Games Launcher now show up when you add a game profile, also when Steam is installed outside Program Files or the game keeps its program in a subfolder. PeriHub also recognises 67 more Razer keyboards, read only for now.</p>

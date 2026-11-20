@@ -5,6 +5,7 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type DeviceStatus, type ReportDevice, type WriteEntry } from "../lib/api";
   import { userNames } from "../lib/redact";
+  import { reportVersion } from "../lib/testReport";
   import { stateStatus } from "../lib/status";
   import Status from "../components/Status.svelte";
   import { readOnly, writeLogLines } from "../lib/readOnly.svelte";
@@ -15,6 +16,8 @@
 
   interface Props {
     status: DeviceStatus;
+    /** A device of the list to start with, as the prompt for an unconfirmed device asks: it is read at once. */
+    start?: string | null;
   }
 
   type Step = "pick" | "read" | "preview" | "tried" | "send";
@@ -43,7 +46,7 @@
   const REFRESH_MS = 2000;
   const COPIED_MS = 3000;
 
-  let { status }: Props = $props();
+  let { status, start = null }: Props = $props();
   let step = $state<Step>("pick");
   let unknown = $state<ReportDevice[] | null>(null);
   let pickedId = $state<string | null>(null);
@@ -91,11 +94,17 @@
 
   onMount(() => {
     loadUnknown();
-    getVersion().then((v) => (version = v));
+    // Asked for one device that is there: nothing to pick, the first reading starts.
+    if (start && list.some((c) => c.id === start)) {
+      pickedId = start;
+      go("read");
+    }
+    getVersion().then((v) => (version = version || v));
     api
       .appSettings()
-      .then((s) => {
+      .then(async (s) => {
         system = s.system;
+        version = reportVersion(await getVersion(), s.build);
         names = userNames([s.config_dir, s.log_dir]);
       })
       .catch(() => (system = "unknown system"));

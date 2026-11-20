@@ -1,14 +1,17 @@
 //! cargo xtask gen: writes the files generated from the device tables in perihub-core.
 //! cargo xtask check: fails if one of them is out of date (also run by cargo test).
+//! cargo xtask confirm: a tester confirmed a device or a Logitech memory format (see confirm.rs).
 
 mod appdevices;
 mod catalog;
+mod confirm;
 mod docs;
 mod json;
 mod metainfo;
 mod preview;
 mod select;
 mod site;
+mod transcript;
 mod udev;
 
 use std::path::{Path, PathBuf};
@@ -63,8 +66,18 @@ fn main() -> ExitCode {
             }
             if stale.is_empty() { ExitCode::SUCCESS } else { ExitCode::FAILURE }
         }
+        Some("confirm") => {
+            let args: Vec<String> = std::env::args().skip(2).collect();
+            match confirm::run(&args) {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(message) => {
+                    eprintln!("{message}");
+                    ExitCode::FAILURE
+                }
+            }
+        }
         _ => {
-            eprintln!("usage: cargo xtask gen | check");
+            eprintln!("usage: cargo xtask gen | check | confirm (see docs/development.md)");
             ExitCode::FAILURE
         }
     }

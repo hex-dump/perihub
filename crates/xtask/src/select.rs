@@ -3,8 +3,8 @@
 //! A selector is one or more groups joined by `+`. A group is words joined by `:`, and takes the
 //! devices that match every word: a family (`razer`, `logitech-onboard`), a brand (`Cooler Master`),
 //! a level (`supported`, `experimental`, `read-only`, `by-memory-format`, `recognized`), a kind
-//! (`mouse`, `keyboard`, `receiver`), `cable` (it has a USB id of its own), `wireless` (it is
-//! reached through a LIGHTSPEED receiver) or `colour` (a Razer mouse that takes one colour).
+//! (`mouse`, `keyboard`, `receiver`), a model's name (`G502 HERO`), `cable` (it has a USB id of its own),
+//! `wireless` (it is reached through a LIGHTSPEED receiver) or `colour` (a Razer mouse that takes one colour).
 
 use perihub_core::peripheral::Protocol;
 
@@ -25,7 +25,7 @@ fn matches(device: &Device, word: &str) -> bool {
         "colour" => {
             matches!(device.model, Source::Peripheral(m) if matches!(m.protocol, Protocol::Razer(p) if p.frame.is_some()))
         }
-        _ => device.family == word || device.brand == word,
+        _ => device.family == word || device.brand == word || device.name == word,
     }
 }
 

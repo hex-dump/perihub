@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--include head-->
+</head>
+<body>
+  <!--include header-->
+
+  <main id="main" tabindex="-1">
+    <section class="device-top">
+      <div class="wrap">
+        <p class="crumbs"><a href="%%ROOT%%#devices">All devices</a> · <a href="%%ROOT%%help-test.html">Wanted: testers</a></p>
+        <p class="eyebrow">%%KIND%% · %%BRAND%%</p>
+        <h1>%%FULL_NAME%%</h1>
+        <p class="level-line"><span class="led %%LED%%" aria-hidden="true"></span>%%LEVEL%%</p>
+        <p class="lead">%%LEAD%%</p>
+      </div>
+    </section>
+%%HELP%%
+    <section class="section">
+      <div class="wrap device-cols">
+        <div>
+          <h2>What it can do in PeriHub</h2>
+%%DOES%%
+        </div>
+        <div>
+          <h2>How it connects</h2>
+%%SPEC%%
+        </div>
+      </div>
+    </section>
+%%RELATED%%
+  </main>
+
+  <!--include footer-->
+</body>
+</html>
