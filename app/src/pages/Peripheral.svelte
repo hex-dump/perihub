@@ -295,9 +295,13 @@
         </table>
       {/if}
 
-      {#if info.blind.length > 0}
-        <h2>{info.kind === "keyboard" ? "Colours and display" : "Colour"}</h2>
+      {#if info.blind.some((b) => !b.remembered)}
+        <h2>{info.blind.some((b) => !b.remembered && b.kind.type !== "color") ? "Not saved in the device" : "Colour"}</h2>
         <BlindSettings {info} onchange={(i) => (live = i)} />
+      {/if}
+      {#if info.blind.some((b) => b.remembered)}
+        <h2>Lighting effects</h2>
+        <BlindSettings {info} stored onchange={(i) => (live = i)} />
       {/if}
 
       {#if info.buttons.length > 0}
@@ -313,9 +317,9 @@
 
       {#if info.editable && info.changes_stay}
         <div class="notice warn change">
-          <b>Experimental.</b> PeriHub treats every change on this device as stored in its memory{#if info.blind.length > 0}
-            (except the colour above, which is never saved){/if}: its protocol has no change that is known to last only
-          until it is turned off. PeriHub asks for the No warranty box the first
+          <b>Experimental.</b> PeriHub treats every change on this device as stored in its memory{#if info.blind.length > 0}{" "}(except what is sent on its own above, with the note
+            written there){/if}: its protocol has no change that is
+          known to last only until it is turned off. PeriHub asks for the No warranty box the first
           time, saves the settings first, reads them back after the change, and puts them back after 15 seconds unless
           you keep the change.
         </div>

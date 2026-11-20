@@ -12,7 +12,8 @@ Mice only: the receivers and docks, which may be shared with a keyboard, are lef
 tools/auto-add.json allows ({"allow": ["1532:00c1"]}).
 
 With --keyboards after COMMIT it writes crates/perihub-core/src/peripheral/razer_keyboard_models.rs instead,
-from driver/razerkbd_driver.{c,h} and daemon/openrazer_daemon/hardware/keyboards.py (see main_keyboards).
+from driver/razerkbd_driver.{c,h}, driver/razerchromacommon.c and daemon/openrazer_daemon/hardware/keyboards.py
+(see main_keyboards).
 """
 
 import ast
@@ -423,6 +424,10 @@ def function_static_int(source, name):
 # interface carries (issue #24: through the receiver, only the media keys). On most Razer keyboards
 # the interface OpenRazer sends to also carries typed keys, so the rule must not open it.
 LINUX_OPENED = {0x02B9, 0x02BA}
+# Keyboards PeriHub also changes (the brightness, the game mode, one colour on the custom frame, the lighting effects
+# of the keyboard's own memory and the macro light), not only reads. Only the one with a requester; the others
+# follow once a tester has confirmed it.
+CHANGES = {0x02B9, 0x02BA}
 # Names PeriHub already used, kept so that settings saved with them still match.
 NAMES = {0x02B9: "BlackWidow V4 Mini HyperSpeed", 0x02BA: "BlackWidow V4 Mini HyperSpeed (wireless)"}
 NOT_KEYBOARDS = r"Blade|Book|Tartarus|Orbweaver|Nostromo"
@@ -484,6 +489,177 @@ def read_facts(body):
     return out
 
 
+def check_builders(common):
+    """The commands PeriHub sends to a keyboard it changes are written in its driver with the bytes below:
+    the class and command of each, its size and the arguments' places. A change in OpenRazer's builders
+    stops the tool, so the facts of the driver and of the documentation stay the ones read here."""
+    expected = {
+        "razer_chroma_extended_matrix_brightness": r"get_razer_report\(0x0F, 0x04, 0x03\);\s*report\.arguments\[0\] = variable_storage;\s*report\.arguments\[1\] = led_id;\s*report\.arguments\[2\] = brightness;",
+        "razer_chroma_standard_set_led_state": r"get_razer_report\(0x03, 0x00, 0x03\);\s*report\.arguments\[0\] = variable_storage;\s*report\.arguments\[1\] = led_id;\s*report\.arguments\[2\] = clamp\(led_state, 0x00, 0x01\);",
+        "razer_chroma_extended_matrix_set_custom_frame": r"razer_chroma_extended_matrix_set_custom_frame2\(row_index, start_col, stop_col, rgb_data, 0x47\)",
+        "razer_chroma_extended_matrix_set_custom_frame2": r"get_razer_report\(0x0F, 0x03, data_length\);.*?report\.arguments\[2\] = row_index;\s*report\.arguments\[3\] = start_col;\s*report\.arguments\[4\] = stop_col;\s*memcpy\(&report\.arguments\[5\], rgb_data, row_length\);",
+        "razer_chroma_extended_matrix_effect_custom_frame": r"razer_chroma_extended_matrix_effect_base\(0x0C, 0x00, 0x00, 0x08\)",
+        "razer_chroma_extended_matrix_effect_base": r"get_razer_report\(0x0F, 0x02, arg_size\);\s*report\.arguments\[0\] = variable_storage;\s*report\.arguments\[1\] = led_id;\s*report\.arguments\[2\] = effect_id;",
+        # The lighting effects of the keyboard's own memory: effect number, size, and where the values go.
+        "razer_chroma_extended_matrix_effect_none": r"razer_chroma_extended_matrix_effect_base\(0x06, variable_storage, led_id, 0x00\)",
+        "razer_chroma_extended_matrix_effect_static": r"effect_base\(0x09, variable_storage, led_id, 0x01\);\s*report\.arguments\[5\] = 0x01;\s*report\.arguments\[6\] = rgb->r;\s*report\.arguments\[7\] = rgb->g;\s*report\.arguments\[8\] = rgb->b;",
+        "razer_chroma_extended_matrix_effect_breathing_random": r"effect_base\(0x06, variable_storage, led_id, 0x02\)",
+        "razer_chroma_extended_matrix_effect_breathing_single": r"effect_base\(0x09, variable_storage, led_id, 0x02\);\s*report\.arguments\[3\] = 0x01;\s*report\.arguments\[5\] = 0x01;\s*report\.arguments\[6\] = rgb1->r;\s*report\.arguments\[7\] = rgb1->g;\s*report\.arguments\[8\] = rgb1->b;",
+        "razer_chroma_extended_matrix_effect_breathing_dual": r"effect_base\(0x0C, variable_storage, led_id, 0x02\);\s*report\.arguments\[3\] = 0x02;\s*report\.arguments\[5\] = 0x02;\s*report\.arguments\[6\] = rgb1->r;\s*report\.arguments\[7\] = rgb1->g;\s*report\.arguments\[8\] = rgb1->b;\s*report\.arguments\[9\] = rgb2->r;\s*report\.arguments\[10\] = rgb2->g;\s*report\.arguments\[11\] = rgb2->b;",
+        "razer_chroma_extended_matrix_effect_spectrum": r"effect_base\(0x06, variable_storage, led_id, 0x03\)",
+        "razer_chroma_extended_matrix_effect_wave": r"effect_base\(0x06, variable_storage, led_id, 0x04\);.*?direction = clamp\(direction, 0x00, 0x02\);.*?report\.arguments\[3\] = direction;\s*report\.arguments\[4\] = 0x28;",
+        "razer_chroma_extended_matrix_effect_reactive": r"effect_base\(0x09, variable_storage, led_id, 0x05\);\s*speed = clamp\(speed, 0x01, 0x04\);\s*report\.arguments\[4\] = speed;\s*report\.arguments\[5\] = 0x01;\s*report\.arguments\[6\] = rgb->r;\s*report\.arguments\[7\] = rgb->g;\s*report\.arguments\[8\] = rgb->b;",
+        "razer_chroma_extended_matrix_effect_starlight_random": r"effect_base\(0x06, variable_storage, led_id, 0x07\);\s*speed = clamp\(speed, 0x01, 0x03\);\s*report\.arguments\[4\] = speed;",
+        "razer_chroma_extended_matrix_effect_starlight_single": r"effect_base\(0x09, variable_storage, led_id, 0x07\);\s*speed = clamp\(speed, 0x01, 0x03\);\s*report\.arguments\[4\] = speed;\s*report\.arguments\[5\] = 0x01;\s*report\.arguments\[6\] = rgb1->r;\s*report\.arguments\[7\] = rgb1->g;\s*report\.arguments\[8\] = rgb1->b;",
+        "razer_chroma_extended_matrix_effect_starlight_dual": r"effect_base\(0x0C, variable_storage, led_id, 0x07\);\s*speed = clamp\(speed, 0x01, 0x03\);\s*report\.arguments\[4\] = speed;\s*report\.arguments\[5\] = 0x02;\s*report\.arguments\[6\] = rgb1->r;\s*report\.arguments\[7\] = rgb1->g;\s*report\.arguments\[8\] = rgb1->b;\s*report\.arguments\[9\] = rgb2->r;\s*report\.arguments\[10\] = rgb2->g;\s*report\.arguments\[11\] = rgb2->b;",
+        # The macro light: its state and effect, and the two reads.
+        "razer_chroma_standard_get_led_state": r"get_razer_report\(0x03, 0x80, 0x03\);\s*report\.arguments\[0\] = variable_storage;\s*report\.arguments\[1\] = led_id;",
+        "razer_chroma_standard_set_led_effect": r"get_razer_report\(0x03, 0x02, 0x03\);\s*report\.arguments\[0\] = variable_storage;\s*report\.arguments\[1\] = led_id;\s*report\.arguments\[2\] = clamp\(led_effect, 0x00, 0x05\);",
+        "razer_chroma_standard_get_led_effect": r"get_razer_report\(0x03, 0x82, 0x03\);\s*report\.arguments\[0\] = variable_storage;\s*report\.arguments\[1\] = led_id;",
+    }
+    for name, pattern in expected.items():
+        found = re.search(rf"^(?:static )?struct razer_report {name}\(", common, re.M)
+        if not found:
+            sys.exit(f"{name} is gone from razerchromacommon.c")
+        body = common[found.start() : common.find("\n}\n", found.start())]
+        if not re.search(pattern, body, re.S):
+            sys.exit(f"{name} no longer builds its request the way PeriHub's keyboard driver sends it")
+
+
+# What OpenRazer's driver builds for each lighting effect of the keyboard's own memory, by the function of the
+# file that takes it: the builders, one for each number of values the file accepts.
+EFFECT_BUILDERS = {
+    "razer_attr_write_matrix_effect_none": ["razer_chroma_extended_matrix_effect_none"],
+    "razer_attr_write_matrix_effect_static": ["razer_chroma_extended_matrix_effect_static"],
+    "razer_attr_write_matrix_effect_breath": [
+        "razer_chroma_extended_matrix_effect_breathing_single",
+        "razer_chroma_extended_matrix_effect_breathing_dual",
+        "razer_chroma_extended_matrix_effect_breathing_random",
+    ],
+    "razer_attr_write_matrix_effect_spectrum": ["razer_chroma_extended_matrix_effect_spectrum"],
+    "razer_attr_write_matrix_effect_wave": ["razer_chroma_extended_matrix_effect_wave"],
+    "razer_attr_write_matrix_effect_reactive": ["razer_chroma_extended_matrix_effect_reactive"],
+    "razer_attr_write_matrix_effect_starlight": [
+        "razer_chroma_extended_matrix_effect_starlight_dual",
+        "razer_chroma_extended_matrix_effect_starlight_single",
+        "razer_chroma_extended_matrix_effect_starlight_random",
+    ],
+}
+# What the daemon offers for them, and for the macro light (the ripple effect is the daemon's own drawing on the
+# custom frame from the key presses it reads: PeriHub leaves it out).
+DAEMON_EFFECT_METHODS = [
+    "set_none_effect", "set_static_effect", "set_breath_random_effect", "set_breath_single_effect",
+    "set_breath_dual_effect", "set_spectrum_effect", "set_wave_effect", "set_reactive_effect",
+    "set_starlight_random_effect", "set_starlight_single_effect", "set_starlight_dual_effect",
+    "get_macro_mode", "set_macro_mode", "get_macro_effect", "set_macro_effect",
+]
+
+
+def group_of(body, define):
+    """The code of the case group of a switch that names `define`, or None."""
+    for labels, code in groups(body):
+        if define in labels:
+            return code
+    return None
+
+
+def check_constants(common):
+    """The numbers PeriHub's driver writes for the storage and the lights."""
+    for name, value in (("NOSTORE", 0x00), ("VARSTORE", 0x01), ("BACKLIGHT_LED", 0x05), ("MACRO_LED", 0x07), ("GAME_LED", 0x08)):
+        found = re.search(rf"#define\s+{name}\s+(0x[0-9A-Fa-f]+)", common)
+        if not found or int(found.group(1), 16) != value:
+            sys.exit(f"{name} is no longer 0x{value:02X} in razercommon.h")
+
+
+def lighting_params(define, m, driver):
+    """What PeriHub needs of OpenRazer's lighting effects and macro light for one keyboard: the transaction id
+    all its effects are sent with, and how its macro light effect is sent. It stops the tool unless every effect
+    is built for this product id, stored (VARSTORE) on the backlight, with one transaction id; the daemon offers
+    them and the wave directions 1 and 2; and the macro light's state is written and read stored with ff and its
+    effect read stored with ff."""
+    name = m["name"]
+    methods = m.get("METHODS", [])
+    tids = set()
+    for func, builders in EFFECT_BUILDERS.items():
+        code = group_of(function(driver, func), define)
+        if code is None:
+            sys.exit(f"{name}: {func} does not name it")
+        found = re.findall(r"request\s*=\s*(razer_\w+)\(", code)
+        if sorted(found) != sorted(builders):
+            sys.exit(f"{name}: {func} builds {found}, not {builders}")
+        if code.count("VARSTORE, BACKLIGHT_LED") != len(builders):
+            sys.exit(f"{name}: {func} is not stored on the backlight")
+        ids = set(re.findall(r"transaction_id\.id\s*=\s*(0x[0-9A-Fa-f]+)", code))
+        if len(ids) != 1:
+            sys.exit(f"{name}: {func} has no single transaction id")
+        tids |= {int(i, 16) for i in ids}
+    if len(tids) != 1:
+        sys.exit(f"{name}: its effects use different transaction ids: {sorted(tids)}")
+    for method in DAEMON_EFFECT_METHODS:
+        if method not in methods:
+            sys.exit(f"{name}: the daemon does not offer {method}")
+    if tuple(m.get("WAVE_DIRS", ())) != (1, 2):
+        sys.exit(f"{name}: wave directions {m.get('WAVE_DIRS')}")
+    # The macro light: the state for every keyboard, stored, with ff; the effect per product id.
+    state_w = function(driver, "razer_attr_write_macro_led_state")
+    state_r = function(driver, "razer_attr_read_macro_led_state")
+    effect_r = function(driver, "razer_attr_read_macro_led_effect")
+    for body, builder, args in (
+        (state_w, "razer_chroma_standard_set_led_state", "VARSTORE, MACRO_LED, enabled"),
+        (state_r, "razer_chroma_standard_get_led_state", "VARSTORE, MACRO_LED"),
+        (effect_r, "razer_chroma_standard_get_led_effect", "VARSTORE, MACRO_LED"),
+    ):
+        if f"request = {builder}({args});" not in body or "request.transaction_id.id = 0xFF;" not in body or "switch" in body:
+            sys.exit(f"{name}: the macro light is no longer written and read the way PeriHub does it")
+    code = group_of(function(driver, "razer_attr_write_macro_led_effect"), define)
+    found = re.fullmatch(
+        r"\s*request = razer_chroma_standard_set_led_effect\((NOSTORE|VARSTORE), MACRO_LED, enabled\);\s*request\.transaction_id\.id = (0x[0-9A-Fa-f]+);\s*break;\s*",
+        code or "",
+    )
+    if not found:
+        sys.exit(f"{name}: the macro light effect is not written in a way PeriHub knows")
+    stored = found.group(1) == "VARSTORE"
+    tid = tids.copy().pop()
+    return (
+        f"Effects {{ tid: 0x{tid:02X} }}, "
+        f"macro_light: MacroLight {{ effect_stored: {str(stored).lower()}, effect_tid: 0x{int(found.group(2), 16):02X} }}"
+    )
+
+
+def change_params(define, m, read_brightness, read_game, brightness_set, game_set, frame_set, custom_set, driver):
+    """The `change` parameter of a keyboard PeriHub changes. It stops the tool unless OpenRazer changes the
+    brightness and the game mode with the transaction id it reads them with, draws the custom frame row by row
+    and then shows it with the custom effect (with one transaction id), and the daemon draws it on a matrix."""
+    name = m["name"]
+    bs, gs = brightness_set.get(define), game_set.get(define)
+    fs, cs = frame_set.get(define), custom_set.get(define)
+    if not (read_brightness and read_brightness[:2] == ("razer_chroma_extended_matrix_get_brightness", "VARSTORE,BACKLIGHT_LED")):
+        sys.exit(f"{name}: the brightness is not read with the extended command")
+    if bs != ("razer_chroma_extended_matrix_brightness", "VARSTORE,BACKLIGHT_LED,brightness", read_brightness[2]):
+        sys.exit(f"{name}: the brightness is not written the way it is read")
+    if not (read_game and read_game[:2] == ("razer_chroma_standard_get_led_state", "VARSTORE,GAME_LED")):
+        sys.exit(f"{name}: the game mode is not read the way PeriHub reads it")
+    if gs != ("razer_chroma_standard_set_led_state", "VARSTORE,GAME_LED,enabled", read_game[2]):
+        sys.exit(f"{name}: the game mode is not written the way it is read")
+    if not (fs and fs[0] == "razer_chroma_extended_matrix_set_custom_frame" and fs[1].startswith("row_id,start_col,stop_col,")):
+        sys.exit(f"{name}: the custom frame is not the standard row command")
+    if cs != ("razer_chroma_extended_matrix_effect_custom_frame", "", fs[2]):
+        sys.exit(f"{name}: the custom effect does not use the transaction id of the frame")
+    methods = m.get("METHODS", [])
+    dims = m.get("MATRIX_DIMS")
+    if not (m.get("HAS_MATRIX") and "set_key_row" in methods and "set_custom_effect" in methods):
+        sys.exit(f"{name}: the daemon does not draw a custom frame on it")
+    if not (isinstance(dims, list) and len(dims) == 2 and 1 <= dims[0] <= 6 and 1 <= dims[1] <= 25):
+        sys.exit(f"{name}: matrix size {dims}")
+    lighting = lighting_params(define, m, driver)
+    if not lighting.startswith(f"Effects {{ tid: 0x{fs[2]:02X} }}"):
+        sys.exit(f"{name}: its effects do not use the transaction id of the frame")
+    return (
+        f"Some(Change {{ frame: Frame {{ tid: 0x{fs[2]:02X}, rows: {dims[0]}, columns: {dims[1]} }}, "
+        f"effects: {lighting} }})"
+    )
+
+
 def main_keyboards(root, commit):
     driver = (root / "driver" / "razerkbd_driver.c").read_text()
     ids = defines((root / "driver" / "razerkbd_driver.h").read_text())
@@ -509,9 +685,16 @@ def main_keyboards(root, commit):
             sys.exit(f"{labels}: the answer comes from another interface")
         for label in labels:
             params[label] = (int(index.group(1), 16), KBD_WAITS[wait.group(1)])
+    check_builders((root / "driver" / "razerchromacommon.c").read_text())
+    check_constants((root / "driver" / "razercommon.h").read_text())
     bright = read_facts(function(driver, "razer_attr_read_matrix_brightness"))
     game = read_facts(function(driver, "razer_attr_read_game_led_state"))
     # The battery reads build their request before the switch, which only sets the transaction id.
+    # What PeriHub changes: the same builders the reads and the daemon's custom drawing use.
+    brightness_set = read_facts(function(driver, "razer_attr_write_matrix_brightness"))
+    game_set = read_facts(function(driver, "razer_attr_write_game_led_state"))
+    frame_set = read_facts(function(driver, "razer_attr_write_matrix_custom_frame"))
+    custom_set = read_facts(function(driver, "razer_attr_write_matrix_effect_custom"))
     level = {k: v[1] for k, v in facts(function(driver, "razer_attr_read_charge_level"), "get_battery_level").items() if v[1]}
     charging = {k: v[1] for k, v in facts(function(driver, "razer_attr_read_charge_status"), "get_charging_status").items() if v[1]}
     for name, body in (("level", "razer_attr_read_charge_level"), ("charging", "razer_attr_read_charge_status")):
@@ -525,7 +708,7 @@ def main_keyboards(root, commit):
         "//! interface of the reports, the wait before the answer and the transaction id of each read. No code",
         "//! was copied. Do not edit by hand.",
         "",
-        "use super::razer_keyboard::{Brightness, Params};",
+        "use super::razer_keyboard::{Brightness, Change, Effects, Frame, MacroLight, Params};",
         "use super::{Kind, Model, Protocol};",
         "",
         "pub const MODELS: &[Model] = &[",
@@ -558,6 +741,9 @@ def main_keyboards(root, commit):
         battery = "None"
         if lv is not None and lv == ch and "get_battery" in methods and "is_charging" in methods:
             battery = f"Some(0x{lv:02X})"
+        change = "None"
+        if pid in CHANGES:
+            change = change_params(define, m, b, g, brightness_set, game_set, frame_set, custom_set, driver)
         name = NAMES.get(pid, m["name"]).replace('"', "")
         out.append("    Model {")
         out.append("        vendor_id: 0x1532,")
@@ -573,6 +759,7 @@ def main_keyboards(root, commit):
         out.append(f"            brightness: {brightness},")
         out.append(f"            game: {game_tid},")
         out.append(f"            linux: {str(pid in LINUX_OPENED).lower()},")
+        out.append(f"            change: {change},")
         out.append("        }),")
         out.append("    },")
     out.append("];")

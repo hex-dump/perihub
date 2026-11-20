@@ -279,23 +279,21 @@ impl Driver for Apex {
     }
 
     fn blind_settings(&self) -> Vec<BlindSetting> {
-        let color = |id, label| BlindSetting { id, label, kind: BlindKind::Color, last: None };
+        let color = |id, label| BlindSetting::new(id, label, BlindKind::Color);
         let mut settings = vec![color(ALL_ID, "Whole keyboard, one colour")];
         settings.extend(GROUPS.iter().map(|&(id, label)| color(id, label)));
-        settings.push(BlindSetting {
-            id: ONBOARD_ID,
-            label: "Lighting",
-            kind: BlindKind::Choice { values: vec![ONBOARD_NAME.to_string()] },
-            last: None,
-        });
-        settings.push(BlindSetting {
-            id: DISPLAY_ID,
-            label: "Display",
-            kind: BlindKind::Choice {
+        settings.push(BlindSetting::new(
+            ONBOARD_ID,
+            "Lighting",
+            BlindKind::Choice { values: vec![ONBOARD_NAME.to_string()] },
+        ));
+        settings.push(BlindSetting::new(
+            DISPLAY_ID,
+            "Display",
+            BlindKind::Choice {
                 values: vec![DISPLAY_CLEAR.to_string(), DISPLAY_FILL.to_string(), DISPLAY_TEST.to_string()],
             },
-            last: None,
-        });
+        ));
         settings
     }
 

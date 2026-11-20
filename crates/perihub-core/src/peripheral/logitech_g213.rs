@@ -360,34 +360,23 @@ impl Driver for G213 {
     }
 
     fn blind_settings(&self) -> Vec<BlindSetting> {
-        let color = |id, label| BlindSetting { id, label, kind: BlindKind::Color, last: None };
+        let color = |id, label| BlindSetting::new(id, label, BlindKind::Color);
         let mut settings = vec![color(ALL_ID, "Whole keyboard, one colour")];
         settings.extend(AREAS.iter().map(|&(id, label)| color(id, label)));
         settings.push(color(BREATHING_ID, "Breathing, in this colour"));
         let mut effects = vec![OFF_NAME.to_string(), CYCLE_NAME.to_string()];
         effects.extend(WAVES.iter().map(|(name, _)| name.to_string()));
-        settings.push(BlindSetting {
-            id: EFFECT_ID,
-            label: "Effect",
-            kind: BlindKind::Choice { values: effects },
-            last: None,
-        });
-        settings.push(BlindSetting {
-            id: SPEED_ID,
-            label: "Time of one cycle (ms), for the effect sent last",
-            kind: BlindKind::Range { min: SPEED_MIN as i32, max: SPEED_MAX as i32, step: SPEED_STEP as i32 },
-            last: None,
-        });
-        settings.push(BlindSetting {
-            id: BRIGHTNESS_ID,
-            label: "Brightness of the effect (%), for the effect sent last",
-            kind: BlindKind::Range {
-                min: BRIGHTNESS_MIN as i32,
-                max: BRIGHTNESS_MAX as i32,
-                step: BRIGHTNESS_STEP as i32,
-            },
-            last: None,
-        });
+        settings.push(BlindSetting::new(EFFECT_ID, "Effect", BlindKind::Choice { values: effects }));
+        settings.push(BlindSetting::new(
+            SPEED_ID,
+            "Time of one cycle (ms), for the effect sent last",
+            BlindKind::Range { min: SPEED_MIN as i32, max: SPEED_MAX as i32, step: SPEED_STEP as i32 },
+        ));
+        settings.push(BlindSetting::new(
+            BRIGHTNESS_ID,
+            "Brightness of the effect (%), for the effect sent last",
+            BlindKind::Range { min: BRIGHTNESS_MIN as i32, max: BRIGHTNESS_MAX as i32, step: BRIGHTNESS_STEP as i32 },
+        ));
         settings
     }
 

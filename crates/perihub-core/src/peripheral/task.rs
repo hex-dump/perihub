@@ -6,13 +6,14 @@
 //! that does not read back is undone at once. One the user does not keep within the countdown is
 //! undone too, also the next time the device is opened if PeriHub was closed in between.
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::{
     BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
-    check_settings, coolermaster, evga, evision, logitech_g213, logitech_g600, logitech_hidpp10, nordic, pulsar, qmk,
-    razer, razer_keyboard, roccat, sinowealth, steelseries, steelseries_apex, wraith, yjx,
+    check_settings, coolermaster, evga, evision, logitech_g213, logitech_g600, logitech_hidpp10, memory, nordic,
+    pulsar, qmk, razer, razer_keyboard, roccat, sinowealth, steelseries, steelseries_apex, wraith, yjx,
 };
 use crate::config;
 use crate::error::{Error, Result};
@@ -31,9 +32,15 @@ pub trait Driver: Send {
     fn blind_settings(&self) -> Vec<BlindSetting> {
         Vec::new()
     }
-    /// Sends one setting to a device that cannot report it, without saving it to its memory.
+    /// Sends one setting to a device that cannot report it. Unless the setting is
+    /// [`remembered`](BlindSetting::remembered), without saving it to the device's memory.
     fn send_blind(&mut self, _io: &mut Io, id: &str, _value: &BlindValue) -> Result<()> {
         Err(Error::Invalid(format!("{id}: this device's settings are changed together")))
+    }
+    /// What the driver sent that changed something, with the device's answer to each, newest last (a few dozen
+    /// lines at most): kept in the page's information for test reports.
+    fn sent(&self) -> Vec<String> {
+        Vec::new()
     }
     /// Reads what the page shows, with read commands only.
     fn read(&mut self, io: &mut Io) -> Result<Reading>;
@@ -152,6 +159,9 @@ pub struct PeripheralTask {
     /// The calls of the first reading, and of the latest one, for the transcript.
     first_reading: Option<Vec<Event>>,
     latest_reading: Vec<Event>,
+    /// What was sent to each remembered setting, by id: read from PeriHub's settings folder when the device was
+    /// opened, and saved there after each send (see [`memory`]).
+    histories: BTreeMap<&'static str, memory::History>,
 }
 
 impl Drop for PeripheralTask {
@@ -208,6 +218,7 @@ impl PeripheralTask {
             buttons: Vec::new(),
             details: Vec::new(),
             blind: driver.blind_settings(),
+            sent: Vec::new(),
             editable: false,
             can_save: driver.can_save(),
             changes_stay: driver.changes_stay(),
@@ -231,8 +242,10 @@ impl PeripheralTask {
             in_memory: None,
             first_reading: None,
             latest_reading: Vec::new(),
+            histories: BTreeMap::new(),
         };
         task.take(reading);
+        task.recall();
         log::info!(
             "{} {} connected (experimental, from {}): {}",
             task.info.brand,
@@ -270,6 +283,7 @@ impl PeripheralTask {
         self.info.limits = reading.limits;
         self.info.buttons = reading.buttons;
         self.info.details = reading.details;
+        self.info.sent = self.driver.sent();
         self.info.layout = reading.layout;
         self.info.problem = reading.problem.or(self.info.problem.take());
         self.info.editable = self.io.changes_allowed();
@@ -318,23 +332,82 @@ impl PeripheralTask {
         Ok(self.info.clone())
     }
 
-    /// Sends one setting to a device that cannot report its settings. Nothing is saved to its
-    /// memory, and nothing can be read back or undone: unplugging the device brings back what it
-    /// has saved.
+    /// What PeriHub sent before to each remembered setting is read from its settings folder, and shown with the
+    /// setting (see [`BlindSetting::remembered`]).
+    fn recall(&mut self) {
+        for setting in self.info.blind.iter_mut().filter(|b| b.remembered) {
+            let history = memory::load(&self.info.key, setting.id);
+            setting.last = history.last.clone();
+            setting.previous = history.previous().cloned();
+            self.histories.insert(setting.id, history);
+        }
+    }
+
+    /// Keeps what was sent to a remembered setting, in memory and in PeriHub's settings folder. The device
+    /// took the setting already: a folder that cannot be written only means a restart forgets it.
+    fn remember(&mut self, index: usize, change: impl FnOnce(&mut memory::History)) {
+        let setting = &mut self.info.blind[index];
+        let history = self.histories.entry(setting.id).or_default();
+        change(history);
+        setting.last = history.last.clone();
+        setting.previous = history.previous().cloned();
+        if let Err(e) = memory::store(&self.info.key, setting.id, history) {
+            log::warn!("{} {}: what was sent could not be kept for a restart: {e}", self.info.brand, self.info.model);
+        }
+    }
+
+    fn blind_index(&self, id: &str) -> Result<usize> {
+        self.info
+            .blind
+            .iter()
+            .position(|b| b.id == id)
+            .ok_or_else(|| Error::Invalid(format!("{id} is not a setting of this device")))
+    }
+
+    /// Sends one setting to a device that cannot report its settings. It cannot be read back or checked. Unless the
+    /// setting is remembered (the device keeps it in its memory, and PeriHub keeps what it sent: see
+    /// [`Self::put_back_blind`]), nothing is saved to the device's memory and unplugging it brings back what it has
+    /// saved.
     pub fn set_blind(&mut self, id: &str, value: &BlindValue) -> Result<PeripheralInfo> {
         crate::writes::refuse_if_read_only()?;
         if !self.info.editable {
             return Err(Error::Invalid("this connection may not change anything".into()));
         }
-        let index = self
-            .info
-            .blind
-            .iter()
-            .position(|b| b.id == id)
-            .ok_or_else(|| Error::Invalid(format!("{id} is not a setting of this device")))?;
-        self.driver.send_blind(&mut self.io, id, value)?;
-        self.info.blind[index].last = Some(value.clone());
+        let index = self.blind_index(id)?;
+        let result = self.driver.send_blind(&mut self.io, id, value);
+        // Also after a refusal: that is what a test report needs to show.
+        self.info.sent = self.driver.sent();
         self.info.raw = self.io.take_raw();
+        result?;
+        if self.info.blind[index].remembered {
+            self.remember(index, |history| history.sent(value.clone()));
+        } else {
+            self.info.blind[index].last = Some(value.clone());
+        }
+        Ok(self.info.clone())
+    }
+
+    /// Sends a remembered setting again as it was before the last change PeriHub made to it. Only what PeriHub itself
+    /// sent can be put back: before its first change the device held something set by other software, which it
+    /// cannot read.
+    pub fn put_back_blind(&mut self, id: &str) -> Result<PeripheralInfo> {
+        crate::writes::refuse_if_read_only()?;
+        if !self.info.editable {
+            return Err(Error::Invalid("this connection may not change anything".into()));
+        }
+        let index = self.blind_index(id)?;
+        let previous = self.info.blind[index].previous.clone().ok_or_else(|| {
+            Error::Invalid(
+                "PeriHub has nothing from before to put back: it only knows what it sent itself, not what the device held before its first change".into(),
+            )
+        })?;
+        let result = self.driver.send_blind(&mut self.io, id, &previous);
+        self.info.sent = self.driver.sent();
+        self.info.raw = self.io.take_raw();
+        result?;
+        self.remember(index, |history| {
+            history.put_back();
+        });
         Ok(self.info.clone())
     }
 

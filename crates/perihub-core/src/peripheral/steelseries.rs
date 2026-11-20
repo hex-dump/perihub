@@ -274,11 +274,7 @@ impl Driver for SteelSeries {
     }
 
     fn blind_settings(&self) -> Vec<BlindSetting> {
-        self.p
-            .settings
-            .iter()
-            .map(|s| BlindSetting { id: s.id, label: s.label, kind: blind_kind(s.kind), last: None })
-            .collect()
+        self.p.settings.iter().map(|s| BlindSetting::new(s.id, s.label, blind_kind(s.kind))).collect()
     }
 
     fn send_blind(&mut self, io: &mut Io, id: &str, value: &BlindValue) -> Result<()> {

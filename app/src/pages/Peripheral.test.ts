@@ -7,6 +7,7 @@ const api = vi.hoisted(() => ({
   peripheralKeepChanges: vi.fn(),
   peripheralUndo: vi.fn(),
   peripheralSetBlind: vi.fn(),
+  peripheralPutBackBlind: vi.fn(),
   appSettings: vi.fn(),
 }));
 
@@ -17,7 +18,7 @@ vi.mock("../lib/api", async (original) => ({
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.7.0" }));
 api.appSettings.mockResolvedValue({ system: "linux x86_64" });
 
-import type { PeripheralInfo } from "../lib/api";
+import type { BlindValue, PeripheralInfo } from "../lib/api";
 import { peripheralTest } from "../lib/testReport";
 import Peripheral from "./Peripheral.svelte";
 
@@ -582,7 +583,7 @@ describe("a keyboard with a brightness it reads and colours it cannot report", (
   it("shows the brightness to change, and the colours and display under a warning about a keyboard", () => {
     render(Peripheral, { props: { info: apexPro, error: null } });
     const text = document.body.textContent ?? "";
-    expect(text).toContain("Colours and display");
+    expect(text).toContain("Not saved in the device");
     expect(text).toContain("PeriHub cannot read the lighting effect of the SteelSeries Apex Pro");
     expect(text.replace(/\s+/g, " ")).toContain("Send sends what you picked, without saving it to the keyboard's memory");
     expect(text).toContain("after the keyboard is unplugged");
@@ -850,5 +851,242 @@ describe("a QMK keyboard", () => {
     expect(screen.getByRole("alertdialog").textContent).toContain(
       "look at its lighting",
     );
+  });
+});
+
+describe("the lighting effects of a Razer keyboard", () => {
+  const speeds: [number, string][] = [
+    [1, "500 ms"],
+    [2, "1000 ms"],
+    [3, "1500 ms"],
+    [4, "2000 ms"],
+  ];
+  const effects = [
+    { name: "Off (no effect)", colors: 0, speeds: [] },
+    { name: "Static, one colour", colors: 1, speeds: [] },
+    { name: "Breathing, two colours", colors: 2, speeds: [] },
+    { name: "Reactive, one colour", colors: 1, speeds },
+  ];
+  const label = "Lighting effect, saved in the keyboard";
+  const v4: PeripheralInfo = {
+    ...info,
+    key: "1532:02b9",
+    vendor_id: 0x1532,
+    product_id: 0x02b9,
+    brand: "Razer",
+    model: "BlackWidow V4 Mini HyperSpeed",
+    kind: "keyboard",
+    source: "OpenRazer (facts only)",
+    tested: false,
+    profiles: 1,
+    active_profile: null,
+    active_dpi: null,
+    can_save: false,
+    changes_stay: true,
+    settings: {
+      dpi_levels: [],
+      polling_hz: null,
+      options: { game_mode: 1 },
+      leds: [{ mode: 0, brightness: 50, color: "#000000" }],
+    },
+    limits: {
+      dpi: null,
+      polling_hz: [],
+      options: [
+        {
+          id: "game_mode",
+          label: "Game mode",
+          values: [
+            [0, "Off"],
+            [1, "On"],
+          ],
+        },
+      ],
+      leds: [{ name: "Backlight", modes: [], brightness_step: 1, color: false }],
+    },
+    buttons: [],
+    blind: [
+      { id: "color", label: "One colour, not saved", kind: { type: "color" }, last: null },
+      {
+        id: "effect",
+        label,
+        kind: { type: "effect", effects },
+        last: null,
+        remembered: true,
+        previous: null,
+      },
+    ],
+    sent: [],
+  };
+  const text = () => document.body.textContent!.replace(/\s+/g, " ");
+  const sentEffect: BlindValue = {
+    type: "effect",
+    value: { name: "Static, one colour", colors: ["#00ff00"], speed: null },
+  };
+  const lastEffect: BlindValue = {
+    type: "effect",
+    value: { name: "Breathing, two colours", colors: ["#ff0000", "#00ff00"], speed: null },
+  };
+  /** The Send button of the effect: the colour above it has one too. */
+  const sendEffect = () => screen.getAllByRole("button", { name: "Send" })[1];
+
+  /** The No warranty box, when this device has not accepted it yet in this session. */
+  async function confirmIfAsked() {
+    const box = screen.queryByRole("checkbox");
+    if (!box) return;
+    await fireEvent.click(box);
+    await fireEvent.click(screen.getByRole("button", { name: "Save to memory" }));
+  }
+
+  it("says plainly that the effect the keyboard had before is unknown, and offers nothing to put back", () => {
+    render(Peripheral, { props: { info: v4, error: null } });
+    expect(text()).toContain("cannot read which lighting effect the Razer BlackWidow V4 Mini HyperSpeed shows");
+    expect(text()).toContain("PeriHub has not sent an effect yet");
+    expect(text()).toContain("set by Razer Synapse");
+    expect(text()).toContain("Note it in Razer Synapse first");
+    expect(text()).toContain("Last sent by PeriHub: not sent yet");
+    expect(screen.queryByRole("button", { name: "Put back" })).toBeNull();
+    // The brightness and the game mode keep their own saved changes, and the colour is not saved.
+    expect(screen.getByRole("slider", { name: "Backlight brightness" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Colour" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Lighting effects" })).toBeTruthy();
+  });
+
+  it("sends an effect with its colours only after the No warranty box", async () => {
+    api.peripheralSetBlind.mockResolvedValue(v4);
+    render(Peripheral, { props: { info: v4, error: null } });
+    const select = screen.getByRole("combobox", { name: label }) as HTMLSelectElement;
+    select.value = "Breathing, two colours";
+    await fireEvent.change(select);
+    const second = screen.getByLabelText(`${label}: colour 2`) as HTMLInputElement;
+    expect(screen.getByLabelText(`${label}: colour 1`)).toBeTruthy();
+    expect(screen.queryByLabelText(`${label}: speed`)).toBeNull();
+    await fireEvent.change(second, { target: { value: "#123456" } });
+    await fireEvent.click(sendEffect());
+    expect(api.peripheralSetBlind).not.toHaveBeenCalled();
+    expect(screen.getByRole("note").textContent).toContain("accepts no responsibility for any damage");
+    expect(screen.getByRole("dialog").textContent!.replace(/\s+/g, " ")).toContain("cannot report which effect it shows");
+    await fireEvent.click(screen.getByRole("checkbox"));
+    await fireEvent.click(screen.getByRole("button", { name: "Save to memory" }));
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenCalledWith("1532:02b9", "effect", {
+      type: "effect",
+      value: { name: "Breathing, two colours", colors: ["#ff0000", "#123456"], speed: null },
+    });
+    // Asked once: the next effect goes out at once.
+    await fireEvent.click(sendEffect());
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("checkbox")).toBeNull();
+  });
+
+  it("shows the colours and the speed only for the effects that take them", async () => {
+    api.peripheralSetBlind.mockResolvedValue(v4);
+    render(Peripheral, { props: { info: v4, error: null } });
+    const select = screen.getByRole("combobox", { name: label }) as HTMLSelectElement;
+    expect(select.value).toBe("Off (no effect)");
+    expect(screen.queryByLabelText(`${label}: colour 1`)).toBeNull();
+    select.value = "Reactive, one colour";
+    await fireEvent.change(select);
+    expect(screen.getByLabelText(`${label}: colour 1`)).toBeTruthy();
+    const speed = screen.getByRole("combobox", { name: `${label}: speed` }) as HTMLSelectElement;
+    expect([...speed.options].map((o) => o.textContent)).toEqual(["500 ms", "1000 ms", "1500 ms", "2000 ms"]);
+    speed.value = "3";
+    await fireEvent.change(speed);
+    await fireEvent.click(sendEffect());
+    await confirmIfAsked();
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenCalledWith("1532:02b9", "effect", {
+      type: "effect",
+      value: { name: "Reactive, one colour", colors: ["#ff0000"], speed: 3 },
+    });
+    // Back to an effect without a speed: none is sent with it.
+    select.value = "Static, one colour";
+    await fireEvent.change(select);
+    expect(screen.queryByLabelText(`${label}: speed`)).toBeNull();
+    await fireEvent.click(sendEffect());
+    await confirmIfAsked();
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenLastCalledWith("1532:02b9", "effect", {
+      type: "effect",
+      value: { name: "Static, one colour", colors: ["#ff0000"], speed: null },
+    });
+  });
+
+  it("offers to put back the effect from before the last one, and the one from before the first stays unknown", async () => {
+    const twice: PeripheralInfo = {
+      ...v4,
+      key: "1532:02ba",
+      product_id: 0x02ba,
+      blind: [
+        v4.blind[0],
+        { ...v4.blind[1], last: lastEffect, previous: sentEffect },
+      ],
+    };
+    const afterPutBack: PeripheralInfo = {
+      ...twice,
+      blind: [twice.blind[0], { ...twice.blind[1], last: sentEffect, previous: null }],
+    };
+    api.peripheralPutBackBlind.mockResolvedValue(afterPutBack);
+    render(Peripheral, { props: { info: twice, error: null } });
+    expect(text()).toContain("Last sent by PeriHub: Breathing, two colours (#ff0000, #00ff00)");
+    expect(text()).toContain("before it, PeriHub sent: Static, one colour (#00ff00)");
+    expect(text()).not.toContain("PeriHub has not sent an effect yet");
+    expect(text()).not.toContain("PeriHub can only put back what it sent itself");
+    await fireEvent.click(screen.getByRole("button", { name: "Put back" }));
+    // A stored change: the same box as before the first one, if this keyboard has not accepted it.
+    expect(api.peripheralPutBackBlind).not.toHaveBeenCalled();
+    await confirmIfAsked();
+    await wait(0);
+    expect(api.peripheralPutBackBlind).toHaveBeenCalledWith("1532:02ba", "effect");
+    // Everything PeriHub sent before was put back: what came before is not known any more.
+    expect(screen.queryByRole("button", { name: "Put back" })).toBeNull();
+    expect(text()).toContain("Last sent by PeriHub: Static, one colour (#00ff00)");
+    expect(text()).toContain("PeriHub can only put back what it sent itself");
+    expect(text()).toContain("set by Razer Synapse");
+  });
+
+  it("says what PeriHub could not put back, and what the keyboard said", async () => {
+    api.peripheralSetBlind.mockRejectedValue("invalid value: the device does not support this command");
+    render(Peripheral, { props: { info: v4, error: null } });
+    await fireEvent.click(sendEffect());
+    await confirmIfAsked();
+    await wait(0);
+    expect(screen.getByRole("alert").textContent).toContain("the device does not support this command");
+  });
+
+  it("offers nothing to send or put back on a read-only connection, and still says what is known", () => {
+    const twice: PeripheralInfo = {
+      ...v4,
+      editable: false,
+      blind: [v4.blind[0], { ...v4.blind[1], last: lastEffect, previous: sentEffect }],
+    };
+    render(Peripheral, { props: { info: twice, error: null } });
+    expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Put back" })).toBeNull();
+    expect(text()).toContain("Last sent by PeriHub: Breathing, two colours (#ff0000, #00ff00)");
+  });
+
+  it("puts what was sent, what came before it and the keyboard's answers into the test report", () => {
+    const sent = [
+      "lighting effect Breathing, two colours #ff0000 #00ff00: 0f 02 01 05 02 02 00 02 ff 00 00 00 ff 00 (transaction id 1f) → accepted (status 02)",
+      "lighting effect Wave, left to right: 0f 02 01 05 04 01 28 00 (transaction id 1f) → not accepted: the device does not support this command",
+    ];
+    const twice: PeripheralInfo = {
+      ...v4,
+      blind: [v4.blind[0], { ...v4.blind[1], last: lastEffect, previous: sentEffect }],
+      sent,
+    };
+    const report = peripheralTest(twice, "0.9.7", "Linux").report;
+    expect(report).toContain(
+      "Last sent by PeriHub: Lighting effect, saved in the keyboard = Breathing, two colours (#ff0000, #00ff00); before that: Static, one colour (#00ff00)",
+    );
+    expect(report).toContain("Changes sent, with the answer of the device to each:");
+    for (const line of sent) expect(report).toContain(`  ${line}`);
+    // The first change: what was before it is not known.
+    const first = peripheralTest({ ...v4, blind: [v4.blind[0], { ...v4.blind[1], last: sentEffect }] }, "0.9.7", "Linux").report;
+    expect(first).toContain("before that: not known (set by other software)");
+    // Nothing sent: no heading, no lines.
+    expect(peripheralTest(v4, "0.9.7", "Linux").report).not.toContain("Changes sent");
   });
 });

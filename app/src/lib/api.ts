@@ -752,6 +752,15 @@ export interface PeripheralLimits {
   }[];
 }
 
+/** One effect of an "effect" setting, and what it takes. */
+export interface EffectSpec {
+  name: string;
+  /** How many colours: none, one or two. */
+  colors: number;
+  /** The speeds it takes, by the device's number and a name; empty: no speed. */
+  speeds: [number, string][];
+}
+
 /** A setting of a device that cannot report it: PeriHub sends it, one at a time. */
 export interface BlindSetting {
   id: string;
@@ -766,16 +775,29 @@ export interface BlindSetting {
         max: number;
         step: number;
         max_presets: number;
-      };
-  /** What PeriHub last sent since the device was connected. */
+      }
+    | { type: "effect"; effects: EffectSpec[] };
+  /** What PeriHub last sent since the device was connected; for a remembered setting, in any session. */
   last: BlindValue | null;
+  /** The device keeps this setting in its memory and cannot report it: PeriHub remembers what it sent, to put it back. */
+  remembered?: boolean;
+  /** What PeriHub sent before `last`: what "Put back" sends again. Null before PeriHub's second change. */
+  previous?: BlindValue | null;
+}
+
+/** An effect as chosen: its name, its colours and its speed. */
+export interface EffectValue {
+  name: string;
+  colors: string[];
+  speed: number | null;
 }
 
 export type BlindValue =
   | { type: "choice"; value: string }
   | { type: "color"; value: string }
   | { type: "number"; value: number }
-  | { type: "dpi"; value: number[] };
+  | { type: "dpi"; value: number[] }
+  | { type: "effect"; value: EffectValue };
 
 export interface PeripheralInfo {
   /** "vvvv:pppp". */
@@ -815,6 +837,8 @@ export interface PeripheralInfo {
   pending_undo: boolean;
   /** Requests and answers of the last reading, cut short, for the backups. */
   raw: string[];
+  /** What PeriHub sent that changed something, and how the device answered each, newest last, for test reports. */
+  sent?: string[];
   /** Every request and answer in full, as a transcript in JSON (docs/replay.md), for test reports:
    * the first reading and the latest one. Nothing in it tells the unit apart. */
   transcript?: string;
@@ -1074,6 +1098,9 @@ export const api = {
   /** Sends one setting to a device that cannot report its settings: not saved, not undone. */
   peripheralSetBlind: (key: string, id: string, value: BlindValue) =>
     invoke<PeripheralInfo>("peripheral_set_blind", { key, id, value }),
+  /** Sends a remembered setting again as it was before PeriHub's last change to it. */
+  peripheralPutBackBlind: (key: string, id: string) =>
+    invoke<PeripheralInfo>("peripheral_put_back_blind", { key, id }),
   /** Experimental lighting on a Corsair mouse: one colour on every LED, for this session. */
   corsairSetLighting: (productId: number, color: string) =>
     invoke<CorsairInfo>("corsair_set_lighting", { productId, color }),
