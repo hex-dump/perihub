@@ -1,0 +1,23 @@
+{
+  "format": "perihub-transcript",
+  "version": 1,
+  "device": {
+    "vendor_id": "1038",
+    "product_id": "1730",
+    "name": "SteelSeries Rival 700 / Rival 710"
+  },
+  "family": "peripheral",
+  "access": "read-only",
+  "recorded_by": "PeriHub 0.9.6 on windows x86_64",
+  "source": "issue #97",
+  "notes": [
+    "Added with the confirmation of this device by cargo xtask confirm, from the transcript of its test report. Its `expect` holds only what the confirmation is about: add the values the tester confirmed (docs/replay.md)."
+  ],
+  "expect": {
+    "problem": null
+  },
+  "events": [
+    {"op":"write","data":"00 10 00"},
+    {"op":"read","data":"72","len":32}
+  ]
+}
