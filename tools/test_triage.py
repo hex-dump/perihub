@@ -460,7 +460,36 @@ class Triage(unittest.TestCase):
         # No label from GitHub: the headings of the form say what it is.
         self.assertEqual(run(issue)["labels"], ["test report", "brand: ASUS", "mouse"])
         other = device_issue(ASUS, "0b05:195c", brand="Other", kind="Keyboard")
-        self.assertEqual(run(other)["labels"], ["brand: ASUS", "keyboard"])
+        # The catalogue and the app's report know it is a mouse: the dropdown's "Keyboard" goes (issue #97).
+        result = run({**other, "labels": [{"name": "test report"}, {"name": "keyboard"}]})
+        self.assertEqual(result["labels"], ["brand: ASUS", "mouse"])
+        self.assertEqual(result["remove_labels"], ["keyboard"])
+        # An id nobody knows: the report's own "(mouse)" still beats the dropdown.
+        unknown = device_issue(ASUS.replace("0b05:195c", "abcd:0001"), "abcd:0001", brand="Other", kind="Keyboard")
+        self.assertEqual(run(unknown)["labels"], ["brand: Other", "mouse"])
+
+    def test_the_released_devices_are_read_with_the_branches_too(self):
+        # triage.yml passes 4 files: the third is still the devices of the latest release, not main's.
+        import io
+        from contextlib import redirect_stdout
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as tmp:
+            event, released, branches = (Path(tmp) / n for n in ("event.json", "released.json", "branches.json"))
+            body = answer("Device model", "X") + answer("USB ID (vendor:product)", "0b05:195c")
+            event.write_text(json.dumps({"issue": {"number": 1, "labels": [{"name": "device request"}], "body": body}}))
+            released.write_text(json.dumps({"devices": []}))
+            branches.write_text("{}")
+            out = io.StringIO()
+            argv = sys.argv
+            try:
+                sys.argv = ["triage.py", str(event), "0.9.0", str(released), str(branches)]
+                with redirect_stdout(out):
+                    triage.main()
+            finally:
+                sys.argv = argv
+            # Only on main, in no release: left to the maintainer, never "already recognizes".
+            self.assertIsNone(json.loads(out.getvalue())["comment"])
 
     def test_a_report_from_an_older_version_is_asked_to_try_the_latest(self):
         result = run(device_issue(ASUS.replace("0.9.0", "0.8.4"), "0b05:195c", version="0.8.4"))
@@ -781,7 +810,9 @@ class AutoAdd(unittest.TestCase):
                 self.assertEqual(result["labels"][-1], "ready to add")
                 self.assertNotIn("auto_add", result)
                 self.assertNotIn("written and built automatically", result["comment"])
-                self.assertIn("will be posted on this issue", result["comment"])
+                self.assertIn("posted on this issue automatically", result["comment"])
+                # No promise of an automatic build: a maintainer writes these.
+                self.assertIn("A maintainer adds it on a test branch", result["comment"])
 
     def test_known_ids_and_ids_nobody_lists_are_not(self):
         for usb in ("1532:0078", "dead:beef"):
@@ -843,6 +874,85 @@ class Catalogue(unittest.TestCase):
             for vendor in vendors:
                 self.assertIsNotNone(triage.driver_brand(vendor, devices), vendor)
 
+
+
+TRIED_CLEAN = """
+What I tried:
+  worked: The name and USB ID PeriHub shows are right
+  worked: PeriHub finds it again after I unplug it and plug it back in
+  worked: The DPI PeriHub shows matches the mouse
+  worked: The polling rate PeriHub shows is right"""
+
+
+class TestMyDevice(unittest.TestCase):
+    """A report made with Test my device: its checklist ("What I tried:") stands for the form's box of the other
+    brands, which the procedure does not tick (issue #97)."""
+
+    def test_a_clean_checklist_confirms_without_the_box(self):
+        result = run(device_issue(ASUS + TRIED_CLEAN, "0b05:195c", ticked=()))
+        self.assertEqual(result["confirm"], {"usb": "0b05:195c"})
+
+    def test_a_check_that_did_not_work_confirms_nothing(self):
+        failed = TRIED_CLEAN + "\n  did not work: The lighting PeriHub shows matches the mouse"
+        self.assertNotIn("confirm", run(device_issue(ASUS + failed, "0b05:195c", ticked=())))
+
+    def test_only_the_name_is_not_enough(self):
+        name_only = "\nWhat I tried:\n  worked: The name and USB ID PeriHub shows are right"
+        self.assertNotIn("confirm", run(device_issue(ASUS + name_only, "0b05:195c", ticked=())))
+
+    def test_without_a_checklist_the_box_is_still_needed(self):
+        self.assertNotIn("confirm", run(device_issue(ASUS, "0b05:195c", ticked=())))
+
+
+def saw_request(usb, saw):
+    body = (
+        answer("Device model", "X")
+        + answer("USB ID (vendor:product)", usb)
+        + answer("What PeriHub saw", "```text\n" + saw + "\n```")
+    )
+    return {"number": 3, "labels": [{"name": "device request"}], "body": body}
+
+
+PLAIN_MOUSE = """PeriHub 0.9.5 on windows x86_64
+Device: Logitech USB Optical Mouse
+Kind: Mouse
+USB ID: 046d:c077 (USB)
+HID collections:
+  interface 0, usage page 0001, usage 0002"""
+
+
+class StandardInterfacesOnly(unittest.TestCase):
+    """A device whose collections are all standard (mouse, keyboard, media keys) has no channel to set it through."""
+
+    devices = [{"family": "logitech-onboard", "brand": "Logitech", "name": "G403", "kind": "mouse", "level": "supported", "usb_ids": ["046d:c08f"]},
+               {"family": "razer", "brand": "Razer", "name": "Viper", "kind": "mouse", "level": "supported", "usb_ids": ["1532:0078"]}]
+
+    def test_a_logitech_id_libratbag_lists_without_hidpp_is_not_ready_to_add(self):
+        result = triage.triage(saw_request("046d:c077", PLAIN_MOUSE), "0.9.6", self.devices, upstream={"libratbag": ["046d:c077"]})
+        self.assertEqual(result["labels"][-1], "needs captures")
+        self.assertIn("no vendor-specific one", result["comment"])
+        self.assertIn("Record the official software", result["comment"])
+        self.assertNotIn("can be added directly", result["comment"])
+
+    def test_with_hidpp_it_is(self):
+        saw = PLAIN_MOUSE + "\n  interface 1, usage page ff00, usage 0001"
+        result = triage.triage(saw_request("046d:c077", saw), "0.9.6", self.devices, upstream={"libratbag": ["046d:c077"]})
+        self.assertEqual(result["labels"][-1], "ready to add")
+
+    def test_a_razer_mouse_is_set_through_its_standard_interface(self):
+        saw = PLAIN_MOUSE.replace("046d:c077", "1532:00c1")
+        result = triage.triage(saw_request("1532:00c1", saw), "0.9.6", self.devices, upstream={"openrazer": ["1532:00c1"]})
+        self.assertEqual(result["labels"][-1], "ready to add")
+
+    def test_nobody_lists_it_and_no_vendor_collection(self):
+        saw = PLAIN_MOUSE.replace("046d:c077", "c0f4:03f5")
+        result = triage.triage(saw_request("c0f4:03f5", saw), "0.9.6", self.devices, upstream={})
+        self.assertEqual(result["labels"][-1], "needs captures")
+        self.assertIn("no vendor-specific one", result["comment"])
+
+    def test_nothing_seen_keeps_the_old_answer(self):
+        result = triage.triage(saw_request("c0f4:03f5", ""), "0.9.6", self.devices, upstream={})
+        self.assertIn("A maintainer will look", result["comment"])
 
 if __name__ == "__main__":
     unittest.main()

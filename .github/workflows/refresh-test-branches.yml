@@ -1,0 +1,71 @@
+name: Refresh test branches
+
+# After a release, every test/* branch a tester is still waiting on (a commit of its own has a "Test: #N" line for
+# an open issue) gets main merged in and a new test build, so that testers try the device with every fix of the
+# release (a test build made before 0.9.6 lacked, for one, report links that fit through GitHub's login page).
+# The test build's notify job then posts the new link on the issue and deletes the old one.
+# tools/refresh-test-branches.sh does the work: generated files are written again with cargo xtask gen, the
+# branch's CHANGELOG entries go under Unreleased, and a branch with any other conflict is left alone and named
+# in the log (the run fails, for a person to merge it by hand).
+# By hand: Actions → Refresh test branches → Run workflow, for every branch or only one.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Only this test/… branch (empty for all of them)
+        type: string
+        required: false
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: refresh-test-branches
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+      issues: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRANCH: ${{ inputs.branch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # cargo xtask gen builds perihub-core, which needs libudev.
+      - name: System dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libudev-dev
+
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+
+      - name: Merge main into the waiting test branches
+        run: |
+          set -euo pipefail
+          if [ -n "$BRANCH" ]; then
+            [[ "$BRANCH" =~ ^test/[A-Za-z0-9._/-]+$ ]] || { echo "::error::Not a test/… branch."; exit 1; }
+            bash tools/refresh-test-branches.sh --push "$BRANCH" | tee "$RUNNER_TEMP/log"
+          else
+            bash tools/refresh-test-branches.sh --push | tee "$RUNNER_TEMP/log"
+          fi
+        shell: bash
+
+      - name: Summary
+        if: always()
+        run: |
+          { echo "### Test branches"; echo; sed 's/^/- /' "$RUNNER_TEMP/log" 2>/dev/null || true; } >> "$GITHUB_STEP_SUMMARY"
+          grep '^NEEDS A PERSON' "$RUNNER_TEMP/log" 2>/dev/null | sed 's/^/::warning::/' || true

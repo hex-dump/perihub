@@ -132,12 +132,14 @@ def driver_brand(vendor: str, devices: list[dict]) -> str | None:
     return brands[0] if brands else None
 
 
-# What happens after "ready to add": a device is never in a release before a tester has confirmed it.
+# What happens after "ready to add": a device is never in a release before a tester has confirmed it. Only the
+# devices auto-add.yml can write (AUTO_TEST_BUILD_STEPS) are added without a person: for the others a maintainer
+# writes the support, and only the link of its test build comes by itself, so the answer does not promise more.
 TEST_BUILD_STEPS = (
-    "A **test build** with it will be posted on this issue (the link comes here automatically). Install it, connect "
-    "the device, and try it with **Test my device**: it reads the device, and the report says which test build it is "
-    "from. Once a clean report comes in, the device is confirmed and goes into the next release. Nothing more is "
-    "needed from you until the test build is here."
+    "A maintainer adds it on a test branch, and when its **test build** is ready the link is posted on this issue "
+    "automatically. Install it, connect the device, and try it with **Test my device**: it reads the device, and the "
+    "report says which test build it is from. Once a clean report comes in, the device is confirmed and goes into "
+    "the next release. Nothing more is needed from you until the test build is here."
 )
 
 
@@ -168,6 +170,30 @@ HIDPP_COLLECTION = re.compile(r"usage page ff00, usage 000[12]\b", re.I)
 def speaks_hidpp(usb: str, saw: str) -> bool:
     """Whether a Logitech device's "What PeriHub saw" block shows HID++ report collections."""
     return usb.startswith("046d:") and bool(HIDPP_COLLECTION.search(saw or ""))
+
+
+COLLECTION = re.compile(r"usage page ([0-9a-f]{4}), usage [0-9a-f]{4}", re.I)
+
+
+def vendor_interface(saw: str) -> bool | None:
+    """Whether "What PeriHub saw" lists a vendor-defined collection (usage page ff00 to ffff), the channel a
+    configurable device is set through; None when it lists no collections at all (nothing to go by)."""
+    pages = [int(p, 16) for p in COLLECTION.findall(saw or "")]
+    return any(p >= 0xFF00 for p in pages) if pages else None
+
+
+# A device with only standard collections (mouse, keyboard, media keys): usually a plain device, nothing to set.
+NO_VENDOR_INTERFACE = (
+    "What PeriHub saw has only standard interfaces (mouse, keyboard, media keys) and no vendor-specific one, which "
+    "is the channel configurable devices usually use, so there may be nothing PeriHub can change on it."
+)
+# How to send what the official software does: the recorder in the app (0.9.6 and newer), or the guide.
+RECORD_STEPS = (
+    "If its official software does change settings on it (DPI, lighting, buttons...), please say which program and "
+    "what it changes. The way to add it is then a recording of that software: in PeriHub, **Send a report** → "
+    "**Record the official software** on this device, and change each setting while it records (only the device's "
+    f"own configuration traffic is kept). The [capture guide]({CAPTURE_GUIDE}) explains the same by hand."
+)
 
 
 def branch_with(usb: str, branches: dict[str, list[dict]] | None) -> str | None:
@@ -209,6 +235,11 @@ def next_steps(
             "ready to add",
         )
     documented = [p for p in projects if brand and usb.split(":")[0] in PROJECT_VENDORS.get(p, ())]
+    vendor = vendor_interface(saw)
+    # libratbag's Logitech devices are set through HID++, on a vendor collection: a device with only standard ones
+    # (046d:c077, a plain optical mouse, issue #95) has nothing for that driver, whatever libratbag lists.
+    if usb.startswith("046d:") and vendor is False:
+        documented = [p for p in documented if p != "libratbag"]
     if documented:
         project = documented[0]
         steps = AUTO_TEST_BUILD_STEPS if auto_addable(usb, upstream, devices, branches) else TEST_BUILD_STEPS
@@ -225,6 +256,12 @@ def next_steps(
             f"directly**, as **read-only or experimental**. {TEST_BUILD_STEPS}",
             "ready to add",
         )
+    if vendor is False and not [p for p in projects if p != "libratbag"]:
+        return (
+            f"Thanks! `{usb}` is not in PeriHub {latest}. {NO_VENDOR_INTERFACE} {RECORD_STEPS} Until then PeriHub "
+            "sends nothing to it.",
+            "needs captures",
+        )
     if projects:
         project = projects[0]
         return (
@@ -237,9 +274,10 @@ def next_steps(
     return (
         f"Thanks! `{usb}` is not in PeriHub {latest}, and no public documentation of its protocol was found in the "
         "projects PeriHub learns from. A maintainer will look for documentation of it; you do not need to do anything "
-        "for the request to count. If you are comfortable with it, **USB captures** of its official software changing "
-        f"each setting would help a lot (see the [capture guide]({CAPTURE_GUIDE})), but they are optional and never "
-        "required. Until the device is added, PeriHub sends nothing to it.",
+        "for the request to count. If you are comfortable with it, a recording of its official software changing each "
+        "setting would help a lot: in PeriHub, **Send a report** → **Record the official software** on this device (the "
+        f"[capture guide]({CAPTURE_GUIDE}) explains the same by hand). It is optional and never required. Until the "
+        "device is added, PeriHub sends nothing to it.",
         "needs captures",
     )
 
@@ -261,22 +299,26 @@ def form_type(body: str) -> str | None:
     return None
 
 
-def form_labels(answers: dict[str, str], from_catalogue: list[str]) -> list[str]:
-    """The kind of device and the brand: what the form's dropdowns say, else what the catalogue
-    knows for the USB ID. A brand not in BRANDS ("Other") is the catalogue's brand if it has one,
-    and "brand: Other" if not."""
+def form_labels(answers: dict[str, str], from_catalogue: list[str], reported: list[str] = ()) -> list[str]:
+    """The kind of device and the brand. What the catalogue knows for the USB ID comes first, then what the
+    app's own report says ("Device: X (mouse)", in reported), and the form's dropdowns only after them: a tester
+    sometimes picks "Keyboard" for a mouse (issue #97), the app never does. A brand nobody knows from the id is
+    the dropdown's, and "brand: Other" for "Other"."""
     catalogue_brand = next((l for l in from_catalogue if l.startswith("brand: ")), None)
     catalogue_kind = next((l for l in from_catalogue if l in KINDS), None)
+    reported_kind = next((l for l in reported if l in KINDS), None)
     kind = answers.get("Device type", "").strip().lower()
-    kind = kind if kind in KINDS else catalogue_kind
+    kind = catalogue_kind or reported_kind or (kind if kind in KINDS else None)
     chosen = answers.get("Brand", "").strip()
     named = next((b for b in BRANDS if b.lower() == chosen.lower()), None)
-    if named:
+    if catalogue_brand:
+        brand = catalogue_brand
+    elif named:
         brand = f"brand: {named}"
     elif chosen.lower() == "other":
-        brand = catalogue_brand or "brand: Other"
+        brand = "brand: Other"
     else:
-        brand = catalogue_brand
+        brand = None
     return [l for l in (brand, kind) if l]
 
 
@@ -403,6 +445,25 @@ def trouble_in(lines: list[str]) -> bool:
     return False
 
 
+# The checklist of Test my device (app/src/lib/reportWizard.ts, checklistText): "What I tried:", then one line for
+# each check the tester answered, "  worked: ..." or "  did not work: ...".
+TRIED = "What I tried:"
+NAME_CHECK = "The name and USB ID PeriHub shows are right"
+
+
+def tried_clean(lines: list[str]) -> bool:
+    """The tester went through Test my device's checklist and everything they answered worked: the name, and at
+    least one thing PeriHub shows about the device (DPI, polling rate, lighting, keys...). The same as the form's
+    box for the other brands, which the procedure does not tick (issue #97)."""
+    if TRIED not in lines:
+        return False
+    tried = [line.strip() for line in lines[lines.index(TRIED) + 1 :] if line.strip()]
+    worked = [line.removeprefix("worked: ") for line in tried if line.startswith("worked: ")]
+    if any(line.startswith("did not work: ") for line in tried):
+        return False
+    return NAME_CHECK in worked and any("PeriHub shows" in w for w in worked if w != NAME_CHECK)
+
+
 def confirm_device(lines: list[str], answers: dict[str, str], devices: list[dict]) -> dict | None:
     """A test report of a mouse or keyboard of another brand, or a Corsair one, nobody had confirmed."""
     found = DEVICE_LINE.match(lines[1]) if len(lines) > 1 else None
@@ -423,7 +484,7 @@ def confirm_device(lines: list[str], answers: dict[str, str], devices: list[dict
         if "Could not read: nothing" not in lines:
             return None
     elif d["family"] in OTHER_BRANDS:
-        needed = {SHOWS_OTHER}
+        needed = set() if tried_clean(lines) else {SHOWS_OTHER}
         if not any(line in CHANGES_OK for line in lines):
             return None
     else:
@@ -535,7 +596,8 @@ def triage(
     labels = {label["name"] for label in issue.get("labels", [])}
     present = set(labels)
     answers = fields(issue.get("body", ""))
-    pasted_kind = []
+    # What the app's report says the device is, in a form or pasted.
+    reported_kind = kind_label(issue.get("body", ""))
     if not labels & set(TYPES):
         kind = form_type(issue.get("body", ""))
         if not kind:
@@ -544,11 +606,15 @@ def triage(
                 return {"comment": None, "labels": []}
             kind, answers = found
             from_form = False
-            pasted_kind = kind_label(issue.get("body", ""))
         labels.add(kind)
     catalogue = brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), current)
-    wanted = sorted(labels - present) + form_labels(answers, pasted_kind + catalogue)
+    wanted = sorted(labels - present) + form_labels(answers, catalogue, reported_kind)
     result = {"comment": None, "labels": [l for i, l in enumerate(wanted) if l not in present and l not in wanted[:i]]}
+    # A kind label the issue has that the device is not (the form's dropdown, wrong): taken off.
+    right_kind = next((l for l in wanted if l in KINDS), None)
+    wrong = sorted(l for l in present & set(KINDS) if right_kind and l != right_kind)
+    if wrong:
+        result["remove_labels"] = wrong
 
     if "device request" in labels:
         given = answers.get("USB ID (vendor:product)", "")
@@ -610,7 +676,8 @@ def main() -> None:
         sys.exit(__doc__)
     event = json.loads(Path(sys.argv[1]).read_text())
     current = json.loads((ROOT / "site/devices.json").read_text())["devices"]
-    released = json.loads(Path(sys.argv[3]).read_text())["devices"] if len(sys.argv) == 4 else current
+    # With BRANCHES.json too (5 arguments, as in the workflow) RELEASED_DEVICES.json is still the third.
+    released = json.loads(Path(sys.argv[3]).read_text())["devices"] if len(sys.argv) >= 4 else current
     upstream = json.loads((ROOT / "tools/upstream-seen.json").read_text())
     branches = json.loads(Path(sys.argv[4]).read_text()) if len(sys.argv) == 5 else None
     result = triage(event["issue"], sys.argv[2], released, current, upstream=upstream, branches=branches)

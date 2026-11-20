@@ -4,6 +4,12 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
+## Unreleased
+
+### Fixed
+- **Automatic answers to device requests and test reports are more accurate.** A request for a device that shows only standard interfaces (mouse, keyboard, media keys) and no vendor-specific one is no longer told it "can be added directly" because libratbag lists its id (a plain Logitech optical mouse, issue #95): it is asked what its software changes, and pointed to **Record the official software**. A request a person has to write the support for no longer promises a test build "automatically": it says a maintainer adds it, and only the link comes by itself. A test report made with **Test my device** whose checklist all worked now confirms a device of another brand without the form's extra box, which the procedure never ticks (issue #97). The kind label comes from the catalogue and the app's own report before the form's dropdown, so a mouse reported as a keyboard is labelled a mouse, and a wrong kind label is taken off. Requests are compared with the devices of the latest release again, not with main's.
+- **Test builds follow the releases.** After each release, the test branch of every device a tester is still waiting on gets the release merged in and a new test build, whose link replaces the old one on the issue, so testers never try a device with fixes the release already has.
+
 ## 0.9.6 — 2026-11-20
 
 A device request can now carry two more things: what the device's vendor-defined feature reports hold at the moment (read only), so that a known controller chip and its protocol can often be recognized without a USB capture, and a USB recording of what the device's official software sends it, made by PeriHub itself (on Windows USBPcap is installed only for the recording and removed after it, on Linux usbmon is read with your password; what you type, other devices and the serial number are never recorded). A Razer mouse OpenRazer documents can also be added without a person, and device requests are answered more accurately.
