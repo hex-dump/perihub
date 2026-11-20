@@ -2645,6 +2645,66 @@
       }
     },
     {
+      "family": "steelseries-apex",
+      "brand": "SteelSeries",
+      "name": "Apex Pro",
+      "kind": "keyboard",
+      "level": "experimental",
+      "page": "devices/steelseries-apex-pro.html",
+      "usb_ids": [
+        "1038:1610"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "steelseries-apex",
+      "brand": "SteelSeries",
+      "name": "Apex 7",
+      "kind": "keyboard",
+      "level": "experimental",
+      "page": "devices/steelseries-apex-7.html",
+      "usb_ids": [
+        "1038:1612"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "steelseries-apex",
+      "brand": "SteelSeries",
+      "name": "Apex 7 TKL",
+      "kind": "keyboard",
+      "level": "experimental",
+      "page": "devices/steelseries-apex-7-tkl.html",
+      "usb_ids": [
+        "1038:1618"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
+      "family": "steelseries-apex",
+      "brand": "SteelSeries",
+      "name": "Apex 5",
+      "kind": "keyboard",
+      "level": "experimental",
+      "page": "devices/steelseries-apex-5.html",
+      "usb_ids": [
+        "1038:161c"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
       "family": "razer",
       "brand": "Razer",
       "name": "Orochi 2011",

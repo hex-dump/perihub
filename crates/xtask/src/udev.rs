@@ -63,6 +63,11 @@ receiver (0b05:1ace) is left out: it is shared with other devices and may carry 
 to. On the mice where that is interface 0 it also carries the mouse's movements and clicks, as on
 the Logitech mice above. The 2.4 GHz receivers listed are the mice's own, not shared ones."#
         }
+        "steelseries-apex" => {
+            r#"SteelSeries Apex Pro, Apex 7, Apex 7 TKL and Apex 5 (experimental, untested; facts from OpenRGB and apex-tux): only
+interface 1, the vendor collection (usage page ffc0) of their lighting, brightness and display. The interfaces
+that carry the keyboard, the mouse and the media keys, and the second vendor collection (interface 4), stay closed."#
+        }
         "razer" => {
             r#"Razer mice (experimental, untested; facts from OpenRazer): only the interface OpenRazer sends to (0, or 3
 on some newer mice). Interface 0 also carries the mouse's movements and clicks, as on the Logitech mice

@@ -29,6 +29,7 @@ pub mod razer_models;
 pub mod roccat;
 pub mod sinowealth;
 pub mod steelseries;
+pub mod steelseries_apex;
 #[rustfmt::skip]
 pub mod steelseries_models;
 pub mod task;
@@ -91,6 +92,7 @@ pub enum Protocol {
     Roccat(roccat::Params),
     Sinowealth(sinowealth::Params),
     SteelSeries(steelseries::Params),
+    SteelSeriesApex(steelseries_apex::Params),
     Wraith(wraith::Params),
     Yjx(yjx::Params),
 }
@@ -116,6 +118,7 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
     asus::MODELS
         .iter()
         .chain(steelseries_models::MODELS)
+        .chain(steelseries_apex::MODELS)
         .chain(razer_models::MODELS)
         .chain(razer_keyboard_models::MODELS)
         .chain(sinowealth::MODELS)

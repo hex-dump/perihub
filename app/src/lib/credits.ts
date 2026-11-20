@@ -196,6 +196,22 @@ export const creditGroups: CreditGroup[] = [
         ],
       },
       {
+        name: "OpenRGB, SteelSeries Apex controller (Controllers/SteelSeriesController)",
+        link: "https://gitlab.com/CalcProgrammer1/OpenRGB",
+        license: "GPL-2.0-or-later",
+        notes: [
+          "Commit 6b681e3c: the USB ids and interface of the Apex Pro, Apex 7, Apex 7 TKL and Apex 5, the report sizes, the firmware, brightness, colour and back-to-the-keyboard's-own-lighting commands, their answers, and the keys of the colour frame (docs/protocols/steelseries-apex.md). " + NO_CODE,
+        ],
+      },
+      {
+        name: "apex-tux",
+        link: "https://github.com/not-jan/apex-tux",
+        license: "Unlicense",
+        notes: [
+          "Commit d0911fe: the picture the display of the Apex Pro, Apex 7 and Apex 5 takes (128 x 40 pixels, one bit each) and the feature report it is sent in (docs/protocols/steelseries-apex.md). Public domain, credited although nothing requires it. " + NO_CODE,
+        ],
+      },
+      {
         name: "OpenRGB, EVision keyboard controllers (Controllers/EVisionKeyboardController)",
         link: "https://gitlab.com/CalcProgrammer1/OpenRGB",
         license: "GPL-2.0-or-later",

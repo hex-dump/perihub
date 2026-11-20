@@ -562,6 +562,13 @@ was copied.
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its EVGA drivers
   (`Controllers/EVGAUSBController`): the EVGA X12 and X20 USB ids, interfaces and lighting reports (see
   `docs/protocols/evga-mice.md`).
+- [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its SteelSeries Apex controller
+  (`Controllers/SteelSeriesController`, commit 6b681e3c): the USB ids and interface of the Apex Pro, Apex 7, Apex 7 TKL and
+  Apex 5, the report sizes, the firmware, brightness, colour and "back to the keyboard's own lighting" commands, their
+  answers, and the keys of the colour frame (see `docs/protocols/steelseries-apex.md`). No code was copied.
+- [apex-tux](https://github.com/not-jan/apex-tux) (Unlicense), commit d0911fe: the picture the display of
+  these keyboards takes (128 x 40 pixels, one bit each) and the feature report it is sent in (see
+  `docs/protocols/steelseries-apex.md`). Public domain, credited although nothing requires it. No code was copied.
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its EVision keyboard controllers
   (`Controllers/EVisionKeyboardController`, commit 91714d1): the EVision keyboards' USB ids, interface and usage page,
   report format and checksum, the configuration read and write commands, the lighting header and its modes, and the

@@ -13,7 +13,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use super::{
     BlindSetting, BlindValue, Command, Hid, Io, Model, PeripheralInfo, Protocol, Reading, Settings, asus,
     check_settings, coolermaster, evga, evision, logitech_g213, logitech_g600, logitech_hidpp10, memory, nordic,
-    pulsar, qmk, razer, razer_keyboard, roccat, sinowealth, steelseries, wraith, yjx,
+    pulsar, qmk, razer, razer_keyboard, roccat, sinowealth, steelseries, steelseries_apex, wraith, yjx,
 };
 use crate::config;
 use crate::error::{Error, Result};
@@ -72,6 +72,7 @@ pub fn driver(model: &'static Model) -> Box<dyn Driver> {
     match model.protocol {
         Protocol::Asus(params) => Box::new(asus::Asus::new(params)),
         Protocol::SteelSeries(params) => Box::new(steelseries::SteelSeries::new(params)),
+        Protocol::SteelSeriesApex(params) => Box::new(steelseries_apex::Apex::new(params)),
         Protocol::Razer(params) => Box::new(razer::Razer::new(params)),
         Protocol::RazerKeyboard(params) => Box::new(razer_keyboard::RazerKeyboard::new(params)),
         Protocol::Sinowealth(params) => Box::new(sinowealth::Sinowealth::new(params)),
