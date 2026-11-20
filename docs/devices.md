@@ -201,6 +201,9 @@ HARPOON, DARK CORE RGB PRO and IRONCLAW receivers; not yet the Slipstream V2).
   The device goes back to its own settings when you turn it off, when PeriHub quits and as soon as
   anything fails. Nothing is written to its memory.
 - With more than one device on the same receiver, PeriHub shows the first one only, for now.
+- Through a receiver PeriHub also reads the battery level.
+- **KATAR PRO WIRELESS** (receiver `1b1c:1b94`): read only, through its own receiver (it has no USB
+  data cable). No lighting until someone tests it.
 
 **Mice:**
 <!-- generated: names corsair-mouse -->

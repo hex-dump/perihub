@@ -245,6 +245,8 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b7f", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b81", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 # Corsair IRONCLAW RGB WIRELESS receiver
 KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b66", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# Corsair KATAR PRO WIRELESS Gaming Dongle
+KERNEL=="hidraw*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1b94", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 
 # ASUS ROG and TUF mice (experimental, untested; protocol from libratbag). The configuration collection
 # shares its interface with the mouse's movements and the keys assigned to its buttons, as on the

@@ -1418,7 +1418,15 @@ impl Manager {
                         continue;
                     }
                 };
-                match corsair::models::find(id) {
+                // A receiver that belongs to one mouse: that mouse, whatever id it reports.
+                let own = corsair::models::behind_own_receiver(receiver.product_id());
+                if own.is_some() {
+                    log::info!(
+                        "Corsair receiver {:04x}, channel {channel}: the mouse reports {id:04x}",
+                        receiver.product_id()
+                    );
+                }
+                match own.or_else(|| corsair::models::find(id)) {
                     Some(model) => {
                         return CorsairTask::open_behind(dev, model, receiver.product_id(), channel).map(Some);
                     }

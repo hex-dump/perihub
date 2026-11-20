@@ -67,11 +67,14 @@ Other commands exist (reading data, probing a handle). PeriHub does not use them
 | `0x01` | polling rate | 1 = 125 Hz, 2 = 250 Hz, 3 = 500 Hz, 4 = 1000 Hz (ckb-next) |
 | `0x02` | brightness | 0–1000 (ckb-next) |
 | `0x03` | mode | 1 = hardware (the device follows its own settings), 2 = software (the host drives it) **(both)** |
+| `0x0f` | battery level | 0–1000, tenths of a percent: both divide it by 10 **(both)** |
+| `0x10` | battery status | read by both; what its values mean is not known, PeriHub does not read it |
 | `0x11` | USB vendor id | read only (ckb-next) |
 | `0x12` | USB product id | read only (ckb-next) |
 | `0x13` | firmware version | major = byte 3, minor = byte 4, build = bytes 5–6 little endian **(both)** |
 | `0x14` | bootloader version | (ckb-next) |
 | `0x1e` | active DPI stage | (ckb-next) |
+| `0x20` | DPI on both axes | OpenLinkHub writes the DPI there, instead of `0x21`/`0x22`, on the KATAR PRO WIRELESS and some other wireless mice (SCIMITAR, SABRE RGB PRO). That it can be read back is our guess |
 | `0x21`, `0x22` | DPI on X and Y | (ckb-next) |
 | `0x41` | a keyboard's physical layout | 1 ANSI, 2 ISO, 3 ABNT (ckb-next and OpenRGB), 4 JIS (OpenRGB); see `keyboard-layouts.md` |
 
@@ -209,6 +212,7 @@ Older Corsair keyboards (K70 RGB MK.2, K95 RGB PLATINUM, K65 RGB, K68 and others
 | DARK CORE RGB PRO SE receiver | `1b7f` | both |
 | DARK CORE RGB PRO receiver | `1b81` | both |
 | IRONCLAW RGB WIRELESS receiver | `1b66` | ckb-next |
+| KATAR PRO WIRELESS Gaming Dongle | `1b94` | OpenLinkHub |
 
 The newer "Slipstream V2" receiver (`2b1b`) is handled by a separate driver in OpenLinkHub, with
 differences PeriHub does not know: it is left out. So is the K57 receiver (`1b62`), which ckb-next talks to on other
@@ -226,10 +230,31 @@ endpoints.
   and checks every few seconds that it is still connected. A receiver with more than one device
   connected shows the first one only, for now.
 
+### Mice with a receiver of their own
+
+The KATAR PRO WIRELESS has no USB data cable (it runs on a battery): it is only reached through
+its own receiver, `1b94` (issue 57). OpenLinkHub handles that receiver like the others: HID
+interface 1, 64-byte packets, requests to the receiver with marker `0x08` and to the mouse with
+`0x09` (channel 1). It also reads the mouse's battery (property `0x0f`) and writes its DPI to
+property `0x20`. On interface 2 the receiver sends a report with property `0x36` and value 2
+(channel 1, bit 1) when the mouse connects, and 0 when it turns off or sleeps, which matches the
+bit field above.
+
+Not known: the product id the mouse reports behind its receiver (property `0x12`). PeriHub logs
+it and names the mouse after the receiver, whatever id it reports.
+
+| Mouse | Receiver | Packet | LEDs |
+|---|---|---|---|
+| KATAR PRO WIRELESS | `1b94` | 64 | 0 (one LED per OpenLinkHub; PeriHub leaves its lighting out until tested) |
+
+PeriHub does not offer lighting on it: OpenLinkHub also puts the receiver itself in software mode
+and sends the keep-alive to both, which PeriHub's lighting does not do.
+
 ## What PeriHub does with it
 
-- **Always (read-only):** get the firmware version, the mode, the polling rate and the DPI, and
-  on keyboards the physical layout (`0x41`). Nothing is set.
+- **Always (read-only):** get the firmware version, the mode, the polling rate and the DPI
+  (`0x21`, or `0x20` when the mouse does not support `0x21`), on keyboards the physical layout
+  (`0x41`), and behind a receiver the battery level (`0x0f`). Nothing is set.
 - **Experimental lighting, off by default and only for the current session:** switch to software
   mode, open the lighting handle, write one colour to every LED, send the keep-alive every 20
   seconds; switch back to hardware mode when it is turned off, when PeriHub quits, or when any

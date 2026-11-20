@@ -1753,6 +1753,21 @@
       }
     },
     {
+      "family": "corsair-receiver",
+      "brand": "Corsair",
+      "name": "KATAR PRO WIRELESS Gaming Dongle",
+      "kind": "receiver",
+      "level": "experimental",
+      "page": "devices/corsair-katar-pro-wireless-gaming-dongle.html",
+      "usb_ids": [
+        "1b1c:1b94"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
       "family": "asus",
       "brand": "ASUS",
       "name": "ROG GX860 Buzzard",
