@@ -1,8 +1,10 @@
 name: Reminders
 
-# Once a day: a device request or test report whose author has not answered the maintainer for 14 days
-# gets one gentle reminder (tools/remind.py), when the maintainer's last message asked something. Never
-# more than one per answer, and nothing is closed.
+# Once a day (tools/remind.py): a device request or test report whose author has not answered the
+# maintainer's question for 7 days gets one gentle reminder. Where closing is surely right (label "waiting for
+# reporter", only safe labels, no pull request or test branch waiting for it) the reminder says so, and the
+# issue is closed with the label "no answer" 14 days after the question; the author's next comment reopens it
+# (waiting.yml).
 on:
   schedule:
     - cron: "23 9 * * *"
