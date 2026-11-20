@@ -16,6 +16,7 @@ pub mod evision;
 pub mod logitech_g213;
 pub mod logitech_g600;
 pub mod logitech_hidpp10;
+pub mod memory;
 pub mod nordic;
 pub mod pulsar;
 pub mod qmk;
@@ -231,8 +232,28 @@ pub struct BlindSetting {
     pub id: &'static str,
     pub label: &'static str,
     pub kind: BlindKind,
-    /// What PeriHub last sent since the device was connected, if anything.
+    /// What PeriHub last sent since the device was connected, if anything. For a [`remembered`](Self::remembered)
+    /// setting, what it last sent in any session.
     pub last: Option<BlindValue>,
+    /// The device keeps this setting in its memory, so PeriHub remembers what it sent (in its own settings, by the
+    /// device's key: see [`memory`]) and can put the one before back. It cannot put back what the device had before
+    /// PeriHub's first change: that was set by something else and cannot be read.
+    pub remembered: bool,
+    /// What PeriHub sent before [`last`](Self::last), which "put back" sends again. `None`: nothing is known, which is
+    /// always the case before the second change of a remembered setting.
+    pub previous: Option<BlindValue>,
+}
+
+impl BlindSetting {
+    /// A setting sent on request, not saved to the device's memory and not remembered.
+    pub fn new(id: &'static str, label: &'static str, kind: BlindKind) -> Self {
+        Self { id, label, kind, last: None, remembered: false, previous: None }
+    }
+
+    /// A setting the device keeps in its memory: PeriHub remembers what it sent.
+    pub fn remembered(id: &'static str, label: &'static str, kind: BlindKind) -> Self {
+        Self { remembered: true, ..Self::new(id, label, kind) }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -254,6 +275,28 @@ pub enum BlindKind {
         step: i32,
         max_presets: u8,
     },
+    /// A lighting effect of the device, with the colours and the speed it takes.
+    Effect {
+        effects: Vec<EffectSpec>,
+    },
+}
+
+/// One effect of a [`BlindKind::Effect`] setting, and what it takes.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct EffectSpec {
+    pub name: &'static str,
+    /// How many colours the effect takes: none, one or two.
+    pub colors: u8,
+    /// The speeds the effect takes, by the device's number and a name. Empty: the effect has no speed.
+    pub speeds: Vec<(u8, &'static str)>,
+}
+
+/// An effect as the user chose it: its name (from [`EffectSpec::name`]), its colours and its speed.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EffectValue {
+    pub name: String,
+    pub colors: Vec<Rgb>,
+    pub speed: Option<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -263,6 +306,7 @@ pub enum BlindValue {
     Color(Rgb),
     Number(i32),
     Dpi(Vec<u16>),
+    Effect(EffectValue),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -321,6 +365,9 @@ pub struct PeripheralInfo {
     pub details: Vec<(String, String)>,
     /// Settings PeriHub can send to a device that cannot report them, one at a time.
     pub blind: Vec<BlindSetting>,
+    /// What PeriHub sent that changed something, and how the device answered each, newest last: kept
+    /// for test reports, which would otherwise lose it at the next reading. Empty for most drivers.
+    pub sent: Vec<String>,
     /// Every change stays in the device's memory: there is no separate save.
     pub changes_stay: bool,
     /// Changes may be tried: this is PeriHub's app (not the command line) and everything read looked

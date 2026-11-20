@@ -1,7 +1,7 @@
 //! The tables of docs/devices.md, between the markers the generator writes around them. The text
 //! around them is written by hand.
 
-use perihub_core::peripheral::{Protocol, asus, razer};
+use perihub_core::peripheral::{Protocol, asus, razer, razer_keyboard};
 
 use crate::catalog::{Access, Device, Kind, Level, Source};
 use crate::select::{self, block, fill, select};
@@ -118,6 +118,11 @@ fn extra(family: &str) -> Option<Column> {
             parts.retain(|p| !p.is_empty());
             if parts.is_empty() { "—".into() } else { parts.join("; ") }
         }),
+        "razer-keyboard" => ("What PeriHub changes", |d| {
+            let Source::Peripheral(m) = d.model else { unreachable!() };
+            let Protocol::RazerKeyboard(p) = m.protocol else { unreachable!() };
+            razer_keyboard::changes(&p).map_or("—".into(), |changes| and_list(&changes))
+        }),
         "glorious" => ("Firmware", |d| {
             let Source::Peripheral(m) = d.model else { unreachable!() };
             let Protocol::Sinowealth(p) = m.protocol else { unreachable!() };
@@ -130,7 +135,7 @@ fn extra(family: &str) -> Option<Column> {
 /// What is particular to one model, for its page on the website: the same facts as the extra column of
 /// its family's table, for the families whose column is about the model and not about the driver.
 pub fn note(device: &Device) -> Option<String> {
-    if !matches!(device.family, "razer" | "asus") {
+    if !matches!(device.family, "razer" | "asus" | "razer-keyboard") {
         return None;
     }
     let (_, cell) = extra(device.family)?;
