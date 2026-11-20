@@ -346,11 +346,11 @@ PeriHub is not on Flathub, so the Flatpak does not update by itself: install the
 
 #### USB permissions
 
-The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage** or the **Flatpak**, if PeriHub shows "permission denied", install it by hand (this is the rule of release 0.9.6: if you have another version, change the version in the address), and again after an update that adds devices:
+The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage** or the **Flatpak**, if PeriHub shows "permission denied", install it by hand (this is the rule of release 0.9.7: if you have another version, change the version in the address), and again after an update that adds devices:
 
 ```sh
 sudo curl -o /etc/udev/rules.d/70-perihub.rules \
-  https://raw.githubusercontent.com/hex-dump/perihub/v0.9.6/packaging/linux/70-perihub.rules
+  https://raw.githubusercontent.com/hex-dump/perihub/v0.9.7/packaging/linux/70-perihub.rules
 sudo udevadm control --reload && sudo udevadm trigger
 ```
 

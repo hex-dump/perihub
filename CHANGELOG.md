@@ -4,7 +4,9 @@
 Added, Performance, Changed, Fixed, Security, Removed, Known limitations. The release notes on
 GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the sections. -->
 
-## Unreleased
+## 0.9.7 — 2026-11-20
+
+More devices, written from public documentation, now come with the release itself as experimental instead of waiting on a test build: the Razer BlackWidow V4 Mini HyperSpeed (brightness, game mode, macro light and its lighting effects, with the effect before put back), the Razer Viper V3 Pro and Pro SE over their dongle, the SteelSeries Apex Pro, Apex 7, Apex 7 TKL and Apex 5, EVision keyboards and the Logitech G213 (Windows), and, read only, the Corsair KATAR PRO WIRELESS, the Logitech PRO K/DA and the Logitech G604 over Bluetooth. Razer mice show their battery, a Logitech keyboard behind a receiver gets its lights read and driven (experimental), the SteelSeries Rival 700/710 is confirmed by a tester, and device requests are answered more accurately.
 
 ### New devices
 - SteelSeries Rival 700 / Rival 710 confirmed on real hardware by a tester ([#97](https://github.com/hex-dump/perihub/issues/97)): now supported.
