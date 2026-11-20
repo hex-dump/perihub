@@ -97,7 +97,9 @@ for branch in $(git for-each-ref --format='%(refname:strip=3)' refs/remotes/orig
     failed+=("$branch: CHANGELOG.md does not pass the lint after the merge")
     continue
   fi
-  if ! cargo xtask gen > /dev/null 2>&1; then
+  if ! cargo xtask gen > "$helpers/gen.log" 2>&1; then
+    # Its end, for the person who takes over (to stderr: the summary lists only the outcomes).
+    tail -n 30 "$helpers/gen.log" >&2
     git merge --abort 2>/dev/null || git reset --quiet --hard
     failed+=("$branch: cargo xtask gen failed after the merge")
     continue
