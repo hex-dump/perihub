@@ -5261,6 +5261,202 @@
       }
     },
     {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 505b",
+      "kind": "keyboard",
+      "level": "experimental",
+      "page": "devices/evision-rgb-keyboard-320f-505b.html",
+      "usb_ids": [
+        "320f:505b"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 5000",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-5000.html",
+      "usb_ids": [
+        "320f:5000"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 502a",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-502a.html",
+      "usb_ids": [
+        "320f:502a"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 5064",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-5064.html",
+      "usb_ids": [
+        "320f:5064"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 5078",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-5078.html",
+      "usb_ids": [
+        "320f:5078"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 5084",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-5084.html",
+      "usb_ids": [
+        "320f:5084"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 5041",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-5041.html",
+      "usb_ids": [
+        "320f:5041"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 5004",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-5004.html",
+      "usb_ids": [
+        "0c45:5004"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 5104",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-5104.html",
+      "usb_ids": [
+        "0c45:5104"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 5204",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-5204.html",
+      "usb_ids": [
+        "0c45:5204"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 652f",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-652f.html",
+      "usb_ids": [
+        "0c45:652f"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 7672",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-7672.html",
+      "usb_ids": [
+        "0c45:7672"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 7698",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-7698.html",
+      "usb_ids": [
+        "0c45:7698"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 8520",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-8520.html",
+      "usb_ids": [
+        "0c45:8520"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
       "family": "yjx",
       "brand": "YJX",
       "name": "mouse (YJX receiver)",

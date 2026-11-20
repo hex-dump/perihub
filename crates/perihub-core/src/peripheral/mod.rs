@@ -12,6 +12,7 @@
 pub mod asus;
 pub mod coolermaster;
 pub mod evga;
+pub mod evision;
 pub mod logitech_g600;
 pub mod logitech_hidpp10;
 pub mod nordic;
@@ -76,6 +77,7 @@ pub enum Protocol {
     Asus(asus::Params),
     CoolerMaster(coolermaster::Params),
     Evga(evga::Params),
+    Evision(evision::Params),
     LogitechG600,
     LogitechHidpp10(logitech_hidpp10::Params),
     Nordic(nordic::Params),
@@ -121,6 +123,7 @@ pub fn models() -> impl Iterator<Item = &'static Model> {
         .chain(coolermaster::MODELS)
         .chain(nordic::MODELS)
         .chain(evga::MODELS)
+        .chain(evision::MODELS)
         .chain(yjx::MODELS)
         .chain(wraith::MODELS)
 }
@@ -131,10 +134,11 @@ pub fn find(vendor_id: u16, product_id: u16) -> Option<&'static Model> {
 
 /// Whether 70-perihub.rules opens the model's configuration interface on Linux. Where it does not,
 /// PeriHub does not open the model there either: the Wraith W60, whose collection can carry how far
-/// each key is pressed, and the Razer keyboards whose interface may also carry typed keys.
+/// each key is pressed, the Razer keyboards whose interface may also carry typed keys, and the EVision keyboards,
+/// whose vendor collection shares its interface with a keyboard collection.
 pub fn opened_on_linux(model: &Model) -> bool {
     match model.protocol {
-        Protocol::Wraith(_) => false,
+        Protocol::Wraith(_) | Protocol::Evision(_) => false,
         Protocol::RazerKeyboard(p) => p.linux,
         _ => true,
     }

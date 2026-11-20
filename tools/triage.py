@@ -367,7 +367,7 @@ OTHER_BRANDS = {
     "evga", "yjx", "wraith",
 }
 SHOWS_OTHER = (
-    "Other brands (ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX, Wraith, "
+    "Other brands (ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX, Wraith, EVision, "
     "QMK keyboards): the DPI levels, polling rate, lighting and buttons PeriHub shows match the device"
 )
 SHOWS_CORSAIR = ("Firmware version", "Polling rate (report rate)")

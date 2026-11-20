@@ -1612,6 +1612,81 @@
       ]
     },
     {
+      "brand": "EVision",
+      "models": [
+        {
+          "name": "RGB keyboard 320f 505b",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "RGB keyboard 320f 5000",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 320f 502a",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 320f 5064",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 320f 5078",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 320f 5084",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 320f 5041",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 5004",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 5104",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 5204",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 652f",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 7672",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 7698",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
+          "name": "RGB keyboard 0c45 8520",
+          "kind": "keyboard",
+          "level": "read_only"
+        }
+      ]
+    },
+    {
       "brand": "YJX",
       "models": [
         {

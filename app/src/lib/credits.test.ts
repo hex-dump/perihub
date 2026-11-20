@@ -73,7 +73,7 @@ describe("credits", () => {
     for (const name of ["Linux kernel", "Solaar", "linuxhw/LsUSB", "OpenRazer", "ckb-next", "OpenLinkHub", "QMK", "vial-qmk", "vial-gui"]) {
       expect(all.map((c) => c.name), name).toContain(name);
     }
-    expect(all.filter((c) => c.name.startsWith("OpenRGB")).length).toBe(3);
+    expect(all.filter((c) => c.name.startsWith("OpenRGB")).length).toBe(4);
     // The facts of each bullet are still said in the entry's note.
     for (const phrase of [
       "Apex 8-zone lighting",
@@ -81,6 +81,8 @@ describe("credits", () => {
       "Cooler Master",
       "issues 1782 and 2305",
       "EVGA X12 and X20",
+      "EVision keyboards' USB ids",
+      "320f:505b",
       "boot mouse interface",
       "hid-logitech-dj.c",
       "onboard profile lists",
