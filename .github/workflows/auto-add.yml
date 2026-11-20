@@ -146,7 +146,8 @@ jobs:
             echo
             echo "**Not tried on hardware.** It goes into the next release as experimental (read-only, or with its changes behind the No warranty box, the read-back and the undo) without waiting for a test: merge it after CI. The Changelog check asks for a line under \`## Unreleased\` → \`### New devices\` first. A test build of this branch is being made and its link comes on #$ISSUE; a clean test report makes the device supported (the Confirm workflow opens that pull request)."
             echo
-            echo "Closes #$ISSUE"
+            # Not "Closes": the request stays open until the release, whose comment tells the requester it is out.
+            echo "For #$ISSUE"
           } > "$RUNNER_TEMP/pr.md"
           existing=$(gh pr list --base main --head "$BRANCH" --state open --json url --jq '.[0].url // empty')
           if [ -n "$existing" ]; then
