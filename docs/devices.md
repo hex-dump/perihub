@@ -327,7 +327,7 @@ rivalcfg's own tests expect (616 reports compared).
 
 ## Razer mice
 
-🧪 Experimental: <!-- generated: count razer -->74<!-- end generated --> Razer mice, on their USB cable. Nobody has tried PeriHub on one yet. Their protocol
+🧪 Experimental: <!-- generated: count razer -->76<!-- end generated --> Razer mice, on their USB cable. Nobody has tried PeriHub on one yet. Their protocol
 is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts found in
 [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): no code was copied.
 
@@ -351,23 +351,23 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 |---|---|---|---|
 | Orochi 2011 | `1532:0013` | interface 0 | polling rate shown |
 | Naga | `1532:0015` | interface 0 | polling rate |
-| Naga Epic | `1532:001f` | interface 0 | polling rate; brightness of scroll wheel |
+| Naga Epic | `1532:001f` | interface 0 | polling rate; brightness of scroll wheel; battery shown |
 | Abyssus 1800 | `1532:0020` | interface 0 | polling rate |
-| Mamba 2012 (Wired) | `1532:0024` | interface 0 | DPI up to 6400, polling rate; brightness of scroll wheel |
+| Mamba 2012 (Wired) | `1532:0024` | interface 0 | DPI up to 6400, polling rate; brightness of scroll wheel; battery shown |
 | Naga 2012 | `1532:002e` | interface 0 | polling rate |
 | Imperator 2012 | `1532:002f` | interface 0 | DPI up to 6400, polling rate |
-| Ouroboros | `1532:0032` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel |
+| Ouroboros | `1532:0032` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel; battery shown |
 | Taipan | `1532:0034` | interface 0 | DPI up to 8200, polling rate |
 | Naga Hex (Red) | `1532:0036` | interface 0 | polling rate |
 | DeathAdder 2013 | `1532:0037` | interface 0 | polling rate |
 | DeathAdder 1800 | `1532:0038` | interface 0 | polling rate |
 | Orochi 2013 | `1532:0039` | interface 0 | DPI up to 6400, polling rate |
-| Naga Epic Chroma (Wired) | `1532:003e` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel and backlight |
+| Naga Epic Chroma (Wired) | `1532:003e` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel and backlight; battery shown |
 | Naga 2014 | `1532:0040` | interface 0 | DPI up to 8200, polling rate |
 | Naga Hex | `1532:0041` | interface 0 | polling rate |
 | Abyssus | `1532:0042` | interface 0 | polling rate |
 | DeathAdder Chroma | `1532:0043` | interface 0 | DPI up to 10000, polling rate; brightness of logo and scroll wheel |
-| Mamba Chroma (Wired) | `1532:0044` | interface 0 | DPI up to 16000, polling rate shown |
+| Mamba Chroma (Wired) | `1532:0044` | interface 0 | DPI up to 16000, polling rate shown; battery shown |
 | Mamba Tournament Edition | `1532:0046` | interface 0 | DPI up to 16000; brightness of backlight |
 | Orochi (Wired) | `1532:0048` | interface 0 | DPI up to 8200, polling rate; brightness of scroll wheel |
 | Diamondback Chroma | `1532:004c` | interface 0 | DPI up to 16000; brightness of backlight |
@@ -375,7 +375,7 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 | Naga Hex V2 | `1532:0050` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel and backlight |
 | Naga Chroma | `1532:0053` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel and backlight; one colour, not saved |
 | DeathAdder 3500 | `1532:0054` | interface 0 | DPI up to 3500, polling rate; brightness of logo and scroll wheel |
-| Lancehead (Wired) | `1532:0059` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| Lancehead (Wired) | `1532:0059` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown |
 | Abyssus V2 | `1532:005b` | interface 0 | DPI up to 5000, polling rate; brightness of logo and scroll wheel |
 | DeathAdder Elite | `1532:005c` | interface 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
 | Abyssus 2000 | `1532:005e` | interface 0 | DPI up to 2000, polling rate |
@@ -387,42 +387,44 @@ is described in [protocols/razer-mice.md](protocols/razer-mice.md), from facts f
 | Abyssus Essential | `1532:006b` | interface 0 | DPI up to 7200, polling rate; brightness of logo |
 | Mamba Elite | `1532:006c` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
 | DeathAdder Essential | `1532:006e` | interface 0 | DPI up to 6400, polling rate; brightness of logo and scroll wheel |
-| Lancehead Wireless (Wired) | `1532:0070` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| Lancehead Wireless (Wired) | `1532:0070` | interface 0 | DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown |
 | DeathAdder Essential (White Edition) | `1532:0071` | interface 0 | DPI up to 6400, polling rate; brightness of logo and scroll wheel |
-| Mamba Wireless (Wired) | `1532:0073` | interface 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
+| Mamba Wireless (Wired) | `1532:0073` | interface 0 | DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown |
 | Viper | `1532:0078` | interface 0 | DPI up to 16000, polling rate; brightness of logo; one colour, not saved |
-| Viper Ultimate (Wired) | `1532:007a` | interface 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved |
-| DeathAdder V2 Pro (Wired) | `1532:007c` | interface 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved |
-| Pro Click (Wired) | `1532:0080` | interface 0 | DPI up to 16000, polling rate |
+| Viper Ultimate (Wired) | `1532:007a` | interface 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved; battery shown |
+| DeathAdder V2 Pro (Wired) | `1532:007c` | interface 0 | DPI up to 20000, polling rate; brightness of logo; one colour, not saved; battery shown |
+| Pro Click (Wired) | `1532:0080` | interface 0 | DPI up to 16000, polling rate; battery shown |
 | DeathAdder V2 | `1532:0084` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
 | Basilisk V2 | `1532:0085` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Basilisk Ultimate | `1532:0086` | interface 0 | DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved |
+| Basilisk Ultimate | `1532:0086` | interface 0 | DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown |
 | Viper Mini | `1532:008a` | interface 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
 | DeathAdder V2 Mini | `1532:008c` | interface 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
 | Naga Left Handed Edition 2020 | `1532:008d` | interface 0 | DPI up to 20000, polling rate; brightness of logo, scroll wheel and right side; one colour, not saved |
-| Naga Pro (Wired) | `1532:008f` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Viper 8KHz | `1532:0091` | interface 0 | DPI up to 20000; brightness of logo |
+| Naga Pro (Wired) | `1532:008f` | interface 0 | DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown |
+| Viper 8KHz | `1532:0091` | interface 0 | DPI up to 20000, polling rate; brightness of logo |
 | Naga X | `1532:0096` | interface 3 | DPI up to 18000, polling rate; brightness of scroll wheel and left side; one colour, not saved |
 | DeathAdder Essential (2021) | `1532:0098` | interface 0 | DPI up to 6400, polling rate; brightness of logo |
 | Basilisk V3 | `1532:0099` | interface 3 | DPI up to 26000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Viper Mini SE (Wired) | `1532:009e` | interface 0 | DPI up to 30000 |
+| Viper Mini SE (Wired) | `1532:009e` | interface 0 | DPI up to 30000, polling rate; battery shown |
 | DeathAdder V2 Lite | `1532:00a1` | interface 0 | DPI up to 8500, polling rate; brightness of logo; one colour, not saved |
 | Cobra | `1532:00a3` | interface 0 | DPI up to 8500, polling rate; brightness of logo |
-| Viper V2 Pro (Wired) | `1532:00a5` | interface 0 | DPI up to 30000, polling rate |
-| Naga V2 Pro (Wired) | `1532:00a7` | interface 0 | DPI up to 30000, polling rate; brightness of logo; one colour, not saved |
-| Basilisk V3 Pro (Wired) | `1532:00aa` | interface 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Cobra Pro (Wired) | `1532:00af` | interface 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel |
-| DeathAdder V3 | `1532:00b2` | interface 0 | DPI up to 30000 |
-| DeathAdder V3 Pro (Wired) | `1532:00b6`, `1532:00c2` | interface 0 | DPI up to 35000, polling rate |
-| DeathAdder V4 Pro (Wired) | `1532:00be` | interface 0 | DPI up to 45000 |
-| Viper V3 Pro (Wired) | `1532:00c0` | interface 0 | DPI up to 35000, polling rate |
-| Pro Click V2 Vertical Edition (Wired) | `1532:00c7` | interface 0 | DPI up to 30000, polling rate |
+| Viper V2 Pro (Wired) | `1532:00a5` | interface 0 | DPI up to 30000, polling rate; battery shown |
+| Naga V2 Pro (Wired) | `1532:00a7` | interface 0 | DPI up to 30000, polling rate; brightness of logo; one colour, not saved; battery shown |
+| Basilisk V3 Pro (Wired) | `1532:00aa` | interface 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown |
+| Cobra Pro (Wired) | `1532:00af` | interface 0 | DPI up to 30000, polling rate; brightness of logo and scroll wheel; battery shown |
+| DeathAdder V3 | `1532:00b2` | interface 0 | DPI up to 30000, polling rate |
+| DeathAdder V3 Pro (Wired) | `1532:00b6`, `1532:00c2` | interface 0 | DPI up to 35000, polling rate; battery shown |
+| DeathAdder V4 Pro (Wired) | `1532:00be` | interface 0 | DPI up to 45000, polling rate; battery shown |
+| Viper V3 Pro (Wired) | `1532:00c0` | interface 0 | DPI up to 35000, polling rate; battery shown |
+| Viper V3 Pro (Wireless) | `1532:00c1` | interface 0 | DPI up to 35000, polling rate; what the dongle light shows; battery shown |
+| Pro Click V2 Vertical Edition (Wired) | `1532:00c7` | interface 0 | DPI up to 30000, polling rate; battery shown |
 | Basilisk V3 35K | `1532:00cb` | interface 3 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Basilisk V3 Pro 35K (Wired) | `1532:00cc` | interface 0 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved |
-| Pro Click V2 (Wired) | `1532:00d0` | interface 0 | DPI up to 30000, polling rate |
+| Basilisk V3 Pro 35K (Wired) | `1532:00cc` | interface 0 | DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown |
+| Pro Click V2 (Wired) | `1532:00d0` | interface 0 | DPI up to 30000, polling rate; battery shown |
 | Basilisk Mobile (Wired) | `1532:00d3` | interface 0 | DPI up to 18000, polling rate |
-| Basilisk V3 Pro 35K Phantom Green Edition (Wired) | `1532:00d6` | interface 0 | DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved |
-| Viper V3 Pro SE (Wired) | `1532:00de` | interface 0 | DPI up to 35000, polling rate |
+| Basilisk V3 Pro 35K Phantom Green Edition (Wired) | `1532:00d6` | interface 0 | DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved; battery shown |
+| Viper V3 Pro SE (Wired) | `1532:00de` | interface 0 | DPI up to 35000, polling rate; battery shown |
+| Viper V3 Pro SE (Wireless) | `1532:00df` | interface 0 | DPI up to 35000, polling rate; battery shown |
 <!-- end generated -->
 
 ## Razer keyboards

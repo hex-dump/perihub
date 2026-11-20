@@ -29,13 +29,17 @@ colour frame. No code was copied.
 | `04 05` | Set the DPI | `01` (stored), X, Y, `00 00` |
 | `00 85` | Read the polling rate | answer: `01` 1000 Hz, `02` 500 Hz, `08` 125 Hz |
 | `00 05` | Set the polling rate | the same codes |
+| `00 c0` | Read the polling rate, on the mice that go up to 8000 Hz (Viper V3 Pro over its dongle, Viper 8K, DeathAdder V3 and V4 Pro, Viper Mini SE) | answer: the rate in the second byte, `40` 125 Hz, `10` 500, `08` 1000, `04` 2000, `02` 4000, `01` 8000 |
+| `00 40` | Set the polling rate on those mice | first argument `00`, then the code; OpenRazer sends it a second time with `01` first (on the Viper 8K with another transaction id) |
+| `07 80`, `07 84` | Read the battery level and the charging state, on the mice with a battery | answer: level 0–255 and charging `00` or `01`, in the second byte; both with the same transaction id |
+| `07 90`, `07 10` | Read and set the indicator light of the mouse's own wireless dongle (Viper V3 Pro) | mode `01` connection status, `02` battery status, `03` battery warning only; transaction id `ff` |
 | `0f 84` | Read the brightness of one light | `01` (stored), LED; answer: storage, LED, brightness 0–255 |
 | `0f 04` | Set the brightness of one light | `01` (stored), LED, brightness 0–255 |
 | `03 83`, `03 03` | The same two on older mice | the same arguments |
 | `0f 03` | One row of the custom colour frame | two unused bytes, row (`00` on a mouse), first and last column, then red, green and blue for each column |
 | `0f 02` | Show the custom frame | `00` (not stored), LED `00`, effect `08` |
 
-Everything else (the other lighting effects, DPI stages, device mode, macros, firmware) is not in the list of
+Everything else (the other lighting effects, DPI stages, the idle time and low-battery threshold, device mode, macros, firmware) is not in the list of
 commands PeriHub may send. For the lights the list also holds the storage byte: a brightness only with `01`,
 the effect only as `00 00 08`, so a stored effect never leaves PeriHub.
 
