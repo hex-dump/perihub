@@ -101,7 +101,9 @@ on screen. What the keyboard shows after it is turned off, unplugged or put to s
   (`00` none, `01` static, `02` breathing, `03` spectrum, `04` wave, `05` reactive, `07` starlight) and its
   values, and always sends them with storage `01`. It has no command that reads the effect in use, so an effect
   could not be read back, undone or put back after a failed change. PeriHub never sends one. They wait for a tester
-  to show a form that does not store, or a way to read the effect.
+  to show a form that does not store, or a way to read the effect. The daemon's ripple effect (a ring that spreads
+  from a pressed key) is not one of them: OpenRazer draws it on the custom frame from the key presses it reads, and
+  PeriHub never reads what is typed.
 - Colours for single keys or groups: the frame's rows and columns are known, but no source PeriHub may use says which
   key sits at which position of the V4 Mini's matrix.
 - The macro light, the device mode, key remapping, the Hypershift layer, macros and onboard profiles. Key remapping,
