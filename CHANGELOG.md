@@ -6,6 +6,9 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
+### New devices
+- SteelSeries Rival 700 / Rival 710 confirmed on real hardware by a tester ([#97](https://github.com/hex-dump/perihub/issues/97)): now supported.
+
 ### Fixed
 - **Automatic answers to device requests and test reports are more accurate.** A request for a device that shows only standard interfaces (mouse, keyboard, media keys) and no vendor-specific one is no longer told it "can be added directly" because libratbag lists its id (a plain Logitech optical mouse, issue #95): it is asked what its software changes, and pointed to **Record the official software**. A request a person has to write the support for no longer promises a test build "automatically": it says a maintainer adds it, and only the link comes by itself. A test report made with **Test my device** whose checklist all worked now confirms a device of another brand without the form's extra box, which the procedure never ticks (issue #97). The kind label comes from the catalogue and the app's own report before the form's dropdown, so a mouse reported as a keyboard is labelled a mouse, and a wrong kind label is taken off. Requests are compared with the devices of the latest release again, not with main's.
 - **Test builds follow the releases.** After each release, the test branch of every device a tester is still waiting on gets the release merged in and a new test build, whose link replaces the old one on the issue, so testers never try a device with fixes the release already has.

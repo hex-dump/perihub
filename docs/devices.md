@@ -288,41 +288,41 @@ rivalcfg's own tests expect (616 reports compared).
 - Not offered yet: button mapping, colour gradients, reactive colours, separate X and Y DPI.
 
 <!-- generated: table steelseries-mice -->
-| Mouse | USB ID | Opened on Linux | Settings PeriHub sends |
-|---|---|---|---|
-| Aerox 3 | `1038:1836` | interface 3 | 8 |
-| Aerox 3 Wireless | `1038:183a`, `1038:187a` | interface 3 | 8, battery |
-| Aerox 5 | `1038:1850` | interface 3 | 8 |
-| Aerox 5 Wireless | `1038:1854`, `1038:185e`, `1038:1862` | interface 3 | 8, battery |
-| Aerox 9 Wireless | `1038:185a`, `1038:1876` | interface 3 | 8, battery |
-| Kana v2 | `1038:137a` | interface 0 | 5 |
-| Kinzu v2 | `1038:1366`, `1038:1378` | interface 0 | 3 |
-| Prime | `1038:182e`, `1038:182a`, `1038:1856` | interface 0 | 4 |
-| Prime Mini | `1038:184d` | interface 3 | 4 |
-| Prime+ | `1038:182c` | interface 0 | 4 |
-| Prime Wireless | `1038:1842`, `1038:184a` | interface 3 | 6, battery |
-| Rival 100 / Rival 105 | `1038:1702`, `1038:170a`, `1038:170b`, `1038:170c`, `1038:1814` | interface 0 | 6 |
-| Rival 110 / Rival 106 | `1038:1729`, `1038:1816` | interface 0 | 6 |
-| Rival 3 | `1038:1824`, `1038:184c` | interface 3 | 7 |
-| Rival 300 / Rival | `1038:1384`, `1038:1392`, `1038:1710`, `1038:1712`, `1038:171c`, `1038:1394`, `1038:171a`, `1038:1716`, `1038:1714`, `1038:1718` | interface 0 | 7 |
-| Rival 300S | `1038:1810` | interface 0 | 6 |
-| Rival 310 | `1038:1720`, `1038:171e`, `1038:1736` | interface 0 | 3 |
-| Rival 3 Gen 2 | `1038:1870` | interface 3 | 7 |
-| Rival 3 Wireless | `1038:1830` | interface 3 | 2, battery |
-| Rival 3 Wireless Gen 2 | `1038:1872` | interface 3 | 1, battery |
-| Rival 5 | `1038:183c`, `1038:183e` | interface 0 | 14 |
-| Rival 500 | `1038:170e` | interface 0 | 3 |
-| Rival 600 | `1038:1724`, `1038:172e` | interface 0 | 3 |
-| Rival 650 Wireless | `1038:172b`, `1038:1726` | interface 0 | 5, battery |
-| Rival 700 / Rival 710 | `1038:1700`, `1038:1730` | interface 0 | 3 |
-| Rival 95 / Rival 100 PC Bang | `1038:1706`, `1038:1707`, `1038:1704`, `1038:1708` | interface 0 | 4 |
-| Sensei 310 | `1038:1722` | interface 0 | 3 |
-| Sensei [RAW] | `1038:1369`, `1038:1362`, `1038:136d`, `1038:136f`, `1038:1380`, `1038:1390` | interface 0 | 5 |
-| Sensei TEN | `1038:1832`, `1038:1834` | interface 0 | 2 |
-| Aerox 3 Wireless (through its receiver) | `1038:1838`, `1038:1878` | interface 3 | 8, battery |
-| Aerox 5 Wireless (through its receiver) | `1038:1852`, `1038:185c`, `1038:1860` | interface 3 | 8, battery |
-| Aerox 9 Wireless (through its receiver) | `1038:1858`, `1038:1874` | interface 3 | 8, battery |
-| Prime Wireless (through its receiver) | `1038:1840`, `1038:1848` | interface 3 | 6, battery |
+| Mouse | USB ID | Opened on Linux | Level | Settings PeriHub sends |
+|---|---|---|---|---|
+| Aerox 3 | `1038:1836` | interface 3 | 🧪 Experimental | 8 |
+| Aerox 3 Wireless | `1038:183a`, `1038:187a` | interface 3 | 🧪 Experimental | 8, battery |
+| Aerox 5 | `1038:1850` | interface 3 | 🧪 Experimental | 8 |
+| Aerox 5 Wireless | `1038:1854`, `1038:185e`, `1038:1862` | interface 3 | 🧪 Experimental | 8, battery |
+| Aerox 9 Wireless | `1038:185a`, `1038:1876` | interface 3 | 🧪 Experimental | 8, battery |
+| Kana v2 | `1038:137a` | interface 0 | 🧪 Experimental | 5 |
+| Kinzu v2 | `1038:1366`, `1038:1378` | interface 0 | 🧪 Experimental | 3 |
+| Prime | `1038:182e`, `1038:182a`, `1038:1856` | interface 0 | 🧪 Experimental | 4 |
+| Prime Mini | `1038:184d` | interface 3 | 🧪 Experimental | 4 |
+| Prime+ | `1038:182c` | interface 0 | 🧪 Experimental | 4 |
+| Prime Wireless | `1038:1842`, `1038:184a` | interface 3 | 🧪 Experimental | 6, battery |
+| Rival 100 / Rival 105 | `1038:1702`, `1038:170a`, `1038:170b`, `1038:170c`, `1038:1814` | interface 0 | 🧪 Experimental | 6 |
+| Rival 110 / Rival 106 | `1038:1729`, `1038:1816` | interface 0 | 🧪 Experimental | 6 |
+| Rival 3 | `1038:1824`, `1038:184c` | interface 3 | 🧪 Experimental | 7 |
+| Rival 300 / Rival | `1038:1384`, `1038:1392`, `1038:1710`, `1038:1712`, `1038:171c`, `1038:1394`, `1038:171a`, `1038:1716`, `1038:1714`, `1038:1718` | interface 0 | 🧪 Experimental | 7 |
+| Rival 300S | `1038:1810` | interface 0 | 🧪 Experimental | 6 |
+| Rival 310 | `1038:1720`, `1038:171e`, `1038:1736` | interface 0 | 🧪 Experimental | 3 |
+| Rival 3 Gen 2 | `1038:1870` | interface 3 | 🧪 Experimental | 7 |
+| Rival 3 Wireless | `1038:1830` | interface 3 | 🧪 Experimental | 2, battery |
+| Rival 3 Wireless Gen 2 | `1038:1872` | interface 3 | 🧪 Experimental | 1, battery |
+| Rival 5 | `1038:183c`, `1038:183e` | interface 0 | 🧪 Experimental | 14 |
+| Rival 500 | `1038:170e` | interface 0 | 🧪 Experimental | 3 |
+| Rival 600 | `1038:1724`, `1038:172e` | interface 0 | 🧪 Experimental | 3 |
+| Rival 650 Wireless | `1038:172b`, `1038:1726` | interface 0 | 🧪 Experimental | 5, battery |
+| Rival 700 / Rival 710 | `1038:1700`, `1038:1730` | interface 0 | ✅ Supported | 3 |
+| Rival 95 / Rival 100 PC Bang | `1038:1706`, `1038:1707`, `1038:1704`, `1038:1708` | interface 0 | 🧪 Experimental | 4 |
+| Sensei 310 | `1038:1722` | interface 0 | 🧪 Experimental | 3 |
+| Sensei [RAW] | `1038:1369`, `1038:1362`, `1038:136d`, `1038:136f`, `1038:1380`, `1038:1390` | interface 0 | 🧪 Experimental | 5 |
+| Sensei TEN | `1038:1832`, `1038:1834` | interface 0 | 🧪 Experimental | 2 |
+| Aerox 3 Wireless (through its receiver) | `1038:1838`, `1038:1878` | interface 3 | 🧪 Experimental | 8, battery |
+| Aerox 5 Wireless (through its receiver) | `1038:1852`, `1038:185c`, `1038:1860` | interface 3 | 🧪 Experimental | 8, battery |
+| Aerox 9 Wireless (through its receiver) | `1038:1858`, `1038:1874` | interface 3 | 🧪 Experimental | 8, battery |
+| Prime Wireless (through its receiver) | `1038:1840`, `1038:1848` | interface 3 | 🧪 Experimental | 6, battery |
 <!-- end generated -->
 
 ## Razer mice

@@ -2467,7 +2467,7 @@
       "brand": "SteelSeries",
       "name": "Rival 700 / Rival 710",
       "kind": "mouse",
-      "level": "experimental",
+      "level": "supported",
       "page": "devices/steelseries-rival-700-rival-710.html",
       "usb_ids": [
         "1038:1700",

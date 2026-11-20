@@ -38,6 +38,7 @@ const fn memory(profile_format: u8, sector_size: u16, issue: u32) -> MemoryConfi
 /// Devices of other brands and Corsair devices, by USB id (vendor, product).
 #[rustfmt::skip]
 pub const USB: &[UsbConfirmation] = &[
+    usb(0x1038, 0x1730, 97),
 ];
 
 /// Memories PeriHub has saved to on real mice, with their USB cable: format 2 in 256-byte sectors on
