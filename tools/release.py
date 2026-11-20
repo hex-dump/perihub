@@ -180,7 +180,7 @@ def bump(version: str, day: str) -> None:
 
 def entry(text: str) -> str:
     """One CHANGELOG item: its bold title, with the rest folded away when it is long."""
-    m = re.match(r"\*\*(.+?)\*\*\s*((?:\(\[[^\]]+\]\([^)]+\)(?:, \[[^\]]+\]\([^)]+\))*\))?)\s*:?\s*(.*)", text)
+    m = re.match(r"\*\*(.+?)\*\*\s*((?:\(\[[^\]]+\]\([^)]+\)(?:, \[[^\]]+\]\([^)]+\))*\))?)[\s,:;]*(.*)", text)
     if not m or len(text) < 160:
         return f"- {text}"
     title, links, rest = m.groups()

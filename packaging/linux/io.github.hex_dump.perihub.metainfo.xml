@@ -433,6 +433,11 @@
   </provides>
 
   <releases>
+    <release version="0.9.7" date="2026-11-20">
+      <description>
+        <p>More devices, written from public documentation, now come with the release itself as experimental instead of waiting on a test build: the Razer BlackWidow V4 Mini HyperSpeed (brightness, game mode, macro light and its lighting effects, with the effect before put back), the Razer Viper V3 Pro and Pro SE over their dongle, the SteelSeries Apex Pro, Apex 7, Apex 7 TKL and Apex 5, EVision keyboards and the Logitech G213 (Windows), and, read only, the Corsair KATAR PRO WIRELESS, the Logitech PRO K/DA and the Logitech G604 over Bluetooth. Razer mice show their battery, a Logitech keyboard behind a receiver gets its lights read and driven (experimental), the SteelSeries Rival 700/710 is confirmed by a tester, and device requests are answered more accurately.</p>
+      </description>
+    </release>
     <release version="0.9.6" date="2026-11-20">
       <description>
         <p>A device request can now carry two more things: what the device's vendor-defined feature reports hold at the moment (read only), so that a known controller chip and its protocol can often be recognized without a USB capture, and a USB recording of what the device's official software sends it, made by PeriHub itself (on Windows USBPcap is installed only for the recording and removed after it, on Linux usbmon is read with your password; what you type, other devices and the serial number are never recorded). A Razer mouse OpenRazer documents can also be added without a person, and device requests are answered more accurately.</p>
