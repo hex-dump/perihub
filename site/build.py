@@ -106,8 +106,14 @@ def models(devices: list) -> list:
     several ids) share a page, and their USB ids are put together."""
     pages: dict = {}
     for d in devices:
-        m = pages.setdefault(d["page"], {**d, "usb_ids": [], "linux": [], "wireless_ids": []})
-        m["usb_ids"] += [i for i in d["usb_ids"] if i not in m["usb_ids"]]
+        m = pages.setdefault(d["page"], {**d, "usb_ids": [], "linux": [], "wireless_ids": [], "bluetooth_ids": []})
+        # The Bluetooth id is the last of the entry's usb_ids (the requests and test reports give it as a USB id), but it
+        # is not one: the page names it apart.
+        bluetooth = d.get("bluetooth_id")
+        usb = [i for i in d["usb_ids"] if i.split(":")[1] != bluetooth]
+        m["usb_ids"] += [i for i in usb if i not in m["usb_ids"]]
+        if bluetooth and bluetooth not in m["bluetooth_ids"]:
+            m["bluetooth_ids"].append(bluetooth)
         if d.get("wireless_id") and d["wireless_id"] not in m["wireless_ids"]:
             m["wireless_ids"].append(d["wireless_id"])
         if d["linux"] not in m["linux"]:
@@ -136,6 +142,8 @@ def rows_of(index_html: str) -> dict:
 def connection(m: dict) -> str:
     if m["kind"] == "receiver":
         return "A USB receiver: wireless devices connect through it."
+    if not m["usb_ids"] and m["bluetooth_ids"]:
+        return "Through a LIGHTSPEED receiver, or over Bluetooth (read only)."
     if not m["usb_ids"]:
         return "Through a LIGHTSPEED receiver only."
     if m["wireless_ids"]:
@@ -170,6 +178,9 @@ def spec(m: dict) -> str:
     if m["wireless_ids"]:
         ids = ", ".join(f"<code>{i}</code>" for i in m["wireless_ids"])
         rows.append(("Id through a LIGHTSPEED receiver", ids))
+    if m["bluetooth_ids"]:
+        ids = ", ".join(f"<code>{i}</code>" for i in m["bluetooth_ids"])
+        rows.append(("Id over Bluetooth", ids))
     rows.append(("Opened on Linux", opened(m)))
     rows.append(("Windows", "No driver needed."))
     body = "".join(f"<div><dt>{k}</dt><dd>{v if v.startswith('<code>') else esc(v)}</dd></div>" for k, v in rows)

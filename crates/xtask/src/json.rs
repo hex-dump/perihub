@@ -26,11 +26,16 @@ struct Entry<'a> {
     level: Level,
     /// The model's page on the website, relative to its root. Models with the same name share one.
     page: String,
-    /// "vvvv:pppp", as lsusb shows them. Empty for a mouse reached only through a receiver.
+    /// "vvvv:pppp", as lsusb shows them, and then the id a mouse has over Bluetooth, which a device request and a test
+    /// report give in the same form (Windows and the app call it a USB id too). Empty for a mouse reached only
+    /// through a receiver.
     usb_ids: Vec<String>,
     /// The id a Logitech mouse reports through a LIGHTSPEED receiver.
     #[serde(skip_serializing_if = "Option::is_none")]
     wireless_id: Option<String>,
+    /// The id a Logitech mouse has over Bluetooth Low Energy: the last of `usb_ids`, not a USB one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    bluetooth_id: Option<String>,
     /// What the Linux udev rule opens.
     linux: Access,
     /// What is particular to this model, when the driver's table says (Razer and ASUS mice).
@@ -57,8 +62,14 @@ pub fn render(devices: &[Device]) -> String {
                 page: catalog::page(d.brand, &d.name),
                 kind: d.kind,
                 level: d.level,
-                usb_ids: d.product_ids.iter().map(|id| format!("{:04x}:{id:04x}", d.vendor_id)).collect(),
+                usb_ids: d
+                    .product_ids
+                    .iter()
+                    .chain(&d.bluetooth_id)
+                    .map(|id| format!("{:04x}:{id:04x}", d.vendor_id))
+                    .collect(),
                 wireless_id: d.wireless_id.map(|id| format!("{id:04x}")),
+                bluetooth_id: d.bluetooth_id.map(|id| format!("{id:04x}")),
                 linux: d.access,
                 note: docs::note(d),
             })

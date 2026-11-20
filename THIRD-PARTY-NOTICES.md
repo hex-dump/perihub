@@ -11,6 +11,8 @@ goes with every PeriHub package.
 <https://github.com/libratbag/libratbag>, MIT license. PeriHub takes from it:
 
 - the list of Logitech mice and their HID++ details, and the Logitech G300's profile format;
+- the Logitech G604's ids (`data/devices/logitech-g604.device`) and the answers of a real G604 that its issue #1477 holds
+  (`crates/perihub-core/tests/fixtures/g604`, see `docs/protocols/logitech-onboard-profiles.md`);
 - the ASUS ROG and TUF mouse table (`data/devices/asus-*.device`) and the ASUS protocol
   (`src/asus.c`, `src/asus.h`, `src/driver-asus.c`, Copyright (C) 2021 Kyoken), rewritten in Rust
   in `crates/perihub-core/src/peripheral/asus.rs` (see `docs/protocols/asus-rog.md`);
@@ -574,7 +576,8 @@ was copied.
   out (`drivers/hid/hid-logitech-hidpp.c`, see `docs/protocols/logitech-g213.md`).
 - [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0): the Logitech receiver ids, and how it reads and writes
   onboard profile lists and button entries, compared with libratbag's (see
-  `docs/protocols/logitech-onboard-profiles.md`); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak
+  `docs/protocols/logitech-onboard-profiles.md`); that a Logitech device on Bluetooth Low Energy is asked on device index
+  0xFF and may answer on 0x00 (`base.py`, same page); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak
   HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (see `docs/protocols/logitech-hidpp10.md`);
   the functions and replies of the HID++ 2.0 lighting features 0x8040, 0x8071, 0x8081 and 0x4540, the names of
   the 0x8071 effects, and which of their calls only read; how a program takes a keyboard's lights over and gives

@@ -738,6 +738,20 @@ class NoDocsButHidpp(unittest.TestCase):
         self.assertEqual(result["labels"][-1], "ready to add")
         self.assertIn("libratbag", result["comment"])
 
+    def test_the_g604_over_bluetooth_is_recognized_once_a_release_lists_its_bluetooth_id(self):
+        # Issue #43: the catalogue (site/devices.json) gives a Bluetooth id with the ids a request names, and as bluetooth_id.
+        g604 = {
+            "family": "logitech-onboard", "brand": "Logitech", "name": "G604", "kind": "mouse", "level": "by_memory_format",
+            "usb_ids": ["046d:b024"], "wireless_id": "4085", "bluetooth_id": "b024",
+        }
+        issue = {"labels": [{"name": "device request"}], "body": G604}
+        released = triage.triage(issue, "0.9.7", REQ_DEVICES + [g604], upstream=REQ_UPSTREAM)
+        self.assertIn("already recognizes this device", released["comment"])
+        self.assertIn("Logitech G604", released["comment"])
+        # Only on main, in no release: never "already recognizes".
+        on_main = triage.triage(issue, "0.9.7", REQ_DEVICES, current=REQ_DEVICES + [g604], upstream=REQ_UPSTREAM)
+        self.assertNotIn("already recognizes", on_main["comment"] or "")
+
     def test_a_logitech_device_with_hidpp_collections_is_ready_to_add_without_any_project(self):
         result = self.run_body(HIDPP)
         self.assertEqual(result["labels"][-1], "ready to add")

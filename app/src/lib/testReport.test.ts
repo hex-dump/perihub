@@ -13,6 +13,7 @@ const cable: MouseInfo = {
   experimental: false,
   pending_undo: false,
   receiver: false,
+  bluetooth: null,
   link: null,
   host_mode: false,
   firmware: [{ kind: 0, name: "U1", version: "27.2.1" }],
@@ -80,6 +81,25 @@ describe("testReport", () => {
     expect(report).toContain("USB ID: 046d:c547");
     expect(report).toContain("Connection: LIGHTSPEED receiver 046d:c547, slot 1, wireless id 4093");
     expect(report).toContain("Support: read-only on this connection");
+  });
+
+  it("names the Bluetooth id and the connection of a mouse over Bluetooth (issue #43)", () => {
+    const g604: MouseInfo = {
+      ...wireless,
+      product_id: 0x4085,
+      model: "G604",
+      receiver: false,
+      link: null,
+      bluetooth: 0xb024,
+      writable: false,
+    };
+    const report = testReport(g604, "0.9.7", "windows x86_64");
+    expect(report).toContain("USB ID: 046d:b024");
+    expect(report).toContain("Connection: Bluetooth");
+    expect(report).toContain("Support: read-only over Bluetooth");
+    const fields = new URL(testFormUrl(g604, "0.9.7", "windows x86_64")).searchParams;
+    expect(fields.get("usb-id")).toBe("046d:b024");
+    expect(fields.get("connection")).toBe("Bluetooth");
   });
 
   it("says how far PeriHub goes with the mouse's memory format", () => {

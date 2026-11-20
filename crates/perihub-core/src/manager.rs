@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use hidapi::{DeviceInfo, HidApi};
+use hidapi::{BusType, DeviceInfo, HidApi};
 use serde::Serialize;
 
 use crate::apex::Apex3Tkl;
@@ -105,12 +105,38 @@ fn is_keyboard_config_interface(d: &DeviceInfo) -> bool {
         && ((d.usage_page() == 0xFFC0 && d.usage() == 1) || d.usage_page() == 0)
 }
 
+/// Usage page and usage of the HID++ collection of a Logitech device connected over Bluetooth Low Energy
+/// (the request of issue #43 shows it next to the mouse, keyboard and consumer collections).
+const BLE_HIDPP_PAGE: u16 = 0xFF43;
+const BLE_HIDPP_USAGE: u16 = 0x0202;
+
+/// How a mouse over Bluetooth is named in the log, and what the page says when its node is there and nothing
+/// answered on it (no receiver is there to say that it sleeps: without this the mouse would stay out of sight).
+const BLUETOOTH: &str = "Bluetooth";
+const BLUETOOTH_SILENT: &str =
+    "connected over Bluetooth, but it does not answer (asleep, out of range, or taken by another device?)";
+
+/// The model of a Logitech mouse connected over Bluetooth Low Energy, if this is the node PeriHub reads it
+/// through. Windows lists every collection with a path of its own: only the vendor-defined HID++ one is
+/// opened, never the mouse or keyboard collections next to it. Linux has one hidraw node for the whole
+/// device (`one_node`), which hidapi names after its first collection.
+fn bluetooth_mouse(product_id: u16, usage_page: u16, usage: u16, one_node: bool) -> Option<&'static MouseModel> {
+    let hidpp = usage_page == BLE_HIDPP_PAGE && usage == BLE_HIDPP_USAGE;
+    if hidpp || one_node { models::find_bluetooth(product_id) } else { None }
+}
+
 /// "Long" HID++ collection (report 0x11) of a known mouse. On Windows it has a separate path
-/// from the short one.
+/// from the short one. A mouse connected over Bluetooth Low Energy has one collection of its own.
 fn mouse_hidpp_interface(d: &DeviceInfo) -> Option<&'static MouseModel> {
+    if d.vendor_id() != LOGITECH {
+        return None;
+    }
+    if matches!(d.bus_type(), BusType::Bluetooth) {
+        return bluetooth_mouse(d.product_id(), d.usage_page(), d.usage(), cfg!(target_os = "linux"));
+    }
     let long_collection =
         (d.usage_page() == 0xFF00 && d.usage() == 2) || (d.usage_page() == 0 && d.interface_number() == 1);
-    if d.vendor_id() == LOGITECH && long_collection { models::find(d.product_id()) } else { None }
+    if long_collection { models::find(d.product_id()) } else { None }
 }
 
 /// The control interfaces of the Corsair devices PeriHub knows, one per device. On Windows an
@@ -785,16 +811,34 @@ impl Manager {
         };
         match candidate {
             Some(Some((info, model))) => {
+                let bluetooth = matches!(info.bus_type(), BusType::Bluetooth);
                 let result = info
                     .open_device(api)
                     .map_err(Error::from)
-                    // Read-only until the mouse's memory format says more (see `mouse::support`).
-                    .and_then(|dev| HidppDevice::new(dev, model.device_index, true))
+                    // Read-only until the mouse's memory format says more (see `mouse::support`), and always
+                    // over Bluetooth.
+                    .and_then(|dev| {
+                        if bluetooth {
+                            HidppDevice::over_bluetooth(dev, true)
+                        } else {
+                            HidppDevice::new(dev, model.device_index, true)
+                        }
+                    })
                     .and_then(|dev| MouseTask::open(dev, model, self.untested_saves));
-                changed |= self.install_mouse(result, info.path(), model, None);
+                changed |= self.install_mouse(result, info.path(), model, bluetooth.then(|| BLUETOOTH.to_string()));
             }
             // No mouse with a cable: look behind the receivers.
-            Some(None) => changed |= self.watch_receivers(api, &receivers),
+            Some(None) => {
+                {
+                    // A Bluetooth mouse that did not answer is gone: that is no longer what is the matter.
+                    let mut slots = self.slots.lock_recover();
+                    if slots.mouse_error.as_deref().is_some_and(|e| e.ends_with(BLUETOOTH_SILENT)) {
+                        slots.mouse_error = None;
+                        changed = true;
+                    }
+                }
+                changed |= self.watch_receivers(api, &receivers);
+            }
             None => {}
         }
         {
@@ -869,6 +913,10 @@ impl Manager {
                 slots.mouse = Some((Worker::spawn("perihub-mouse", task), mouse));
                 slots.mouse_path = Some(path.to_owned());
                 None
+            }
+            // A Bluetooth mouse whose node is there and does not answer is told about, and asked again at the next pass.
+            Err(Error::Unreachable) if via.as_deref() == Some(BLUETOOTH) => {
+                Some(format!("{}: {BLUETOOTH_SILENT}", model.name))
             }
             // It fell asleep while it was being opened: tried again at the next pass.
             Err(Error::Unreachable) => None,
@@ -1894,6 +1942,20 @@ fn open_error_message(error: Error) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_bluetooth_mouse_is_opened_by_its_hidpp_collection_on_windows_and_by_its_one_node_on_linux() {
+        // Windows gives every collection a path of its own: only the vendor-defined HID++ one is opened.
+        assert_eq!(bluetooth_mouse(0xB024, 0xFF43, 0x0202, false).map(|m| m.name), Some("G604"));
+        for (page, usage) in [(0x0001, 0x0002), (0x0001, 0x0006), (0x000C, 0x0001)] {
+            assert!(bluetooth_mouse(0xB024, page, usage, false).is_none(), "{page:04x}/{usage:04x}");
+        }
+        // Linux has one node for the whole device, which hidapi names after its first collection.
+        assert_eq!(bluetooth_mouse(0xB024, 0x0001, 0x0002, true).map(|m| m.name), Some("G604"));
+        // An id that is not a known Bluetooth mouse, or a wireless id, is never taken.
+        assert!(bluetooth_mouse(0xB999, 0xFF43, 0x0202, true).is_none());
+        assert!(bluetooth_mouse(0x4085, 0xFF43, 0x0202, true).is_none());
+    }
 
     #[test]
     fn the_wait_between_tries_grows_to_30_seconds_and_stays_there() {

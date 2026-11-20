@@ -16,6 +16,10 @@ pub struct MouseModel {
     pub product_id: u16,
     /// Id the mouse reports through a LIGHTSPEED receiver (libratbag's second `DeviceMatch`).
     pub wireless_id: Option<u16>,
+    /// Id the mouse has over Bluetooth Low Energy, where it is a Bluetooth HID device of its own (libratbag's
+    /// `bluetooth:` `DeviceMatch`). PeriHub only reads a mouse connected that way
+    /// (`docs/protocols/logitech-onboard-profiles.md`).
+    pub bluetooth_id: Option<u16>,
     pub name: &'static str,
     /// Device index the mouse answers on (libratbag's `DeviceIndex`).
     pub device_index: u8,
@@ -36,7 +40,7 @@ impl MouseModel {
 }
 
 const fn model(product_id: u16, name: &'static str) -> MouseModel {
-    MouseModel { product_id, wireless_id: None, name, device_index: WIRED_INDEX, verified: false }
+    MouseModel { product_id, wireless_id: None, bluetooth_id: None, name, device_index: WIRED_INDEX, verified: false }
 }
 
 /// A mouse that connects with a cable and through a LIGHTSPEED receiver.
@@ -86,7 +90,8 @@ pub const MODELS: &[MouseModel] = &[
     wireless(0xC0A0, 0x40B8, "PRO X 2 DEX"),
     receiver_only(0x4074, "G305"),
     receiver_only(0x406C, "G603"),
-    receiver_only(0x4085, "G604"),
+    // libratbag's device file for the G604 lists its Bluetooth id too; it is the id the request of issue #43 shows.
+    MouseModel { bluetooth_id: Some(0xB024), ..receiver_only(0x4085, "G604") },
 ];
 
 /// The model of a mouse connected with its USB cable.
@@ -97,6 +102,11 @@ pub fn find(product_id: u16) -> Option<&'static MouseModel> {
 /// The model of a mouse behind a LIGHTSPEED receiver, from the id it reports there.
 pub fn find_wireless(wireless_id: u16) -> Option<&'static MouseModel> {
     MODELS.iter().find(|m| m.wireless_id == Some(wireless_id))
+}
+
+/// The model of a mouse connected over Bluetooth Low Energy, from the product id it has there.
+pub fn find_bluetooth(bluetooth_id: u16) -> Option<&'static MouseModel> {
+    MODELS.iter().find(|m| m.bluetooth_id == Some(bluetooth_id))
 }
 
 #[cfg(test)]
@@ -125,6 +135,22 @@ mod tests {
         assert_eq!(find_wireless(0x40A8).unwrap().name, "PRO 2 LIGHTSPEED");
         assert_eq!(find_wireless(0x40B8).unwrap().name, "PRO X 2 DEX");
         assert_eq!(find(0xC0A0).unwrap().name, "PRO X 2 DEX");
+    }
+
+    #[test]
+    fn bluetooth_ids_are_unique_and_belong_to_no_other_connection() {
+        let ids: Vec<u16> = MODELS.iter().filter_map(|m| m.bluetooth_id).collect();
+        for (i, a) in ids.iter().enumerate() {
+            assert!(!ids[i + 1..].contains(a), "{a:04x}");
+            assert!(find(*a).is_none() && find_wireless(*a).is_none(), "{a:04x} is the id of another connection");
+            assert!(!super::super::receiver::is_receiver(*a), "{a:04x}");
+        }
+        // The id of issue #43, and the receiver id the same mouse reports through its LIGHTSPEED receiver.
+        let g604 = find_bluetooth(0xB024).unwrap();
+        assert_eq!(g604.name, "G604");
+        assert_eq!(find_wireless(0x4085).unwrap().name, g604.name);
+        assert!(!g604.has_cable(), "the G604 has no data cable");
+        assert!(find_bluetooth(0x4085).is_none() && find_bluetooth(0xC08B).is_none());
     }
 
     #[test]

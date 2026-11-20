@@ -36,6 +36,21 @@ fn udev_rule_matches_mouse_list() {
 }
 
 #[test]
+fn udev_rule_opens_a_mouse_over_bluetooth_by_the_hid_device_the_kernel_names_for_it() {
+    // A Bluetooth Low Energy mouse has no USB id: its hidraw node hangs under the HID device `0005:VVVV:PPPP.NNNN`.
+    let lines: Vec<&str> = RULE.lines().filter(|line| line.contains(r#"KERNELS=="0005:"#)).collect();
+    for line in &lines {
+        assert!(
+            line.starts_with(r#"KERNEL=="hidraw*", KERNELS=="0005:046D:"#) && line.ends_with(r#".*", TAG+="uaccess""#),
+            "{line}"
+        );
+    }
+    let in_rule = lines.iter().map(|line| line.split("0005:046D:").nth(1).unwrap()[..4].to_lowercase()).collect();
+    let in_list = MODELS.iter().filter_map(|m| m.bluetooth_id).map(|id| format!("{id:04x}")).collect();
+    assert_eq!(sorted(in_rule), sorted(in_list));
+}
+
+#[test]
 fn udev_rule_opens_only_the_hidpp_interface_of_the_receivers() {
     let lines: Vec<&str> = RULE.lines().filter(|line| line.contains(r#"KERNELS=="0003:046D:"#)).collect();
     for line in &lines {
