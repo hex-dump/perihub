@@ -4,10 +4,11 @@ name: Triage
 # "can be added directly" if another project documents it for a protocol PeriHub has a driver for, else
 # "needs USB captures" (the labels "ready to add" and "needs captures"). A test report from an older
 # version is asked to try the latest one, and both get the label of the brand ("brand: Razer") and of the
-# kind of device ("mouse", "keyboard"): from the form's Brand and Device type dropdowns, else from the
-# catalogue (tools/triage.py). A test report with nothing wrong in it that confirms a device starts the
-# Confirm workflow (confirm.yml); for a device that only a test/* branch has (a report of that branch's test
-# build), with that branch as the base, found by tools/test-branch-devices.sh. A request that is "ready to add"
+# kind of device ("mouse", "keyboard"): from the catalogue for a device it knows, else from the form's Brand
+# and Device type dropdowns, else (a pasted report) from the app's own "Kind:" line (tools/triage.py). A test
+# report with nothing wrong in it that confirms a device starts the Confirm workflow (confirm.yml); for a
+# device that only a test/* branch has (a report of that branch's test build), with that branch as the base,
+# found by tools/test-branch-devices.sh. A request that is "ready to add"
 # with an id a generator can add without a person (OpenRazer's mice) starts Auto-add (auto-add.yml): the
 # test branch, the test build and a pull request for the maintainer to merge are made without anyone: the
 # device then goes into the next release as experimental, without waiting for a tester. The issue text is only read

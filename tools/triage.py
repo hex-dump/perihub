@@ -305,15 +305,18 @@ def form_type(body: str) -> str | None:
 
 
 def form_labels(answers: dict[str, str], from_catalogue: list[str], reported: list[str] = ()) -> list[str]:
-    """The kind of device and the brand. What the catalogue knows for the USB ID comes first, then what the
-    app's own report says ("Device: X (mouse)", in reported), and the form's dropdowns only after them: a tester
-    sometimes picks "Keyboard" for a mouse (issue #97), the app never does. A brand nobody knows from the id is
-    the dropdown's, and "brand: Other" for "Other"."""
+    """The kind of device and the brand. What the catalogue knows for the USB ID comes first, whatever the
+    form says: a tester sometimes picks "Keyboard" for a mouse PeriHub knows (issue #97). For an id the
+    catalogue does not have, the form's Device type comes next, before the app's own report ("Device: X
+    (mouse)", "Kind: Mouse", in reported): the app fills that dropdown in from its guess (deviceKind in
+    testReport.ts), so a different value is a person's correction, as when PeriHub took the SteelSeries Apex Pro
+    for a mouse (issue #111) and the tester set Keyboard. A pasted report has no form: the app's kind is what
+    is left. A brand nobody knows from the id is the dropdown's, and "brand: Other" for "Other"."""
     catalogue_brand = next((l for l in from_catalogue if l.startswith("brand: ")), None)
     catalogue_kind = next((l for l in from_catalogue if l in KINDS), None)
     reported_kind = next((l for l in reported if l in KINDS), None)
     kind = answers.get("Device type", "").strip().lower()
-    kind = catalogue_kind or reported_kind or (kind if kind in KINDS else None)
+    kind = catalogue_kind or (kind if kind in KINDS else None) or reported_kind
     chosen = answers.get("Brand", "").strip()
     named = next((b for b in BRANDS if b.lower() == chosen.lower()), None)
     if catalogue_brand:
@@ -601,7 +604,8 @@ def triage(
     labels = {label["name"] for label in issue.get("labels", [])}
     present = set(labels)
     answers = fields(issue.get("body", ""))
-    # What the app's report says the device is, in a form or pasted.
+    # What the app's report says the device is, in a form or pasted (form_labels says which of it, the
+    # catalogue and the form's dropdown counts).
     reported_kind = kind_label(issue.get("body", ""))
     if not labels & set(TYPES):
         kind = form_type(issue.get("body", ""))
@@ -615,7 +619,7 @@ def triage(
     catalogue = brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), current)
     wanted = sorted(labels - present) + form_labels(answers, catalogue, reported_kind)
     result = {"comment": None, "labels": [l for i, l in enumerate(wanted) if l not in present and l not in wanted[:i]]}
-    # A kind label the issue has that the device is not (the form's dropdown, wrong): taken off.
+    # A kind label the issue has that the device is not (the app's guess or the form's dropdown, whichever lost): taken off.
     right_kind = next((l for l in wanted if l in KINDS), None)
     wrong = sorted(l for l in present & set(KINDS) if right_kind and l != right_kind)
     if wrong:

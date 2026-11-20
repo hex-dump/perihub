@@ -464,9 +464,13 @@ class Triage(unittest.TestCase):
         result = run({**other, "labels": [{"name": "test report"}, {"name": "keyboard"}]})
         self.assertEqual(result["labels"], ["brand: ASUS", "mouse"])
         self.assertEqual(result["remove_labels"], ["keyboard"])
-        # An id nobody knows: the report's own "(mouse)" still beats the dropdown.
+        # An id the catalogue does not have: the dropdown, which the app fills in and a person may correct (issue
+        # #111), beats the report's own "(mouse)"...
         unknown = device_issue(ASUS.replace("0b05:195c", "abcd:0001"), "abcd:0001", brand="Other", kind="Keyboard")
-        self.assertEqual(run(unknown)["labels"], ["brand: Other", "mouse"])
+        self.assertEqual(run(unknown)["labels"], ["brand: Other", "keyboard"])
+        # ...and the report's kind is what is left when the dropdown says nothing the labels have ("Receiver").
+        receiver = device_issue(ASUS.replace("0b05:195c", "abcd:0001"), "abcd:0001", brand="Other", kind="Receiver")
+        self.assertEqual(run(receiver)["labels"], ["brand: Other", "mouse"])
 
     def test_the_released_devices_are_read_with_the_branches_too(self):
         # triage.yml passes 4 files: the third is still the devices of the latest release, not main's.
@@ -908,6 +912,153 @@ class AutoAdd(unittest.TestCase):
         if any("1532:00c1" in d["usb_ids"] for d in catalogue):
             self.skipTest("1532:00c1 is in the catalogue now")
         self.assertTrue(triage.auto_addable("1532:00c1", seen, catalogue))
+
+
+# The device request of issue #111, as GitHub laid it out: PeriHub 0.9.6 took the SteelSeries Apex Pro for a mouse
+# ("Kind: Mouse"), and the person who filled in the form picked Keyboard in the Device type dropdown.
+APEX_PRO = """### Device model
+
+SteelSeries Apex Pro
+
+### Device type
+
+Keyboard
+
+### Brand
+
+SteelSeries
+
+### USB ID (vendor:product)
+
+1038:1610
+
+### What PeriHub saw
+
+```text
+PeriHub 0.9.6 on windows x86_64
+Device: SteelSeries Apex Pro
+Kind: Mouse
+USB ID: 1038:1610 (USB)
+Release number (bcdDevice): 0x0416
+USB interfaces: not read
+HID collections:
+  interface 0, usage page 0001, usage 0002
+  interface 0, usage page 0001, usage 0006
+  interface 0, usage page 000c, usage 0001
+  interface 1, usage page ffc0, usage 0001
+  interface 2, usage page 0001, usage 0002
+  interface 2, usage page 0001, usage 0006
+  interface 2, usage page 000c, usage 0001
+  interface 3, usage page 0001, usage 0002
+  interface 3, usage page 000c, usage 0001
+  interface 4, usage page ffc1, usage 0001
+Report descriptors (lengths in bytes, with the id byte):
+  interface 0, 81 bytes: usage page 0001, usage 0002: id 01 (in 8)
+  interface 0, 62 bytes: usage page 0001, usage 0006: id 02 (in 34, out 2)
+  interface 0, 25 bytes: usage page 000c, usage 0001: id 03 (in 5)
+  interface 1, 51 bytes: usage page ffc0, usage 0001: no id (in 64, out 64, feature 642)
+  interface 2, 81 bytes: usage page 0001, usage 0002: id 01 (in 8)
+  interface 2, 62 bytes: usage page 0001, usage 0006: id 02 (in 34, out 2)
+  interface 2, 25 bytes: usage page 000c, usage 0001: id 03 (in 5)
+  interface 3, 73 bytes: usage page 0001, usage 0002: id 02 (in 6)
+  interface 3, 25 bytes: usage page 000c, usage 0001: id 01 (in 5)
+  interface 4, 21 bytes: usage page ffc1, usage 0001: no id (in 64)
+Raw descriptors (hex):
+  interface 0: [id hidden]
+Feature reports (read only):
+  none declared by a vendor-defined collection
+```
+
+### What the device can do in its official software
+
+- [ ] DPI
+- [ ] Polling rate
+- [x] Lighting
+- [x] Button remapping
+- [x] Macros
+- [x] Onboard profiles
+- [ ] Battery level
+- [ ] Something else (say what below)
+
+### Anything else it can do
+
+_No response_
+
+### Official software it uses
+
+_No response_
+
+### Operating system
+
+Windows
+
+### Testing
+
+- [x] I can run read-only diagnostic commands and share their output.
+- [x] Optionally, if I am comfortable with it, I can make a USB capture of the official software with the [capture guide](https://github.com/hex-dump/perihub/blob/main/docs/captures.md)
+"""
+APEX_LABELS = ("device request", "mouse", "brand: SteelSeries", "needs captures")  # what the first triage put on it
+
+
+class KeyboardTakenForAMouse(unittest.TestCase):
+    """Issue #111: the SteelSeries Apex Pro (1038:1610) was labelled a mouse and "needs captures"."""
+
+    seen = json.loads((ROOT / "tools/upstream-seen.json").read_text())
+
+    def issue(self, body=APEX_PRO, labels=("device request",)):
+        return {"number": 111, "labels": [{"name": n} for n in labels], "body": body}
+
+    def test_the_id_is_listed_by_openrgb_in_the_real_baseline(self):
+        self.assertIn("OpenRGB", triage.listed_by("1038:1610", self.seen))
+
+    def test_the_request_is_ready_to_add_and_not_in_need_of_captures(self):
+        result = triage.triage(self.issue(), "0.9.6", DEVICES, upstream=self.seen)
+        self.assertIn("ready to add", result["labels"])
+        self.assertNotIn("needs captures", result["labels"])
+        self.assertIn("OpenRGB", result["comment"])
+        self.assertIn("documents its protocol", result["comment"])
+        self.assertIn("no USB captures are needed", result["comment"])
+        self.assertNotIn("no public documentation", result["comment"])
+        # OpenRGB is for lights: it is never added without a person (MECHANICAL stays as it is).
+        self.assertNotIn("auto_add", result)
+
+    def test_the_form_s_keyboard_beats_the_report_s_mouse_for_an_id_the_catalogue_lacks(self):
+        result = triage.triage(self.issue(), "0.9.6", DEVICES, upstream=self.seen)
+        self.assertEqual(result["labels"], ["brand: SteelSeries", "keyboard", "ready to add"])
+        self.assertNotIn("remove_labels", result)
+
+    def test_the_mouse_label_the_first_triage_put_on_it_is_taken_off(self):
+        result = triage.triage(self.issue(labels=APEX_LABELS), "0.9.6", DEVICES, upstream=self.seen)
+        self.assertEqual(result["labels"], ["keyboard", "ready to add"])
+        self.assertEqual(result["remove_labels"], ["mouse"])
+
+    def test_with_the_real_catalogue_too(self):
+        catalogue = json.loads((ROOT / "site/devices.json").read_text())["devices"]
+        if any("1038:1610" in d["usb_ids"] for d in catalogue):
+            self.skipTest("1038:1610 is in the catalogue now")
+        result = triage.triage(self.issue(labels=APEX_LABELS), "0.9.6", catalogue, catalogue, upstream=self.seen)
+        self.assertEqual(result["labels"], ["keyboard", "ready to add"])
+        self.assertEqual(result["remove_labels"], ["mouse"])
+
+    def test_a_pasted_report_has_no_form_and_keeps_the_app_s_kind(self):
+        saw = APEX_PRO.split("```text\n")[1].split("\n```")[0]
+        result = triage.triage({"labels": [], "body": saw}, "0.9.6", DEVICES, upstream=self.seen)
+        self.assertEqual(result["labels"][:2], ["device request", "mouse"])
+        self.assertIn("ready to add", result["labels"])
+
+    def test_the_dropdown_the_app_filled_in_agrees_with_the_report_so_nothing_changes(self):
+        mouse_form = APEX_PRO.replace("### Device type\n\nKeyboard", "### Device type\n\nMouse")
+        result = triage.triage(self.issue(mouse_form), "0.9.6", DEVICES, upstream=self.seen)
+        self.assertEqual(result["labels"], ["brand: SteelSeries", "mouse", "ready to add"])
+
+    def test_a_device_the_catalogue_knows_is_labelled_from_the_catalogue_whatever_the_form_says(self):
+        known = [{"family": "steelseries", "brand": "SteelSeries", "name": "Apex Pro", "kind": "keyboard", "level": "experimental", "usb_ids": ["1038:1610"]}]
+        for form in ("Mouse", "Keyboard", "Receiver"):
+            with self.subTest(form=form):
+                body = APEX_PRO.replace("### Device type\n\nKeyboard", f"### Device type\n\n{form}")
+                result = triage.triage(self.issue(body, labels=APEX_LABELS), "0.9.6", known, upstream=self.seen)
+                self.assertIn("keyboard", result["labels"])
+                self.assertEqual(result.get("remove_labels"), ["mouse"])
 
 
 class Catalogue(unittest.TestCase):

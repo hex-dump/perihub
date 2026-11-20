@@ -437,20 +437,42 @@ export const reportUsbId = (device: ReportDevice) => `${hex(device.vendor_id)}:$
 export type DeviceKind = "Mouse" | "Keyboard" | "Headset" | "Other";
 
 const GENERIC_DESKTOP = 0x01;
+const MOUSE_USAGE = 0x02;
+const KEYBOARD_USAGE = 0x06;
 const TELEPHONY = 0x0b;
 
-/** What a device is, from its name when it says so, else from its collections: the first mouse or
- * keyboard one by interface number (a mouse often has a keyboard interface for its macros, and a
- * keyboard a mouse one), or the telephony page headsets use. */
+/** Whether the keyboard collection of this interface has an output report, which is how a keyboard gets its
+ * Caps Lock and other indicator lights. A mouse's keyboard collection (for its macros) has none, as a rule.
+ * `false` as well when the descriptors were not read: nothing is then known. */
+function keyboardHasLights(device: ReportDevice, interface_: number): boolean {
+  return device.descriptors
+    .filter((d) => d.interface === interface_)
+    .flatMap((d) => d.collections ?? [])
+    .some((c) => c.usage_page === GENERIC_DESKTOP && c.usage === KEYBOARD_USAGE && c.reports.some((r) => r.output > 0));
+}
+
+/** What a device is, from its name when it says so, else from its collections: the mouse or keyboard ones
+ * of the lowest interface that has any (a mouse often has a keyboard interface for its macros, and a
+ * keyboard a mouse one), or the telephony page headsets use. When that interface has both, as the
+ * SteelSeries Apex Pro's has (a mouse, then a keyboard collection), the device is a keyboard if its keyboard
+ * collection has an output report (the indicator lights), and "Other" if it has none or the descriptors were
+ * not read: the report then says so, no kind is filled in, and the form's own choice stands. */
 export function deviceKind(device: ReportDevice): DeviceKind {
   const name = reportDeviceName(device).toLowerCase();
   if (/headset|headphone|earbud/.test(name)) return "Headset";
   if (/mouse/.test(name)) return "Mouse";
   if (/keyboard/.test(name)) return "Keyboard";
-  const input = [...device.collections]
-    .sort((a, b) => a.interface - b.interface)
-    .find((c) => c.usage_page === GENERIC_DESKTOP && (c.usage === 0x02 || c.usage === 0x06));
-  if (input) return input.usage === 0x02 ? "Mouse" : "Keyboard";
+  const input = device.collections.filter(
+    (c) => c.usage_page === GENERIC_DESKTOP && (c.usage === MOUSE_USAGE || c.usage === KEYBOARD_USAGE),
+  );
+  if (input.length > 0) {
+    const first = Math.min(...input.map((c) => c.interface));
+    const here = input.filter((c) => c.interface === first);
+    const mouse = here.some((c) => c.usage === MOUSE_USAGE);
+    const keyboard = here.some((c) => c.usage === KEYBOARD_USAGE);
+    if (mouse !== keyboard) return mouse ? "Mouse" : "Keyboard";
+    return keyboardHasLights(device, first) ? "Keyboard" : "Other";
+  }
   return device.collections.some((c) => c.usage_page === TELEPHONY) ? "Headset" : "Other";
 }
 
