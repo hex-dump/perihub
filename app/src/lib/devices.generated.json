@@ -178,6 +178,26 @@
           "name": "Prime Wireless (through its receiver)",
           "kind": "mouse",
           "level": "experimental"
+        },
+        {
+          "name": "Apex Pro",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "Apex 7",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "Apex 7 TKL",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
+          "name": "Apex 5",
+          "kind": "keyboard",
+          "level": "experimental"
         }
       ]
     },

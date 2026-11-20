@@ -296,7 +296,7 @@
       {/if}
 
       {#if info.blind.length > 0}
-        <h2>Colour</h2>
+        <h2>{info.kind === "keyboard" ? "Colours and display" : "Colour"}</h2>
         <BlindSettings {info} onchange={(i) => (live = i)} />
       {/if}
 

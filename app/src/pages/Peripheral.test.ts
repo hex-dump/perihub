@@ -549,6 +549,89 @@ describe("a keyboard that cannot report its lighting", () => {
   });
 });
 
+const apexPro: PeripheralInfo = {
+  ...g213,
+  key: "1038:1610",
+  vendor_id: 0x1038,
+  product_id: 0x1610,
+  brand: "SteelSeries",
+  model: "Apex Pro",
+  source: "OpenRGB (facts only) and apex-tux",
+  firmware: "1.2.3",
+  readable: true,
+  settings: { dpi_levels: [], polling_hz: null, options: {}, leds: [{ mode: 0, brightness: 80, color: "#000000" }] },
+  limits: {
+    dpi: null,
+    polling_hz: [],
+    options: [],
+    leds: [{ name: "Backlight", modes: [], brightness_step: 10, color: false }],
+  },
+  details: [["Protocol", "first generation (colours in feature report 3a)"]],
+  blind: [
+    { id: "colour-all", label: "Whole keyboard, one colour", kind: { type: "color" }, last: null },
+    {
+      id: "display",
+      label: "Display",
+      kind: { type: "choice", values: ["Clear the display", "Light every pixel"] },
+      last: null,
+    },
+  ],
+};
+
+describe("a keyboard with a brightness it reads and colours it cannot report", () => {
+  it("shows the brightness to change, and the colours and display under a warning about a keyboard", () => {
+    render(Peripheral, { props: { info: apexPro, error: null } });
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("Colours and display");
+    expect(text).toContain("PeriHub cannot read the lighting effect of the SteelSeries Apex Pro");
+    expect(text.replace(/\s+/g, " ")).toContain("Send sends what you picked, without saving it to the keyboard's memory");
+    expect(text).toContain("after the keyboard is unplugged");
+    expect(text).toContain("OpenRGB (facts only) and apex-tux");
+    expect(text).not.toContain("mouse");
+    const slider = screen.getByRole("slider", { name: "Backlight brightness" }) as HTMLInputElement;
+    expect([slider.step, slider.value]).toEqual(["10", "80"]);
+    expect(screen.getByRole("button", { name: "Apply" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Save to memory…" })).toBeNull();
+  });
+
+  it("sends a colour for the whole keyboard and a picture for the display one at a time", async () => {
+    api.peripheralSetBlind.mockResolvedValue(apexPro);
+    render(Peripheral, { props: { info: apexPro, error: null } });
+    const send = () => screen.getAllByRole("button", { name: "Send" });
+    await fireEvent.click(send()[0]);
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenLastCalledWith("1038:1610", "colour-all", { type: "color", value: "#ffffff" });
+    const display = screen.getByRole("combobox", { name: "Display" }) as HTMLSelectElement;
+    display.value = "Light every pixel";
+    await fireEvent.change(display);
+    await fireEvent.click(send()[1]);
+    await wait(0);
+    expect(api.peripheralSetBlind).toHaveBeenLastCalledWith("1038:1610", "display", {
+      type: "choice",
+      value: "Light every pixel",
+    });
+  });
+
+  it("changes the brightness through the usual change, with its undo", async () => {
+    api.peripheralChange.mockResolvedValue({
+      ...apexPro,
+      settings: { ...apexPro.settings, leds: [{ mode: 0, brightness: 30, color: "#000000" }] },
+    });
+    render(Peripheral, { props: { info: apexPro, error: null } });
+    const slider = screen.getByRole("slider", { name: "Backlight brightness" }) as HTMLInputElement;
+    slider.value = "30";
+    await fireEvent.change(slider);
+    await fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await wait(0);
+    expect(api.peripheralChange).toHaveBeenCalledWith(
+      "1038:1610",
+      { ...apexPro.settings, leds: [{ mode: 0, brightness: 30, color: "#000000" }] },
+      false,
+      null,
+    );
+  });
+});
+
 describe("a mouse that stores every change", () => {
   const razer: PeripheralInfo = {
     ...info,

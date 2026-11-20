@@ -204,6 +204,26 @@ fn udev_rule_never_opens_an_evision_keyboard() {
 }
 
 #[test]
+fn udev_rule_opens_only_interface_1_of_the_steelseries_apex_keyboards() {
+    // Interface 1 is the vendor collection (usage page ffc0); interfaces 0, 2 and 3 carry the keyboard, the mouse and the
+    // media keys, and interface 4 a second vendor collection that PeriHub never uses.
+    use perihub_core::peripheral::{Protocol, models, opened_on_linux};
+    let keyboards: Vec<_> = models().filter(|m| matches!(m.protocol, Protocol::SteelSeriesApex(_))).collect();
+    assert_eq!(keyboards.len(), 4);
+    for model in keyboards {
+        assert!(opened_on_linux(model), "{}", model.name);
+        assert_eq!((model.interface, model.usage_page), (Some(1), Some(0xFFC0)), "{}", model.name);
+        for id in model.product_ids {
+            let tag = format!(r#"ATTRS{{idVendor}}=="{:04x}", ATTRS{{idProduct}}=="{id:04x}""#, model.vendor_id);
+            let lines: Vec<&str> =
+                RULE.lines().filter(|l| !l.trim_start().starts_with('#') && l.contains(&tag)).collect();
+            assert_eq!(lines.len(), 1, "{}", model.name);
+            assert!(lines[0].contains(r#"ENV{ID_USB_INTERFACE_NUM}=="01""#), "{}", lines[0]);
+        }
+    }
+}
+
+#[test]
 fn udev_rule_never_opens_the_logitech_g213() {
     // Its HID++ collection (usage page ff43) shares interface 1 with two keyboard collections: one hidraw node carries
     // all three, so what is typed would reach any program that could open it.

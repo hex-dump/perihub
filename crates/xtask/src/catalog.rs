@@ -88,6 +88,7 @@ pub fn family(protocol: &Protocol) -> Option<&'static str> {
     Some(match protocol {
         Protocol::Asus(_) => "asus",
         Protocol::SteelSeries(_) => "steelseries-mice",
+        Protocol::SteelSeriesApex(_) => "steelseries-apex",
         Protocol::Razer(_) => "razer",
         Protocol::RazerKeyboard(_) => "razer-keyboard",
         Protocol::Yjx(_) => "yjx",

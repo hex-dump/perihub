@@ -24,6 +24,7 @@ the same format.
 - [Corsair](#corsair)
 - [ASUS](#asus)
 - [SteelSeries mice](#steelseries-mice)
+- [SteelSeries Apex Pro, Apex 7, Apex 7 TKL and Apex 5](#steelseries-apex-pro-apex-7-apex-7-tkl-and-apex-5)
 - [Razer mice](#razer-mice)
 - [Razer keyboards](#razer-keyboards)
 - [Glorious mice](#glorious-mice)
@@ -369,6 +370,38 @@ rivalcfg's own tests expect (616 reports compared).
 | Aerox 5 Wireless (through its receiver) | `1038:1852`, `1038:185c`, `1038:1860` | interface 3 | 🧪 Experimental | 8, battery |
 | Aerox 9 Wireless (through its receiver) | `1038:1858`, `1038:1874` | interface 3 | 🧪 Experimental | 8, battery |
 | Prime Wireless (through its receiver) | `1038:1840`, `1038:1848` | interface 3 | 🧪 Experimental | 6, battery |
+<!-- end generated -->
+
+## SteelSeries Apex Pro, Apex 7, Apex 7 TKL and Apex 5
+
+🧪 Experimental: nobody has tried PeriHub on one yet. The first request is [issue #111](https://github.com/hex-dump/perihub/issues/111),
+an Apex Pro (`1038:1610`) on Windows. The protocol is described in [protocols/steelseries-apex.md](protocols/steelseries-apex.md) from
+facts found in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later; no code was copied) and, for the display,
+[apex-tux](https://github.com/not-jan/apex-tux) (Unlicense). The four keyboards share one command set on the vendor collection of USB
+interface 1 (usage page `ffc0`), the only interface PeriHub opens: the others carry what is typed.
+
+- PeriHub reads the keyboard's and the LED controller's firmware and the **brightness**. An answer that does not look as documented
+  leaves the keyboard read-only, with the reason.
+- **Brightness** (tens of percent) can be changed as an experimental feature, with a backup, a read-back and the 15-second undo.
+  Nothing is saved to the keyboard.
+- **Colours**: one colour for the whole keyboard, or one for each group of keys (letters, number row, F1 to F12, navigation keys and
+  arrows, number pad, modifiers, the other keys), sent as one frame of the 112 keys OpenRGB lists, and **back to the keyboard's own
+  lighting**. The keyboard cannot report what it shows, so these are sent one at a time under a warning, cannot be read back or
+  undone, and last until the keyboard is told to go back or is unplugged.
+- **The display** (OLED): clear it, light every pixel, or a test pattern.
+- Left out, waiting for a recording of SteelSeries GG made by a tester (docs/captures.md): per-key actuation points (OmniPoint),
+  key remapping, macros, onboard profiles and the lighting effects of the keyboard's own profiles, which no public source documents,
+  and a picture of your own on the display.
+- The Apex Pro TKL (`1614`), the Apex Pro 3 (`1640`), the Apex 9 and the 2023 and Gen 3 models are not added: OpenRGB gives them
+  other commands, or commands that depend on the firmware (see the protocol page).
+
+<!-- generated: table steelseries-apex -->
+| Keyboard | USB ID | Opened on Linux |
+|---|---|---|
+| Apex Pro | `1038:1610` | interface 1 |
+| Apex 7 | `1038:1612` | interface 1 |
+| Apex 7 TKL | `1038:1618` | interface 1 |
+| Apex 5 | `1038:161c` | interface 1 |
 <!-- end generated -->
 
 ## Razer mice

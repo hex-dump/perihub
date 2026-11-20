@@ -95,9 +95,10 @@
 {#if info.editable && info.readable}
   <div class="notice warn">
     <b>Experimental. PeriHub cannot read the lighting effect of the {name},</b> so it cannot show it, check a colour or
-    put the effect from before back. <b>Send</b> shows one colour the way {info.source.replace(" (facts only)", "")} does,
-    without saving it to the mouse's memory. Nobody has checked yet how long it lasts, or which lighting comes back
-    after the mouse is unplugged.{#if info.settings.leds.length > 0} The brightness above is a separate setting, saved
+    put the effect from before back. {#if thing === "keyboard"}<b>Send</b> sends what you picked,
+    without saving it to the keyboard's memory.{:else}<b>Send</b> shows one colour the way {info.source.replace(" (facts only)", "")} does,
+    without saving it to the mouse's memory.{/if} Nobody has checked yet how long it lasts, or which lighting comes back
+    after the {thing} is unplugged.{#if info.settings.leds.length > 0} The brightness above is a separate setting, saved
       with an undo.{/if}
   </div>
 {:else if info.editable}

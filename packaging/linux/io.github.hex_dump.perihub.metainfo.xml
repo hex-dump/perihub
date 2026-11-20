@@ -184,6 +184,10 @@
     <modalias>usb:v1038p1390d*</modalias>
     <modalias>usb:v1038p1392d*</modalias>
     <modalias>usb:v1038p1394d*</modalias>
+    <modalias>usb:v1038p1610d*</modalias>
+    <modalias>usb:v1038p1612d*</modalias>
+    <modalias>usb:v1038p1618d*</modalias>
+    <modalias>usb:v1038p161Cd*</modalias>
     <modalias>usb:v1038p1622d*</modalias>
     <modalias>usb:v1038p1700d*</modalias>
     <modalias>usb:v1038p1702d*</modalias>

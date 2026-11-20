@@ -422,6 +422,18 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1874", ENV{ID_USB
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1840", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1848", ENV{ID_USB_INTERFACE_NUM}=="03", TAG+="uaccess"
 
+# SteelSeries Apex Pro, Apex 7, Apex 7 TKL and Apex 5 (experimental, untested; facts from OpenRGB and apex-tux): only
+# interface 1, the vendor collection (usage page ffc0) of their lighting, brightness and display. The interfaces
+# that carry the keyboard, the mouse and the media keys, and the second vendor collection (interface 4), stay closed.
+# SteelSeries Apex Pro
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1610", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# SteelSeries Apex 7
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1612", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# SteelSeries Apex 7 TKL
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1618", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+# SteelSeries Apex 5
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="161c", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
+
 # Razer mice (experimental, untested; facts from OpenRazer): only the interface OpenRazer sends to (0, or 3
 # on some newer mice). Interface 0 also carries the mouse's movements and clicks, as on the Logitech mice
 # above. Receivers and docks are left out: some can be shared with a keyboard.

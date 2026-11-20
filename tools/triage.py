@@ -369,7 +369,7 @@ TROUBLE = re.compile(
 # The families whose form checkbox says what PeriHub shows matches the device.
 OTHER_BRANDS = {
     "asus", "steelseries-mice", "razer", "razer-keyboard", "glorious", "roccat", "pulsar", "coolermaster", "nordic",
-    "evga", "yjx", "wraith",
+    "evga", "yjx", "wraith", "steelseries-apex",
 }
 SHOWS_OTHER = (
     "Other brands (ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX, Wraith, EVision, "
