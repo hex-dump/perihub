@@ -21,6 +21,10 @@ export interface CreditGroup {
   credits: Credit[];
 }
 
+/** Said under the group of tools downloaded at run time, as in THIRD-PARTY-NOTICES.md. */
+export const RUNTIME_ONLY =
+  "Not part of PeriHub and not shipped with it: downloaded from the project's own release only when you use the feature that needs it, checked against a pinned SHA-256, and removed afterwards.";
+
 /** Said under the facts-only group, as in THIRD-PARTY-NOTICES.md. */
 export const FACTS_ONLY =
   "These projects are under the GPL. PeriHub took only facts from them (commands, byte layouts, USB ids, interface numbers), described in its own words in docs/protocols, and wrote its own code. No code was copied.";
@@ -252,6 +256,21 @@ export const creditGroups: CreditGroup[] = [
         license: "GPL-2.0",
         notes: [
           "The VIA and Vial commands, the lighting values and VialRGB's effect ids, the raw HID collection and interface of QMK keyboards, and the serial numbers Vial uses to find its keyboards (docs/protocols/qmk-via-vial.md). " + NO_CODE,
+        ],
+      },
+    ],
+  },
+  {
+    id: "runtime",
+    title: "Tools downloaded when a feature needs them",
+    intro: RUNTIME_ONLY,
+    credits: [
+      {
+        name: "USBPcap",
+        link: "https://github.com/desowin/usbpcap",
+        license: "GPL-2.0 driver, BSD-2-Clause USBPcapCMD",
+        notes: [
+          "Version 1.5.4.0, by Tomasz Moń: on Windows, Send a report → Record the official software downloads its installer from the project's GitHub release, installs it for the recording only and removes it completely after it. PeriHub runs USBPcapCMD and reads what it captures. " + NO_CODE,
         ],
       },
     ],

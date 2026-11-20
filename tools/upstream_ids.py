@@ -34,22 +34,42 @@ def libratbag(root: Path):
         text = f.read_text(errors="replace")
         name = re.search(r"^Name=(.*)$", text, re.M)
         driver = re.search(r"^Driver=(.*)$", text, re.M)
-        for vid, pid in re.findall(r"usb:([0-9a-fA-F]{4}):([0-9a-fA-F]{4})", text):
+        for vid, pid in re.findall(r"(?:usb|bluetooth):([0-9a-fA-F]{4}):([0-9a-fA-F]{4})", text):
             yield hexid(vid, pid), name.group(1).strip() if name else f.stem, f"driver {driver.group(1).strip() if driver else '?'}"
 
 
 def openrazer(root: Path):
+    """The classes of the daemon's hardware files. A wireless or receiver variant is often a subclass
+    of the wired one that sets only USB_PID (RazerViperV3ProWireless(RazerViperV3ProWired)), so the
+    vendor id is the class's own, else its base class's, which may be in another file."""
+    classes = {}  # name -> (base, vendor, product, name, file)
     for f in sorted((root / "daemon/openrazer_daemon/hardware").glob("*.py")):
         text = f.read_text(errors="replace")
         for block in re.split(r"\n(?=class \w+)", text):
-            vid = re.search(r"USB_VID\s*=\s*0x([0-9a-fA-F]+)", block)
-            pid = re.search(r"USB_PID\s*=\s*0x([0-9a-fA-F]+)", block)
-            if not (vid and pid):
+            head = re.match(r"class (\w+)\s*(?:\(\s*(\w+)\s*\))?", block)
+            if not head:
                 continue
+            vid = re.search(r"^\s+USB_VID\s*=\s*0x([0-9a-fA-F]+)", block, re.M)
+            pid = re.search(r"^\s+USB_PID\s*=\s*0x([0-9a-fA-F]+)", block, re.M)
             doc = re.search(r'"""\s*Class for the (.+?)\s*"""', block, re.S)
-            cls = re.match(r"class (\w+)", block)
-            name = doc.group(1).strip() if doc else (cls.group(1) if cls else "?")
-            yield hexid(vid.group(1), pid.group(1)), name, f.stem
+            classes[head.group(1)] = (
+                head.group(2),
+                vid.group(1) if vid else None,
+                pid.group(1) if pid else None,
+                doc.group(1).strip() if doc else None,
+                f.stem,
+            )
+
+    def vendor(name: str, seen=()) -> str | None:
+        base, vid, _, _, _ = classes.get(name, (None, None, None, None, None))
+        if vid or not base or base in seen or base not in classes:
+            return vid
+        return vendor(base, (*seen, name))
+
+    for cls, (_, _, pid, doc, stem) in classes.items():
+        vid = vendor(cls)
+        if vid and pid:
+            yield hexid(vid, pid), doc or cls, stem
 
 
 def rivalcfg(root: Path):

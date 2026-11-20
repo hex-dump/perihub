@@ -2,7 +2,9 @@ name: Test build
 
 # Builds the Windows installer and the Linux AppImage, .deb and Flatpak for testing, without a tag or a
 # release: by itself for every push to a test/… branch, or by hand for any branch (Actions → Test build
-# → Run workflow). The files are attached to the run as artifacts. When all three are built, the
+# → Run workflow). The build knows which branch and commit it is (PERIHUB_BUILD, "test/x@abc1234"):
+# the test report it writes starts "PeriHub 0.9.5 (test build test/x@abc1234) on ...", which the triage
+# workflow reads. The files are attached to the run as artifacts. When all three are built, the
 # open issues named by a "Test: #30" line in the commits new to the push get a new comment with the link,
 # and the branch's earlier comment is deleted (tools/notify.py).
 on:
@@ -24,6 +26,16 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # The test report says which build it is from (app/src-tauri/build.rs reads it).
+      - name: Name this build
+        shell: bash
+        env:
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          branch=$(printf '%s' "$BRANCH" | tr -c 'A-Za-z0-9._/-' '-')
+          echo "PERIHUB_BUILD=$branch@$(printf '%.7s' "$SHA")" >> "$GITHUB_ENV"
 
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
@@ -55,6 +67,15 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # The test report says which build it is from (app/src-tauri/build.rs reads it).
+      - name: Name this build
+        env:
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          branch=$(printf '%s' "$BRANCH" | tr -c 'A-Za-z0-9._/-' '-')
+          echo "PERIHUB_BUILD=$branch@$(printf '%.7s' "$SHA")" >> "$GITHUB_ENV"
 
       # Same package cache as the release workflow.
       - name: Downloaded system packages
@@ -108,6 +129,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # The test report says which build it is from (app/src-tauri/build.rs reads it).
+      - name: Name this build
+        env:
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          branch=$(printf '%s' "$BRANCH" | tr -c 'A-Za-z0-9._/-' '-')
+          echo "PERIHUB_BUILD=$branch@$(printf '%.7s' "$SHA")" >> "$GITHUB_ENV"
+
       # The image has the GNOME runtime in a read-only layer of the container: when Flathub has a newer
       # one, flatpak-builder updates it by renaming folders across layers, which fails with "Invalid
       # cross-device link". A copy first puts the installation in the container's own layer.
@@ -116,6 +146,7 @@ jobs:
 
       # Flathub's runtime download sometimes fails with "Failed to update org.gnome.Sdk: Invalid cross-device
       # link": one more try is enough.
+      # PERIHUB_BUILD (set above) reaches the sandbox of flatpak-builder through a file build-local.sh writes.
       - name: Build the bundle
         run: |
           packaging/flatpak/build-local.sh --system || {

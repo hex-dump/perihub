@@ -34,6 +34,9 @@ use crate::sync::LockExt;
 use crate::worker::Worker;
 
 const POLL_INTERVAL: Duration = Duration::from_secs(2);
+/// The Send a report page counts as open this long after it last asked for the devices (it asks every
+/// two seconds).
+const REPORT_PAGE_OPEN: Duration = Duration::from_secs(6);
 /// Start of the error shown while the system's HID access cannot be opened.
 const HID_UNAVAILABLE: &str = "HID unavailable";
 /// The wait before the first new try to open the system's HID access, and the longest wait.
@@ -432,6 +435,11 @@ struct Slots {
     report_devices: Vec<ReportDevice>,
     /// The first detection pass is over.
     scanned: bool,
+    /// What was read from the nodes of those devices (their report descriptors), once each.
+    report_details: report_devices::DetailsCache,
+    /// The Send a report page asked for the list of devices this recently: only then are the feature
+    /// reports of those devices read (see [`crate::feature_reports`]), never in the background.
+    report_page_seen: Option<std::time::Instant>,
     /// Keys of the connected keyboard's map that start software macros, kept by its thread.
     keyboard_macro_keys: Option<Arc<Mutex<Vec<u8>>>>,
 }
@@ -554,8 +562,17 @@ impl Manager {
             log::warn!("HID enumeration failed: {error}");
             return false;
         }
-        let report = report_devices::unknown_devices(api.device_list().filter_map(report_devices::Entry::from_hid));
-        self.slots.lock_recover().report_devices = report;
+        // Reading descriptors can take a while (Windows opens each node): not under the lock.
+        let (mut cache, page_open) = {
+            let mut slots = self.slots.lock_recover();
+            let open = slots.report_page_seen.is_some_and(|seen| seen.elapsed() < REPORT_PAGE_OPEN);
+            (std::mem::take(&mut slots.report_details), open)
+        };
+        let report = report_devices::unknown_devices(report_devices::entries(api, &mut cache, page_open));
+        let mut slots = self.slots.lock_recover();
+        slots.report_devices = report;
+        slots.report_details = cache;
+        drop(slots);
         let keyboard = api.device_list().find(|d| is_keyboard_config_interface(d)).cloned();
         let key_interface = |number| {
             api.device_list()
@@ -1079,7 +1096,9 @@ impl Manager {
 
     /// The connected USB and Bluetooth devices PeriHub does not know, as of the last pass.
     pub fn report_devices(&self) -> Vec<ReportDevice> {
-        self.slots.lock_recover().report_devices.clone()
+        let mut slots = self.slots.lock_recover();
+        slots.report_page_seen = Some(std::time::Instant::now());
+        slots.report_devices.clone()
     }
 
     pub fn status(&self) -> DeviceStatus {

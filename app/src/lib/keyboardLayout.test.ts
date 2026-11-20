@@ -135,7 +135,7 @@ describe("layoutReport", () => {
   it("goes into the Corsair test report for keyboards only", async () => {
     const { corsairTest } = await import("./testReport");
     const keyboard: CorsairInfo = {
-      product_id: 0x1b73, model: "K70 RGB TKL", kind: "keyboard", receiver: null, leds: 130, firmware: "1.2.3",
+      product_id: 0x1b73, model: "K70 RGB TKL", kind: "keyboard", tested: false, receiver: null, leds: 130, firmware: "1.2.3",
       mode: 1, polling_hz: 1000, dpi: null, read_errors: [], lighting: null, layout: corsairIso,
     };
     expect(corsairTest(keyboard, "0.10.0", "linux x86_64").report).toContain("Keyboard layout: US English (ISO)");

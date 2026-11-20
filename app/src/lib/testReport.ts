@@ -1,7 +1,10 @@
+import { MAX_LINK, fitsGithubLink } from "./githubLink";
 import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
-import type { HidppFeature, HidppLighting, LightsLook, MouseInfo, ReportDevice } from "./api";
+import type {
+  DescriptorCollection, DescriptorReports, HidppFeature, HidppLighting, InterfaceFeatures, LightsLook, MouseInfo, ReportDevice,
+} from "./api";
 import { effectName, kindName, zoneName } from "./logitechFeatures";
 import { layoutReport } from "./keyboardLayout.svelte";
 
@@ -137,6 +140,12 @@ function extendedLines(mouse: MouseInfo): string[] {
 }
 
 /** What a tester sends about a mouse: never key presses, macros, apps or log lines. */
+/** The version as a report's first line says it: a test build adds its branch and commit
+ * ("0.9.5 (test build test/x@abc1234)"), which tools/triage.py reads: such a report counts as the version's. */
+export function reportVersion(version: string, build?: string | null): string {
+  return build ? `${version} (test build ${build})` : version;
+}
+
 export function testReport(mouse: MouseInfo, version: string, system: string): string {
   const { onboard } = mouse;
   const zones = mouse.led_zones.map((z) => `zone ${z.index} at ${z.location}, effects ${z.effects.join(" ")}`);
@@ -395,21 +404,174 @@ export function reportDeviceName(device: ReportDevice): string {
 
 export const reportUsbId = (device: ReportDevice) => `${hex(device.vendor_id)}:${hex(device.product_id)}`;
 
-/** The device request form, filled in with what PeriHub sees of `device`: no serial number, no path. */
-export function deviceRequestUrl(device: ReportDevice, version: string, system: string): string {
-  const name = reportDeviceName(device);
+/** What the device request form takes for "Kind of device": the labels of its options. */
+export type DeviceKind = "Mouse" | "Keyboard" | "Headset" | "Other";
+
+const GENERIC_DESKTOP = 0x01;
+const TELEPHONY = 0x0b;
+
+/** What a device is, from its name when it says so, else from its collections: the first mouse or
+ * keyboard one by interface number (a mouse often has a keyboard interface for its macros, and a
+ * keyboard a mouse one), or the telephony page headsets use. */
+export function deviceKind(device: ReportDevice): DeviceKind {
+  const name = reportDeviceName(device).toLowerCase();
+  if (/headset|headphone|earbud/.test(name)) return "Headset";
+  if (/mouse/.test(name)) return "Mouse";
+  if (/keyboard/.test(name)) return "Keyboard";
+  const input = [...device.collections]
+    .sort((a, b) => a.interface - b.interface)
+    .find((c) => c.usage_page === GENERIC_DESKTOP && (c.usage === 0x02 || c.usage === 0x06));
+  if (input) return input.usage === 0x02 ? "Mouse" : "Keyboard";
+  return device.collections.some((c) => c.usage_page === TELEPHONY) ? "Headset" : "Other";
+}
+
+/** The brands the forms list, by USB vendor id. */
+const BRANDS: Record<number, string> = {
+  0x046d: "Logitech", 0x1038: "SteelSeries", 0x1b1c: "Corsair", 0x1532: "Razer", 0x0b05: "ASUS",
+};
+
+/** A link longer than this is not opened by GitHub (it answers 414 at about 8 KB); see also [fitsGithubLink],
+ * which every link is checked with. */
+export const MAX_URL = MAX_LINK;
+/** Said in the details when the link could not carry them all. */
+export const SHORTENED = "(shortened: Copy the details and paste them)";
+
+/** The reports of an interface's collections: "usage page ff00, usage 0001: id 10 (in 7, out 7), id 11 (in 20)". */
+function reportLengths(collections: DescriptorCollection[]): string {
+  const lengths = (r: DescriptorReports) =>
+    [["in", r.input], ["out", r.output], ["feature", r.feature]]
+      .filter(([, n]) => n)
+      .map(([kind, n]) => `${kind} ${n}`)
+      .join(", ");
+  return collections
+    .map((c) => {
+      const ids = c.reports.map((r) => `${r.id === 0 ? "no id" : "id " + r.id.toString(16).padStart(2, "0")} (${lengths(r)})`);
+      return `usage page ${hex(c.usage_page)}, usage ${hex(c.usage)}: ${ids.join(", ") || "no reports"}`;
+    })
+    .join("; ");
+}
+
+/** What happened to one interface's feature reports, one line for it and one for each id asked for. */
+const FEATURE_ENDINGS: Record<InterfaceFeatures["outcome"], string> = {
+  nothing_to_read: "",
+  not_opened: "not opened (it needs rights PeriHub does not ask for)",
+  read: "",
+  stopped_after_error: "stopped after the first error, the other ids were not asked for",
+  timed_out: "stopped after no answer in time, the other ids were not asked for",
+};
+
+/** The section "Feature reports (read only)": the current contents of the feature reports a device's
+ * vendor-defined collections declare, read with GET_FEATURE only, from the interfaces PeriHub could open
+ * without extra rights. `null`: they were not read (yet). */
+export function featureLines(reports: InterfaceFeatures[] | null): string[] {
+  if (reports === null) return ["  not read"];
+  const lines = reports.flatMap((f) => [
+    ...f.reports.map(
+      (r) =>
+        "  interface " + f.interface + ", id " + r.id.toString(16).padStart(2, "0") + " (" + r.length + " bytes): " + (r.hex ?? "no answer"),
+    ),
+    ...(FEATURE_ENDINGS[f.outcome] ? ["  interface " + f.interface + ": " + FEATURE_ENDINGS[f.outcome]] : []),
+  ]);
+  return lines.length ? lines : ["  none declared by a vendor-defined collection"];
+}
+
+/** What PeriHub sees of a device, for the "What PeriHub saw" field: names, ids, release number, HID
+ * collections, the shape of each interface's report descriptor and the contents of its feature reports
+ * (never a serial number or a path). `raw`: also the descriptors in hex, which a maintainer can decode to
+ * the last byte. `recording`: also a USB recording of the official software. `features`: also the feature
+ * reports (the section is then there, saying it was left out). */
+export function deviceDetails(
+  device: ReportDevice,
+  version: string,
+  system: string,
+  raw = true,
+  recording: string | null = null,
+  features = true,
+): string {
   const collections = device.collections.map(
     (c) =>
-      `  ${c.interface < 0 ? "no interface number" : `interface ${c.interface}`}, usage page ${hex(c.usage_page)}, usage ${hex(c.usage)}`,
+      "  " + (c.interface < 0 ? "no interface number" : "interface " + c.interface) + ", usage page " + hex(c.usage_page) + ", usage " + hex(c.usage),
   );
-  const details = [
-    `PeriHub ${version} on ${system}`,
-    `Device: ${name}`,
-    `USB ID: ${reportUsbId(device)} (${device.bus})`,
+  const descriptors = device.descriptors.map((d) => {
+    const where = d.interface < 0 ? "no interface number" : "interface " + d.interface;
+    if (d.hex === null) return "  " + where + ": not read";
+    return "  " + where + ", " + d.hex.length / 2 + " bytes: " + (d.collections ? reportLengths(d.collections) : "read, not understood");
+  });
+  const rawLines = device.descriptors
+    .filter((d) => d.hex !== null)
+    .map((d) => "  " + (d.interface < 0 ? "no interface number" : "interface " + d.interface) + ": " + d.hex);
+  return [
+    "PeriHub " + version + " on " + system,
+    "Device: " + reportDeviceName(device),
+    "Kind: " + deviceKind(device),
+    "USB ID: " + reportUsbId(device) + " (" + device.bus + ")",
+    "Release number (bcdDevice): " + (device.release === null ? "not read" : "0x" + hex(device.release)),
+    "USB interfaces: " + (device.usb_interfaces ?? "not read"),
     "HID collections:",
     ...collections,
+    "Report descriptors (lengths in bytes, with the id byte):",
+    ...(descriptors.length ? descriptors : ["  not read"]),
+    ...(rawLines.length ? ["Raw descriptors (hex):", ...(raw ? rawLines : ["  left out of the link: use Copy report"])] : []),
+    "Feature reports (read only):",
+    ...(features ? featureLines(device.feature_reports) : ["  left out of the link: use Copy report"]),
+    ...(recording ? [RECORDING_HEADING, recording] : []),
   ].join("\n");
-  const values = { title: `Device request: ${name}`, model: name, "usb-id": reportUsbId(device), details };
-  const query = Object.entries(values).map(([field, value]) => `${field}=${encodeURIComponent(value)}`);
-  return `${DEVICE_REQUEST_FORM}&${query.join("&")}`;
+}
+
+/** Above a USB recording made by "Record the official software" (docs/captures.md). */
+export const RECORDING_HEADING =
+  "USB recording of the official software (made by PeriHub; key presses, other devices and the serial number left out):";
+
+/** The device request form, filled in with what PeriHub sees of `device`. GitHub fills in inputs,
+ * text areas and dropdowns from the link, not checkboxes, so what the device can do is left to be
+ * ticked. The link stays under [MAX_URL]: the USB recording goes first (it is the biggest; it is cut short
+ * and then left out), then the raw descriptors, then the feature reports, then the end of the details. */
+export function deviceRequestUrl(device: ReportDevice, version: string, system: string, recording: string | null = null): string {
+  return deviceRequestLink(device, version, system, recording).url;
+}
+
+/** [deviceRequestUrl], and whether the details had to be shortened to fit the link. */
+export function deviceRequestLink(
+  device: ReportDevice,
+  version: string,
+  system: string,
+  recording: string | null = null,
+): { url: string; shortened: boolean } {
+  const name = reportDeviceName(device);
+  const link = (details: string) => {
+    const kind = deviceKind(device);
+    const values = {
+      title: "Device request: " + name,
+      model: name,
+      // The form's own dropdowns (the triage sets its labels from them): no device type for a headset.
+      ...(kind === "Mouse" || kind === "Keyboard" ? { "device-type": kind } : {}),
+      brand: BRANDS[device.vendor_id] ?? "Other",
+      "usb-id": reportUsbId(device),
+      details,
+    };
+    const query = Object.entries(values).map(([field, value]) => field + "=" + encodeURIComponent(value));
+    return DEVICE_REQUEST_FORM + "&" + query.join("&");
+  };
+  const full = link(deviceDetails(device, version, system, true, recording));
+  if (fitsGithubLink(full)) return { url: full, shortened: false };
+  const short = (details: string) => link([details, SHORTENED].join("\n"));
+  // 1. The USB recording, as many of its lines as fit (none: the section is left out).
+  if (recording) {
+    const rows = recording.split("\n");
+    const fits = (n: number) => fitsGithubLink(short(deviceDetails(device, version, system, true, rows.slice(0, n).join("\n"))));
+    let lo = 0;
+    let hi = rows.length - 1;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      if (fits(mid)) lo = mid;
+      else hi = mid - 1;
+    }
+    if (lo > 0) return { url: short(deviceDetails(device, version, system, true, rows.slice(0, lo).join("\n"))), shortened: true };
+  }
+  // 2. The raw descriptors, 3. the feature reports, 4. the end of the details.
+  const withFeatures = deviceDetails(device, version, system, false);
+  if (fitsGithubLink(short(withFeatures))) return { url: short(withFeatures), shortened: true };
+  const lines = deviceDetails(device, version, system, false, null, false).split("\n");
+  while (lines.length > 1 && !fitsGithubLink(link([...lines, SHORTENED].join("\n")))) lines.pop();
+  return { url: link([...lines, SHORTENED].join("\n")), shortened: true };
 }

@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/perihub-core", "crates/perihub-cli", "crates/xtask", "app/src-tauri"]
 
 [workspace.package]
-version = "0.9.4"
+version = "0.9.6"
 edition = "2024"
 license = "MIT"
 

@@ -111,6 +111,7 @@ const settings: AppSettings = {
   config_dir: "~/.config/perihub",
   system: "linux x86_64",
   no_tray_reason: null,
+  build: null,
 };
 
 /** Answers by command name. A command that is not here never answers, as in the tests: the page waits. */
@@ -134,6 +135,7 @@ export const answers: Record<string, unknown> = {
   app_write_log: [],
   update_available: null,
   update_just_installed: null,
+  app_open_release_notes: null,
 };
 
 // ?devices=more (with npm run screenshots untouched): also a low battery on the mouse, an experimental Corsair
@@ -145,6 +147,7 @@ if (typeof location !== "undefined" && new URLSearchParams(location.search).get(
       product_id: 0x1b7a,
       model: "M65 RGB ULTRA",
       kind: "mouse",
+      tested: false,
       receiver: null,
       leds: 3,
       firmware: "1.2.47",
@@ -164,6 +167,7 @@ if (typeof location !== "undefined" && new URLSearchParams(location.search).get(
       model: "Vulcan TKL",
       kind: "keyboard",
       source: "libratbag (MIT)",
+      tested: false,
       profiles: 5,
       firmware: "1.05",
       battery: null,

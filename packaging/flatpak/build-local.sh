@@ -35,6 +35,13 @@ if [ ! -d "$modules" ]; then
     git -C "$modules" checkout --quiet e69357f3b96c2572456b5a371e4b973d98fdd284
 fi
 
+# A test build (PERIHUB_BUILD, "test/x@abc1234") says so in its test reports. The sandbox of flatpak-builder
+# keeps no environment, so the text goes in a file the app's build script reads; a build without it
+# removes a file left by an earlier one.
+build_file="$here/../../.perihub-build"
+if [ -n "${PERIHUB_BUILD:-}" ]; then printf '%s\n' "$PERIHUB_BUILD" > "$build_file"; else rm -f "$build_file"; fi
+trap 'rm -f "$build_file"' EXIT
+
 version=$(sed -n 's/^version = "\(.*\)"/\1/p' "$here/../../Cargo.toml" | head -1)
 mkdir -p "$work"
 flatpak-builder "$installation" $install $container --force-clean --install-deps-from=flathub --assumeyes \

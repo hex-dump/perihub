@@ -20,6 +20,11 @@
   import Icon from "./components/Icon.svelte";
   import Status from "./components/Status.svelte";
   import Support from "./components/Support.svelte";
+  import WhatsNewDialog from "./components/WhatsNewDialog.svelte";
+  import type { ReleaseNotes } from "./lib/changelog";
+  import { notesToShow } from "./lib/whatsNew";
+  import { getVersion } from "@tauri-apps/api/app";
+  import { markPrompted, nextToPrompt, unconfirmedDevices } from "./lib/confirmPrompt";
   import logo from "../icon.svg";
 
   type Page =
@@ -59,6 +64,30 @@
 
   /** Why the settings file was not used at start-up, until the user closes the message. */
   let configProblem = $state<string | null>(null);
+  /** A USB recording did not finish and left USBPcap installed (Windows): it is offered for removal. */
+  let usbLeftover = $state(false);
+  let usbCleanup = $state<string | null>(null);
+  let usbCleaning = $state(false);
+
+  async function removeUsbPcap() {
+    usbCleaning = true;
+    usbCleanup = null;
+    const unlisten = await api.onUsbRecord((p) => {
+      if (p.state === "cleanup") usbCleanup = p.text;
+      if (p.state === "failed") usbCleanup = p.text;
+      if (p.state === "ended" || p.state === "failed") {
+        usbCleaning = false;
+        usbLeftover = false;
+        unlisten();
+        api.usbRecordInfo().then((i) => (usbLeftover = i.leftover), () => {});
+      }
+    });
+    api.usbRecordCleanLeftover().catch((e) => {
+      usbCleanup = errorText(e);
+      usbCleaning = false;
+      unlisten();
+    });
+  }
   /** Why read-only mode could not be turned off from the bar. */
   let readOnlyError = $state<string | null>(null);
 
@@ -75,7 +104,11 @@
   let page = $state<Page | null>(initialPage);
   let tab = $state<string | undefined>(initialTab);
 
+  /** The device the "Test my device" wizard starts with, when the prompt for an unconfirmed device opened it. */
+  let wizardStart = $state<string | null>(null);
+
   function go(next: Page, nextTab?: string) {
+    if (next !== "wizard") wizardStart = null;
     page = next;
     tab = nextTab;
     history.replaceState(null, "", nextTab ? `#${next}:${nextTab}` : `#${next}`);
@@ -173,9 +206,44 @@
     if (loaded && page === null) page = firstPage();
   }
 
+  // A one-time prompt for a device nobody has confirmed yet: one at a time, remembered as soon as it
+  // is shown. It stays until dismissed or used, and goes away if the device does. Not before the first
+  // scan is over (see `unconfirmedDevices`).
+  let promptKey = $state<string | null>(null);
+  const seenPrompts = new Set<string>();
+  const prompt = $derived(unconfirmedDevices(status).find((d) => d.key === promptKey) ?? null);
+  $effect(() => {
+    if (prompt) return;
+    const next = nextToPrompt(status, seenPrompts);
+    promptKey = next?.key ?? null;
+    if (next) {
+      seenPrompts.add(next.key);
+      markPrompted(next.key);
+    }
+  });
+
+  /** The wizard is the guided way to send the report: it opens with the device picked and read. */
+  function testPrompted() {
+    if (!prompt) return;
+    wizardStart = prompt.candidate.id;
+    promptKey = null;
+    go("wizard");
+  }
+
+  /** The release notes of a version that just replaced another, until the dialog is closed. */
+  let whatsNew = $state<ReleaseNotes | null>(null);
+
+  /** The dialog says what the "PeriHub was updated" notice says, so closing it closes the notice too. */
+  function closeWhatsNew() {
+    whatsNew = null;
+    updates.installed = null;
+  }
+
   onMount(() => {
+    getVersion().then((v) => (whatsNew = notesToShow(v)), () => {});
     api.status().then(received);
     api.configProblem().then((p) => (configProblem = p), () => {});
+    api.usbRecordInfo().then((i) => (usbLeftover = i.leftover), () => {});
     // PeriHub checks for updates in the background, also while this window is closed.
     api.updateAvailable().then((u) => u && (updates.available = u));
     api.updateJustInstalled().then((v) => v && (updates.installed = v));
@@ -288,7 +356,10 @@
         <Icon name={device.kind} />
         <span class="col tight">
           <span class="name">Corsair {device.model}</span>
-          <Status kind="experimental" label={device.receiver ? "Experimental · wireless" : "Experimental"} />
+          <Status
+            kind={device.tested ? "ok" : "experimental"}
+            label={`${device.tested ? "Tested" : "Experimental"}${device.receiver ? " · wireless" : ""}`}
+          />
         </span>
       </button>
     {/each}
@@ -301,7 +372,11 @@
         <Icon name={device.kind} />
         <span class="col tight">
           <span class="name">{device.brand} {device.model}</span>
-          <Status kind={device.editable ? "experimental" : "readonly"} label={device.editable ? "Experimental" : "Read-only"} />
+          {#if device.tested}
+            <Status kind="ok" label="Tested" />
+          {:else}
+            <Status kind={device.editable ? "experimental" : "readonly"} label={device.editable ? "Experimental" : "Read-only"} />
+          {/if}
         </span>
       </button>
     {/each}
@@ -342,7 +417,14 @@
 
     <div class="grow"></div>
     <h3>Tools</h3>
-    <button class:active={page === "wizard"} aria-current={page === "wizard" ? "page" : undefined} onclick={() => go("wizard")}>
+    <button
+      class:active={page === "wizard"}
+      aria-current={page === "wizard" ? "page" : undefined}
+      onclick={() => {
+        wizardStart = null;
+        go("wizard");
+      }}
+    >
       <Icon name="report" />
       <span class="name">Test my device</span>
     </button>
@@ -364,10 +446,34 @@
 
   <main>
     <div class="content">
-      {#if updates.installed}
+      {#if prompt}
+        <div class="notice info row confirm" role="region" aria-label="Test report">
+          <span class="grow">
+            Your {prompt.name} isn't confirmed yet. Sending a test report takes a couple of minutes and unlocks it for everyone.
+          </span>
+          <button class="tiny" onclick={testPrompted}>Send test report</button>
+          <button class="ghost tiny" aria-label="Dismiss" onclick={() => (promptKey = null)}><Icon name="close" /></button>
+        </div>
+      {/if}
+      {#if updates.installed && !whatsNew}
         <div class="notice ok row updated">
           <span>PeriHub was updated to {updates.installed}.</span>
           <button class="tiny" onclick={() => (updates.installed = null)}>Close</button>
+        </div>
+      {/if}
+      {#if usbLeftover}
+        <div class="notice warn row usb-leftover" role="alert">
+          <span class="grow">
+            A USB recording did not finish, and USBPcap is still installed. PeriHub can remove it now (Windows asks for
+            administrator rights; USB devices disconnect for a couple of seconds).
+          </span>
+          <button class="tiny" disabled={usbCleaning} onclick={removeUsbPcap}>{usbCleaning ? "Removing…" : "Remove USBPcap"}</button>
+        </div>
+      {/if}
+      {#if usbCleanup}
+        <div class="notice row" class:ok={usbCleanup.startsWith("USBPcap was removed:")} class:warn={!usbCleanup.startsWith("USBPcap was removed:")}>
+          <span class="grow">{usbCleanup}</span>
+          <button class="tiny" onclick={() => (usbCleanup = null)}>Close</button>
         </div>
       {/if}
       {#if configProblem}
@@ -434,7 +540,7 @@
         <!-- Until the devices were looked at, "no device found" would be a guess. -->
         {#if loaded}<DeviceReport alone={!anyDevice} shown={status.qmk.map((k) => k.key)} />{/if}
       {:else if page === "wizard"}
-        <TestWizard {status} />
+        {#key wizardStart}<TestWizard {status} start={wizardStart} />{/key}
       {:else if page === "tester"}
         <MouseTester />
       {:else if page === "profiles"}
@@ -445,6 +551,10 @@
     </div>
   </main>
 </div>
+
+{#if whatsNew}
+  <WhatsNewDialog notes={whatsNew} onclose={closeWhatsNew} />
+{/if}
 
 <style>
   .shell {
@@ -525,6 +635,12 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .confirm {
+    align-items: center;
+    gap: 10px;
     margin-bottom: 18px;
   }
 

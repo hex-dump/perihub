@@ -19,6 +19,7 @@ const info: CorsairInfo = {
   product_id: 0x1b70,
   model: "M55 RGB PRO",
   kind: "mouse",
+  tested: false,
   receiver: null,
   leds: 2,
   firmware: "4.5.12",
@@ -51,6 +52,15 @@ describe("a Corsair mouse", () => {
     expect(screen.getByText("4.5.12")).toBeTruthy();
     expect(screen.getByText("1000 Hz")).toBeTruthy();
     expect(api.corsairSetLighting).not.toHaveBeenCalled();
+  });
+
+  it("says a tester confirmed it, and leaves the lighting experimental", async () => {
+    render(CorsairDevice, { props: { info: { ...info, tested: true }, error: null } });
+    await wait(0);
+    expect(screen.getByText("Tested")).toBeTruthy();
+    expect(document.body.textContent).toContain("A tester confirmed the M55 RGB PRO on real hardware");
+    expect(document.body.textContent).not.toContain("Nobody has tested");
+    expect(screen.getByRole("button", { name: "Try experimental lighting…" })).toBeTruthy();
   });
 
   it("turns lighting on only after the risk is acknowledged", async () => {

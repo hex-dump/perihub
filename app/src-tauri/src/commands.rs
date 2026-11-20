@@ -703,6 +703,9 @@ pub struct AppSettings {
     /// Operating system and architecture, for test reports: read only.
     #[serde(default)]
     system: String,
+    /// The branch and commit of a test build ("test/x@abc1234"), `None` in a release: read only.
+    #[serde(default)]
+    build: Option<String>,
     /// Why "close to tray" is unavailable (the desktop has no tray), `None` when it works: read only.
     #[serde(default)]
     no_tray_reason: Option<String>,
@@ -721,6 +724,7 @@ pub fn app_get_settings(app: AppHandle, state: State<'_, AppState>) -> AppSettin
         log_dir: crate::logfile::dir().display().to_string(),
         config_dir: perihub_core::config::config_dir().display().to_string(),
         system: format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
+        build: option_env!("PERIHUB_BUILD").map(String::from),
         no_tray_reason: crate::tray_support::unavailable_reason(),
     }
 }
@@ -822,6 +826,18 @@ pub fn app_open_support_link(url: String) -> CmdResult<()> {
     perihub_core::softmacro::inject::open_target(&url).map_err(|e| e.to_string())
 }
 
+/// Opens the release notes of a version on GitHub, the link of the "What's new" dialog. A version number only.
+#[tauri::command]
+pub fn app_open_release_notes(version: String) -> CmdResult<()> {
+    if version.is_empty() || !version.chars().all(|c| c.is_ascii_digit() || c == '.') {
+        return Err("not a version number".to_string());
+    }
+    perihub_core::softmacro::inject::open_target(&format!(
+        "https://github.com/hex-dump/perihub/releases/tag/v{version}"
+    ))
+    .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn app_quit(app: AppHandle) {
     crate::window::quit(&app);
@@ -900,6 +916,7 @@ mod tests {
         "app_open_log_folder",
         "app_open_test_form",
         "app_open_support_link",
+        "app_open_release_notes",
         "app_quit",
         "games_installed",
     ];

@@ -115,6 +115,16 @@ fn extra(family: &str) -> Option<Column> {
     })
 }
 
+/// What is particular to one model, for its page on the website: the same facts as the extra column of
+/// its family's table, for the families whose column is about the model and not about the driver.
+pub fn note(device: &Device) -> Option<String> {
+    if !matches!(device.family, "razer" | "asus") {
+        return None;
+    }
+    let (_, cell) = extra(device.family)?;
+    Some(cell(device)).filter(|text| text != "—")
+}
+
 /// The table of the devices a selector takes. Models with the same name share a row.
 pub fn table(devices: &[Device], selector: &str) -> String {
     let mut rows: Vec<Device> = Vec::new();

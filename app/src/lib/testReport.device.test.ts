@@ -6,6 +6,7 @@ const info: CorsairInfo = {
   product_id: 0x1b4c,
   model: "IRONCLAW RGB WIRELESS",
   kind: "mouse",
+  tested: false,
   receiver: 0x1ba6,
   leds: 6,
   firmware: "5.6.7",

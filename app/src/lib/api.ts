@@ -370,6 +370,53 @@ export interface ReportDevice {
   bus: "USB" | "Bluetooth";
   /** Interface -1: the system does not say (Bluetooth). */
   collections: { interface: number; usage_page: number; usage: number }[];
+  /** The release number (bcdDevice), `null`: not read. */
+  release: number | null;
+  /** Interfaces of the USB device, HID or not, `null`: not read. */
+  usb_interfaces: number | null;
+  /** The report descriptor of each interface. */
+  descriptors: InterfaceDescriptor[];
+  /** The feature reports of the interfaces that declare vendor-defined ones, read only. `null`: not read (yet). */
+  feature_reports: InterfaceFeatures[] | null;
+}
+
+/** How reading one interface's feature reports went. */
+export type FeatureOutcome = "nothing_to_read" | "not_opened" | "read" | "stopped_after_error" | "timed_out";
+
+export interface FeatureReport {
+  id: number;
+  /** The declared length, with the id byte when the id is not 0. */
+  length: number;
+  /** What came back, as hex (the first byte is the report id); `null`: no answer. */
+  hex: string | null;
+}
+
+export interface InterfaceFeatures {
+  interface: number;
+  outcome: FeatureOutcome;
+  reports: FeatureReport[];
+}
+
+/** The lengths in bytes of one report id's reports, with the id byte; 0: there is none. */
+export interface DescriptorReports {
+  id: number;
+  input: number;
+  output: number;
+  feature: number;
+}
+
+export interface DescriptorCollection {
+  usage_page: number;
+  usage: number;
+  reports: DescriptorReports[];
+}
+
+export interface InterfaceDescriptor {
+  interface: number;
+  /** In hex, `null`: not read. */
+  hex: string | null;
+  /** Report ids and lengths, `null`: not read or not understood. */
+  collections: DescriptorCollection[] | null;
 }
 
 export interface DeviceStatus {
@@ -725,6 +772,8 @@ export interface PeripheralInfo {
   kind: "mouse" | "keyboard";
   /** Where PeriHub knows the protocol from, e.g. "libratbag (MIT)". */
   source: string;
+  /** A tester confirmed this model on real hardware (the core's confirmed.rs). */
+  tested: boolean;
   profiles: number;
   firmware: string | null;
   battery: { level: number; charging: boolean } | null;
@@ -762,6 +811,8 @@ export interface CorsairInfo {
   product_id: number;
   model: string;
   kind: "mouse" | "keyboard";
+  /** A tester confirmed this model on real hardware (the core's confirmed.rs). */
+  tested: boolean;
   /** Connected through its wireless receiver: the receiver's USB product id. */
   receiver: number | null;
   leds: number;
@@ -807,6 +858,8 @@ export interface AppSettings {
   config_dir: string;
   /** Operating system and architecture, for test reports. */
   system: string;
+  /** The branch and commit of a test build ("test/x@abc1234"); null in a release. */
+  build: string | null;
   /** Why closing the window cannot keep PeriHub in the tray (no tray on this desktop); null when it can. */
   no_tray_reason: string | null;
 }
@@ -865,11 +918,48 @@ export interface MouseRestore {
   directory: boolean;
 }
 
+/** What the USB recorder of the Send a report page can do here. */
+export interface UsbRecorderInfo {
+  available: boolean;
+  /** Why it cannot record here, when it cannot. */
+  reason: string | null;
+  /** "USBPcap" (Windows) or "usbmon" (Linux). */
+  tool: string;
+  windows: boolean;
+  /** An earlier recording did not finish and left USBPcap installed (Windows). */
+  leftover: boolean;
+}
+
+/** One step of a USB recording, as the "usb-record" event tells it. */
+export interface UsbRecordProgress {
+  state: "status" | "recording" | "cleanup" | "done" | "cancelled" | "failed" | "ended";
+  text: string;
+}
+
+/** A step of the user's list and when it started (milliseconds since 1970). */
+export interface UsbRecordStep {
+  at_ms: number;
+  name: string;
+}
+
 // ---- Commands ----
 
 export const api = {
   status: () => invoke<DeviceStatus>("get_status"),
   devicesForReport: () => invoke<ReportDevice[]>("devices_for_report"),
+  usbRecordInfo: () => invoke<UsbRecorderInfo>("usb_record_info"),
+  usbRecordStart: (device: ReportDevice) =>
+    invoke<void>("usb_record_start", {
+      vendorId: device.vendor_id,
+      productId: device.product_id,
+      product: device.product,
+      descriptors: device.descriptors.map((d) => ({ interface: d.interface, hex: d.hex })),
+    }),
+  usbRecordStop: (steps: UsbRecordStep[]) => invoke<void>("usb_record_stop", { steps }),
+  usbRecordCancel: () => invoke<void>("usb_record_cancel"),
+  usbRecordCleanLeftover: () => invoke<void>("usb_record_clean_leftover"),
+  onUsbRecord: (handler: (progress: UsbRecordProgress) => void): Promise<UnlistenFn> =>
+    listen<UsbRecordProgress>("usb-record", (event) => handler(event.payload)),
   onStatus: (handler: (status: DeviceStatus) => void): Promise<UnlistenFn> =>
     listen<DeviceStatus>("devices-changed", (event) => handler(event.payload)),
 
@@ -1006,6 +1096,8 @@ export const api = {
   clearWriteLog: () => invoke<void>("app_clear_write_log"),
   openLogFolder: () => invoke<void>("app_open_log_folder"),
   openTestForm: (url: string) => invoke<void>("app_open_test_form", { url }),
+  /** Opens the release notes of a version on GitHub. */
+  openReleaseNotes: (version: string) => invoke<void>("app_open_release_notes", { version }),
   openSupportLink: (url: string) => invoke<void>("app_open_support_link", { url }),
   softMacros: () => invoke<SoftMacrosInfo>("soft_get"),
   /** Saves a macro run by PeriHub; a new one (key 0) gets its trigger key. */

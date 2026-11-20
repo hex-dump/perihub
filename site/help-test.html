@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--include head-->
+</head>
+<body>
+  <!--include header-->
+
+  <main id="main" tabindex="-1">
+    <section class="device-top">
+      <div class="wrap">
+        <p class="crumbs"><a href="%%ROOT%%#devices">All devices</a></p>
+        <h1>Wanted: testers</h1>
+        <p class="lead">PeriHub recognizes %%COUNT%% mice, keyboards and receivers that nobody has tried with it yet. If you own one, <b>one test report moves it up for everyone</b>. It takes a couple of minutes, and sending it only reads the device.</p>
+        <ol class="steps">
+          <li><b>Download</b> PeriHub below, install it and quit the maker's app (G HUB, GG, iCUE, Synapse…).</li>
+          <li>Connect your device and open <b>Test my device</b> in the sidebar. Pick the device and follow the steps.</li>
+          <li>Press <b>Open the form</b> and send the report. You need a free GitHub account.</li>
+        </ol>
+        <!--include get-->
+      </div>
+    </section>
+
+    <section class="section" id="models">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Find your model</h2>
+          <p class="lead">Every model here has a page with what PeriHub does with it. A Logitech G mouse is confirmed by its memory format, so one report counts for every mouse that uses it: <a href="%%ROOT%%#logitech">how that works</a>.</p>
+        </div>
+
+        <div class="finder" hidden>
+          <label class="visually-hidden" for="device-search">Find your device</label>
+          <input type="search" id="device-search" class="finder-input" placeholder="Find your mouse or keyboard, e.g. G703 or DeathAdder" autocomplete="off" spellcheck="false">
+          <p class="finder-status" role="status"></p>
+        </div>
+
+        <div class="catalogue">
+%%WANTED%%
+        </div>
+        <p class="finder-empty" hidden>Nothing matches. If your device is not on the main list, PeriHub can ask for it: <b>Settings → Devices → Send a report</b> opens a device request already filled in, or <a href="https://github.com/hex-dump/perihub/issues/new?template=device_request.yml">open one on GitHub</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <!--include footer-->
+</body>
+</html>

@@ -17,7 +17,7 @@
     show(".linux-choices");
     // In the Download section too, the visitor's system comes first.
     const linux = document.getElementById("linux");
-    linux.parentElement.prepend(linux);
+    if (linux) linux.parentElement.prepend(linux);
   } else if (os === "mobile") {
     buttons.hidden = true;
     show(".mobile-note");
