@@ -12,8 +12,8 @@ import { describe } from "./g300";
 import { kindName } from "./logitechFeatures";
 import { type Hidden, mergeHidden, redact } from "./redact";
 import {
-  corsairTest, deviceRequestUrl, deviceTestFormUrl, g300Test, peripheralTest, receiverTest, reportDeviceName,
-  reportUsbId, testFormUrl,
+  corsairTest, deviceRequestUrl, deviceTestFormUrl, g300Test, peripheralTest, RECORDING_HEADING, receiverTest,
+  reportDeviceName, reportUsbId, testFormUrl,
 } from "./testReport";
 
 export type DeviceKind = "mouse" | "keyboard" | "other";
@@ -250,8 +250,15 @@ const DEVICE_REQUEST = "template=device_request.yml";
 /** The fields that hold the report text, by form. */
 const TEXT_FIELDS = ["report", "details"];
 
-/** The form with its fields, from the builders of testReport.ts. */
-export function formAddress(c: Candidate, live: LogitechLive | null, version: string, system: string): string {
+/** The form with its fields, from the builders of testReport.ts. `recording`: a USB recording of the official
+ * software, for the request of a device PeriHub does not know. */
+export function formAddress(
+  c: Candidate,
+  live: LogitechLive | null,
+  version: string,
+  system: string,
+  recording: string | null = null,
+): string {
   const t = c.target;
   switch (t.type) {
     case "mouse":
@@ -267,7 +274,7 @@ export function formAddress(c: Candidate, live: LogitechLive | null, version: st
     case "receiver":
       return deviceTestFormUrl(receiverTest(t.receiver, null, version, system), version, system);
     case "unknown":
-      return deviceRequestUrl(t.device, version, system);
+      return deviceRequestUrl(t.device, version, system, recording);
   }
 }
 
@@ -279,6 +286,21 @@ export interface Form {
   /** The field that holds the report. */
   textField: string;
   hidden: Hidden[];
+}
+
+/** The sections of a device request that PeriHub writes from the device's report descriptors, its feature
+ * reports and a recording it has already filtered: their long runs of hex are bytes, not ids, and the second net
+ * of redact() would hide every one of them (the raw descriptors of issue #93 arrived as "[id hidden]"). They are
+ * the last sections of the details (deviceDetails), so everything from the first of them on stays as it is. */
+const BYTE_SECTIONS = ["Raw descriptors (hex):", "Feature reports (read only):", RECORDING_HEADING];
+
+/** redact(), leaving the byte sections of a device request alone. */
+export function redactDetails(text: string, names: string[]): ReturnType<typeof redact> {
+  const lines = text.split("\n");
+  const at = lines.findIndex((l) => BYTE_SECTIONS.includes(l));
+  if (at < 0) return redact(text, names);
+  const head = redact(lines.slice(0, at).join("\n"), names);
+  return { text: [head.text, ...lines.slice(at)].join("\n"), hidden: head.hidden };
 }
 
 /** Splits the address of a form from the builders, adds the writes of this session (lines from
@@ -294,7 +316,8 @@ export function prepareForm(address: string, checklist: string, names: string[],
     if (isText) textField = name;
     // Like the other test reports: the writes right after the report, before the checklist.
     const report = isText && writes.length && !address.includes(DEVICE_REQUEST) ? [value, ...writes].join("\n") : value;
-    const r = redact(isText && checklist ? `${report}\n\n${checklist}` : report, names);
+    const text = isText && checklist ? `${report}\n\n${checklist}` : report;
+    const r = isText && address.includes(DEVICE_REQUEST) ? redactDetails(text, names) : redact(text, names);
     hidden.push(r.hidden);
     fields.push([name, r.text]);
   }

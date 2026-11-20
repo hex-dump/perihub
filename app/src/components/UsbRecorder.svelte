@@ -12,9 +12,12 @@
     /** The recording as text, for the request. */
     onrecorded: (text: string) => void;
     onclose: () => void;
+    /** The button the end of the recording points to, and what it does. */
+    nextButton?: string;
+    nextAction?: string;
   }
 
-  let { device, info, onrecorded, onclose }: Props = $props();
+  let { device, info, onrecorded, onclose, nextButton = "Request support", nextAction = "open it" }: Props = $props();
 
   type Phase = "setup" | "starting" | "recording" | "finishing" | "done" | "failed" | "cancelled";
   let phase = $state<Phase>("setup");
@@ -208,7 +211,7 @@
     <p class="loading">{status}</p>
     {#if phase === "starting"}<button class="ghost self-start" onclick={cancel}>Cancel</button>{/if}
   {:else if phase === "done"}
-    <div class="notice ok">The recording is in the request: press <b>Request support</b> to open it.</div>
+    <div class="notice ok">The recording is in the request: press <b>{nextButton}</b> to {nextAction}.</div>
     <details>
       <summary class="small">See the recording</summary>
       <pre class="term recording">{result}</pre>

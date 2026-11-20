@@ -3,7 +3,8 @@
   // tick what was tried, and send it through PeriHub's form on GitHub.
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
-  import { api, errorText, type DeviceStatus, type ReportDevice, type WriteEntry } from "../lib/api";
+  import { api, errorText, type DeviceStatus, type ReportDevice, type UsbRecorderInfo, type WriteEntry } from "../lib/api";
+  import UsbRecorder from "../components/UsbRecorder.svelte";
   import { userNames } from "../lib/redact";
   import { reportVersion } from "../lib/testReport";
   import { stateStatus } from "../lib/status";
@@ -20,11 +21,12 @@
     start?: string | null;
   }
 
-  type Step = "pick" | "read" | "preview" | "tried" | "send";
+  type Step = "pick" | "read" | "record" | "preview" | "tried" | "send";
 
   const TITLES: Record<Step, string> = {
     pick: "Pick your device",
     read: "Read the device",
+    record: "Record its software",
     preview: "See what is shared",
     tried: "What did you try?",
     send: "Send the report",
@@ -62,20 +64,33 @@
   let copied = $state(false);
   let opened = $state(false);
   let error = $state<string | null>(null);
+  /** What "Record the official software" can do here; null until asked. */
+  let recorder = $state<UsbRecorderInfo | null>(null);
+  /** The device being recorded, a copy: on Windows its USB devices disconnect for a moment when a recording starts. */
+  let recordingDevice = $state<ReportDevice | null>(null);
+  /** The finished recording of the picked device, for its request. */
+  let recorded = $state<string | null>(null);
   /** Only the latest reading counts: the user may go back and pick another device. */
   let readId = 0;
 
   const list = $derived(candidates(status, unknown ?? []));
   const picked = $derived(list.find((c) => c.id === pickedId) ?? null);
   const items = $derived(probed ? checklist(probed.candidate) : []);
-  /** Nothing to tick for a device PeriHub does not know: that step is left out. */
+  /** A USB device PeriHub does not know: its request can carry a recording of the official software. Here
+   * and not only on the Send a report page, which the sidebar shows only when no known device is there. */
+  const unknownDevice = $derived(picked?.target.type === "unknown" && picked.target.device.bus === "USB" ? picked.target.device : null);
+  /** Nothing to tick for a device PeriHub does not know: that step is left out, and the recording comes instead. */
   const steps = $derived<Step[]>(
-    items.length > 0 ? ["pick", "read", "preview", "tried", "send"] : ["pick", "read", "preview", "send"],
+    items.length > 0
+      ? ["pick", "read", "preview", "tried", "send"]
+      : unknownDevice && recorder
+        ? ["pick", "read", "record", "preview", "send"]
+        : ["pick", "read", "preview", "send"],
   );
   const form = $derived(
     probed && version
       ? prepareForm(
-          formAddress(probed.candidate, probed.live, version, system),
+          formAddress(probed.candidate, probed.live, version, system, unknownDevice ? recorded : null),
           checklistText(items, answers),
           names,
           writes ? writeLogLines(writes, readOnly.on) : [],
@@ -94,6 +109,7 @@
 
   onMount(() => {
     loadUnknown();
+    api.usbRecordInfo().then((i) => (recorder = i), () => {});
     // Asked for one device that is there: nothing to pick, the first reading starts.
     if (start && list.some((c) => c.id === start)) {
       pickedId = start;
@@ -152,6 +168,8 @@
       pickedId = id;
       probed = null;
       answers = {};
+      recorded = null;
+      recordingDevice = null;
       copied = opened = false;
     }
   }
@@ -300,6 +318,36 @@
     <button type="button" onclick={() => move(-1)}>Back</button>
     <button type="button" disabled={reading} onclick={read}>Read again</button>
     <button type="button" class="primary" disabled={reading || !probed} onclick={() => move(1)}>Next</button>
+  </div>
+{:else if step === "record"}
+  <div class="notice info">
+    PeriHub does not know {picked?.name ?? "this device"} yet. If its official software changes settings on it (DPI,
+    lighting, buttons…), a recording of that software is what lets it be added. It is optional: <b>Next</b> goes on
+    without one.
+  </div>
+  {#if recordingDevice && recorder}
+    <UsbRecorder
+      device={recordingDevice}
+      info={recorder}
+      nextButton="Next"
+      nextAction="see it"
+      onrecorded={(text) => (recorded = text)}
+      onclose={() => (recordingDevice = null)}
+    />
+  {:else}
+    {#if recorded}<div class="notice ok">The recording goes into the request.</div>{/if}
+    <button
+      type="button"
+      class="self-start"
+      disabled={!unknownDevice}
+      onclick={() => unknownDevice && (recordingDevice = $state.snapshot(unknownDevice))}
+    >
+      {recorded ? "Record again" : "Record the official software"}
+    </button>
+  {/if}
+  <div class="row nav">
+    <button type="button" disabled={recordingDevice !== null} onclick={() => move(-1)}>Back</button>
+    <button type="button" class="primary" disabled={recordingDevice !== null} onclick={() => move(1)}>Next</button>
   </div>
 {:else if step === "preview"}
   <div class="notice info">
@@ -488,5 +536,9 @@
   .check select {
     flex: none;
     width: 140px;
+  }
+
+  .self-start {
+    align-self: flex-start;
   }
 </style>

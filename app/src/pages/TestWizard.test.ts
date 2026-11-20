@@ -12,6 +12,8 @@ const readings = vi.hoisted(() => ({
   logitechLive: vi.fn(),
   writeLog: vi.fn(),
   openTestForm: vi.fn(),
+  usbRecordInfo: vi.fn(),
+  onUsbRecord: vi.fn(),
 }));
 const writes = vi.hoisted(() => ({
   peripheralChange: vi.fn(),
@@ -61,6 +63,8 @@ beforeEach(() => {
   readings.writeLog.mockResolvedValue([]);
   readings.peripheralInfo.mockResolvedValue(peripheral);
   readings.openTestForm.mockResolvedValue(undefined);
+  readings.usbRecordInfo.mockResolvedValue({ available: true, reason: null, tool: "usbmon", windows: false, leftover: false });
+  readings.onUsbRecord.mockResolvedValue(() => {});
 });
 afterEach(cleanup);
 
@@ -193,7 +197,7 @@ describe("the test wizard", () => {
     for (const [name, fn] of Object.entries(writes)) expect(fn, name).not.toHaveBeenCalled();
     // And only the readings of the list were used.
     const used = Object.entries(readings).filter(([, fn]) => fn.mock.calls.length > 0).map(([name]) => name);
-    expect(used.sort()).toEqual(["appSettings", "devicesForReport", "openTestForm", "peripheralInfo", "status", "writeLog"]);
+    expect(used.sort()).toEqual(["appSettings", "devicesForReport", "openTestForm", "peripheralInfo", "status", "usbRecordInfo", "writeLog"]);
   });
 
   it("adds the writes of this session to the report, private details hidden", async () => {
@@ -209,5 +213,34 @@ describe("the test wizard", () => {
     expect(text).toContain("ROG Keris: save, 1 bytes, refused (read-only mode)");
     expect(text).toContain("cannot write /home/[user]/x");
     expect(text).not.toContain("/home/ann");
+  });
+
+  it("offers a recording of the official software for a USB device PeriHub does not know", async () => {
+    const zap = {
+      vendor_id: 0x048d, product_id: 0x5702, manufacturer: "ITE Tech. Inc.", product: "ITE Device", bus: "USB",
+      collections: [{ interface: 0, usage_page: 0xff89, usage: 0xcc }], release: null, usb_interfaces: null,
+      descriptors: [{ interface: 0, hex: "0689ff09cca1018507150026ff00", collections: null }], feature_reports: null,
+    };
+    readings.devicesForReport.mockResolvedValue([zap]);
+    readings.status.mockResolvedValue(status({ peripherals: [] }));
+    render(TestWizard, { props: { status: status({ peripherals: [] }) } });
+    await settle();
+    await fireEvent.click(screen.getByRole("radio", { name: /ITE Device/ }));
+    await click("Next");
+    await settle();
+    expect(document.body.textContent).toContain("Record its software");
+    await click("Next");
+    expect(document.body.textContent).toContain("is what lets it be added");
+    await click("Record the official software");
+    await settle();
+    expect(screen.getByRole("region", { name: "Record the official software" })).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(true);
+    await click("Close");
+    // Skipped: the request goes on without a recording, and its raw descriptor is not taken for an id.
+    await click("Next");
+    await settle();
+    const text = document.querySelector("pre.report")?.textContent ?? "";
+    expect(text).toContain("interface 0: 0689ff09cca1018507150026ff00");
+    expect(text).not.toContain("[id hidden]");
   });
 });
