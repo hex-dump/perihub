@@ -103,5 +103,35 @@ class Testbuild(unittest.TestCase):
         self.assertEqual(self.run_tb([comment(1, "github-actions[bot]", "https://x/actions/runs/9")]), [])
 
 
+
+class ReopenAfterNoAnswer(unittest.TestCase):
+    """An issue tools/remind.py closed for want of an answer opens again when its author answers."""
+
+    def run_waiting(self, state, labels, who):
+        import json as _json
+        import tempfile
+        from unittest import mock
+
+        event = {
+            "issue": {"number": 7, "state": state, "user": {"login": "tester"}, "labels": [{"name": n} for n in labels]},
+            "comment": {"user": {"login": who, "type": "User"}, "body": "Here it is."},
+        }
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+            _json.dump(event, f)
+        calls = []
+        with mock.patch.object(notify, "gh", side_effect=lambda *a: calls.append(a) or ""):
+            notify.waiting(f.name, True)
+        return calls
+
+    def test_the_author_s_answer_reopens_it(self):
+        calls = self.run_waiting("closed", ["device request", "no answer", "waiting for reporter"], "tester")
+        self.assertEqual(calls[0], ("issue", "reopen", "7", "--repo", notify.REPO))
+        self.assertIn("no answer", calls[1])
+        self.assertIn("waiting for reporter", calls[1])
+
+    def test_nobody_else_and_no_other_closed_issue(self):
+        self.assertFalse(any(c[:2] == ("issue", "reopen") for c in self.run_waiting("closed", ["no answer"], "someone")))
+        self.assertFalse(any(c[:2] == ("issue", "reopen") for c in self.run_waiting("closed", ["device request"], "tester")))
+
 if __name__ == "__main__":
     unittest.main()

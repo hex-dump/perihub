@@ -30,6 +30,8 @@ from pathlib import Path
 REPO = "hex-dump/perihub"
 MAINTAINER = "hex-dump"
 WAITING = "waiting for reporter"
+# The label tools/remind.py puts on an issue it closed because nobody answered.
+NO_ANSWER = "no answer"
 # Markers of the automatic comments: they never count as a question to the reporter.
 MARKS = ("<!-- perihub-",)
 
@@ -240,9 +242,17 @@ def waiting(event_path: str, apply: bool) -> None:
     who = comment["user"]
     if "pull_request" in issue or who.get("type") == "Bot" or who["login"].endswith("[bot]"):
         return
-    has = WAITING in {label["name"] for label in issue.get("labels", [])}
+    names = {label["name"] for label in issue.get("labels", [])}
+    has = WAITING in names
     reporter = issue["user"]["login"]
     number = str(issue["number"])
+    # Closed by tools/remind.py for want of an answer: the answer opens it again, as that comment promised.
+    if who["login"] == reporter and issue.get("state") == "closed" and NO_ANSWER in names:
+        print(f"#{number}: {reporter} answered after it was closed for no answer, reopened")
+        if apply:
+            gh("issue", "reopen", number, "--repo", REPO)
+            gh("issue", "edit", number, "--repo", REPO, "--remove-label", NO_ANSWER, *(["--remove-label", WAITING] if has else []))
+        return
     if who["login"] == reporter:
         if has:
             print(f"#{number}: {reporter} answered, label off")
