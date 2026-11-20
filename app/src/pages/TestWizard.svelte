@@ -68,6 +68,8 @@
   let recorder = $state<UsbRecorderInfo | null>(null);
   /** The device being recorded, a copy: on Windows its USB devices disconnect for a moment when a recording starts. */
   let recordingDevice = $state<ReportDevice | null>(null);
+  /** A recording is running: leaving the step would cancel it. */
+  let recorderBusy = $state(false);
   /** The finished recording of the picked device, for its request. */
   let recorded = $state<string | null>(null);
   /** Only the latest reading counts: the user may go back and pick another device. */
@@ -332,6 +334,7 @@
       nextButton="Next"
       nextAction="see it"
       onrecorded={(text) => (recorded = text)}
+      onbusy={(b) => (recorderBusy = b)}
       onclose={() => (recordingDevice = null)}
     />
   {:else}
@@ -346,8 +349,9 @@
     </button>
   {/if}
   <div class="row nav">
-    <button type="button" disabled={recordingDevice !== null} onclick={() => move(-1)}>Back</button>
-    <button type="button" class="primary" disabled={recordingDevice !== null} onclick={() => move(1)}>Next</button>
+    <!-- Only while a recording runs: once it is done (or not started), the recorder may close with the step. -->
+    <button type="button" disabled={recorderBusy} onclick={() => move(-1)}>Back</button>
+    <button type="button" class="primary" disabled={recorderBusy} onclick={() => move(1)}>Next</button>
   </div>
 {:else if step === "preview"}
   <div class="notice info">

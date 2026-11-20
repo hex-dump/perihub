@@ -12,12 +12,14 @@
     /** The recording as text, for the request. */
     onrecorded: (text: string) => void;
     onclose: () => void;
+    /** Called when a recording starts or ends (true while one runs). */
+    onbusy?: (busy: boolean) => void;
     /** The button the end of the recording points to, and what it does. */
     nextButton?: string;
     nextAction?: string;
   }
 
-  let { device, info, onrecorded, onclose, nextButton = "Request support", nextAction = "open it" }: Props = $props();
+  let { device, info, onrecorded, onclose, onbusy, nextButton = "Request support", nextAction = "open it" }: Props = $props();
 
   type Phase = "setup" | "starting" | "recording" | "finishing" | "done" | "failed" | "cancelled";
   let phase = $state<Phase>("setup");
@@ -37,6 +39,7 @@
 
   const planned = $derived(recordingSteps(picked, other));
   const busy = $derived(phase === "starting" || phase === "recording" || phase === "finishing");
+  $effect(() => onbusy?.(busy));
 
   function toggle(id: string, on: boolean) {
     picked = on ? [...picked, id] : picked.filter((p) => p !== id);

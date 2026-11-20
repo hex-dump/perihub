@@ -234,7 +234,8 @@ describe("the test wizard", () => {
     await click("Record the official software");
     await settle();
     expect(screen.getByRole("region", { name: "Record the official software" })).toBeTruthy();
-    expect((screen.getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(true);
+    // Not recording yet (and later, once done): Next stays usable.
+    expect((screen.getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false);
     await click("Close");
     // Skipped: the request goes on without a recording, and its raw descriptor is not taken for an id.
     await click("Next");
