@@ -3,7 +3,7 @@
 //! interface of the reports, the wait before the answer and the transaction id of each read. No code
 //! was copied. Do not edit by hand.
 
-use super::razer_keyboard::{Brightness, Change, Frame, Params};
+use super::razer_keyboard::{Brightness, Change, Effects, Frame, MacroLight, Params};
 use super::{Kind, Model, Protocol};
 
 pub const MODELS: &[Model] = &[
@@ -1024,7 +1024,7 @@ pub const MODELS: &[Model] = &[
             brightness: Some(Brightness { standard: false, tid: 0x1F }),
             game: Some(0xFF),
             linux: true,
-            change: Some(Change { frame: Frame { tid: 0x1F, rows: 5, columns: 14 } }),
+            change: Some(Change { frame: Frame { tid: 0x1F, rows: 5, columns: 14 }, effects: Effects { tid: 0x1F }, macro_light: MacroLight { effect_stored: false, effect_tid: 0x1F } }),
         }),
     },
     Model {
@@ -1041,7 +1041,7 @@ pub const MODELS: &[Model] = &[
             brightness: Some(Brightness { standard: false, tid: 0x9F }),
             game: Some(0xFF),
             linux: true,
-            change: Some(Change { frame: Frame { tid: 0x9F, rows: 5, columns: 14 } }),
+            change: Some(Change { frame: Frame { tid: 0x9F, rows: 5, columns: 14 }, effects: Effects { tid: 0x9F }, macro_light: MacroLight { effect_stored: true, effect_tid: 0xFF } }),
         }),
     },
     Model {

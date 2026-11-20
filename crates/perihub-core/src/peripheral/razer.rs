@@ -300,7 +300,7 @@ impl Driver for Razer {
     fn blind_settings(&self) -> Vec<BlindSetting> {
         match self.p.frame {
             Some(_) => {
-                vec![BlindSetting { id: COLOR, label: "One colour, not saved", kind: BlindKind::Color, last: None }]
+                vec![BlindSetting::new(COLOR, "One colour, not saved", BlindKind::Color)]
             }
             None => Vec::new(),
         }

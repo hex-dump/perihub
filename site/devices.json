@@ -4713,7 +4713,7 @@
         "kind": "interface",
         "interface": 3
       },
-      "note": "backlight brightness, game mode and one colour, not saved"
+      "note": "backlight brightness, game mode, macro light, lighting effects (saved in the keyboard) and one colour, not saved"
     },
     {
       "family": "razer-keyboard",
@@ -4729,7 +4729,7 @@
         "kind": "interface",
         "interface": 3
       },
-      "note": "backlight brightness, game mode and one colour, not saved"
+      "note": "backlight brightness, game mode, macro light, lighting effects (saved in the keyboard) and one colour, not saved"
     },
     {
       "family": "razer-keyboard",

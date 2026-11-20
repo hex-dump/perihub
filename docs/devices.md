@@ -478,9 +478,14 @@ OpenRazer's tables by `tools/openrazer_facts.py`; Razer laptops and keypads (Tar
 - PeriHub reads the firmware and the layout, and where OpenRazer reads them on that keyboard, the backlight
   brightness, the game mode, and on the wireless ones the battery and whether it is charging.
 - **BlackWidow V4 Mini HyperSpeed** (the one a user asked for in [issue #24](https://github.com/hex-dump/perihub/issues/24)):
-  **Save to memory** changes the backlight brightness and the game mode, after the No warranty box the first time.
-  OpenRazer sends both with "variable storage", so PeriHub treats every change as one that stays: it saves the
-  settings first, reads them back, and puts them back after 15 seconds unless you keep the change.
+  **Save to memory** changes the backlight brightness, the game mode and the macro light, after the No warranty box the
+  first time. OpenRazer sends them with "variable storage", so PeriHub treats every change as one that stays: it saves
+  the settings first, reads them back, and puts them back after 15 seconds unless you keep the change.
+  **Lighting effects**: **Send** puts one of the keyboard's own effects (off, static, breathing, spectrum, wave,
+  reactive, starlight, with their colours, directions and speeds) into its memory, the way OpenRazer does. The keyboard
+  cannot report which effect it shows, so PeriHub cannot check it: it remembers what it sent itself, and **Put back**
+  sends the effect before the last one again. The effect the keyboard had before the first change (set by Razer
+  Synapse) cannot be read, so PeriHub cannot put it back; the page says so first, and suggests noting it in Synapse.
   **One colour, not saved**: **Send** draws one colour on every key of the keyboard's custom frame (5 rows of 14
   columns), the way OpenRazer draws its custom frames, without saving it to the keyboard's memory. The frame cannot
   be read back, so PeriHub cannot show it, check the colour or put back what was there, and the warning stays on
@@ -488,10 +493,9 @@ OpenRazer's tables by `tools/openrazer_facts.py`; Razer laptops and keypads (Tar
   unplugged.
 - Wireless keyboards are recognized on their cable and through their own HyperSpeed receiver, where OpenRazer gives
   that receiver to the keyboard alone.
-- Left out: **the lighting effects of the keyboard's own memory** (static, breathing, spectrum, wave, reactive,
-  starlight: OpenRazer stores every one of them and nothing reads the effect in use, so one could not be undone;
-  PeriHub never sends one), colours for single keys, the macro light, macros, key remapping, the Hypershift layer
-  and profiles. Changes on the other Razer keyboards wait until a tester has confirmed this one.
+- Left out: **the ripple effect** (OpenRazer draws it from the key presses it reads, and PeriHub never reads what is
+  typed), colours for single keys, macros, key remapping, the Hypershift layer and profiles. Changes on the other Razer
+  keyboards wait until a tester has confirmed this one.
 - **On Linux only the BlackWidow V4 Mini HyperSpeed for now.** On most Razer keyboards the interface OpenRazer sends
   to also carries what is typed, and the udev rule would let any program read it, so the rule opens only interface 3
   of the V4 Mini, which a tester showed holds only the media keys. The others are read on Windows, where the system
@@ -561,8 +565,8 @@ OpenRazer's tables by `tools/openrazer_facts.py`; Razer laptops and keypads (Tar
 | Huntsman V3 Pro | `1532:02a6` | — | 👁 Read-only | — |
 | Huntsman V3 Pro TKL | `1532:02a7` | — | 👁 Read-only | — |
 | Huntsman V3 Pro Mini | `1532:02b0` | — | 👁 Read-only | — |
-| BlackWidow V4 Mini HyperSpeed | `1532:02b9` | interface 3 | 🧪 Experimental | backlight brightness, game mode and one colour, not saved |
-| BlackWidow V4 Mini HyperSpeed (wireless) | `1532:02ba` | interface 3 | 🧪 Experimental | backlight brightness, game mode and one colour, not saved |
+| BlackWidow V4 Mini HyperSpeed | `1532:02b9` | interface 3 | 🧪 Experimental | backlight brightness, game mode, macro light, lighting effects (saved in the keyboard) and one colour, not saved |
+| BlackWidow V4 Mini HyperSpeed (wireless) | `1532:02ba` | interface 3 | 🧪 Experimental | backlight brightness, game mode, macro light, lighting effects (saved in the keyboard) and one colour, not saved |
 | Joro | `1532:02cd` | — | 👁 Read-only | — |
 | Huntsman V3 Pro 8KHz | `1532:02cf` | — | 👁 Read-only | — |
 | BlackWidow V4 Low-profile Tenkeyless HyperSpeed (Wireless) | `1532:02d2` | — | 👁 Read-only | — |
