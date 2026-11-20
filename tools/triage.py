@@ -7,7 +7,9 @@
 
 A request for a device the latest release recognizes gets an answer with its level; one for a device
 that any project lists is "ready to add": added directly if PeriHub has a driver for it, else by writing a driver from
-the documentation, no captures needed. One nobody lists is told a maintainer will look for documentation, and that
+the documentation, no captures needed. "Ready to add" means it is added to the next release as experimental (read-only
+where the documentation does not allow checking it), with a test build earlier if one is made; nothing waits for a tester,
+and a clean report from Test my device makes it supported. One nobody lists is told a maintainer will look for documentation, and that
 USB captures are optional help ("needs captures"). A test report from an
 older version gets asked to try the latest one. A test report from the latest version with nothing
 wrong in it, for a device or a Logitech memory format nobody had confirmed, says so in "confirm"
@@ -17,12 +19,13 @@ RELEASED_DEVICES.json is site/devices.json as of the latest release's tag: a dev
 main is not in it, and is left to the maintainer, since no published version has it. Without it,
 site/devices.json is used for both.
 "Ready to add" with a project and vendor whose table a generator writes (MECHANICAL: OpenRazer's mice) says
-{"auto_add": "1532:00c1"}: the auto-add workflow writes the support on a test branch and starts its test
-build by itself, and the answer says so. A new device is never merged before a tester confirms it: it is on a test/<name> branch, and the tester
-runs that branch's test build, whose reports start "PeriHub 0.9.5 (test build test/x@abc1234) on ...".
+{"auto_add": "1532:00c1"}: the auto-add workflow writes the support on a test branch, starts its test
+build by itself and opens a pull request the maintainer merges after CI, and the answer says so. A new device goes into
+main and the next release as experimental without waiting for a tester; a test build (a test/<name> branch) is for
+trying it earlier, and its reports start "PeriHub 0.9.5 (test build test/x@abc1234) on ...".
 BRANCHES.json ({"test/x": [devices of site/devices.json on that branch]}, made by
-tools/test-branch-devices.sh) lets a clean report of such a build confirm the device on its branch:
-{"usb": ..., "branch": "test/x"}. A test build is never told to update (it is as new as its branch).
+tools/test-branch-devices.sh) lets a clean report of such a build confirm a device that only its branch has (not
+merged yet) on that branch: {"usb": ..., "branch": "test/x"}. A test build is never told to update (it is as new as its branch).
 The issue text comes from anyone: it is only parsed, never run.
 """
 
@@ -132,25 +135,27 @@ def driver_brand(vendor: str, devices: list[dict]) -> str | None:
     return brands[0] if brands else None
 
 
-# What happens after "ready to add": a device is never in a release before a tester has confirmed it. Only the
-# devices auto-add.yml can write (AUTO_TEST_BUILD_STEPS) are added without a person: for the others a maintainer
+# What happens after "ready to add": the device is added to the next release as experimental, without waiting for a
+# tester, and a clean report from Test my device makes it supported. A test build comes earlier when one is made. Only
+# the devices auto-add.yml can write (AUTO_TEST_BUILD_STEPS) are added without a person: for the others a maintainer
 # writes the support, and only the link of its test build comes by itself, so the answer does not promise more.
 TEST_BUILD_STEPS = (
-    "A maintainer adds it on a test branch, and when its **test build** is ready the link is posted on this issue "
-    "automatically. Install it, connect the device, and try it with **Test my device**: it reads the device, and the "
-    "report says which test build it is from. Once a clean report comes in, the device is confirmed and goes into "
-    "the next release. Nothing more is needed from you until the test build is here."
+    "A maintainer adds it, as read-only or experimental, to the **next release**: it does not wait for a test. If a "
+    "**test build** with it is made earlier, its link is posted on this issue automatically. Install it, connect the "
+    "device, and try it with **Test my device**: it reads the device, and the report says which test build it is from. "
+    "Once a clean report comes in, the device is confirmed and becomes **supported**. Nothing is needed from you for "
+    "it to be added."
 )
 
 
 # The same, when the support is written by the repository's own workflow: nobody has to do anything.
 AUTO_TEST_BUILD_STEPS = (
-    "The support is being **written and built automatically** right now (a draft pull request on a `test/` branch "
-    "and a **test build**): the link to the test build is posted on this issue when it is ready. Install it, connect "
-    "the device, and try it with **Test my device**: it reads the device, and the report says which test build it is "
-    "from. Once a clean report comes in, the device is confirmed and goes into the next release. Nothing more is "
-    "needed from you until the test build is here. If the automatic step cannot add it, a maintainer takes over and "
-    "the link still comes here."
+    "The support is being **written and built automatically** right now (a pull request and a **test build** on a "
+    "`test/` branch): it goes into the **next release** as experimental once the maintainer merges it, without waiting "
+    "for a test. The link to the test build is posted on this issue when it is ready. Install it, connect the device, "
+    "and try it with **Test my device**: it reads the device, and the report says which test build it is from. Once a "
+    "clean report comes in, the device is confirmed and becomes **supported**. Nothing is needed from you for it to be "
+    "added. If the automatic step cannot add it, a maintainer takes over and the link still comes here."
 )
 
 
@@ -158,8 +163,8 @@ ON_BRANCH_STEPS = (
     "A **test build** with it already exists, on the branch `{branch}`. To get it, open the "
     "[test build runs of that branch]({url}), open the latest successful run, and download the file for your system "
     "from the bottom of its page. Install it, connect the device, and try it with **Test my device**: it reads the "
-    "device, and the report says which test build it is from. Once a clean report comes in, the device is confirmed "
-    "and goes into the next release."
+    "device, and the report says which test build it is from. The device goes into the next release as read-only or "
+    "experimental whether or not you try it; once a clean report comes in, it is confirmed and becomes **supported**."
 )
 TEST_BUILD_RUNS = "https://github.com/hex-dump/perihub/actions/workflows/test-build.yml?query=branch%3A{branch}"
 # A Logitech device that has a vendor collection on usage page ff00 with usage 0001 or 0002 (HID++ short and long
@@ -367,7 +372,7 @@ OTHER_BRANDS = {
     "evga", "yjx", "wraith",
 }
 SHOWS_OTHER = (
-    "Other brands (ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX, Wraith, "
+    "Other brands (ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX, Wraith, EVision, "
     "QMK keyboards): the DPI levels, polling rate, lighting and buttons PeriHub shows match the device"
 )
 SHOWS_CORSAIR = ("Firmware version", "Polling rate (report rate)")

@@ -3,7 +3,8 @@
 tools/auto-add.json, the generator of its table is run on the upstream source at the commit the table
 already names, `cargo xtask gen` writes the rest, the checks run, and everything is committed on
 test/auto-VVVV-PPPP with a "Test: #N" line. Only that: pushing the branch, starting the test build and
-opening the draft pull request are the auto-add workflow's (.github/workflows/auto-add.yml).
+opening the pull request (a normal one, for the maintainer to merge after CI) are the auto-add workflow's
+(.github/workflows/auto-add.yml).
 
   auto_add.py USB_ID ISSUE --src SOURCE_DIR [--skip-checks] [--dry-run [--keep]]
       prints {"branch", "name", "usb", "commit"} as JSON on stdout when a branch was made, and nothing
@@ -116,7 +117,7 @@ def commit_message(name: str, usb: str, issue: str, project: str, commit: str) -
         f"{name} ({usb}), added automatically from {project} facts\n\n"
         f"Made by the auto-add workflow (tools/auto_add.py): the id is in {ALLOW} and the table was written by its\n"
         f"generator from {project} at {commit[:12]}, the commit the table already names; cargo xtask gen wrote the rest.\n"
-        "Not tried on hardware: a tester's clean report confirms it.\n\n"
+        "Not tried on hardware: it ships as experimental, and a tester's clean report makes it supported.\n\n"
         f"Test: #{issue}\n"
     )
 

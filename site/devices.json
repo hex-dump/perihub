@@ -505,6 +505,20 @@
       }
     },
     {
+      "family": "logitech-direct",
+      "brand": "Logitech",
+      "name": "PRO K/DA",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/logitech-pro-k-da.html",
+      "usb_ids": [
+        "046d:c339"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
       "family": "lightspeed",
       "brand": "Logitech",
       "name": "LIGHTSPEED receiver",
@@ -1753,6 +1767,21 @@
       }
     },
     {
+      "family": "corsair-receiver",
+      "brand": "Corsair",
+      "name": "KATAR PRO WIRELESS Gaming Dongle",
+      "kind": "receiver",
+      "level": "experimental",
+      "page": "devices/corsair-katar-pro-wireless-gaming-dongle.html",
+      "usb_ids": [
+        "1b1c:1b94"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 1
+      }
+    },
+    {
       "family": "asus",
       "brand": "ASUS",
       "name": "ROG GX860 Buzzard",
@@ -2658,7 +2687,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "polling rate; brightness of scroll wheel"
+      "note": "polling rate; brightness of scroll wheel; battery shown"
     },
     {
       "family": "razer",
@@ -2690,7 +2719,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 6400, polling rate; brightness of scroll wheel"
+      "note": "DPI up to 6400, polling rate; brightness of scroll wheel; battery shown"
     },
     {
       "family": "razer",
@@ -2738,7 +2767,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 8200, polling rate; brightness of scroll wheel"
+      "note": "DPI up to 8200, polling rate; brightness of scroll wheel; battery shown"
     },
     {
       "family": "razer",
@@ -2834,7 +2863,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 8200, polling rate; brightness of scroll wheel and backlight"
+      "note": "DPI up to 8200, polling rate; brightness of scroll wheel and backlight; battery shown"
     },
     {
       "family": "razer",
@@ -2914,7 +2943,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 16000, polling rate shown"
+      "note": "DPI up to 16000, polling rate shown; battery shown"
     },
     {
       "family": "razer",
@@ -3042,7 +3071,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
+      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3234,7 +3263,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
+      "note": "DPI up to 16000, polling rate; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3266,7 +3295,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
+      "note": "DPI up to 16000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3298,7 +3327,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 20000, polling rate; brightness of logo; one colour, not saved"
+      "note": "DPI up to 20000, polling rate; brightness of logo; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3314,7 +3343,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 20000, polling rate; brightness of logo; one colour, not saved"
+      "note": "DPI up to 20000, polling rate; brightness of logo; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3330,7 +3359,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 16000, polling rate"
+      "note": "DPI up to 16000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3378,7 +3407,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved"
+      "note": "DPI up to 20000, polling rate shown; brightness of logo, scroll wheel, left side and right side; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3442,7 +3471,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
+      "note": "DPI up to 20000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3458,7 +3487,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 20000; brightness of logo"
+      "note": "DPI up to 20000, polling rate; brightness of logo"
     },
     {
       "family": "razer",
@@ -3522,7 +3551,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000"
+      "note": "DPI up to 30000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3570,7 +3599,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate"
+      "note": "DPI up to 30000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3586,7 +3615,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate; brightness of logo; one colour, not saved"
+      "note": "DPI up to 30000, polling rate; brightness of logo; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3602,7 +3631,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
+      "note": "DPI up to 30000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3618,7 +3647,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate; brightness of logo and scroll wheel"
+      "note": "DPI up to 30000, polling rate; brightness of logo and scroll wheel; battery shown"
     },
     {
       "family": "razer",
@@ -3634,7 +3663,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000"
+      "note": "DPI up to 30000, polling rate"
     },
     {
       "family": "razer",
@@ -3650,7 +3679,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate"
+      "note": "DPI up to 35000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3666,7 +3695,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 45000"
+      "note": "DPI up to 45000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3682,7 +3711,23 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate"
+      "note": "DPI up to 35000, polling rate; battery shown"
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper V3 Pro (Wireless)",
+      "kind": "mouse",
+      "level": "experimental",
+      "page": "devices/razer-viper-v3-pro-wireless.html",
+      "usb_ids": [
+        "1532:00c1"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      },
+      "note": "DPI up to 35000, polling rate; what the dongle light shows; battery shown"
     },
     {
       "family": "razer",
@@ -3698,7 +3743,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate"
+      "note": "DPI up to 35000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3714,7 +3759,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate"
+      "note": "DPI up to 30000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3746,7 +3791,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved"
+      "note": "DPI up to 35000, polling rate; brightness of logo and scroll wheel; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3762,7 +3807,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 30000, polling rate"
+      "note": "DPI up to 30000, polling rate; battery shown"
     },
     {
       "family": "razer",
@@ -3794,7 +3839,7 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved"
+      "note": "DPI up to 35000, polling rate; brightness of scroll wheel; one colour, not saved; battery shown"
     },
     {
       "family": "razer",
@@ -3810,7 +3855,23 @@
         "kind": "interface",
         "interface": 0
       },
-      "note": "DPI up to 35000, polling rate"
+      "note": "DPI up to 35000, polling rate; battery shown"
+    },
+    {
+      "family": "razer",
+      "brand": "Razer",
+      "name": "Viper V3 Pro SE (Wireless)",
+      "kind": "mouse",
+      "level": "experimental",
+      "page": "devices/razer-viper-v3-pro-se-wireless.html",
+      "usb_ids": [
+        "1532:00df"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 0
+      },
+      "note": "DPI up to 35000, polling rate; battery shown"
     },
     {
       "family": "razer-keyboard",
@@ -4825,6 +4886,20 @@
       }
     },
     {
+      "family": "g213",
+      "brand": "Logitech",
+      "name": "G213 Prodigy",
+      "kind": "keyboard",
+      "level": "experimental",
+      "page": "devices/logitech-g213-prodigy.html",
+      "usb_ids": [
+        "046d:c336"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
       "family": "g600",
       "brand": "Logitech",
       "name": "G600",
@@ -5228,6 +5303,202 @@
       "linux": {
         "kind": "interface",
         "interface": 2
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 505b",
+      "kind": "keyboard",
+      "level": "experimental",
+      "page": "devices/evision-rgb-keyboard-320f-505b.html",
+      "usb_ids": [
+        "320f:505b"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 5000",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-5000.html",
+      "usb_ids": [
+        "320f:5000"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 502a",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-502a.html",
+      "usb_ids": [
+        "320f:502a"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 5064",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-5064.html",
+      "usb_ids": [
+        "320f:5064"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 5078",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-5078.html",
+      "usb_ids": [
+        "320f:5078"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 5084",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-5084.html",
+      "usb_ids": [
+        "320f:5084"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 320f 5041",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-320f-5041.html",
+      "usb_ids": [
+        "320f:5041"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 5004",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-5004.html",
+      "usb_ids": [
+        "0c45:5004"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 5104",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-5104.html",
+      "usb_ids": [
+        "0c45:5104"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 5204",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-5204.html",
+      "usb_ids": [
+        "0c45:5204"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 652f",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-652f.html",
+      "usb_ids": [
+        "0c45:652f"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 7672",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-7672.html",
+      "usb_ids": [
+        "0c45:7672"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 7698",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-7698.html",
+      "usb_ids": [
+        "0c45:7698"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
+      "family": "evision",
+      "brand": "EVision",
+      "name": "RGB keyboard 0c45 8520",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/evision-rgb-keyboard-0c45-8520.html",
+      "usb_ids": [
+        "0c45:8520"
+      ],
+      "linux": {
+        "kind": "closed"
       }
     },
     {

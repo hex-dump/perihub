@@ -23,6 +23,10 @@ fn udev_rule_matches_mouse_list() {
         .filter(|m| m.has_cable())
         .map(|m| format!("{:04x}", m.product_id))
         .chain([format!("{:04x}", perihub_core::g300::PRODUCT_ID)])
+        // Devices with HID++ on their own USB connection, except where that interface carries typing.
+        .chain(
+            perihub_core::hidpp::direct::DIRECT.iter().filter(|m| !m.typing).map(|m| format!("{:04x}", m.product_id)),
+        )
         // The G600 and the HID++ 1.0 mice, from the other brands' tables (checked there).
         .chain(perihub_core::peripheral::logitech_g600::MODELS.iter().map(|m| format!("{:04x}", m.product_ids[0])))
         // The HID++ 1.0 mice, from the other brands' tables too.
@@ -138,6 +142,24 @@ fn udev_rule_matches_the_other_brands_tables() {
 }
 
 #[test]
+fn udev_rule_opens_only_the_hidpp_interface_of_the_logitech_usb_devices() {
+    for m in perihub_core::hidpp::direct::DIRECT {
+        let tag = format!(r#"ATTRS{{idProduct}}=="{:04x}""#, m.product_id);
+        let lines: Vec<&str> = RULE.lines().filter(|l| !l.trim_start().starts_with('#') && l.contains(&tag)).collect();
+        if m.typing {
+            assert!(lines.is_empty(), "{lines:?}");
+        } else {
+            assert_eq!(lines.len(), 1);
+            assert!(
+                lines[0].contains(&format!(r#"ENV{{ID_USB_INTERFACE_NUM}}=="{:02}""#, m.interface)),
+                "{}",
+                lines[0]
+            );
+        }
+    }
+}
+
+#[test]
 fn udev_rule_never_opens_the_asus_omni_receiver() {
     for line in RULE.lines().filter(|l| !l.trim_start().starts_with('#')) {
         assert!(!line.contains(r#"ATTRS{idProduct}=="1ace""#), "{line}");
@@ -148,6 +170,33 @@ fn udev_rule_never_opens_the_asus_omni_receiver() {
 fn udev_rule_never_opens_the_wraith_keyboard() {
     for line in RULE.lines().filter(|l| !l.trim_start().starts_with('#')) {
         assert!(!line.contains(r#"ATTRS{idVendor}=="2e3c""#), "{line}");
+    }
+}
+
+#[test]
+fn udev_rule_never_opens_an_evision_keyboard() {
+    // Their vendor collection shares interface 1 with a keyboard collection: one hidraw node carries both.
+    use perihub_core::peripheral::{Protocol, models, opened_on_linux};
+    let keyboards: Vec<_> = models().filter(|m| matches!(m.protocol, Protocol::Evision(_))).collect();
+    assert!(keyboards.len() > 2);
+    for model in keyboards {
+        assert!(!opened_on_linux(model), "{}", model.name);
+        for id in model.product_ids {
+            let tag = format!(r#"ATTRS{{idVendor}}=="{:04x}", ATTRS{{idProduct}}=="{id:04x}""#, model.vendor_id);
+            assert!(!RULE.lines().any(|l| !l.trim_start().starts_with('#') && l.contains(&tag)), "{}", model.name);
+        }
+    }
+}
+
+#[test]
+fn udev_rule_never_opens_the_logitech_g213() {
+    // Its HID++ collection (usage page ff43) shares interface 1 with two keyboard collections: one hidraw node carries
+    // all three, so what is typed would reach any program that could open it.
+    let g213 = perihub_core::peripheral::find(0x046D, 0xC336).expect("a model");
+    assert_eq!(g213.interface, Some(1));
+    assert!(!perihub_core::peripheral::opened_on_linux(g213));
+    for line in RULE.lines().filter(|l| !l.trim_start().starts_with('#')) {
+        assert!(!line.contains(r#"ATTRS{idProduct}=="c336""#), "{line}");
     }
 }
 

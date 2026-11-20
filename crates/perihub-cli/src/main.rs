@@ -101,7 +101,15 @@ fn run(args: &[&str]) -> Result<()> {
     if config.read_only && changes_a_device(args) {
         return Err(perihub_core::Error::ReadOnly);
     }
-    let manager = Manager::start(config.keyboard, false, Default::default(), Vec::new(), Box::new(|_| {}));
+    let manager = Manager::start(
+        config.keyboard,
+        false,
+        Default::default(),
+        Default::default(),
+        Vec::new(),
+        Vec::new(),
+        Box::new(|_| {}),
+    );
     wait_for_devices(&manager);
     match args {
         ["status"] => print_json(&manager.status()),

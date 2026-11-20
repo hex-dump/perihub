@@ -81,7 +81,7 @@ fn extra(family: &str) -> Option<Column> {
             if p.dpi_max > 0 && p.tid.dpi_set.is_some() && p.tid.dpi_set == p.tid.dpi_get {
                 first.push(format!("DPI up to {}", p.dpi_max));
             }
-            if p.tid.poll_set.is_some() {
+            if p.tid.poll_set.is_some() || p.poll2.is_some() {
                 first.push("polling rate".into());
             } else if p.tid.poll_get.is_some() {
                 first.push("polling rate shown".into());
@@ -102,6 +102,12 @@ fn extra(family: &str) -> Option<Column> {
             }
             if p.frame.is_some() {
                 parts.push("one colour, not saved".into());
+            }
+            if p.dongle_led.is_some() {
+                parts.push("what the dongle light shows".into());
+            }
+            if p.battery.is_some() {
+                parts.push("battery shown".into());
             }
             parts.retain(|p| !p.is_empty());
             if parts.is_empty() { "—".into() } else { parts.join("; ") }

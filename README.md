@@ -76,11 +76,12 @@
 |---|---|
 | <!-- generated: count logitech-onboard:by-memory-format -->28<!-- end generated --> more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
 | Logitech devices on a **Logi Bolt** or **Unifying** receiver (MX Master, MX Anywhere, MX Keys…) | 🧪 Recognized by the features they report; the DPI of those without onboard memory can be changed, everything else is read |
+| **Logitech G213 Prodigy** keyboard (Windows) | 🧪 Lighting only: colours of its five areas, effects, time and brightness, sent one at a time and never stored; the keyboard cannot report them |
 | **Logitech G600** | 🧪 Read; DPI, polling rate and lighting of the profile in use can be saved at your own risk |
 | **Logitech G500s, G700s** with a cable, whose software Logitech no longer offers | 🧪 Read the profile in use; the DPI in use can be changed, not saved; their memory is never written |
 | **Logitech G9, G9x, G500, G700** with a cable | 👁 Profile in use, DPI, polling rate and buttons |
 | <!-- generated: count Corsair:mouse -->26<!-- end generated --> **Corsair mice** and <!-- generated: count Corsair:keyboard -->23<!-- end generated --> **Corsair keyboards** (KATAR, M65, M75, SCIMITAR, DARK CORE, K55, K70, K100…) | 🧪 Read, and one colour of lighting for the session, at your own risk |
-| <!-- generated: count razer -->74<!-- end generated --> **Razer mice** (DeathAdder, Viper, Basilisk, Naga, Orochi…) on their USB cable | 🧪 Read; DPI, polling rate and the brightness of the lights can be saved at your own risk, and on <!-- generated: count colour -->27<!-- end generated --> of them one colour can be sent without saving it |
+| <!-- generated: count razer -->76<!-- end generated --> **Razer mice** (DeathAdder, Viper, Basilisk, Naga, Orochi…) on their USB cable, and the Viper V3 Pro and Pro SE behind their own dongle | 🧪 Read, with the battery on the <!-- generated: count razer:battery -->28<!-- end generated --> that have one; DPI, polling rate (up to 8000 Hz on those that go that high) and the brightness of the lights can be saved at your own risk, and on <!-- generated: count colour -->27<!-- end generated --> of them one colour can be sent without saving it |
 | <!-- generated: count razer-keyboard -->69<!-- end generated --> **Razer keyboards** (BlackWidow, Huntsman, Ornata, Cynosa, DeathStalker…) | 👁 Firmware, layout, backlight brightness, game mode and battery. 🧪 BlackWidow V4 Mini HyperSpeed: also changes the brightness, the game mode and one colour. On Linux only that one for now |
 | <!-- generated: count steelseries-mice -->33<!-- end generated --> **SteelSeries mice** (Rival, Sensei, Aerox, Prime, Kana, Kinzu) | 🧪 They cannot report their settings: DPI, polling rate, colours and effects are sent one at a time, never saved to the mouse |
 | <!-- generated: count asus -->21<!-- end generated --> **ASUS ROG and TUF mice** (Chakram, Gladius II, Keris, Spatha X, Strix Impact, TUF Gaming M3…) | 🧪 Read; DPI, polling rate, button response, angle snapping and lighting can be changed at your own risk |
@@ -90,6 +91,7 @@
 | **Lamzu Atlantis** on its USB cable | 👁 Read-only |
 | <!-- generated: count coolermaster -->4<!-- end generated --> **Cooler Master mice** (MM530, MM711, MM720, MM730) | 🧪 Lighting only: colour, brightness and mode can be saved at your own risk |
 | **EVGA X12, X20** with a cable | 🧪 Lighting only: on the X12 colour, brightness and off can be saved at your own risk; the X20 is read-only |
+| **EVision keyboards** (<!-- generated: count EVision -->14<!-- end generated --> ids on an EVision controller, such as the Surmen V400 `320f:505b`) | 🧪 On Windows: the lighting in use and the key table are read, and on `320f:505b` the lighting can be changed at your own risk; the other ids are read only. Not opened on Linux (the interface also carries what is typed) |
 | **Roccat Kone Pure, Kone XTD, Kone EMP** | 👁 Profile in use, DPI levels and polling rate |
 | **Keyboards with QMK firmware**: every Vial keyboard, and VIA keyboards you turn on | 🧪 Read; lighting can be changed at your own risk, keymaps are left to VIA and Vial |
 
@@ -200,6 +202,13 @@ Glorious mice are supported from the published documentation of their SinoWealth
 </details>
 
 <details>
+<summary><b>Logitech G213 Prodigy</b></summary>
+
+The lighting of the **Logitech G213 Prodigy** keyboard is supported from facts in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB), [g810-led](https://github.com/MatMoul/g810-led), [G213Colors](https://github.com/SebiTimeWaster/G213Colors) and [gdevd](https://github.com/R1tschY/gdevd), with no code copied. The keyboard cannot report its lighting, so PeriHub sends one setting at a time (a colour for the whole keyboard or one of its five areas, off, breathing, a colour cycle, waves, and the time and brightness of the effects that move), shows a warning that it cannot check or undo it, and never stores anything in the keyboard: unplug it to go back to its own lighting. PeriHub first asks the keyboard where it lists its lighting, and keeps the page read-only if that is not where the sources send it. Its startup effect is left out, since the keyboard stores it and nobody can read it back. On Windows only: on Linux the keyboard's HID++ collection shares a device node with what is typed, so PeriHub does not open it there.
+
+</details>
+
+<details>
 <summary><b>Logitech G600</b></summary>
 
 The **Logitech G600** is supported from the documentation of its protocol in [libratbag](https://github.com/libratbag/libratbag). It keeps three profiles in vendor reports of its own, not HID++, and writing a profile stores it, so its page too offers only **Save to memory** on the profile in use, after the **No warranty** box, with the same backup, read-back and 15-second undo. PeriHub changes the DPI of the slots that are on, the polling rate and the lighting, writes the buttons and everything else back as it read it, and never writes on top of a profile that changed since the mouse was connected.
@@ -245,6 +254,13 @@ The lighting of four **Cooler Master mice** (MM530, MM711, MM720, MM730) is supp
 <summary><b>EVGA mice</b></summary>
 
 The lighting of two **EVGA mice** is supported from facts in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVGA drivers, with no code copied. On the **X12** PeriHub turns each zone off or steady and changes its colour and brightness with **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo; the **X20** on its cable is read only. The Z15 and Z20 keyboards are left out.
+
+</details>
+
+<details>
+<summary><b>EVision keyboards</b></summary>
+
+Keyboards on an **EVision controller** (sold as Surmen, Ajazz, Redragon, Tecware and many other brands) are supported from facts found in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVision controllers and in [OpenEVision](https://github.com/iefedev/OpenEVision), a Windows app that tried them on a `320f:505b`, with no code copied. PeriHub reads the lighting in use and counts the key table; on `320f:505b` it changes the mode, brightness, colour and speed with **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo (every change stays in the keyboard). Key remapping, macros and onboard profiles wait for captures. **On Linux these keyboards are not opened**: their vendor collection shares an interface with the keyboard's own, and a udev rule would let any program read what is typed.
 
 </details>
 
@@ -493,10 +509,12 @@ PeriHub is free. If it spared you an official app and you'd like to say thanks, 
 - [rivalcfg](https://github.com/flozz/rivalcfg) (WTFPL): the SteelSeries mice, their commands and the reports its tests expect, in [docs/protocols/steelseries-mice.md](docs/protocols/steelseries-mice.md).
 - The USB captures of Cooler Master's app attached to [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s device requests: the Cooler Master mice's lighting, described in our own words in [docs/protocols/coolermaster-mm.md](docs/protocols/coolermaster-mm.md). No code was copied.
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVGA drivers: the EVGA X12 and X20 lighting, described in our own words in [docs/protocols/evga-mice.md](docs/protocols/evga-mice.md). No code was copied.
+- [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVision controllers and [OpenEVision](https://github.com/iefedev/OpenEVision) (both GPL-2.0): the EVision keyboards' lighting, key table and ids, described in our own words in [docs/protocols/evision.md](docs/protocols/evision.md). No code was copied.
+- [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) and [g810-led](https://github.com/MatMoul/g810-led) (facts only, no code), with [G213Colors](https://github.com/SebiTimeWaster/G213Colors) (MIT) and [gdevd](https://github.com/R1tschY/gdevd) (MIT): the Logitech G213 Prodigy's lighting, described in our own words in [docs/protocols/logitech-g213.md](docs/protocols/logitech-g213.md).
 - [QMK](https://github.com/qmk/qmk_firmware) and [Vial](https://github.com/vial-kb/vial-qmk): the VIA and Vial protocols and how QMK keyboards present their raw HID channel, described in our own words in [docs/protocols/qmk-via-vial.md](docs/protocols/qmk-via-vial.md). No code was copied.
 
 </details>
 
 The notices of the projects PeriHub takes code or data from are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which comes with every package.
 
-PeriHub is released under the [MIT license](LICENSE). It is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master or EVGA; product names belong to their owners.
+PeriHub is released under the [MIT license](LICENSE). It is not affiliated with SteelSeries, Logitech, Corsair, ASUS, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA or EVision; product names belong to their owners.

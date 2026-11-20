@@ -11,7 +11,7 @@ body:
       value: |
         Thanks for testing! Sending a report only reads the device, so it is safe. PeriHub changes settings only if you choose to, after a **No warranty** box, at your own risk, and each save is undone after 15 seconds unless you keep it.
 
-        What it does depends on the device. On a Logitech mouse whose memory format is untested it can save, and once someone confirms that what PeriHub shows matches the mouse and that saving works, the format becomes tested for every mouse that uses it. On the Logitech G300 it reads and saves the three profiles. On the Logitech G9, G9x, G500, G500s, G700 and G700s (with the cable) it reads the profile in use, and on the G500s and G700s it can set the DPI in use without saving it; it never writes their memory. For a Logitech device on a Bolt or Unifying receiver it reads what the device is, and can set its DPI. PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session. The Wraith W60, Razer keyboards other than the BlackWidow V4 Mini, and mice on a YJX receiver are only read. On the Razer BlackWidow V4 Mini it also changes the backlight brightness and the game mode (saved in the keyboard) and tries one colour (not saved), if you choose to. On ASUS, SteelSeries, Razer and Glorious mice, and on QMK keyboards (Vial, VIA), it reads what the device reports and changes settings only if you choose to. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
+        What it does depends on the device. On a Logitech mouse whose memory format is untested it can save, and once someone confirms that what PeriHub shows matches the mouse and that saving works, the format becomes tested for every mouse that uses it. On the Logitech G300 it reads and saves the three profiles. On the Logitech G9, G9x, G500, G500s, G700 and G700s (with the cable) it reads the profile in use, and on the G500s and G700s it can set the DPI in use without saving it; it never writes their memory. For a Logitech device on a Bolt or Unifying receiver it reads what the device is, and can set its DPI. PeriHub only reads Corsair devices, and can try one colour of lighting on them for the session. On the Logitech G213 keyboard (Windows) it sends lighting colours and effects, which the keyboard does not keep. The Wraith W60, Razer keyboards other than the BlackWidow V4 Mini, and mice on a YJX receiver are only read, and EVision keyboards (the Surmen V400 and others on an EVision controller) are read, with their lighting changed only if you choose to. On the Razer BlackWidow V4 Mini it also changes the backlight brightness and the game mode (saved in the keyboard) and tries one colour (not saved), if you choose to. On ASUS, SteelSeries, Razer and Glorious mice, and on QMK keyboards (Vial, VIA), it reads what the device reports and changes settings only if you choose to. A device becomes fully supported once someone confirms that what PeriHub shows matches it.
   - type: dropdown
     id: device-type
     attributes:
@@ -26,7 +26,7 @@ body:
     id: brand
     attributes:
       label: Brand
-      description: "Pick Other for Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX and any brand not listed."
+      description: "Pick Other for Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX, EVision and any brand not listed."
       options:
         - Logitech
         - SteelSeries
@@ -101,7 +101,7 @@ body:
         - label: "Bolt or Unifying: after the device slept or was turned off and on, PeriHub set the DPI again"
         - label: "Bolt or Unifying: without PeriHub running, the device kept the DPI after it slept or was turned off and on"
         - label: "Bolt or Unifying: Back to the device's own DPI worked"
-        - label: "Other brands (ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX, Wraith, QMK keyboards): the DPI levels, polling rate, lighting and buttons PeriHub shows match the device"
+        - label: "Other brands (ASUS, SteelSeries, Razer, Glorious, Roccat, Pulsar, Lamzu, Cooler Master, EVGA, YJX, Wraith, EVision, QMK keyboards): the DPI levels, polling rate, lighting and buttons PeriHub shows match the device"
   - type: checkboxes
     id: saving
     attributes:

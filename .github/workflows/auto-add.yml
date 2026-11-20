@@ -2,7 +2,9 @@ name: Auto-add a device
 
 # A device request is "ready to add" and its USB id can be added without a person (tools/triage.py,
 # MECHANICAL: today OpenRazer's mice): this writes the support on a test branch, starts its test build and
-# opens a draft pull request, so that nobody has to do anything until the tester's report.
+# opens a pull request for the maintainer to merge after CI, so that nobody has to do anything else. The device
+# then goes into the next release as experimental, without waiting for a tester; a clean test report later
+# makes it supported.
 #
 #   1. tools/auto_add.py puts the id in the allow list tools/auto-add.json, runs the generator of its table
 #      (tools/openrazer_facts.py) on the upstream source at the commit the table already names, runs
@@ -12,9 +14,11 @@ name: Auto-add a device
 #      started here by hand (workflow_dispatch, which is allowed): there is exactly one build. Its notify job
 #      (tools/notify.py) comments the link on the issue named by the commit's "Test: #N" line, as for a
 #      push: a dispatched run has no "before" commit, so every commit of the branch not on main counts.
-#   3. A draft pull request to main titled for the device is opened (the confirm workflow reuses it when the
-#      tester's report is clean, and adds the confirmation to the branch). It stays a draft: nothing is merged
-#      before a tester has confirmed the device. Main is never pushed to.
+#   3. A pull request to main titled for the device is opened, a normal one, not a draft: the maintainer merges
+#      it after CI (the Changelog check asks for a line under "New devices" first). The test build is for trying
+#      the device earlier, and nothing waits for it. The confirm workflow reuses this pull request when a
+#      tester's report from the test build is clean while the branch is not merged yet, and adds the
+#      confirmation to the branch. Main is never pushed to.
 #
 # If the generator cannot produce the id (a laptop, a keyboard, a mouse with no command PeriHub knows, an id
 # upstream added after the pinned commit) or a check fails, nothing is commented and the issue gets the
@@ -130,7 +134,7 @@ jobs:
           # The push above, made with GITHUB_TOKEN, does not start the Test build workflow: this does, once.
           gh workflow run test-build.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
 
-      - name: Open the draft pull request
+      - name: Open the pull request
         if: steps.build.outputs.made == 'true'
         env:
           BRANCH: ${{ steps.build.outputs.branch }}
@@ -140,16 +144,17 @@ jobs:
           {
             echo "Adds **$NAME** (\`$USB\`) for #$ISSUE, written and built automatically by the Auto-add workflow: the id is in \`tools/auto-add.json\`, the table was written by its generator from the source at the commit it already names, and \`cargo xtask gen\` wrote the rest. The format, clippy, the tests, the generated-file check and the CHANGELOG lint passed before the branch was pushed."
             echo
-            echo "**Not tried on hardware, so this stays a draft.** A test build of this branch is being made and its link comes on #$ISSUE. A new device is never merged before a tester has confirmed it: when a clean test report comes in, the Confirm workflow adds the confirmation to this branch, and the maintainer marks this ready and merges it."
+            echo "**Not tried on hardware.** It goes into the next release as experimental (read-only, or with its changes behind the No warranty box, the read-back and the undo) without waiting for a test: merge it after CI. The Changelog check asks for a line under \`## Unreleased\` → \`### New devices\` first. A test build of this branch is being made and its link comes on #$ISSUE; a clean test report makes the device supported (the Confirm workflow opens that pull request)."
             echo
-            echo "Closes #$ISSUE"
+            # Not "Closes": the request stays open until the release, whose comment tells the requester it is out.
+            echo "For #$ISSUE"
           } > "$RUNNER_TEMP/pr.md"
           existing=$(gh pr list --base main --head "$BRANCH" --state open --json url --jq '.[0].url // empty')
           if [ -n "$existing" ]; then
             echo "$existing is open already."
-          elif ! gh pr create --draft --base main --head "$BRANCH" --title "Add $NAME ($USB), waiting for a test report (#$ISSUE)" --body-file "$RUNNER_TEMP/pr.md"; then
+          elif ! gh pr create --base main --head "$BRANCH" --title "Add $NAME ($USB) (#$ISSUE)" --body-file "$RUNNER_TEMP/pr.md"; then
             # Actions may not be allowed to create pull requests here: the branch and its build are there, which is what matters now.
-            echo "::warning::The draft pull request could not be created: the confirm workflow comments the link to open it."
+            echo "::warning::The pull request could not be created: open it from the branch $BRANCH."
           fi
 
       # Anything above that failed: nothing is said on the issue, and a person takes over.

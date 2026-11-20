@@ -1,0 +1,53 @@
+name: Status board
+
+# The pinned issue "Device support: where every request stands" (tools/status_board.py): every open device
+# request grouped by where it stands (in the latest release, coming in the next one, test build, being written,
+# needs a recording). Remade when an issue, a release or main's catalogue changes, and once a day; the issue is
+# edited only when something moved. The first run makes it, pins it and locks it (people talk in their own issues).
+on:
+  issues:
+    types: [opened, closed, reopened, labeled, unlabeled, edited]
+  release:
+    types: [published]
+  push:
+    branches: [main]
+    paths: [site/devices.json]
+  schedule:
+    - cron: "47 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: status-board
+  cancel-in-progress: true
+
+jobs:
+  board:
+    # Its own edits do not start it again.
+    if: "github.event_name != 'issues' || github.event.issue.title != 'Device support: where every request stands'"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          sparse-checkout: |
+            tools/status_board.py
+            tools/triage.py
+            tools/upstream-seen.json
+            tools/test-branch-devices.sh
+            site/devices.json
+            crates/perihub-core/src/confirmed.rs
+          sparse-checkout-cone-mode: false
+
+      - name: Update the board
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          gh api "repos/$GITHUB_REPOSITORY/contents/site/devices.json?ref=$latest" -H "Accept: application/vnd.github.raw" > "$RUNNER_TEMP/released.json"
+          bash tools/test-branch-devices.sh "$RUNNER_TEMP/branches.json"
+          python3 -I tools/status_board.py "$RUNNER_TEMP/released.json" "$RUNNER_TEMP/branches.json" --apply

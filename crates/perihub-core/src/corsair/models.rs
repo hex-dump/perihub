@@ -112,7 +112,21 @@ pub const RECEIVERS: &[(u16, &str)] = &[
     (0x1B7F, "DARK CORE RGB PRO SE receiver"),
     (0x1B81, "DARK CORE RGB PRO receiver"),
     (0x1B66, "IRONCLAW RGB WIRELESS receiver"),
+    (0x1B94, "KATAR PRO WIRELESS Gaming Dongle"),
 ];
+
+/// Mice sold with a receiver of their own and no USB data cable: what answers behind that receiver
+/// is always this mouse, whatever product id it reports. No lighting until one is tested: PeriHub
+/// only reads them.
+pub const OWN_RECEIVER_MICE: &[(u16, CorsairModel)] = &[(
+    0x1B94,
+    CorsairModel { product_id: 0x1B94, name: "KATAR PRO WIRELESS", kind: Kind::Mouse, leds: 0, packet: super::PACKET },
+)];
+
+/// The mouse behind `receiver`, if that receiver belongs to one mouse only.
+pub fn behind_own_receiver(receiver: u16) -> Option<&'static CorsairModel> {
+    OWN_RECEIVER_MICE.iter().find(|(id, _)| *id == receiver).map(|(_, model)| model)
+}
 
 pub fn is_receiver(product_id: u16) -> bool {
     RECEIVERS.iter().any(|&(id, _)| id == product_id)
@@ -143,6 +157,19 @@ mod tests {
             assert!(page.contains(&format!("| {name} | `{id:04x}` |")), "{name} {id:04x}");
             assert!(find(*id).is_none(), "a receiver is not a device");
         }
+    }
+
+    #[test]
+    fn a_mouse_with_its_own_receiver_is_known_by_the_receiver() {
+        let page = include_str!("../../../../docs/protocols/corsair-bragi.md");
+        for (receiver, m) in OWN_RECEIVER_MICE {
+            assert!(is_receiver(*receiver));
+            assert_eq!(behind_own_receiver(*receiver), Some(m));
+            assert_eq!(m.leds, 0, "read-only until tested");
+            let row = format!("| {} | `{:04x}` | {} |", m.name, receiver, m.packet);
+            assert!(page.contains(&row), "missing from the page: {row}");
+        }
+        assert_eq!(behind_own_receiver(0x1BA6), None);
     }
 
     #[test]

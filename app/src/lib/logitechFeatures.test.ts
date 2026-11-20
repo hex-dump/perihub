@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("./api", () => ({}));
 
 import type { UnsupportedReceiverDevice } from "./api";
-import { capabilities, kindIcon, kindName } from "./logitechFeatures";
+import { capabilities, kindIcon, kindName, keyGroups, lightsDrivable, perKeyKeys, waveDirections } from "./logitechFeatures";
 
 /** The feature table of the MX Master 3S, as Solaar's device documentation lists it (ids only). */
 const MX_MASTER_3S = [
@@ -23,6 +23,11 @@ const device = (ids: number[], hidden: number[] = []): UnsupportedReceiverDevice
   dpi: null,
   report_rates_ms: [],
   onboard: null,
+  lighting: null,
+  led_zones: [],
+  battery: null,
+  battery_reply: null,
+  read_only: false,
   read_errors: [],
 });
 
@@ -61,5 +66,70 @@ describe("kinds", () => {
     expect(kindIcon(0)).toBe("keyboard");
     expect(kindIcon(2)).toBe("keyboard");
     expect(kindIcon(3)).toBe("mouse");
+  });
+});
+
+describe("driving a keyboard's lights", () => {
+  it("puts the keys in groups by their ids", () => {
+    const keys = [...Array.from({ length: 111 }, (_, i) => i + 1), 153, 155, 156, 157, 158, 180, 181, 210];
+    const groups = keyGroups(keys);
+    expect(groups.map((g) => [g.name, g.keys.length])).toEqual([
+      ["Letters", 26],
+      ["Numbers", 10],
+      ["F keys", 12],
+      ["Arrows and navigation", 13],
+      ["Numpad", 17],
+      ["Other keys", 25],
+      ["Ctrl, Shift, Alt and Windows", 8],
+      ["Media and brightness", 5],
+      ["G keys", 2],
+      ["Logo", 1],
+    ]);
+    expect(groups.flatMap((g) => g.keys).sort((a, b) => a - b)).toEqual(keys);
+    expect(keyGroups([1, 2]).map((g) => g.name)).toEqual(["Letters"]);
+  });
+
+  it("leaves the logo out of the colours per key when the keyboard has a logo zone", () => {
+    const zones = (locations: number[]) => ({ zones: locations.map((location) => ({ location })) });
+    expect(perKeyKeys({ keys: [1, 2, 210], effects: zones([1, 2]) })).toEqual([1, 2]);
+    expect(perKeyKeys({ keys: [1, 2, 210], effects: zones([1]) })).toEqual([1, 2, 210]);
+    expect(keyGroups(perKeyKeys({ keys: [1, 210], effects: zones([1, 2]) })).map((g) => g.name)).toEqual(["Letters"]);
+  });
+
+  it("offers only the wave directions the keyboard lists", () => {
+    // 0xdce1: a G915 X LS has no inward and outward wave.
+    expect(waveDirections(0xdce1).map((d) => d.value)).toEqual([0, 1, 6, 2, 7, 3, 8]);
+    expect(waveDirections(0).map((d) => d.value)).toEqual([0]);
+  });
+
+  it("drives the lights of a keyboard with 0x8071 and 0x8101 only", () => {
+    const zones = [{ index: 0, location: 1, effects: [] }];
+    const lighting = { brightness: null, effects: { zones, startup: null, shutdown: null, idle_s: null, sleep_s: null }, keys: [], layout: null, raw: [], errors: [] };
+    const base = {
+      slot: 1,
+      name: "G915 X LS",
+      kind: 0,
+      protocol: "4.2",
+      wireless_id: null,
+      device_info: null,
+      firmware: [],
+      dpi: null,
+      report_rates_ms: [],
+      onboard: null,
+      read_errors: [],
+      lighting,
+      led_zones: [],
+      battery: null,
+      battery_reply: null,
+      read_only: false,
+    };
+    const features = (ids: number[]) => ids.map((id) => ({ id, kind: 0, version: 0 }));
+    expect(lightsDrivable({ ...base, features: features([0x8071, 0x8101]) })).toBe(true);
+    expect(lightsDrivable({ ...base, features: features([0x8071]) })).toBe(false);
+    expect(lightsDrivable({ ...base, features: features([0x8071, 0x8101]), lighting: { ...lighting, effects: null } })).toBe(false);
+    const dpi = { min: 200, max: 8000, step: 50, list: [] };
+    expect(lightsDrivable({ ...base, features: features([0x8071, 0x8101]), dpi })).toBe(false);
+    // A device PeriHub only reads (on its own USB connection, issue #40).
+    expect(lightsDrivable({ ...base, features: features([0x8071, 0x8101]), read_only: true })).toBe(false);
   });
 });

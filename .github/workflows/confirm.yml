@@ -14,12 +14,12 @@ name: Confirm a device
 # pushed. If the repository does not let Actions create pull requests (Settings → Actions → General),
 # the branch is pushed and the issue gets a comment with the link to open it.
 #
-# A new device is never merged before a tester has confirmed it, so it is on a test/<name> branch, not on
-# main, until then. For a report of that branch's test build, the base is that branch (input "branch", which
-# triage.py finds again here and which must agree): the confirmation is committed and pushed to the
-# branch itself, and the pull request from it to main is opened (or the one open already is reused, or its
-# link is commented), for the maintainer to merge. Everything else is as above, with main as the base and
-# a confirm/<id> branch.
+# A new device goes into main and the next release as experimental without waiting for a tester, so a
+# confirmation normally has main as the base and a confirm/<id> branch. A device that only a test/<name> branch
+# has (a test build made it available before it was merged) is confirmed there: for a report of that branch's
+# test build, the base is that branch (input "branch", which triage.py finds again here and which must agree):
+# the confirmation is committed and pushed to the branch itself, and the pull request from it to main is opened
+# (or the one open already is reused, or its link is commented), for the maintainer to merge.
 on:
   workflow_call:
     inputs:
@@ -226,7 +226,7 @@ jobs:
 
           {
             if [ -n "$BASE_BRANCH" ]; then
-              echo "Adds **$NAME** (\`$TARGET\`), confirmed on real hardware by a tester with the test build of this branch: the test report is in #$ISSUE. The branch has the device's support; the last commit confirms it, so it is supported in the next release once this is merged. A new device is not merged before a tester has confirmed it."
+              echo "Adds **$NAME** (\`$TARGET\`), confirmed on real hardware by a tester with the test build of this branch: the test report is in #$ISSUE. The branch has the device's support; the last commit confirms it, so it is supported in the next release once this is merged."
             else
               echo "Confirms **$NAME** (\`$TARGET\`) on real hardware, from the test report in #$ISSUE."
             fi

@@ -5,11 +5,12 @@
   import { onDestroy } from "svelte";
   import { api, errorText, type LogitechLive, type ReceiverReport, type UnsupportedReceiverDevice } from "../lib/api";
   import { reportRateLabel } from "../lib/keys";
-  import { capabilities, kindName } from "../lib/logitechFeatures";
+  import { capabilities, effectName, kindName, layoutName, lightsDrivable, zoneName } from "../lib/logitechFeatures";
   import Status from "../components/Status.svelte";
   import { acceptNoWarranty, noWarrantyAccepted } from "../lib/noWarranty";
   import { receiverTest } from "../lib/testReport";
   import DeviceTestReport from "../components/DeviceTestReport.svelte";
+  import LogitechLights from "../components/LogitechLights.svelte";
   import NoWarranty from "../components/NoWarranty.svelte";
   import UnifyingPermission from "../components/UnifyingPermission.svelte";
   import { readOnly } from "../lib/readOnly.svelte";
@@ -34,7 +35,9 @@
   const open = $derived(!!device && !!receiver && receiver.open_slots.includes(device.slot));
   /** The DPI can be changed: adjustable DPI and no onboard profiles, whose active profile sets the DPI
    * (as in the core's `dpi_changeable`). */
-  const changeable = $derived(!!device?.dpi && !device.onboard);
+  const changeable = $derived(!!device?.dpi && !device.onboard && !device.read_only);
+  /** PeriHub can drive the keyboard's lights in host mode (experimental). */
+  const drivable = $derived(!!device && lightsDrivable(device));
   /** The "No warranty" box is asked once per model. */
   const warrantyKey = $derived(`dpi:${name}`);
 
@@ -109,6 +112,20 @@
     return `${caps.min} to ${caps.max}${caps.step ? `, in steps of ${caps.step}` : ""}`;
   }
 
+  /** Who drives the lights, from 0x8071 function 5. Host mode (3) is PeriHub's own while it drives
+   * them (`live.host`), another program's otherwise (issue #30). */
+  function controlText(control: number, host: boolean): string {
+    if (control === 0) return `The ${kind} itself, with its own effects`;
+    if (control === 3) return host ? "PeriHub" : "A program, such as G HUB";
+    return `Mode ${control}`;
+  }
+
+  function seconds(s: number): string {
+    if (s < 60) return `${s} s`;
+    const rest = s % 60;
+    return `${Math.floor(s / 60)} min${rest ? ` ${rest} s` : ""}`;
+  }
+
   function batteryText(b: NonNullable<LogitechLive["battery"]>): string {
     if (b.state === "full") return "Charged";
     return `${b.estimated ? "About " : ""}${b.percent}%${b.state === "charging" ? ", charging" : ""}`;
@@ -119,7 +136,9 @@
   <div class="col tight grow">
     <h1>Logitech {name}</h1>
     <span class="muted small">
-      {#if device && receiver}
+      {#if device && receiver?.direct}
+        {kindName(device.kind)} · on its {receiver.name}{open ? "" : " · not answering"}
+      {:else if device && receiver}
         {kindName(device.kind)} · through its {receiver.name}, slot {device.slot}{open ? "" : " · asleep"}
       {:else}
         Not connected
@@ -146,6 +165,15 @@
       <b>Experimental.</b> PeriHub knows the {name} by the features it reports. It can change its DPI, which nobody has
       tried on such a {kind} yet; everything else is only read. Whether it works or not, a test report on PeriHub's
       GitHub page helps.
+    {:else if drivable}
+      <b>Experimental.</b> PeriHub knows the {name} by the features it reports. It can drive its lights, which nobody
+      has tried on such a {kind} yet; everything else is only read. Whether it works or not, a test report on PeriHub's
+      GitHub page helps.
+    {:else if receiver.direct}
+      <b>Read-only.</b> PeriHub reads the {name} on its {receiver.name} by the features it reports, and changes nothing
+      on it, not even its lights. Nobody has tried it yet: a test report on PeriHub's GitHub page tells what it has and
+      what it answered.
+      {#if !open && device.read_errors.length}It has not answered yet: {device.read_errors[0]}.{/if}
     {:else}
       <b>Not supported yet.</b> PeriHub knows the {name} by the features it reports, and only reads it: nothing on it
       is changed. A test report on PeriHub's GitHub page helps: it tells what this {kind} has.
@@ -224,6 +252,65 @@
           </div>
         {/if}
         {#if error}<div class="notice error" role="alert">{error}</div>{/if}
+      {/if}
+    </section>
+  {/if}
+
+  {#if device.lighting}
+    {@const lighting = device.lighting}
+    {@const now = live?.lighting}
+    <section class="card">
+      {#if drivable}
+        <h2>Lighting <Status kind="experimental" label="Experimental" chip /></h2>
+      {:else}
+        <h2>Lighting <Status kind="readonly" label="Read-only" chip /></h2>
+        <p class="small muted">
+          PeriHub reads the {kind}'s lighting and does not change it yet. Your test report tells how to change it safely.
+        </p>
+      {/if}
+      <dl>
+        {#if lighting.brightness}
+          <dt>Brightness</dt>
+          <dd>
+            {#if now?.brightness != null}{now.brightness} of {lighting.brightness.max}{now.on === false ? ", lights off" : ""}
+            {:else}{lighting.brightness.min} to {lighting.brightness.max}{/if}
+            {#if lighting.brightness.steps}<span class="muted">· {lighting.brightness.steps} levels on the key</span>{/if}
+          </dd>
+        {/if}
+        {#if now?.control != null}<dt>Lights driven by</dt><dd>{controlText(now.control, !!live?.host)}</dd>{/if}
+        {#each lighting.effects?.zones ?? [] as zone (zone.index)}
+          <dt>{zoneName(zone.location, device.kind)}</dt>
+          <dd>{[...new Set(zone.effects.map((e) => effectName(e.id)))].join(", ") || "no effects listed"}</dd>
+        {/each}
+        {#if lighting.keys.length}<dt>Per-key colours</dt><dd>{lighting.keys.length} keys</dd>{/if}
+        {#each [["Startup effect", lighting.effects?.startup], ["Shutdown effect", lighting.effects?.shutdown]] as const as [label, effect] (label)}
+          {#if effect}
+            <dt>{label}</dt>
+            <dd class="row colors">
+              {effect.enabled ? "On" : "Off"}
+              {#each effect.colors as color, i (i)}<span class="swatch" style:background={color} title={color}></span>{/each}
+            </dd>
+          {/if}
+        {/each}
+        {#if lighting.effects?.idle_s != null}
+          <dt>When not in use</dt>
+          <dd>
+            Dims after {seconds(lighting.effects.idle_s)}{lighting.effects.sleep_s != null
+              ? `, off ${seconds(lighting.effects.sleep_s)} later`
+              : ""}
+          </dd>
+        {/if}
+        {#if lighting.layout != null}<dt>Layout</dt><dd>{layoutName(lighting.layout)}</dd>{/if}
+      </dl>
+      {#if lighting.errors.length}
+        <p class="small muted">Could not read: {lighting.errors.join("; ")}</p>
+      {/if}
+      {#if drivable}
+        {#if !open}
+          <p class="muted">The {name} is asleep: press a key or turn it on to change its lights.</p>
+        {:else}
+          <LogitechLights receiverId={receiver.product_id} {device} {live} changed={refresh} />
+        {/if}
       {/if}
     </section>
   {/if}
@@ -357,5 +444,17 @@
 
   .report {
     margin-top: 10px;
+  }
+
+  .colors {
+    gap: 6px;
+    align-items: center;
+  }
+
+  .swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
   }
 </style>

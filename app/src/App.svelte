@@ -136,7 +136,8 @@
   });
 
   const hex = (id: number) => id.toString(16).padStart(4, "0");
-  /** Logitech devices behind a receiver that PeriHub only reads, each with a page of its own. */
+  /** Logitech devices behind a receiver that PeriHub only reads, each with a page of its own, and those
+   * on their own USB connection (`direct`). */
   const logitechDevices = $derived(
     status.receivers.flatMap((receiver) => receiver.unsupported.map((device) => ({ receiver, device }))),
   );
@@ -338,8 +339,8 @@
         <span class="col tight">
           <span class="name">Logitech {device.name ?? kindName(device.kind)}</span>
           {#if !receiver.open_slots.includes(device.slot)}
-            <Status kind="asleep" label="Asleep" />
-          {:else if device.dpi && !device.onboard}
+            <Status kind="asleep" label={receiver.direct ? "Not answering" : "Asleep"} />
+          {:else if device.dpi && !device.onboard && !device.read_only}
             <Status kind="experimental" label="Experimental" />
           {:else}
             <Status kind="readonly" label="Read-only" />
@@ -514,7 +515,7 @@
             info={status.mouse}
             error={status.mouse_error}
             asleep={status.mouse_asleep}
-            receivers={status.receivers}
+            receivers={status.receivers.filter((r) => !r.direct)}
             initialTab={tab}
           />{/key}
       {:else if page === "g300"}
