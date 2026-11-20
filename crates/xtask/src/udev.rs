@@ -91,6 +91,12 @@ interface, so the whole mouse is opened, as for the ASUS mice above. Besides the
 it carries the mouse's movements, clicks and the keys assigned to its own buttons, never what is
 typed on a keyboard."#
         }
+        "g213" => {
+            r#"Logitech G213 Prodigy (experimental lighting, untested; facts from OpenRGB, g810-led, G213Colors and gdevd): not
+opened on Linux. Its HID++ collection (usage page ff43) is on interface 1, which also holds two keyboard collections,
+and Linux has one hidraw node per interface: a rule that opened it would let any program running as the user read
+what is typed. Windows only for now."#
+        }
         "g600" => {
             r#"Logitech G600 (experimental, untested; protocol from libratbag, interface from OpenRGB): interface 1,
 which holds its profiles. It also carries the keys the mouse's own side buttons send, never what is

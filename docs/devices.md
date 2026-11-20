@@ -26,6 +26,7 @@ the same format.
 - [Razer mice](#razer-mice)
 - [Razer keyboards](#razer-keyboards)
 - [Glorious mice](#glorious-mice)
+- [Logitech G213 Prodigy](#logitech-g213-prodigy)
 - [Logitech G600](#logitech-g600)
 - [Older Logitech mice: G9, G9x, G500, G500s, G700, G700s](#older-logitech-mice-g9-g9x-g500-g500s-g700-g700s)
 - [Roccat mice](#roccat-mice)
@@ -552,6 +553,36 @@ described in [protocols/sinowealth-glorious.md](protocols/sinowealth-glorious.md
 | Model O/O- | `258a:0036` | whole mouse | `V103` |
 | Model D | `258a:0033` | whole mouse | `V102` |
 | Model O Eternal | `3794:a000` | whole mouse | `1009` |
+<!-- end generated -->
+
+## Logitech G213 Prodigy
+
+🧪 Experimental, on Windows only for now: nobody has tried PeriHub on one yet ([issue #96](https://github.com/hex-dump/perihub/issues/96)).
+It is a keyboard that speaks Logitech's HID++ 2.0 on a vendor collection of its own. Its protocol comes from facts in
+[OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) and [g810-led](https://github.com/MatMoul/g810-led) (GPL: no code was copied)
+and in [G213Colors](https://github.com/SebiTimeWaster/G213Colors) and [gdevd](https://github.com/R1tschY/gdevd) (MIT), and is
+described in [protocols/logitech-g213.md](protocols/logitech-g213.md).
+
+- PeriHub asks the keyboard for its HID++ version and for where it lists its lighting (the colour LED effects, feature `8070`)
+  and a few other features, for the test report. If the lighting is not where every source sends it, the page stays read-only,
+  and says why.
+- **The lighting, one setting at a time, never stored**: one colour for the whole keyboard or for each of its five areas (left,
+  middle, right, arrows and home keys, numpad), off, breathing in a colour, a colour cycle and waves in five directions, with the
+  time of one cycle and a brightness for the effects that move. The keyboard cannot report its lighting, so PeriHub cannot show
+  it, check a change or undo one: the page says so, and the sources say the keyboard forgets what was sent when it is unplugged
+  (**to go back to its own lighting, unplug it and plug it in again**). Nothing asks for the No warranty box, because nothing is saved.
+- Left out: the **startup effect** (whether the keyboard starts with its colour cycle). The keyboard stores it, no source reads
+  it, and the two that send it disagree on the command, so PeriHub could neither check nor undo it. It will come after a test
+  report shows which feature the lighting is, and someone has tried the command on a real G213.
+- The G213 has no per-key colours, and PeriHub changes nothing else on it.
+- Its HID++ collection (usage page `ff43`) is on interface 1 with two keyboard collections. Windows gives each collection a path of
+  its own, and PeriHub opens only the vendor one. On Linux they share one node that also carries what is typed, so PeriHub does not
+  open the keyboard there, and the udev rule does not list it.
+
+<!-- generated: table g213 -->
+| Keyboard | USB ID | Opened on Linux |
+|---|---|---|
+| G213 Prodigy | `046d:c336` | — |
 <!-- end generated -->
 
 ## Logitech G600

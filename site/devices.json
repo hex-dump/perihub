@@ -4870,6 +4870,20 @@
       }
     },
     {
+      "family": "g213",
+      "brand": "Logitech",
+      "name": "G213 Prodigy",
+      "kind": "keyboard",
+      "level": "experimental",
+      "page": "devices/logitech-g213-prodigy.html",
+      "usb_ids": [
+        "046d:c336"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
       "family": "g600",
       "brand": "Logitech",
       "name": "G600",
