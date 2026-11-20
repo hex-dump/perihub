@@ -96,6 +96,24 @@ export const creditGroups: CreditGroup[] = [
         notes: ["(commit 9a526ee) The configuration collection, report and commands of the AULA WIN60 HE, which the Wraith W60 shares, and how its model and lighting are read (docs/protocols/wraith-he.md)."],
       },
       {
+        name: "G213Colors",
+        link: "https://github.com/SebiTimeWaster/G213Colors",
+        license: "MIT license",
+        copyright: ["Copyright (c) 2016, 2017 TimeWaster"],
+        notes: [
+          "(commit 369daa2) The byte layouts of the Logitech G213's fixed colour, breathing and colour cycle commands, which its author captured from the official software, that the keyboard's answer is read after each command, that the keyboard does not keep what is sent, and the range of the times (docs/protocols/logitech-g213.md).",
+        ],
+      },
+      {
+        name: "gdevd",
+        link: "https://github.com/R1tschY/gdevd",
+        license: "MIT or Apache-2.0, taken under MIT",
+        copyright: ["Copyright (c) 2016-2019 Sergio Benitez"],
+        notes: [
+          "(commit 60fcfc3) The Logitech G213's brightness byte, the layout of its wave command and the wave directions, and the command that switches its startup effect (docs/protocols/logitech-g213.md).",
+        ],
+      },
+      {
         name: "apex-3-tkl (gorkemgun)",
         link: "https://github.com/gorkemgun/apex-3-tkl",
         license: "MIT license",
@@ -149,7 +167,15 @@ export const creditGroups: CreditGroup[] = [
         link: "https://gitlab.com/CalcProgrammer1/OpenRGB",
         license: "GPL-2.0-or-later",
         notes: [
-          "The Apex 8-zone lighting protocol, the interface and usage page of each ASUS mouse's configuration collection, and for the Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and that a reading right after a write is incomplete, and the interface and usage page of the Logitech G600's, and the name and USB id of a white Corsair K70 PRO MINI WIRELESS (docs/protocols/corsair-bragi.md), and the values of the Corsair keyboards' physical layout property and how it reads a Logitech keyboard's layout code (docs/protocols/keyboard-layouts.md). " + NO_CODE,
+          "The Apex 8-zone lighting protocol, the interface and usage page of each ASUS mouse's configuration collection, and for the Glorious mice the usage page of theirs, how their reports are split over collections on Windows, and that a reading right after a write is incomplete, and the interface and usage page of the Logitech G600's, and the name and USB id of a white Corsair K70 PRO MINI WIRELESS (docs/protocols/corsair-bragi.md), and the values of the Corsair keyboards' physical layout property and how it reads a Logitech keyboard's layout code (docs/protocols/keyboard-layouts.md), and the Logitech G213's USB id, the collection that takes its lighting commands, its five lighting areas, the bytes of its lighting commands and that its answer is read after each (docs/protocols/logitech-g213.md). " + NO_CODE,
+        ],
+      },
+      {
+        name: "g810-led",
+        link: "https://github.com/MatMoul/g810-led",
+        license: "GPL-3.0",
+        notes: [
+          "(commit efa3c35) The same lighting commands as sent to the Logitech G213: the numbers of the effect groups and of the wave variants, that the keyboard needs no \"commit\", and the byte of an effect that stores it (docs/protocols/logitech-g213.md). " + NO_CODE,
         ],
       },
       {
@@ -173,7 +199,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://github.com/torvalds/linux",
         license: "GPL-2.0",
         notes: [
-          "That the Roccat Kone mice are configured through their boot mouse interface (drivers/hid/hid-roccat-konepure.c, hid-roccat-koneplus.c), and the product ids of the Logitech receivers (drivers/hid/hid-logitech-dj.c). " + NO_CODE,
+          "That the Roccat Kone mice are configured through their boot mouse interface (drivers/hid/hid-roccat-konepure.c, hid-roccat-koneplus.c), and the product ids of the Logitech receivers (drivers/hid/hid-logitech-dj.c), and how a HID++ 2.0 request and an error answer are laid out (drivers/hid/hid-logitech-hidpp.c, docs/protocols/logitech-g213.md). " + NO_CODE,
         ],
       },
       {
@@ -181,7 +207,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://github.com/pwr-Solaar/Solaar",
         license: "GPL-2.0",
         notes: [
-          "The Logitech receiver ids, and how it reads and writes onboard profile lists and button entries, compared with libratbag's (docs/protocols/logitech-onboard-profiles.md); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (docs/protocols/logitech-hidpp10.md); how it reads a Logitech keyboard's layout code, HID++ 0x4540 (docs/protocols/keyboard-layouts.md). " + NO_CODE,
+          "The Logitech receiver ids, and how it reads and writes onboard profile lists and button entries, compared with libratbag's (docs/protocols/logitech-onboard-profiles.md); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (docs/protocols/logitech-hidpp10.md); how it reads a Logitech keyboard's layout code, HID++ 0x4540 (docs/protocols/keyboard-layouts.md); what the HID++ 2.0 root feature answers (docs/protocols/logitech-g213.md). " + NO_CODE,
         ],
       },
       {

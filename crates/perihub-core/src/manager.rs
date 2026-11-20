@@ -184,6 +184,18 @@ fn hidpp10_collection<'a>(devices: &'a [DeviceInfo], of: &DeviceInfo, usage: u16
     })
 }
 
+/// The collection of a Logitech G213 that takes HID++ long reports, of the same interface as `of`. Its other vendor
+/// collection has reports of another length. On Windows each has a path of its own.
+fn g213_collection<'a>(devices: &'a [DeviceInfo], of: &DeviceInfo) -> Option<&'a DeviceInfo> {
+    devices.iter().find(|d| {
+        d.vendor_id() == of.vendor_id()
+            && d.product_id() == of.product_id()
+            && d.serial_number() == of.serial_number()
+            && d.interface_number() == of.interface_number()
+            && peripheral::logitech_g213::is_command_collection(d.usage_page(), d.usage())
+    })
+}
+
 /// HID++ collection of a receiver: usage 2 is the long one, 1 the short one. On Linux both are the
 /// same hidraw node.
 fn receiver_collection(d: &DeviceInfo, usage: u16) -> bool {
@@ -1150,6 +1162,19 @@ impl Manager {
                 *d = long.clone();
             }
         }
+        // The G213 is opened by its collection of HID++ long reports, and not at all where there is none.
+        found.retain_mut(|(d, model)| {
+            if !matches!(model.protocol, Protocol::LogitechG213) {
+                return true;
+            }
+            match g213_collection(&devices, d) {
+                Some(long) => {
+                    *d = long.clone();
+                    true
+                }
+                None => false,
+            }
+        });
         let enabled = self.qmk_enabled.lock_recover().clone();
         let mut keyboards: Vec<(CString, QmkKeyboard)> = Vec::new();
         for d in &devices {
@@ -1191,8 +1216,8 @@ impl Manager {
         // system keeps typed keys away from programs). QMK keyboards were checked above, more strictly.
         found.retain(|(d, model)| {
             // On Linux a model 70-perihub.rules does not open is not opened at all: the Wraith's collection
-            // can carry how far each key is pressed (it will need a rule the user turns on), and most Razer
-            // keyboards' interface also carries typed keys.
+            // can carry how far each key is pressed (it will need a rule the user turns on), most Razer
+            // keyboards' interface also carries typed keys, and so does the G213's.
             if cfg!(target_os = "linux") && !peripheral::opened_on_linux(model) {
                 return false;
             }

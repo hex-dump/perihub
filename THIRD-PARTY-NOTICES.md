@@ -443,6 +443,67 @@ report and commands of the AULA WIN60 HE, which the Wraith W60 shares, how its m
    limitations under the License.
 ```
 
+### G213Colors
+
+<https://github.com/SebiTimeWaster/G213Colors> (commit 369daa2), MIT license: the byte layouts of the Logitech G213's
+fixed colour, breathing and colour cycle commands, which its author captured from the official software, that the
+keyboard's answer must be read after each command, that the keyboard does not keep what is sent, and the range of the
+times (`G213Colors.py`, `README.md`), read in `crates/perihub-core/src/peripheral/logitech_g213.rs` (see
+`docs/protocols/logitech-g213.md`).
+
+```
+MIT License
+
+Copyright (c) 2016, 2017 TimeWaster
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### gdevd
+
+<https://github.com/R1tschY/gdevd> (commit 60fcfc3), MIT or Apache-2.0, taken under MIT: the Logitech G213's
+brightness byte, the layout of its wave command and the wave directions, and the command that switches its startup
+effect (`src/drivers/g213.rs`, `src/lib.rs`), read in `crates/perihub-core/src/peripheral/logitech_g213.rs` (see
+`docs/protocols/logitech-g213.md`).
+
+```
+The MIT License (MIT)
+Copyright (c) 2016-2019 Sergio Benitez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
 ### Phosphor Icons
 
 <https://github.com/phosphor-icons/core>, MIT license: the "Flask" icon (regular weight, `assets/regular/flask.svg` of
@@ -484,7 +545,12 @@ was copied.
   that a reading right after a write is incomplete, and the interface and usage page of the Logitech
   G600's, and the name and USB id of a white Corsair K70 PRO MINI WIRELESS (see `docs/protocols/corsair-bragi.md`), and
   the values of the Corsair keyboards' physical layout property and how it reads a Logitech keyboard's layout code (see
-  `docs/protocols/keyboard-layouts.md`).
+  `docs/protocols/keyboard-layouts.md`), and the Logitech G213's USB id, the collection that takes its lighting commands,
+  its five lighting areas, the bytes of its lighting commands and that its answer is read after each (see
+  `docs/protocols/logitech-g213.md`).
+- [g810-led](https://github.com/MatMoul/g810-led) (GPL-3.0), commit efa3c35: the same lighting commands as sent to the
+  Logitech G213 (`src/classes/Keyboard.cpp`, `Keyboard.h`): the numbers of the effect groups and of the wave variants,
+  that the keyboard needs no "commit", and the byte of an effect that stores it (see `docs/protocols/logitech-g213.md`).
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its issues 1782 and 2305: the USB captures
   of Cooler Master's app that users attached there, read as data, and which product ids form the Cooler Master mouse
   family (see `docs/protocols/coolermaster-mm.md`).
@@ -493,12 +559,14 @@ was copied.
   `docs/protocols/evga-mice.md`).
 - The [Linux kernel](https://github.com/torvalds/linux) (GPL-2.0): that the Roccat Kone mice are configured
   through their boot mouse interface (`drivers/hid/hid-roccat-konepure.c`, `hid-roccat-koneplus.c`), and the
-  product ids of the Logitech receivers (`drivers/hid/hid-logitech-dj.c`).
+  product ids of the Logitech receivers (`drivers/hid/hid-logitech-dj.c`), and how a HID++ 2.0 request and an error answer are laid
+  out (`drivers/hid/hid-logitech-hidpp.c`, see `docs/protocols/logitech-g213.md`).
 - [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0): the Logitech receiver ids, and how it reads and writes
   onboard profile lists and button entries, compared with libratbag's (see
   `docs/protocols/logitech-onboard-profiles.md`); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak
   HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (see `docs/protocols/logitech-hidpp10.md`);
-  how it reads a Logitech keyboard's layout code, HID++ `0x4540` (see `docs/protocols/keyboard-layouts.md`).
+  how it reads a Logitech keyboard's layout code, HID++ `0x4540` (see `docs/protocols/keyboard-layouts.md`); what the
+  HID++ 2.0 root feature answers (see `docs/protocols/logitech-g213.md`).
 - The `lsusb -v` dumps of [linuxhw/LsUSB](https://github.com/linuxhw/LsUSB): which interfaces the Logitech G600
   and the Roccat Kone mice have.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse

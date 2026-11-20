@@ -152,6 +152,18 @@ fn udev_rule_never_opens_the_wraith_keyboard() {
 }
 
 #[test]
+fn udev_rule_never_opens_the_logitech_g213() {
+    // Its HID++ collection (usage page ff43) shares interface 1 with two keyboard collections: one hidraw node carries
+    // all three, so what is typed would reach any program that could open it.
+    let g213 = perihub_core::peripheral::find(0x046D, 0xC336).expect("a model");
+    assert_eq!(g213.interface, Some(1));
+    assert!(!perihub_core::peripheral::opened_on_linux(g213));
+    for line in RULE.lines().filter(|l| !l.trim_start().starts_with('#')) {
+        assert!(!line.contains(r#"ATTRS{idProduct}=="c336""#), "{line}");
+    }
+}
+
+#[test]
 fn udev_rule_never_opens_a_razer_keyboard_whose_interface_may_carry_typing() {
     use perihub_core::peripheral::{Protocol, models, opened_on_linux};
     let keyboards: Vec<_> = models().filter(|m| matches!(m.protocol, Protocol::RazerKeyboard(_))).collect();

@@ -1,7 +1,7 @@
 <script lang="ts">
-  // The settings of a device that cannot report them (most SteelSeries mice), or that a readable
-  // device cannot report (the colour of Razer mice): PeriHub sends one at a time and never saves it
-  // to the device's memory. It cannot show, check or undo them, so the warning is always on screen.
+  // The settings of a device that cannot report them (most SteelSeries mice, the lighting of the Logitech
+  // G213), or that a readable device cannot report (the colour of Razer mice): PeriHub sends one at a time and
+  // never saves it to the device's memory. It cannot show, check or undo them, so the warning is always on screen.
   import { api, errorText, type BlindSetting, type BlindValue, type PeripheralInfo } from "../lib/api";
   import { readOnly } from "../lib/readOnly.svelte";
 
@@ -14,6 +14,8 @@
   let { info, onchange }: Props = $props();
 
   const name = $derived(`${info.brand} ${info.model}`);
+  /** What the device is, in the warning below. */
+  const thing = $derived(info.kind === "keyboard" ? "keyboard" : "mouse");
   /** What is typed or picked for each setting, before Send. */
   let drafts = $state<Record<string, string>>({});
   let busy = $state<string | null>(null);
@@ -101,9 +103,10 @@
 {:else if info.editable}
   <div class="notice warn">
     <b>Experimental. The {name} cannot report its settings,</b> so PeriHub cannot show them, check a change or undo it.
-    <b>Send</b> changes one setting until the mouse is unplugged or turned off: PeriHub never saves to its memory before
-    someone has tested it (rivalcfg documents that settings not saved do not last). <b>To go back</b> to the settings
-    saved in the mouse, unplug it and plug it back in.
+    <b>Send</b> changes one setting until the {thing} is unplugged or turned off: PeriHub never saves to its memory before
+    someone has tested it ({#if thing === "keyboard"}its sources say the keyboard forgets what was sent, which nobody has checked
+      with PeriHub yet{:else}rivalcfg documents that settings not saved do not last{/if}). <b>To go back</b> to the settings
+    saved in the {thing}, unplug it and plug it back in.
   </div>
 {/if}
 {#if error}<div class="notice error" role="alert">{error}</div>{/if}

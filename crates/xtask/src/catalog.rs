@@ -91,6 +91,7 @@ pub fn family(protocol: &Protocol) -> Option<&'static str> {
         Protocol::Yjx(_) => "yjx",
         Protocol::Wraith(_) => "wraith",
         Protocol::Sinowealth(_) => "glorious",
+        Protocol::LogitechG213 => "g213",
         Protocol::LogitechG600 => "g600",
         Protocol::LogitechHidpp10(_) => "logitech-hidpp10",
         Protocol::Roccat(_) => "roccat",
@@ -275,7 +276,8 @@ pub fn devices_with(confirmed: &dyn Fn(u16, u16) -> bool) -> Vec<Device> {
             PeripheralKind::Keyboard => Kind::Keyboard,
         };
         // Not opened by 70-perihub.rules: the Wraith W60, whose configuration collection can carry how far
-        // each key is pressed, and the Razer keyboards whose interface may carry typed keys
+        // each key is pressed, the Razer keyboards whose interface may carry typed keys, and the Logitech G213,
+        // whose vendor collection shares its interface with two keyboard collections
         // (perihub-core/src/peripheral/mod.rs).
         let access = if !peripheral::opened_on_linux(m) {
             Access::Closed

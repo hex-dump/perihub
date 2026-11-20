@@ -76,6 +76,7 @@
 |---|---|
 | <!-- generated: count logitech-onboard:by-memory-format -->28<!-- end generated --> more **Logitech G mice** (G Pro, G403, G703, G903, G305…) | Depends on the memory format each mouse reports: ✅ supported if that format was tested on another mouse, 🧪 experimental if PeriHub can write it but nobody has tried yet, 👁 read-only otherwise ([how it works](#logitech-mice-supported-by-memory-format)) |
 | Logitech devices on a **Logi Bolt** or **Unifying** receiver (MX Master, MX Anywhere, MX Keys…) | 🧪 Recognized by the features they report; the DPI of those without onboard memory can be changed, everything else is read |
+| **Logitech G213 Prodigy** keyboard (Windows) | 🧪 Lighting only: colours of its five areas, effects, time and brightness, sent one at a time and never stored; the keyboard cannot report them |
 | **Logitech G600** | 🧪 Read; DPI, polling rate and lighting of the profile in use can be saved at your own risk |
 | **Logitech G500s, G700s** with a cable, whose software Logitech no longer offers | 🧪 Read the profile in use; the DPI in use can be changed, not saved; their memory is never written |
 | **Logitech G9, G9x, G500, G700** with a cable | 👁 Profile in use, DPI, polling rate and buttons |
@@ -196,6 +197,13 @@ Razer mice are supported from facts found in [OpenRazer](https://github.com/open
 <summary><b>Glorious mice</b></summary>
 
 Glorious mice are supported from the published documentation of their SinoWealth protocol ([libratbag](https://github.com/libratbag/libratbag)). Every change rewrites their settings in memory, so their page too offers only **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo; PeriHub changes only the DPI of each slot and the polling rate, and writes everything else back as it read it, never on top of a reading that differs from the one taken when the mouse was connected. On Windows they are read-only for now: there the mouse does not say how long its settings are, and a write must. Only the ids that belong to Glorious are recognized: the generic SinoWealth ids are shared by other brands' mice, some with a different protocol.
+
+</details>
+
+<details>
+<summary><b>Logitech G213 Prodigy</b></summary>
+
+The lighting of the **Logitech G213 Prodigy** keyboard is supported from facts in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB), [g810-led](https://github.com/MatMoul/g810-led), [G213Colors](https://github.com/SebiTimeWaster/G213Colors) and [gdevd](https://github.com/R1tschY/gdevd), with no code copied. The keyboard cannot report its lighting, so PeriHub sends one setting at a time (a colour for the whole keyboard or one of its five areas, off, breathing, a colour cycle, waves, and the time and brightness of the effects that move), shows a warning that it cannot check or undo it, and never stores anything in the keyboard: unplug it to go back to its own lighting. PeriHub first asks the keyboard where it lists its lighting, and keeps the page read-only if that is not where the sources send it. Its startup effect is left out, since the keyboard stores it and nobody can read it back. On Windows only: on Linux the keyboard's HID++ collection shares a device node with what is typed, so PeriHub does not open it there.
 
 </details>
 
@@ -493,6 +501,7 @@ PeriHub is free. If it spared you an official app and you'd like to say thanks, 
 - [rivalcfg](https://github.com/flozz/rivalcfg) (WTFPL): the SteelSeries mice, their commands and the reports its tests expect, in [docs/protocols/steelseries-mice.md](docs/protocols/steelseries-mice.md).
 - The USB captures of Cooler Master's app attached to [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s device requests: the Cooler Master mice's lighting, described in our own words in [docs/protocols/coolermaster-mm.md](docs/protocols/coolermaster-mm.md). No code was copied.
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVGA drivers: the EVGA X12 and X20 lighting, described in our own words in [docs/protocols/evga-mice.md](docs/protocols/evga-mice.md). No code was copied.
+- [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) and [g810-led](https://github.com/MatMoul/g810-led) (facts only, no code), with [G213Colors](https://github.com/SebiTimeWaster/G213Colors) (MIT) and [gdevd](https://github.com/R1tschY/gdevd) (MIT): the Logitech G213 Prodigy's lighting, described in our own words in [docs/protocols/logitech-g213.md](docs/protocols/logitech-g213.md).
 - [QMK](https://github.com/qmk/qmk_firmware) and [Vial](https://github.com/vial-kb/vial-qmk): the VIA and Vial protocols and how QMK keyboards present their raw HID channel, described in our own words in [docs/protocols/qmk-via-vial.md](docs/protocols/qmk-via-vial.md). No code was copied.
 
 </details>

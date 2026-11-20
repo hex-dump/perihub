@@ -340,6 +340,11 @@
           "level": "supported"
         },
         {
+          "name": "G213 Prodigy",
+          "kind": "keyboard",
+          "level": "experimental"
+        },
+        {
           "name": "G600",
           "kind": "mouse",
           "level": "experimental"
