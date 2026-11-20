@@ -5,8 +5,9 @@ on:
     branches: [main, "test/**"]
     # The website has its own workflow (pages.yml): no need to build the app for it.
     paths-ignore: ["site/**", ".github/workflows/pages.yml"]
+  # Every pull request, also one that only changes the website: the required checks must run, and
+  # the "Website builds" job catches a site that would stop the Pages deploy.
   pull_request:
-    paths-ignore: ["site/**", ".github/workflows/pages.yml"]
   # Run by hand on a branch (its checks do not count for a pull request's required checks).
   workflow_dispatch:
 
@@ -26,6 +27,21 @@ jobs:
           arguments: --all-features
       - name: npm licenses
         run: python3 tools/check_npm_licenses.py
+
+  # The website, built as pages.yml builds it (site/build.py checks every model has its row and page).
+  site:
+    name: Website builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch --depth=1 origin assets
+          git archive FETCH_HEAD screenshots social-preview.png | tar -x -C docs
+          gh release view --repo "$GITHUB_REPOSITORY" --json tagName,assets > "$RUNNER_TEMP/release.json"
+          python3 site/build.py "$RUNNER_TEMP/release.json" "$RUNNER_TEMP/_site"
 
   test:
     name: Test (${{ matrix.os }})
