@@ -82,31 +82,83 @@ def rivalcfg(root: Path):
             yield hexid(vid, pid), name, f.stem
 
 
+def call_args(text: str, start: int) -> list[str] | None:
+    """The arguments of the macro call whose opening parenthesis is text[start], split at the commas outside
+    parentheses and strings. Comments inside the call are dropped; None when the parenthesis is never closed."""
+    args, current, depth, i = [], [], 0, start
+    while i < len(text):
+        c = text[i]
+        if c == '"' or c == "'":
+            j = i + 1
+            while j < len(text) and text[j] != c and text[j] != "\n":
+                j += 2 if text[j] == "\\" else 1
+            current.append(text[i : j + 1])
+            i = j + 1
+            continue
+        if text.startswith("//", i) or text.startswith("/*", i):
+            end = text.find("\n" if text[i + 1] == "/" else "*/", i)
+            i = len(text) if end < 0 else end + (0 if text[i + 1] == "/" else 2)
+            continue
+        if c == "(":
+            depth += 1
+            if depth > 1:
+                current.append(c)
+        elif c == ")":
+            depth -= 1
+            if depth == 0:
+                args.append("".join(current).strip())
+                return args
+            current.append(c)
+        elif c == "," and depth == 1:
+            args.append("".join(current).strip())
+            current = []
+        else:
+            current.append(c)
+        i += 1
+    return None
+
+
 def openrgb(root: Path):
-    """HID detectors: REGISTER_HID_DETECTOR*("Name", function, VID, PID, …), with the #defines of their folder."""
+    """HID detectors: REGISTER_HID_DETECTOR*("Name", function, VID, PID, …), and the REGISTER_HID_WRAPPED_DETECTOR*
+    ones, with the #defines of their folder (names and ids). The USB serial detectors are left out: those
+    devices are not HID, and their ids are often those of a generic serial chip.
+
+    OpenRGB writes a call in many shapes: with spaces or a new line before the parenthesis or between the
+    arguments, with a name that is a #define string, with ids that are #defines of the folder (or of a folder
+    above it). The macros ending in _ONLY have no ids (they take any vendor), and HID_PID_ANY means any product:
+    neither is an id. A call whose ids cannot be found is written on stderr, so that a form nobody foresaw is
+    noticed instead of silently missing (a keyboard OpenRGB documents was told "no documentation" that way)."""
     controllers = root / "Controllers"
     files = [p for p in controllers.rglob("*") if p.suffix in (".h", ".cpp")]
-    define = re.compile(r"#define\s+(\w+)\s+0x([0-9a-fA-F]{1,4})\b")
+    texts = {p: p.read_text(errors="replace") for p in files}
+    define = re.compile(r'#define\s+(\w+)\s+(0x[0-9a-fA-F]{1,4}\b|"[^"\n]*")')
     by_dir, everywhere = {}, {}
-    for p in files:
-        for name, value in define.findall(p.read_text(errors="replace")):
-            by_dir.setdefault(p.parent, {})[name] = value
-            everywhere.setdefault(name, value)
-    call = re.compile(r'REGISTER_HID_DETECTOR\w*\(\s*"([^"]+)"\s*,\s*\w+\s*,\s*(\w+)\s*,\s*(\w+)')
+    for p, text in texts.items():
+        for name, literal in define.findall(text):
+            by_dir.setdefault(p.parent, {})[name] = literal
+            everywhere.setdefault(name, literal)
+    head = re.compile(r"\bREGISTER_(?:HID|HID_WRAPPED)_DETECTOR(\w*)\s*\(")
 
-    def value(token: str, folder: Path) -> str | None:
-        if re.fullmatch(r"0x[0-9a-fA-F]{1,4}", token):
-            return token[2:]
+    def literal(token: str, folder: Path) -> str | None:
+        if re.fullmatch(r'0x[0-9a-fA-F]{1,4}|"[^"\n]*"', token):
+            return token
         for d in (folder, *folder.parents):
             if token in by_dir.get(d, {}):
                 return by_dir[d][token]
         return everywhere.get(token)
 
     for p in sorted(files):
-        for name, vid, pid in call.findall(p.read_text(errors="replace")):
-            v, i = value(vid, p.parent), value(pid, p.parent)
-            if v and i:
-                yield hexid(v, i), name, str(p.parent.relative_to(controllers))
+        for m in head.finditer(texts[p]):
+            if "_ONLY" in m.group(1):
+                continue
+            args = call_args(texts[p], m.end() - 1) or []
+            ids = [literal(a, p.parent) for a in args[2:4]]
+            ids = [i[2:] for i in ids if i and i.startswith("0x")]
+            if len(ids) == 2:
+                yield hexid(*ids), (literal(args[0], p.parent) or args[0]).strip('"'), str(p.parent.relative_to(controllers))
+            elif not any(a.endswith("_ANY") for a in args[2:4]):
+                line = texts[p].count("\n", 0, m.start()) + 1
+                print(f"upstream_ids: OpenRGB: no ids in {p.relative_to(root)}:{line}: {m.group(0)[:-1].strip()}({', '.join(args[:4])})", file=sys.stderr)
 
 
 READERS = {"libratbag": libratbag, "openrazer": openrazer, "rivalcfg": rivalcfg, "OpenRGB": openrgb}
