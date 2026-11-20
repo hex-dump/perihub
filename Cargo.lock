@@ -2826,7 +2826,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "perihub-app"
-version = "0.9.5"
+version = "0.9.6"
 dependencies = [
  "dirs 7.0.0",
  "env_logger",
@@ -2849,7 +2849,7 @@ dependencies = [
 
 [[package]]
 name = "perihub-cli"
-version = "0.9.5"
+version = "0.9.6"
 dependencies = [
  "perihub-core",
  "serde",
@@ -2858,7 +2858,7 @@ dependencies = [
 
 [[package]]
 name = "perihub-core"
-version = "0.9.5"
+version = "0.9.6"
 dependencies = [
  "dirs 7.0.0",
  "evdev",
@@ -2867,6 +2867,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror 2.0.21",
  "windows-sys 0.61.2",
  "xkbcommon",
@@ -5728,7 +5729,7 @@ checksum = "b9cc00251562a284751c9973bace760d86c0276c471b4be569fe6b068ee97a56"
 
 [[package]]
 name = "xtask"
-version = "0.9.5"
+version = "0.9.6"
 dependencies = [
  "perihub-core",
  "serde",

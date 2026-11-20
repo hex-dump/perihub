@@ -8,16 +8,34 @@ OpenRazer is never compiled or run.
 
 Usage: python3 -I tools/openrazer_facts.py OPENRAZER_CHECKOUT COMMIT > crates/perihub-core/src/peripheral/razer_models.rs
 where OPENRAZER_CHECKOUT holds driver/razermouse_driver.{c,h} and daemon/openrazer_daemon/hardware/mouse.py.
-Mice only: the receivers and docks, which may be shared with a keyboard, are left out.
+Mice only: the receivers and docks, which may be shared with a keyboard, are left out, except the ids that
+tools/auto-add.json allows ({"allow": ["1532:00c1"]}).
 
 With --keyboards after COMMIT it writes crates/perihub-core/src/peripheral/razer_keyboard_models.rs instead,
 from driver/razerkbd_driver.{c,h} and daemon/openrazer_daemon/hardware/keyboards.py (see main_keyboards).
 """
 
 import ast
+import json
 import re
 import sys
 from pathlib import Path
+
+
+ALLOW_FILE = Path(__file__).with_name("auto-add.json")
+
+
+def allowed_pids(path=ALLOW_FILE):
+    """Razer mice (product ids) the allow list tools/auto-add.json asks for even though they are receivers,
+    docks or wireless dongles, which are otherwise left out: tools/auto_add.py adds an id there when a
+    request for it is ready to add, and a test build with it is made."""
+    if not path.exists():
+        return set()
+    ids = json.loads(path.read_text())["allow"]
+    return {int(i.split(":")[1], 16) for i in ids if re.fullmatch(r"1532:[0-9a-f]{4}", i)}
+
+
+ALLOWED = allowed_pids()
 
 
 def defines(header):
@@ -220,7 +238,7 @@ def main():
     for define, pid in sorted(ids.items(), key=lambda kv: kv[1]):
         if pid not in mice:
             continue
-        if define not in MOUSE_DONGLES and re.search(r"RECEIVER|DOCK|HYPERSPEED|DONGLE|BLUETOOTH|_WIRELESS(_ALT)?$", define):
+        if define not in MOUSE_DONGLES and pid not in ALLOWED and re.search(r"RECEIVER|DOCK|HYPERSPEED|DONGLE|BLUETOOTH|_WIRELESS(_ALT)?$", define):
             left_out.append(f"{define} (receiver or wireless dongle)")
             continue
         m = mice[pid]

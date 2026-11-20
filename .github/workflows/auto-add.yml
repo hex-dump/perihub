@@ -1,0 +1,161 @@
+name: Auto-add a device
+
+# A device request is "ready to add" and its USB id can be added without a person (tools/triage.py,
+# MECHANICAL: today OpenRazer's mice): this writes the support on a test branch, starts its test build and
+# opens a draft pull request, so that nobody has to do anything until the tester's report.
+#
+#   1. tools/auto_add.py puts the id in the allow list tools/auto-add.json, runs the generator of its table
+#      (tools/openrazer_facts.py) on the upstream source at the commit the table already names, runs
+#      cargo xtask gen and the checks (format, clippy, tests, generated files, CHANGELOG lint), and commits on
+#      test/auto-VVVV-PPPP with a "Test: #N" line. The generated table may only gain this one device.
+#   2. The branch is pushed. A push made with GITHUB_TOKEN does not start the Test build workflow, so it is
+#      started here by hand (workflow_dispatch, which is allowed): there is exactly one build. Its notify job
+#      (tools/notify.py) comments the link on the issue named by the commit's "Test: #N" line, as for a
+#      push: a dispatched run has no "before" commit, so every commit of the branch not on main counts.
+#   3. A draft pull request to main titled for the device is opened (the confirm workflow reuses it when the
+#      tester's report is clean, and adds the confirmation to the branch). It stays a draft: nothing is merged
+#      before a tester has confirmed the device. Main is never pushed to.
+#
+# If the generator cannot produce the id (a laptop, a keyboard, a mouse with no command PeriHub knows, an id
+# upstream added after the pinned commit) or a check fails, nothing is commented and the issue gets the
+# label "needs maintainer" for a person to take over. A branch that exists already is left alone.
+#
+# Started by the triage workflow, or by hand (Actions → Auto-add a device → Run workflow). The inputs are
+# checked for their shape, and are only passed to commands as environment variables.
+on:
+  workflow_call:
+    inputs:
+      issue:
+        description: Number of the device request
+        type: string
+        required: true
+      usb:
+        description: The USB id, vvvv:pppp in lower case
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Number of the device request
+        type: string
+        required: true
+      usb:
+        description: The USB id, vvvv:pppp in lower case
+        type: string
+        required: true
+
+permissions: {}
+
+jobs:
+  add:
+    name: Write, build and open
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+    concurrency:
+      group: auto-add-${{ inputs.usb }}
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE: ${{ inputs.issue }}
+      USB: ${{ inputs.usb }}
+    steps:
+      # Always from main: the branch starts there, and what is built is main plus the device.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+
+      - name: Check the inputs
+        id: check
+        run: |
+          set -euo pipefail
+          case "$ISSUE" in ''|*[!0-9]*) echo "::error::The issue must be a number."; exit 1 ;; esac
+          [[ "$USB" =~ ^[0-9a-f]{4}:[0-9a-f]{4}$ ]] || { echo "::error::Not a USB id."; exit 1; }
+          if ! gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE" --jq 'select(.pull_request == null and .state == "open") | .number' | grep -q .; then
+            echo "::error::#$ISSUE is not an open issue."
+            exit 1
+          fi
+          branch="test/auto-${USB/:/-}"
+          if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+            echo "$branch exists already: nothing is made twice."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: System dependencies
+        if: steps.check.outputs.exists != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libudev-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        if: steps.check.outputs.exists != 'true'
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        if: steps.check.outputs.exists != 'true'
+
+      # Fetches the source at the pinned commit, runs the generator and the checks, commits locally.
+      # Exits 1 when it cannot (the last step then hands the issue to a person), and prints nothing when
+      # the device is in the catalogue already.
+      - name: Write the support
+        id: build
+        if: steps.check.outputs.exists != 'true'
+        run: |
+          set -euo pipefail
+          python3 -I tools/auto_add.py "$USB" "$ISSUE" --src "$RUNNER_TEMP/upstream" > "$RUNNER_TEMP/result.json"
+          if [ ! -s "$RUNNER_TEMP/result.json" ]; then
+            echo "Nothing to add."
+            exit 0
+          fi
+          branch=$(jq -r .branch "$RUNNER_TEMP/result.json")
+          [[ "$branch" =~ ^test/auto-[0-9a-f]{4}-[0-9a-f]{4}$ ]] || { echo "::error::Not the branch this makes."; exit 1; }
+          {
+            echo "made=true"
+            echo "branch=$branch"
+            # A name printed from the catalogue: only printable characters, on one line.
+            echo "name=$(jq -r .name "$RUNNER_TEMP/result.json" | tr -cd '[:print:]' | head -c 120)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Push the branch and start its test build
+        if: steps.build.outputs.made == 'true'
+        env:
+          BRANCH: ${{ steps.build.outputs.branch }}
+        run: |
+          set -euo pipefail
+          git push origin "HEAD:refs/heads/$BRANCH"
+          # The push above, made with GITHUB_TOKEN, does not start the Test build workflow: this does, once.
+          gh workflow run test-build.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
+
+      - name: Open the draft pull request
+        if: steps.build.outputs.made == 'true'
+        env:
+          BRANCH: ${{ steps.build.outputs.branch }}
+          NAME: ${{ steps.build.outputs.name }}
+        run: |
+          set -euo pipefail
+          {
+            echo "Adds **$NAME** (\`$USB\`) for #$ISSUE, written and built automatically by the Auto-add workflow: the id is in \`tools/auto-add.json\`, the table was written by its generator from the source at the commit it already names, and \`cargo xtask gen\` wrote the rest. The format, clippy, the tests, the generated-file check and the CHANGELOG lint passed before the branch was pushed."
+            echo
+            echo "**Not tried on hardware, so this stays a draft.** A test build of this branch is being made and its link comes on #$ISSUE. A new device is never merged before a tester has confirmed it: when a clean test report comes in, the Confirm workflow adds the confirmation to this branch, and the maintainer marks this ready and merges it."
+            echo
+            echo "Closes #$ISSUE"
+          } > "$RUNNER_TEMP/pr.md"
+          existing=$(gh pr list --base main --head "$BRANCH" --state open --json url --jq '.[0].url // empty')
+          if [ -n "$existing" ]; then
+            echo "$existing is open already."
+          elif ! gh pr create --draft --base main --head "$BRANCH" --title "Add $NAME ($USB), waiting for a test report (#$ISSUE)" --body-file "$RUNNER_TEMP/pr.md"; then
+            # Actions may not be allowed to create pull requests here: the branch and its build are there, which is what matters now.
+            echo "::warning::The draft pull request could not be created: the confirm workflow comments the link to open it."
+          fi
+
+      # Anything above that failed: nothing is said on the issue, and a person takes over.
+      - name: Hand over to a maintainer
+        if: failure()
+        run: |
+          gh label create "needs maintainer" --repo "$GITHUB_REPOSITORY" --color d93f0b --description "Automation could not finish: a person takes over" 2> /dev/null || true
+          gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label "needs maintainer"
+          echo "::error::The device could not be added automatically: #$ISSUE has the label needs maintainer."

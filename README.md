@@ -97,7 +97,7 @@ How PeriHub changes the devices of each brand: [Mice and keyboards of other bran
 
 The full list, with USB IDs, is in **[docs/devices.md](docs/devices.md)**. A device becomes fully supported once someone with it sends a test report: see [Help test your device](#help-test-your-device).
 
-Not on the list? Open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml): any brand can be asked for. PeriHub fills one in for you: with no supported device connected its sidebar shows **Send a report**, which lists your USB and Bluetooth devices with their USB ids (Settings → Devices links to it too).
+Not on the list? Open a [device request](https://github.com/hex-dump/perihub/issues/new?template=device_request.yml): any brand can be asked for. PeriHub fills one in for you: with no supported device connected its sidebar shows **Send a report**, which lists your USB and Bluetooth devices with their USB ids (Settings → Devices links to it too). Its **Record the official software** button records what the device's own software sends it while you change one setting at a time (USBPcap installed only for the recording on Windows, usbmon on Linux) and puts it in the request, without what you type or the serial number ([docs/captures.md](docs/captures.md)). What it reads and sends is in [docs/device-request.md](docs/device-request.md).
 
 ## What PeriHub can do
 
@@ -321,11 +321,11 @@ PeriHub is not on Flathub, so the Flatpak does not update by itself: install the
 
 #### USB permissions
 
-The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage** or the **Flatpak**, if PeriHub shows "permission denied", install it by hand (this is the rule of release 0.9.5: if you have another version, change the version in the address), and again after an update that adds devices:
+The `.deb`, `.rpm` and `perihub-bin` packages install a udev rule that lets PeriHub open the devices. With the **AppImage** or the **Flatpak**, if PeriHub shows "permission denied", install it by hand (this is the rule of release 0.9.6: if you have another version, change the version in the address), and again after an update that adds devices:
 
 ```sh
 sudo curl -o /etc/udev/rules.d/70-perihub.rules \
-  https://raw.githubusercontent.com/hex-dump/perihub/v0.9.5/packaging/linux/70-perihub.rules
+  https://raw.githubusercontent.com/hex-dump/perihub/v0.9.6/packaging/linux/70-perihub.rules
 sudo udevadm control --reload && sudo udevadm trigger
 ```
 

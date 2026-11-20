@@ -3,8 +3,9 @@
   import { onMount } from "svelte";
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type WriteEntry } from "../lib/api";
-  import { deviceTestFormUrl, type DeviceTestFields } from "../lib/testReport";
-  import { MAX_URL_LENGTH, PASTE_NOTE } from "../lib/reportWizard";
+  import { deviceTestFormUrl, reportVersion, type DeviceTestFields } from "../lib/testReport";
+  import { PASTE_NOTE } from "../lib/reportWizard";
+  import { fitsGithubLink } from "../lib/githubLink";
   import { readOnly, withWriteLog } from "../lib/readOnly.svelte";
 
   interface Props {
@@ -39,9 +40,12 @@
 
   onMount(async () => {
     loadWrites();
-    version = await getVersion();
+    const v = await getVersion();
+    version = v;
     try {
-      system = (await api.appSettings()).system;
+      const settings = await api.appSettings();
+      system = settings.system;
+      version = reportVersion(v, settings.build);
     } catch {
       system = "unknown system";
     }
@@ -65,7 +69,7 @@
     const fields = report();
     let url = deviceTestFormUrl(fields, version, system);
     pasted = false;
-    if (url.length > MAX_URL_LENGTH) {
+    if (!fitsGithubLink(url)) {
       try {
         await navigator.clipboard.writeText(fields.report);
       } catch (e) {

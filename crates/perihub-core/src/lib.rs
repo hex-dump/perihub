@@ -10,6 +10,7 @@ pub mod conflicts;
 pub mod corsair;
 pub mod effects;
 pub mod error;
+pub mod feature_reports;
 pub mod focus;
 pub mod g300;
 pub mod games;
@@ -28,6 +29,7 @@ pub mod replay;
 pub mod report_devices;
 pub mod softmacro;
 pub mod sync;
+pub mod usbcap;
 pub mod worker;
 pub mod writes;
 

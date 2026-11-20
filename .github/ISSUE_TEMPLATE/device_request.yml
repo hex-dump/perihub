@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping PeriHub support more hardware. Devices are added once their protocol can be verified on real hardware, so the more details you share, the better.
+        Thanks for helping PeriHub support more hardware. Devices are added once their protocol can be verified on real hardware, so the more details you share, the better. A USB capture is optional help, never required: the request counts without it.
   - type: input
     id: model
     attributes:
@@ -87,4 +87,4 @@ body:
       label: Testing
       options:
         - label: I can run read-only diagnostic commands and share their output.
-        - label: I can make a USB capture of the official software with the [capture guide](https://github.com/hex-dump/perihub/blob/main/docs/captures.md)
+        - label: Optionally, if I am comfortable with it, I can make a USB capture of the official software with the [capture guide](https://github.com/hex-dump/perihub/blob/main/docs/captures.md)

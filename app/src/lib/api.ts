@@ -376,6 +376,25 @@ export interface ReportDevice {
   usb_interfaces: number | null;
   /** The report descriptor of each interface. */
   descriptors: InterfaceDescriptor[];
+  /** The feature reports of the interfaces that declare vendor-defined ones, read only. `null`: not read (yet). */
+  feature_reports: InterfaceFeatures[] | null;
+}
+
+/** How reading one interface's feature reports went. */
+export type FeatureOutcome = "nothing_to_read" | "not_opened" | "read" | "stopped_after_error" | "timed_out";
+
+export interface FeatureReport {
+  id: number;
+  /** The declared length, with the id byte when the id is not 0. */
+  length: number;
+  /** What came back, as hex (the first byte is the report id); `null`: no answer. */
+  hex: string | null;
+}
+
+export interface InterfaceFeatures {
+  interface: number;
+  outcome: FeatureOutcome;
+  reports: FeatureReport[];
 }
 
 /** The lengths in bytes of one report id's reports, with the id byte; 0: there is none. */
@@ -754,6 +773,8 @@ export interface AppSettings {
   config_dir: string;
   /** Operating system and architecture, for test reports. */
   system: string;
+  /** The branch and commit of a test build ("test/x@abc1234"); null in a release. */
+  build: string | null;
   /** Why closing the window cannot keep PeriHub in the tray (no tray on this desktop); null when it can. */
   no_tray_reason: string | null;
 }
@@ -812,11 +833,48 @@ export interface MouseRestore {
   directory: boolean;
 }
 
+/** What the USB recorder of the Send a report page can do here. */
+export interface UsbRecorderInfo {
+  available: boolean;
+  /** Why it cannot record here, when it cannot. */
+  reason: string | null;
+  /** "USBPcap" (Windows) or "usbmon" (Linux). */
+  tool: string;
+  windows: boolean;
+  /** An earlier recording did not finish and left USBPcap installed (Windows). */
+  leftover: boolean;
+}
+
+/** One step of a USB recording, as the "usb-record" event tells it. */
+export interface UsbRecordProgress {
+  state: "status" | "recording" | "cleanup" | "done" | "cancelled" | "failed" | "ended";
+  text: string;
+}
+
+/** A step of the user's list and when it started (milliseconds since 1970). */
+export interface UsbRecordStep {
+  at_ms: number;
+  name: string;
+}
+
 // ---- Commands ----
 
 export const api = {
   status: () => invoke<DeviceStatus>("get_status"),
   devicesForReport: () => invoke<ReportDevice[]>("devices_for_report"),
+  usbRecordInfo: () => invoke<UsbRecorderInfo>("usb_record_info"),
+  usbRecordStart: (device: ReportDevice) =>
+    invoke<void>("usb_record_start", {
+      vendorId: device.vendor_id,
+      productId: device.product_id,
+      product: device.product,
+      descriptors: device.descriptors.map((d) => ({ interface: d.interface, hex: d.hex })),
+    }),
+  usbRecordStop: (steps: UsbRecordStep[]) => invoke<void>("usb_record_stop", { steps }),
+  usbRecordCancel: () => invoke<void>("usb_record_cancel"),
+  usbRecordCleanLeftover: () => invoke<void>("usb_record_clean_leftover"),
+  onUsbRecord: (handler: (progress: UsbRecordProgress) => void): Promise<UnlistenFn> =>
+    listen<UsbRecordProgress>("usb-record", (event) => handler(event.payload)),
   onStatus: (handler: (status: DeviceStatus) => void): Promise<UnlistenFn> =>
     listen<DeviceStatus>("devices-changed", (event) => handler(event.payload)),
 
