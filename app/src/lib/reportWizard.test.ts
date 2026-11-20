@@ -8,7 +8,7 @@ import type {
 } from "./api";
 import {
   candidates, checklist, checklistText, formAddress, formUrl, MAX_URL_LENGTH, needsPaste, PASTE_NOTE, prepareForm,
-  readDevice, reportText, type ReadOnlyApi,
+  readDevice, redactDetails, reportText, type ReadOnlyApi,
 } from "./reportWizard";
 
 const mouse = {
@@ -245,6 +245,22 @@ describe("the form", () => {
     const text = reportText(form);
     expect(text).toContain("\nWrites this session: 1 sent, 0 refused:\n  10:00:00 ROG Keris: save, 4 bytes, failed in /home/[user]/x\n\nWhat I tried:");
     expect(text).not.toContain("ann");
+  });
+
+  it("keeps the bytes of a device request: raw descriptors, feature reports and the recording (issue #93)", () => {
+    const [u] = candidates(status({}), [{ ...unknown, descriptors: [{ interface: 1, hex: "0643ff0a0206a1018511", collections: null }] }]);
+    const recording = "   +0.000 → SET_REPORT if1 11ff0c3a0001ff000000000000000000";
+    const form = prepareForm(formAddress(u, null, "0.9.0", "linux x86_64", recording), "", ["ann"]);
+    const text = reportText(form);
+    expect(text).toContain("interface 1: 0643ff0a0206a1018511");
+    expect(text).toContain("11ff0c3a0001ff000000000000000000");
+    expect(text).not.toContain("[id hidden]");
+  });
+
+  it("still hides an id above the byte sections", () => {
+    const { text, hidden } = redactDetails("Device: serial: AB12CD34EF\nRaw descriptors (hex):\n  interface 0: 0501090605070c0d0e0f", []);
+    expect(text).toBe("Device: serial: [id hidden]\nRaw descriptors (hex):\n  interface 0: 0501090605070c0d0e0f");
+    expect(hidden).toEqual([{ what: "serial number or unit id", count: 1 }]);
   });
 
   it("leaves the write log out of a device request", () => {
