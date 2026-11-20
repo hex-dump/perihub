@@ -200,4 +200,75 @@ describe("the kind of device", () => {
     expect(deviceKind(device("Foo", [[3, 0x0b, 5]]))).toBe("Headset");
     expect(deviceKind(device("Foo", [[0, 0xff89, 0x10]]))).toBe("Other");
   });
+
+  // The SteelSeries Apex Pro (issue #111), as PeriHub 0.9.6 saw it on Windows: its first interface has a mouse
+  // collection and then a keyboard one, and the report said "Kind: Mouse" for a keyboard.
+  const hid = (id: number, input: number, output = 0, feature = 0) => ({ id, input, output, feature });
+  const described = (interface_: number, usage_page: number, usage: number, ...reports: ReturnType<typeof hid>[]) => ({
+    interface: interface_,
+    hex: "05010902a101",
+    collections: [{ usage_page, usage, reports }],
+  });
+  const apex = (descriptors: ReportDevice["descriptors"]): ReportDevice => ({
+    ...device(
+      "SteelSeries Apex Pro",
+      [
+        [0, 1, 2], [0, 1, 6], [0, 0x0c, 1], [1, 0xffc0, 1], [2, 1, 2], [2, 1, 6], [2, 0x0c, 1], [3, 1, 2], [3, 0x0c, 1], [4, 0xffc1, 1],
+      ],
+    ),
+    manufacturer: "SteelSeries",
+    vendor_id: 0x1038,
+    product_id: 0x1610,
+    descriptors,
+  });
+  const apexDescriptors = [
+    described(0, 1, 2, hid(1, 8)),
+    described(0, 1, 6, hid(2, 34, 2)),
+    described(0, 0x0c, 1, hid(3, 5)),
+    described(1, 0xffc0, 1, hid(0, 64, 64, 642)),
+    described(2, 1, 2, hid(1, 8)),
+    described(2, 1, 6, hid(2, 34, 2)),
+    described(2, 0x0c, 1, hid(3, 5)),
+    described(3, 1, 2, hid(2, 6)),
+    described(3, 0x0c, 1, hid(1, 5)),
+    described(4, 0xffc1, 1, hid(0, 64)),
+  ];
+
+  it("is a keyboard when the keyboard collection that shares the interface with a mouse one has indicator lights", () => {
+    const keyboard = apex(apexDescriptors);
+    expect(deviceKind(keyboard)).toBe("Keyboard");
+    expect(deviceDetails(keyboard, "0.9.6", "windows x86_64")).toContain("Kind: Keyboard\n");
+    expect(url(keyboard).searchParams.get("device-type")).toBe("Keyboard");
+    expect(url(keyboard).searchParams.get("brand")).toBe("SteelSeries");
+  });
+
+  it("is other when the same two collections have no output report, or the descriptors were not read", () => {
+    const noLights = apexDescriptors.map((d) => ({ ...d, collections: d.collections.map((c) => ({ ...c, reports: c.reports.map((r) => ({ ...r, output: 0 })) })) }));
+    const unread = apexDescriptors.map((d) => ({ interface: d.interface, hex: null, collections: null }));
+    for (const descriptors of [noLights, unread, [], [{ interface: 0, hex: "0501", collections: null }]]) {
+      const unsure = apex(descriptors);
+      expect(deviceKind(unsure)).toBe("Other");
+      expect(deviceDetails(unsure, "0.9.6", "windows x86_64")).toContain("Kind: Other\n");
+      // The form keeps its own choice: nothing is filled in for the device type.
+      expect(url(unsure).searchParams.has("device-type")).toBe(false);
+    }
+  });
+
+  it("only looks at the lights of the interface where the mouse and the keyboard are together", () => {
+    // Lights on interface 2's keyboard collection do not make interface 0 (no lights) a keyboard's.
+    const elsewhere = apexDescriptors.map((d) => (d.interface === 0 ? { ...d, collections: d.collections.map((c) => ({ ...c, reports: c.reports.map((r) => ({ ...r, output: 0 })) })) } : d));
+    expect(deviceKind(apex(elsewhere))).toBe("Other");
+    // Mouse and keyboard together on an interface that is not the first one: the first one decides, as before.
+    expect(deviceKind(device("Foo", [[0, 1, 2], [1, 1, 2], [1, 1, 6]]))).toBe("Mouse");
+    expect(deviceKind(device("Foo", [[0, 1, 6], [1, 1, 6], [1, 1, 2]]))).toBe("Keyboard");
+  });
+
+  it("is a mouse or a keyboard when the lowest interface has only that, with or without descriptors", () => {
+    const withLights = [described(0, 1, 6, hid(2, 34, 2)), described(1, 1, 2, hid(1, 8))];
+    expect(deviceKind({ ...device("Foo", [[0, 1, 6], [1, 1, 2]]), descriptors: withLights })).toBe("Keyboard");
+    expect(deviceKind({ ...device("Foo", [[0, 1, 2], [1, 1, 6]]), descriptors: [] })).toBe("Mouse");
+    // A device the system gives no interface numbers for (Bluetooth) has all its collections on interface -1.
+    expect(deviceKind(device("Foo", [[-1, 1, 2], [-1, 1, 6]]))).toBe("Other");
+    expect(deviceKind({ ...device("Foo", [[-1, 1, 2], [-1, 1, 6]]), descriptors: [described(-1, 1, 6, hid(0, 8, 1))] })).toBe("Keyboard");
+  });
 });
