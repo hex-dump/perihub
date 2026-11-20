@@ -12,7 +12,8 @@ Mice only: the receivers and docks, which may be shared with a keyboard, are lef
 tools/auto-add.json allows ({"allow": ["1532:00c1"]}).
 
 With --keyboards after COMMIT it writes crates/perihub-core/src/peripheral/razer_keyboard_models.rs instead,
-from driver/razerkbd_driver.{c,h} and daemon/openrazer_daemon/hardware/keyboards.py (see main_keyboards).
+from driver/razerkbd_driver.{c,h}, driver/razerchromacommon.c and daemon/openrazer_daemon/hardware/keyboards.py
+(see main_keyboards).
 """
 
 import ast
@@ -304,6 +305,9 @@ def function_static_int(source, name):
 # interface carries (issue #24: through the receiver, only the media keys). On most Razer keyboards
 # the interface OpenRazer sends to also carries typed keys, so the rule must not open it.
 LINUX_OPENED = {0x02B9, 0x02BA}
+# Keyboards PeriHub also changes (the brightness, the game mode and one colour on the custom frame), not
+# only reads. Only the one with a requester; the others follow once a tester has confirmed it.
+CHANGES = {0x02B9, 0x02BA}
 # Names PeriHub already used, kept so that settings saved with them still match.
 NAMES = {0x02B9: "BlackWidow V4 Mini HyperSpeed", 0x02BA: "BlackWidow V4 Mini HyperSpeed (wireless)"}
 NOT_KEYBOARDS = r"Blade|Book|Tartarus|Orbweaver|Nostromo"
@@ -365,6 +369,55 @@ def read_facts(body):
     return out
 
 
+def check_builders(common):
+    """The commands PeriHub sends to a keyboard it changes are written in its driver with the bytes below:
+    the class and command of each, its size and the arguments' places. A change in OpenRazer's builders
+    stops the tool, so the facts of the driver and of the documentation stay the ones read here."""
+    expected = {
+        "razer_chroma_extended_matrix_brightness": r"get_razer_report\(0x0F, 0x04, 0x03\);\s*report\.arguments\[0\] = variable_storage;\s*report\.arguments\[1\] = led_id;\s*report\.arguments\[2\] = brightness;",
+        "razer_chroma_standard_set_led_state": r"get_razer_report\(0x03, 0x00, 0x03\);\s*report\.arguments\[0\] = variable_storage;\s*report\.arguments\[1\] = led_id;\s*report\.arguments\[2\] = clamp\(led_state, 0x00, 0x01\);",
+        "razer_chroma_extended_matrix_set_custom_frame": r"razer_chroma_extended_matrix_set_custom_frame2\(row_index, start_col, stop_col, rgb_data, 0x47\)",
+        "razer_chroma_extended_matrix_set_custom_frame2": r"get_razer_report\(0x0F, 0x03, data_length\);.*?report\.arguments\[2\] = row_index;\s*report\.arguments\[3\] = start_col;\s*report\.arguments\[4\] = stop_col;\s*memcpy\(&report\.arguments\[5\], rgb_data, row_length\);",
+        "razer_chroma_extended_matrix_effect_custom_frame": r"razer_chroma_extended_matrix_effect_base\(0x0C, 0x00, 0x00, 0x08\)",
+        "razer_chroma_extended_matrix_effect_base": r"get_razer_report\(0x0F, 0x02, arg_size\);\s*report\.arguments\[0\] = variable_storage;\s*report\.arguments\[1\] = led_id;\s*report\.arguments\[2\] = effect_id;",
+    }
+    for name, pattern in expected.items():
+        found = re.search(rf"^(?:static )?struct razer_report {name}\(", common, re.M)
+        if not found:
+            sys.exit(f"{name} is gone from razerchromacommon.c")
+        body = common[found.start() : common.find("\n}\n", found.start())]
+        if not re.search(pattern, body, re.S):
+            sys.exit(f"{name} no longer builds its request the way PeriHub's keyboard driver sends it")
+
+
+def change_params(define, m, read_brightness, read_game, brightness_set, game_set, frame_set, custom_set):
+    """The `change` parameter of a keyboard PeriHub changes. It stops the tool unless OpenRazer changes the
+    brightness and the game mode with the transaction id it reads them with, draws the custom frame row by row
+    and then shows it with the custom effect (with one transaction id), and the daemon draws it on a matrix."""
+    name = m["name"]
+    bs, gs = brightness_set.get(define), game_set.get(define)
+    fs, cs = frame_set.get(define), custom_set.get(define)
+    if not (read_brightness and read_brightness[:2] == ("razer_chroma_extended_matrix_get_brightness", "VARSTORE,BACKLIGHT_LED")):
+        sys.exit(f"{name}: the brightness is not read with the extended command")
+    if bs != ("razer_chroma_extended_matrix_brightness", "VARSTORE,BACKLIGHT_LED,brightness", read_brightness[2]):
+        sys.exit(f"{name}: the brightness is not written the way it is read")
+    if not (read_game and read_game[:2] == ("razer_chroma_standard_get_led_state", "VARSTORE,GAME_LED")):
+        sys.exit(f"{name}: the game mode is not read the way PeriHub reads it")
+    if gs != ("razer_chroma_standard_set_led_state", "VARSTORE,GAME_LED,enabled", read_game[2]):
+        sys.exit(f"{name}: the game mode is not written the way it is read")
+    if not (fs and fs[0] == "razer_chroma_extended_matrix_set_custom_frame" and fs[1].startswith("row_id,start_col,stop_col,")):
+        sys.exit(f"{name}: the custom frame is not the standard row command")
+    if cs != ("razer_chroma_extended_matrix_effect_custom_frame", "", fs[2]):
+        sys.exit(f"{name}: the custom effect does not use the transaction id of the frame")
+    methods = m.get("METHODS", [])
+    dims = m.get("MATRIX_DIMS")
+    if not (m.get("HAS_MATRIX") and "set_key_row" in methods and "set_custom_effect" in methods):
+        sys.exit(f"{name}: the daemon does not draw a custom frame on it")
+    if not (isinstance(dims, list) and len(dims) == 2 and 1 <= dims[0] <= 6 and 1 <= dims[1] <= 25):
+        sys.exit(f"{name}: matrix size {dims}")
+    return f"Some(Change {{ frame: Frame {{ tid: 0x{fs[2]:02X}, rows: {dims[0]}, columns: {dims[1]} }} }})"
+
+
 def main_keyboards(root, commit):
     driver = (root / "driver" / "razerkbd_driver.c").read_text()
     ids = defines((root / "driver" / "razerkbd_driver.h").read_text())
@@ -390,9 +443,15 @@ def main_keyboards(root, commit):
             sys.exit(f"{labels}: the answer comes from another interface")
         for label in labels:
             params[label] = (int(index.group(1), 16), KBD_WAITS[wait.group(1)])
+    check_builders((root / "driver" / "razerchromacommon.c").read_text())
     bright = read_facts(function(driver, "razer_attr_read_matrix_brightness"))
     game = read_facts(function(driver, "razer_attr_read_game_led_state"))
     # The battery reads build their request before the switch, which only sets the transaction id.
+    # What PeriHub changes: the same builders the reads and the daemon's custom drawing use.
+    brightness_set = read_facts(function(driver, "razer_attr_write_matrix_brightness"))
+    game_set = read_facts(function(driver, "razer_attr_write_game_led_state"))
+    frame_set = read_facts(function(driver, "razer_attr_write_matrix_custom_frame"))
+    custom_set = read_facts(function(driver, "razer_attr_write_matrix_effect_custom"))
     level = {k: v[1] for k, v in facts(function(driver, "razer_attr_read_charge_level"), "get_battery_level").items() if v[1]}
     charging = {k: v[1] for k, v in facts(function(driver, "razer_attr_read_charge_status"), "get_charging_status").items() if v[1]}
     for name, body in (("level", "razer_attr_read_charge_level"), ("charging", "razer_attr_read_charge_status")):
@@ -406,7 +465,7 @@ def main_keyboards(root, commit):
         "//! interface of the reports, the wait before the answer and the transaction id of each read. No code",
         "//! was copied. Do not edit by hand.",
         "",
-        "use super::razer_keyboard::{Brightness, Params};",
+        "use super::razer_keyboard::{Brightness, Change, Frame, Params};",
         "use super::{Kind, Model, Protocol};",
         "",
         "pub const MODELS: &[Model] = &[",
@@ -439,6 +498,9 @@ def main_keyboards(root, commit):
         battery = "None"
         if lv is not None and lv == ch and "get_battery" in methods and "is_charging" in methods:
             battery = f"Some(0x{lv:02X})"
+        change = "None"
+        if pid in CHANGES:
+            change = change_params(define, m, b, g, brightness_set, game_set, frame_set, custom_set)
         name = NAMES.get(pid, m["name"]).replace('"', "")
         out.append("    Model {")
         out.append("        vendor_id: 0x1532,")
@@ -454,6 +516,7 @@ def main_keyboards(root, commit):
         out.append(f"            brightness: {brightness},")
         out.append(f"            game: {game_tid},")
         out.append(f"            linux: {str(pid in LINUX_OPENED).lower()},")
+        out.append(f"            change: {change},")
         out.append("        }),")
         out.append("    },")
     out.append("];")

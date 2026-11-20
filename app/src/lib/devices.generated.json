@@ -1412,12 +1412,12 @@
         {
           "name": "BlackWidow V4 Mini HyperSpeed",
           "kind": "keyboard",
-          "level": "read_only"
+          "level": "experimental"
         },
         {
           "name": "BlackWidow V4 Mini HyperSpeed (wireless)",
           "kind": "keyboard",
-          "level": "read_only"
+          "level": "experimental"
         },
         {
           "name": "Joro",

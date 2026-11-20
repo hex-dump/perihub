@@ -130,11 +130,11 @@ pub struct Frame {
 }
 
 /// A brightness of 0–255 in percent, and back.
-fn percent(raw: u8) -> u8 {
+pub(super) fn percent(raw: u8) -> u8 {
     ((raw as u32 * 100 + 127) / 255) as u8
 }
 
-fn raw(percent: u8) -> u8 {
+pub(super) fn raw(percent: u8) -> u8 {
     ((percent.min(100) as u32 * 255 + 50) / 100) as u8
 }
 

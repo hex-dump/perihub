@@ -1,13 +1,15 @@
 # Razer keyboards
 
-How PeriHub reads a Razer keyboard. **No keyboard has been tried with PeriHub yet**, and for now PeriHub only
-reads. The transport is the one of the Razer mice (`razer-mice.md`): one 90-byte feature report, number 0, read
-back after a wait, with the status, transaction id, command class and id, arguments and an XOR checksum. The
-facts below were found in [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0, commit cd5c424) and are
-written here in PeriHub's own words. No code was copied.
+How PeriHub talks to a Razer keyboard. **No keyboard has been tried with PeriHub yet.** PeriHub reads every
+keyboard below; it also changes the BlackWidow V4 Mini HyperSpeed, as an experimental feature (see "Changes"). The
+transport is the one of the Razer mice (`razer-mice.md`): one 90-byte feature report, number 0, read back after a
+wait, with the status, transaction id, command class and id, arguments and an XOR checksum. The facts below were
+found in [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0, commit cd5c424) and are written here in
+PeriHub's own words. No code was copied.
 
 The facts of each keyboard are written into `crates/perihub-core/src/peripheral/razer_keyboard_models.rs` by
-`tools/openrazer_facts.py --keyboards`, which reads OpenRazer's keyboard driver and daemon as text. It leaves out
+`tools/openrazer_facts.py --keyboards`, which reads OpenRazer's keyboard driver, the commands it builds and its daemon
+as text. It leaves out
 Razer laptops and keypads (Tartarus, Orbweaver, Nostromo), and any product id another OpenRazer driver also
 claims, such as a receiver shared with a mouse.
 
@@ -33,6 +35,8 @@ A keyboard with no brightness or game mode read in OpenRazer is not asked for it
 | Wait before reading the answer | 600 µs | 4.9 ms |
 | Transaction id: battery, charging, brightness | `1f` | `9f` |
 | Transaction id: firmware, game mode | `ff` | `ff` |
+| Transaction id: the custom frame and showing it | `1f` | `9f` |
+| Matrix of the custom frame | 5 rows of 14 columns | 5 rows of 14 columns |
 
 Interface 3 holds, through the receiver, only a consumer control collection (usage page `000c`, the media keys),
 as the device request in [issue #24](https://github.com/hex-dump/perihub/issues/24) shows. On its cable it has not
@@ -66,9 +70,43 @@ keys (the Keyboard/Keypad page, or a keyboard or keypad of the Generic Desktop p
 Status `05` means the keyboard does not take the command: PeriHub then shows that value as not supported. Status
 `04` (timed out), which a receiver may give while its keyboard is off, makes PeriHub ask again later.
 
+## Changes
+
+Only on the BlackWidow V4 Mini HyperSpeed, on its cable and through its receiver. PeriHub sends nothing else to a
+keyboard than the reads above, and these four commands. Every transaction id is the one OpenRazer sends for that
+keyboard and command. The brightness and game mode changes use the same transaction id as their reads, and the
+custom frame the one of the brightness.
+
+| Class, command | Size | Arguments | What |
+|---|---|---|---|
+| `0f 04` | `03` | `01` (stored), `05` (backlight), brightness 0–255 | The backlight brightness. Transaction id `1f` on the cable, `9f` through the receiver. |
+| `03 00` | `03` | `01` (stored), `08` (game mode light), `01` on or `00` off | The game mode. Transaction id `ff`. |
+| `0f 03` | `47` | `00 00`, row, first column, last column, then red, green and blue of each column | One row of the custom colour frame. The V4 Mini's matrix has 5 rows of 14 columns (the daemon's matrix size). Same transaction id as the brightness, `1f` or `9f`. |
+| `0f 02` | `0c` | `00` (not stored), `00`, `08` | Shows the custom frame, with the transaction id of the frame. |
+
+OpenRazer sends the brightness and the game mode with "variable storage" (`01`): the keyboard keeps them in its
+memory. PeriHub therefore treats both as changes that stay: the No warranty box the first time, a backup of the
+settings, a read-back with the commands above, and the settings put back after 15 seconds unless the user keeps the
+change. The undo writes back the exact brightness byte first read, not the nearest percent.
+
+OpenRazer draws a custom frame by sending each row, then the custom effect, with storage `00`. PeriHub does the same
+for **one colour**, the same in all 70 positions, and never with storage `01`. Nothing reads the frame back, so
+PeriHub cannot show it or put back what was there: it is offered as a setting it cannot read, with the warning always
+on screen. What the keyboard shows after it is turned off, unplugged or put to sleep has not been checked.
+
 ## Left out for now
 
-Lighting effects, the custom frame, changing the brightness and game mode, macros and key remapping. OpenRazer
-stores every lighting effect of these keyboards in their memory and has no command that reads the effect back, so
-a stored effect could not be undone. Key remapping, the Hypershift layer and onboard profiles are not described by
-any source PeriHub may use: they would need USB captures of Razer Synapse from a tester.
+- **The lighting effects of the keyboard's own memory** (none, static, breathing, spectrum, wave, reactive,
+  starlight). OpenRazer builds all of them with the command `0f 02`, arguments storage, LED `05`, then the effect
+  (`00` none, `01` static, `02` breathing, `03` spectrum, `04` wave, `05` reactive, `07` starlight) and its
+  values, and always sends them with storage `01`. It has no command that reads the effect in use, so an effect
+  could not be read back, undone or put back after a failed change. PeriHub never sends one. They wait for a tester
+  to show a form that does not store, or a way to read the effect.
+- Colours for single keys or groups: the frame's rows and columns are known, but no source PeriHub may use says which
+  key sits at which position of the V4 Mini's matrix.
+- The macro light, the device mode, key remapping, the Hypershift layer, macros and onboard profiles. Key remapping,
+  the Hypershift layer and profiles are not described by any source PeriHub may use: they would need USB captures
+  of Razer Synapse from a tester. OpenRazer gives the V4 Mini no polling rate, no idle time and no low-battery
+  threshold.
+- Changes on the other keyboards: the same commands exist for many of them, but PeriHub changes none until a
+  tester has confirmed the V4 Mini.

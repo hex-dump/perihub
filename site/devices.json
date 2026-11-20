@@ -4643,7 +4643,7 @@
       "brand": "Razer",
       "name": "BlackWidow V4 Mini HyperSpeed",
       "kind": "keyboard",
-      "level": "read_only",
+      "level": "experimental",
       "page": "devices/razer-blackwidow-v4-mini-hyperspeed.html",
       "usb_ids": [
         "1532:02b9"
@@ -4651,14 +4651,15 @@
       "linux": {
         "kind": "interface",
         "interface": 3
-      }
+      },
+      "note": "backlight brightness, game mode and one colour, not saved"
     },
     {
       "family": "razer-keyboard",
       "brand": "Razer",
       "name": "BlackWidow V4 Mini HyperSpeed (wireless)",
       "kind": "keyboard",
-      "level": "read_only",
+      "level": "experimental",
       "page": "devices/razer-blackwidow-v4-mini-hyperspeed-wireless.html",
       "usb_ids": [
         "1532:02ba"
@@ -4666,7 +4667,8 @@
       "linux": {
         "kind": "interface",
         "interface": 3
-      }
+      },
+      "note": "backlight brightness, game mode and one colour, not saved"
     },
     {
       "family": "razer-keyboard",

@@ -195,7 +195,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://github.com/openrazer/openrazer",
         license: "GPL-2.0",
         notes: [
-          "The Razer report layout and commands, and per mouse its USB interface, transaction ids, maximum DPI, lights with a brightness and custom frame width, read as text by tools/openrazer_facts.py (docs/protocols/razer-mice.md); per keyboard its USB interface, waits and transaction ids, and the battery, charging, brightness and game mode reads, read as text by the same tool (docs/protocols/razer-keyboards.md); the keyboard layout read and its region codes (docs/protocols/keyboard-layouts.md). " + NO_CODE,
+          "The Razer report layout and commands, and per mouse its USB interface, transaction ids, maximum DPI, lights with a brightness and custom frame width, read as text by tools/openrazer_facts.py (docs/protocols/razer-mice.md); per keyboard its USB interface, waits and transaction ids, and the battery, charging, brightness and game mode reads, read as text by the same tool, and for the BlackWidow V4 Mini HyperSpeed also the commands that change the brightness and the game mode and draw a custom frame, and the size of its matrix (docs/protocols/razer-keyboards.md); the keyboard layout read and its region codes (docs/protocols/keyboard-layouts.md). " + NO_CODE,
         ],
       },
       {
