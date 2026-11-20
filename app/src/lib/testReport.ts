@@ -5,6 +5,7 @@ import type {
 import type {
   Battery, DescriptorCollection, DescriptorReports, HidppFeature, HidppLighting, InterfaceFeatures, LightsLook, MouseInfo, ReportDevice,
 } from "./api";
+import { blindText } from "./blind";
 import { effectName, kindName, zoneName } from "./logitechFeatures";
 import { layoutReport } from "./keyboardLayout.svelte";
 
@@ -391,7 +392,16 @@ export function peripheralTest(info: PeripheralInfo, version: string, system: st
       info.readable ? null : "Settings: this device cannot be read back; PeriHub sends them one at a time",
       ...info.blind
         .filter((b) => b.last)
-        .map((b) => `Sent: ${b.label} = ${b.last!.type === "dpi" ? b.last!.value.join(", ") : b.last!.value}`),
+        .map((b) => {
+          const text = b.last!.type === "dpi" ? b.last!.value.join(", ") : blindText(b.last, b);
+          // A setting the device keeps and cannot report: what PeriHub sent, in this session or an earlier one.
+          return b.remembered
+            ? `Last sent by PeriHub: ${b.label} = ${text}; before that: ${b.previous ? blindText(b.previous, b) : "not known (set by other software)"}`
+            : `Sent: ${b.label} = ${text}`;
+        }),
+      ...(info.sent?.length
+        ? ["Changes sent, with the answer of the device to each:", ...info.sent.map((line) => `  ${line}`)]
+        : []),
       info.kind === "mouse"
         ? `Active profile: ${info.active_profile ?? "-"} of ${info.profiles}, DPI level ${info.active_dpi ?? "-"}`
         : null,
