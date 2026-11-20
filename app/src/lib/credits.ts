@@ -223,7 +223,23 @@ export const creditGroups: CreditGroup[] = [
         link: "https://github.com/pwr-Solaar/Solaar",
         license: "GPL-2.0",
         notes: [
-          "The Logitech receiver ids, and how it reads and writes onboard profile lists and button entries, compared with libratbag's (docs/protocols/logitech-onboard-profiles.md); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (docs/protocols/logitech-hidpp10.md); how it reads a Logitech keyboard's layout code, HID++ 0x4540 (docs/protocols/keyboard-layouts.md); what the HID++ 2.0 root feature answers (docs/protocols/logitech-g213.md). " + NO_CODE,
+          "The Logitech receiver ids, and how it reads and writes onboard profile lists and button entries, compared with libratbag's (docs/protocols/logitech-onboard-profiles.md); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (docs/protocols/logitech-hidpp10.md); how it reads a Logitech keyboard's layout code, HID++ 0x4540 (docs/protocols/keyboard-layouts.md); what the HID++ 2.0 root feature answers (docs/protocols/logitech-g213.md); the functions and replies of the HID++ 2.0 lighting features 0x8040, 0x8071, 0x8081 and 0x4540, how a program takes a keyboard's lights over and gives them back, and the G HUB captures and hardware tests in its pull request 3149 (docs/protocols/logitech-keyboard-lighting.md). " + NO_CODE,
+        ],
+      },
+      {
+        name: "logi-ghub-linux",
+        link: "https://github.com/theo-antonescu/logi-ghub-linux",
+        license: "GPL-2.0",
+        notes: [
+          "Its notes of a USB capture of Logitech G HUB on a G915 X and of its tests on a G915 X LS TKL: host mode through 0x8101, the 0x8071 claim with both activity notices, and the light timers G HUB writes (docs/protocols/logitech-keyboard-lighting.md). " + NO_CODE,
+        ],
+      },
+      {
+        name: "logirgb",
+        link: "https://github.com/mevdschee/logirgb",
+        license: "MIT",
+        notes: [
+          "Its copy of Logitech's public HID++ 2.0 feature specifications \"x8071 – RGB Effects\", \"x8081 – Per-Key Lighting\" and \"x8040 – Brightness Control\": the byte layouts of the effects, power modes, activity notices and per-key colours (docs/protocols/logitech-keyboard-lighting.md). " + NO_CODE,
         ],
       },
       {

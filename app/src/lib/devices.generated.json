@@ -335,6 +335,11 @@
           "level": "by_memory_format"
         },
         {
+          "name": "PRO K/DA",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
           "name": "G300",
           "kind": "mouse",
           "level": "supported"

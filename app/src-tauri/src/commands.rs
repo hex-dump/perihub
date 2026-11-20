@@ -8,6 +8,7 @@ use perihub_core::corsair::device::CorsairInfo;
 use perihub_core::effects::KeyboardLighting;
 use perihub_core::focus::{self, FocusSupport};
 use perihub_core::g300::{G300Info, G300Settings};
+use perihub_core::hidpp::host::Look;
 use perihub_core::hidpp::profile::{LedEffect, ProfileSettings};
 use perihub_core::keyboard::{Keymap, KeymapRestore};
 use perihub_core::logitech::LogitechLive;
@@ -262,6 +263,62 @@ pub async fn logitech_reset_dpi(state: State<'_, AppState>, receiver_id: u16, sl
     save_logitech_dpi(&state, key, None)
 }
 
+/// Takes the lights of a keyboard PeriHub knows by its features over (host mode, experimental) and
+/// shows `look`, or shows it if PeriHub drives them already. The look and the wish are saved in the
+/// settings: PeriHub takes the lights with it every time the keyboard connects, at every start too,
+/// until the user gives them back.
+#[tauri::command]
+pub async fn logitech_drive_lights(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    receiver_id: u16,
+    slot: u8,
+    look: Look,
+) -> CmdResult<()> {
+    writes_allowed()?;
+    let manager = state.manager.clone();
+    let kept = look.clone();
+    let key = blocking(move || manager.logitech(receiver_id, slot)?.call(move |d| d.drive_lights(look))).await?;
+    state.manager.set_logitech_look(key.clone(), Some(kept.clone()));
+    crate::window::refresh_menu(&app);
+    let mut config = state.config.lock().unwrap();
+    if !config.logitech_drive.contains(&key) {
+        config.logitech_drive.push(key.clone());
+    }
+    config.logitech_looks.insert(key, kept);
+    config.save().map_err(|e| e.to_string())
+}
+
+/// Gives the keyboard its own lights back, and stops taking them when it connects.
+#[tauri::command]
+pub async fn logitech_give_back_lights(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    receiver_id: u16,
+    slot: u8,
+) -> CmdResult<()> {
+    let manager = state.manager.clone();
+    let key = blocking(move || manager.logitech(receiver_id, slot)?.call(|d| d.give_back_lights())).await?;
+    state.manager.set_logitech_look(key.clone(), None);
+    crate::window::refresh_menu(&app);
+    let mut config = state.config.lock().unwrap();
+    config.logitech_drive.retain(|k| *k != key);
+    config.save().map_err(|e| e.to_string())
+}
+
+/// Sets the brightness of a keyboard's lights (experimental); the keyboard keeps it, as with its key.
+#[tauri::command]
+pub async fn logitech_set_brightness(
+    state: State<'_, AppState>,
+    receiver_id: u16,
+    slot: u8,
+    value: u16,
+) -> CmdResult<()> {
+    writes_allowed()?;
+    let manager = state.manager.clone();
+    blocking(move || manager.logitech(receiver_id, slot)?.call(move |d| d.set_brightness(value))).await
+}
+
 /// Turns a keyboard with a raw HID collection on or off as a VIA keyboard ("vvvv:pppp"). PeriHub
 /// opens it, or closes it, at its next look at the devices.
 #[tauri::command]
@@ -350,11 +407,23 @@ pub async fn mouse_preview_led(state: State<'_, AppState>, zone: u8, effect: Led
     blocking(move || manager.mouse()?.call(move |m| m.preview_led(zone, &effect))).await
 }
 
-/// "Turn off experimental lighting" in the tray menu: every Corsair device back to its own settings.
+/// "Turn off experimental lighting" in the tray menu: every Corsair device back to its own settings,
+/// and every Logitech keyboard whose lights PeriHub drives back to its own lights, no longer taken
+/// when it connects.
 pub fn turn_off_experimental(app: &AppHandle) {
     let app = app.clone();
     std::thread::spawn(move || {
         app.state::<AppState>().manager.release_corsair();
+        app.state::<AppState>().manager.release_logitech(true);
+        {
+            let state = app.state::<AppState>();
+            let mut config = state.config.lock().unwrap();
+            config.logitech_drive.clear();
+            if let Err(e) = config.save() {
+                log::warn!("saving the settings failed: {e}");
+            }
+        }
+        crate::window::refresh_menu(&app);
         corsair_changed(&app);
     });
 }
@@ -688,11 +757,13 @@ pub fn app_read_only() -> bool {
 
 /// Turns read-only mode on or off, from the settings or the tray, at once for every device, and
 /// keeps it for the next start. Before it goes on, Corsair devices with experimental lighting are
-/// given back to their own settings: afterwards nothing could be sent to do it.
+/// given back to their own settings, and Logitech keyboards their own lights: afterwards nothing
+/// could be sent to do it.
 pub fn set_read_only(app: &AppHandle, on: bool) -> CmdResult<()> {
     let state = app.state::<AppState>();
     if on && !perihub_core::writes::read_only() {
         state.manager.release_corsair();
+        state.manager.release_logitech_for_read_only();
     }
     perihub_core::writes::set_read_only(on);
     let saved = {
@@ -785,6 +856,8 @@ mod tests {
         "kb_restore_backup",
         "logitech_set_dpi",
         "logitech_reset_dpi",
+        "logitech_drive_lights",
+        "logitech_set_brightness",
         "mouse_save_profile",
         "mouse_restore_factory",
         "mouse_restore_backup",
@@ -819,6 +892,9 @@ mod tests {
         "mouse_get_state",
         "mouse_live",
         "logitech_live",
+        // Without host mode it only stops PeriHub taking the lights; giving them back is refused by
+        // the core in read-only mode, and the app gives them back before read-only mode goes on.
+        "logitech_give_back_lights",
         "qmk_set_enabled",
         "mouse_backups",
         "g300_info",

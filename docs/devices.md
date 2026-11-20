@@ -20,6 +20,7 @@ the same format.
 - [SteelSeries](#steelseries)
 - [Logitech mice with onboard profiles](#logitech-mice-with-onboard-profiles)
 - [Logitech G300](#logitech-g300)
+- [Logitech keyboards and headsets on their own USB connection](#logitech-keyboards-and-headsets-on-their-own-usb-connection)
 - [Corsair](#corsair)
 - [ASUS](#asus)
 - [SteelSeries mice](#steelseries-mice)
@@ -103,6 +104,20 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
     the **No warranty** box. Nobody has tried it on a real device yet: the MX Master 3S of
     [issue #17](https://github.com/hex-dump/perihub/issues/17) is the first candidate.
   - 👁 Everything else is only read.
+  - 👁 **Lighting**, on a device with the HID++ lighting features of the newer keyboards (0x8040
+    brightness, 0x8071 effects by zone, 0x8081 per-key colours, 0x4540 layout): the brightness now, who
+    drives the lights (the device or a program such as G HUB), the effects each zone offers, how many
+    keys have their own colour, the startup and shutdown effects and when the lights dim. The test report
+    carries every reply. The first one is a G915 X LS through a `c547` receiver on Windows
+    ([issue #30](https://github.com/hex-dump/perihub/issues/30)), see
+    [protocols/logitech-keyboard-lighting.md](protocols/logitech-keyboard-lighting.md).
+  - 🧪 **Lights driven by PeriHub (experimental)**, on a keyboard that also has 0x8101 profile management:
+    an effect per zone, colours per group of keys and the brightness, in host mode as G HUB does with its
+    on-board memory mode off. Everything but the brightness stays in the keyboard's RAM; PeriHub dims and
+    turns the lights off when the keyboard is idle, and gives them back on request, from the tray, when
+    G HUB or Solaar starts and when it quits. Once asked, it takes them again at every start and when
+    G HUB or Solaar quit, until you give them back. Tried on a G915 X LS ([issue #30](https://github.com/hex-dump/perihub/issues/30));
+    **No warranty** box first.
   - **Solaar and logiops** set their own DPI and may undo PeriHub's: the device page says so when
     one of them runs.
   - Logitech devices PeriHub does not know behind a **LIGHTSPEED** receiver get the same page,
@@ -190,6 +205,26 @@ experimental feature. It was confirmed on a real G300 in
 they were still there after the mouse was unplugged and plugged back in, and a save that was not
 kept was undone. No G300 has been tried on Linux yet. Something does not work on yours? Send a
 [test report](https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml).
+
+## Logitech keyboards and headsets on their own USB connection
+
+👁 Read-only: Logitech devices with HID++ 2.0 on a USB connection of their own, without a receiver,
+whose HID++ collections use the newer vendor usage page `ff43`
+([how PeriHub finds them](protocols/logitech-usb-hidpp.md)). Nobody has tried PeriHub on one yet.
+Each gets the page of a device PeriHub knows by its features: its name, firmware, the features it
+lists, its battery if it has one, and the lighting it reports (zones and effects, brightness, who
+drives the lights). Nothing is changed, not even in RAM: the DPI and **Drive the lights** are not
+offered, and the connection refuses anything but reads. The test report has every answer as it came.
+
+- **PRO K/DA** keyboard ([issue #40](https://github.com/hex-dump/perihub/issues/40)): on Windows
+  only. Its HID++ collections share USB interface 1 with what is typed on it, so on Linux, where
+  one device node holds both, PeriHub neither opens it nor asks for a udev rule.
+
+<!-- generated: table logitech-direct -->
+| Keyboard | USB ID | Opened on Linux |
+|---|---|---|
+| PRO K/DA | `046d:c339` | — |
+<!-- end generated -->
 
 ## Corsair
 

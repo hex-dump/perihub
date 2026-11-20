@@ -477,12 +477,46 @@ export interface UnsupportedReceiverDevice {
   report_rates_hz?: number[];
   /** Its onboard profile memory (0x8100), if it has one. */
   onboard: MouseInfo["onboard"] | null;
+  /** Its lighting (0x8040, 0x8071, 0x8081, 0x4540), if it has one of those features. */
+  lighting: HidppLighting | null;
+  /** The zones of the older lighting feature (0x8070), with the effects each offers. */
+  led_zones: LedZone[];
+  /** Its battery when it was read, if it has a battery feature. */
+  battery: Battery | null;
+  /** The battery feature's reply as it came, such as "1004: 50 04 00 00". */
+  battery_reply: string | null;
+  /** PeriHub only reads it: a device on its own USB connection nobody has tested yet. */
+  read_only: boolean;
   read_errors: string[];
   /** A keyboard's layout code (0x4540), if it has that feature. */
   layout?: DeviceLayout | null;
   /** Every request and answer of the reading when PeriHub connected, as a transcript in JSON
    * (docs/replay.md), for test reports. Nothing in it tells the unit apart. */
   transcript?: string;
+}
+
+/** What PeriHub read of a Logitech device's lighting, by its features. Read only. */
+export interface HidppLighting {
+  brightness: { min: number; max: number; steps: number; on_off: boolean } | null;
+  effects: {
+    zones: {
+      index: number;
+      /** 1 primary, 2 logo, 3 left side, 4 right side, 5 combined, 6 to 11 primary 1 to 6. */
+      location: number;
+      effects: { index: number; id: number; caps: number; period_ms: number }[];
+    }[];
+    startup: { enabled: boolean; colors: [string, string] } | null;
+    shutdown: { enabled: boolean; colors: [string, string] } | null;
+    idle_s: number | null;
+    sleep_s: number | null;
+  } | null;
+  /** The ids of the keys whose colour can be set one by one (0x8081). */
+  keys: number[];
+  /** The layout the keyboard reports (0x4540): 1 ANSI, 2 ISO and others. */
+  layout: number | null;
+  /** Every reply as it came, for test reports. */
+  raw: string[];
+  errors: string[];
 }
 
 /** A connected Logitech receiver, for the test report that helps support what is paired with it. */
@@ -493,6 +527,65 @@ export interface LogitechLive {
   dpi: number | null;
   /** The DPI PeriHub sets every time the device connects, if one was chosen. */
   saved_dpi: number | null;
+  /** Its lighting as it is now: brightness, lights on, and who drives them (0 the device, 3 a program). */
+  lighting: { brightness: number | null; on: boolean | null; control: number | null } | null;
+  /** While PeriHub drives a keyboard's lights (host mode): what it shows, and how it went. */
+  host: LightsHost | null;
+  /** Why PeriHub gave the lights back on its own, if it did. */
+  gave_back: string | null;
+  /** The last look shown on the keyboard, kept in PeriHub's settings: the editor starts from it. */
+  saved_look: LightsLook | null;
+  /** How host mode went this session, across give-backs and reconnections, once PeriHub took the lights. */
+  host_log: LightsLog | null;
+  /** PeriHub takes the lights with the saved look every time the keyboard connects, at every start too. */
+  drive_at_start: boolean;
+  /** Why PeriHub does not drive them now although it should, such as G HUB running. */
+  waiting: string | null;
+}
+
+export interface LightsLog {
+  taken: number;
+  /** Taken again when the keyboard connected again. */
+  on_connect: number;
+  given_back: number;
+  /** Why the last time ("asked" when the user did). */
+  last_reason: string | null;
+  timeouts: number;
+  idle_events: number;
+  active_events: number;
+  retaken: number;
+  shown: number;
+  /** Looks that needed the lights given back and taken again (leaving a wave to the centre). */
+  resets: number;
+}
+
+/** What one lighting zone of a Logitech keyboard shows (0x8071). */
+export interface ZoneLook {
+  zone: number;
+  /** The effect's id, such as 1 for a fixed colour. */
+  effect: number;
+  color: string | null;
+  period_ms: number | null;
+  /** For a wave: 1 horizontal, 2 vertical, 3 centre out, 6 reverse horizontal, 7 reverse vertical, 8 centre in. */
+  direction: number | null;
+}
+
+/** What PeriHub shows on a Logitech keyboard whose lights it drives: effects by zone, and a colour per key. */
+export interface LightsLook {
+  zones: ZoneLook[];
+  keys: [number, string][];
+}
+
+export interface LightsHost {
+  look: LightsLook;
+  /** Full lights, dimmed because nobody uses the keyboard, or off. */
+  power: "full" | "dimmed" | "off";
+  idle_events: number;
+  active_events: number;
+  /** Times the keyboard was found back on its own lighting, and taken again. */
+  retaken: number;
+  shown: number;
+  resets: number;
 }
 
 /** A keyboard with QMK firmware, found by its raw HID channel (usage page 0xFF60). */
@@ -555,6 +648,10 @@ export interface ReceiverReport {
   slots: string[];
   /** Paired devices that answer and that PeriHub does not support yet. */
   unsupported: UnsupportedReceiverDevice[];
+  /** Not a receiver: a device on its own USB connection. `name` says how it connects ("USB cable"),
+   * `slots` what its HID++ collections answered, and `unsupported` holds the device itself (its "slot"
+   * is the HID++ device index). */
+  direct: boolean;
 }
 
 export type G300Button =
@@ -915,6 +1012,12 @@ export const api = {
     invoke<void>("logitech_set_dpi", { receiverId, slot, dpi }),
   logitechResetDpi: (receiverId: number, slot: number) =>
     invoke<void>("logitech_reset_dpi", { receiverId, slot }),
+  logitechDriveLights: (receiverId: number, slot: number, look: LightsLook) =>
+    invoke<void>("logitech_drive_lights", { receiverId, slot, look }),
+  logitechGiveBackLights: (receiverId: number, slot: number) =>
+    invoke<void>("logitech_give_back_lights", { receiverId, slot }),
+  logitechSetBrightness: (receiverId: number, slot: number, value: number) =>
+    invoke<void>("logitech_set_brightness", { receiverId, slot, value }),
   presets: () => invoke<LightingPreset[]>("kb_get_presets"),
   savePreset: (name: string, lighting: KeyboardLighting) =>
     invoke<LightingPreset[]>("kb_save_preset", { name, lighting }),

@@ -31,7 +31,10 @@ goes with every PeriHub package.
 - the extended DPI (`0x2202`) and polling rate (`0x8061`) features and the layout of Logitech profile
   format 7, read in `crates/perihub-core/src/hidpp/mod.rs` and `profile.rs` (see
   `docs/protocols/logitech-onboard-profiles.md`), from libratbag's open pull requests #1676 (Nathan
-  Rossi) and #1806 (nt-slug), which are contributed under the project's MIT license.
+  Rossi) and #1806 (nt-slug), which are contributed under the project's MIT license;
+- the functions of the HID++ 2.0 RGB effects feature 0x8071 and the layout of its device, zone and effect
+  information (`src/hidpp20.c`, `src/hidpp20.h`, Copyright © 2015-2017 Red Hat, Inc.), read in
+  `crates/perihub-core/src/hidpp/lighting.rs` (see `docs/protocols/logitech-keyboard-lighting.md`).
 
 ```
 Copyright © 2015-2017 Red Hat, Inc.
@@ -573,8 +576,19 @@ was copied.
   onboard profile lists and button entries, compared with libratbag's (see
   `docs/protocols/logitech-onboard-profiles.md`); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak
   HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (see `docs/protocols/logitech-hidpp10.md`);
+  the functions and replies of the HID++ 2.0 lighting features 0x8040, 0x8071, 0x8081 and 0x4540, the names of
+  the 0x8071 effects, and which of their calls only read; how a program takes a keyboard's lights over and gives
+  them back, the key ids of 0x8081, the pauses after a busy reply, and the G HUB captures and hardware tests in
+  its pull request 3149 (see `docs/protocols/logitech-keyboard-lighting.md`);
   how it reads a Logitech keyboard's layout code, HID++ `0x4540` (see `docs/protocols/keyboard-layouts.md`); what the
   HID++ 2.0 root feature answers (see `docs/protocols/logitech-g213.md`).
+- [logi-ghub-linux](https://github.com/theo-antonescu/logi-ghub-linux) (GPL-2.0): its notes of a USB capture of
+  Logitech G HUB on a G915 X and of its tests on a G915 X LS TKL: host mode through 0x8101, the 0x8071 claim with
+  both activity notices, and the light timers G HUB writes (see `docs/protocols/logitech-keyboard-lighting.md`).
+- Logitech's HID++ 2.0 feature specifications "x8071 – RGB Effects", "x8081 – Per-Key Lighting" and "x8040 –
+  Brightness Control", from Logitech's public HID++ folder, read from the copy in
+  [logirgb](https://github.com/mevdschee/logirgb) (MIT): the byte layouts of the effects, power modes, activity
+  notices and per-key colours (see `docs/protocols/logitech-keyboard-lighting.md`).
 - The `lsusb -v` dumps of [linuxhw/LsUSB](https://github.com/linuxhw/LsUSB): which interfaces the Logitech G600
   and the Roccat Kone mice have.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse

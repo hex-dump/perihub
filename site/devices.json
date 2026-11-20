@@ -505,6 +505,20 @@
       }
     },
     {
+      "family": "logitech-direct",
+      "brand": "Logitech",
+      "name": "PRO K/DA",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/logitech-pro-k-da.html",
+      "usb_ids": [
+        "046d:c339"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
+    },
+    {
       "family": "lightspeed",
       "brand": "Logitech",
       "name": "LIGHTSPEED receiver",

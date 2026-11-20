@@ -3,7 +3,7 @@
 
 use perihub_core::confirmed;
 use perihub_core::corsair::models as corsair;
-use perihub_core::hidpp::{models as hidpp, receiver};
+use perihub_core::hidpp::{direct, models as hidpp, receiver};
 use perihub_core::manager;
 use perihub_core::peripheral::{self, Effect, Kind as PeripheralKind, Protocol, task};
 use serde::Serialize;
@@ -204,6 +204,24 @@ pub fn devices_with(confirmed: &dyn Fn(u16, u16) -> bool) -> Vec<Device> {
             Source::Logitech,
         ));
         list.last_mut().unwrap().wireless_id = m.wireless_id;
+    }
+    for m in direct::DIRECT {
+        let kind = match m.kind {
+            direct::DirectKind::Keyboard => Kind::Keyboard,
+        };
+        // A HID++ interface that also carries typing stays closed on Linux (see `DirectModel::typing`).
+        let access = if m.typing { Access::Closed } else { Access::Interface(m.interface) };
+        list.push(device(
+            "logitech-direct",
+            "Logitech",
+            m.name,
+            kind,
+            LOGITECH,
+            vec![m.product_id],
+            Level::ReadOnly,
+            access,
+            Source::Logitech,
+        ));
     }
     for &id in receiver::RECEIVERS {
         let (family, name, access) = if id == receiver::BOLT {

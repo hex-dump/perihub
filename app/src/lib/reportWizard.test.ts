@@ -59,7 +59,7 @@ const peripheral = {
 const device = {
   slot: 1, name: "MX Master 3S", kind: 3, protocol: "4.5", wireless_id: null, device_info: "02 xx xx xx xx 00",
   firmware: ["RBM 12.01"], features: [], dpi: { min: 200, max: 8000, step: 50, list: [] }, report_rates_ms: [],
-  onboard: null, read_errors: [],
+  onboard: null, lighting: null, led_zones: [], battery: null, battery_reply: null, read_only: false, read_errors: [],
 } as UnsupportedReceiverDevice;
 
 const receiver = (unsupported: UnsupportedReceiverDevice[], extra: Partial<ReceiverReport> = {}) =>
