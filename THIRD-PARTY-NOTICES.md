@@ -595,9 +595,10 @@ was copied.
   its USB interface, transaction ids, maximum DPI, lights with a brightness and custom frame width, read as text
   by `tools/openrazer_facts.py` (see `docs/protocols/razer-mice.md`); per keyboard its USB interface, waits
   and transaction ids, and the battery, charging, brightness and game mode reads, read as text by the same tool, and
-  for the BlackWidow V4 Mini HyperSpeed also the commands that change the brightness and the game mode and draw a
-  custom frame, and the size of its matrix (see `docs/protocols/razer-keyboards.md`); the keyboard layout read and its
-  region codes (see `docs/protocols/keyboard-layouts.md`).
+  for the BlackWidow V4 Mini HyperSpeed also the commands that change the brightness, the game mode and the macro
+  light, those that set its lighting effects (with their values, speeds and storage) and draw a custom frame, and the
+  size of its matrix (see `docs/protocols/razer-keyboards.md`); the keyboard layout read and its region codes (see
+  `docs/protocols/keyboard-layouts.md`).
 - [OpenMouse mouse-protocol](https://github.com/OpenMouse-Project/mouse-protocol) (AGPL-3.0), its K-Snake driver
   (commit 5a4f643): the battery request of the YJX mice and where their settings hold the lift-off distance (see
   `docs/protocols/yjx-mice.md`).
