@@ -216,7 +216,7 @@ impl AppConfig {
 
 /// Atomic write: a temporary file, then a rename, so a crash halfway through does not leave a
 /// truncated file.
-fn write_atomic(path: &Path, content: &[u8]) -> std::io::Result<()> {
+pub(crate) fn write_atomic(path: &Path, content: &[u8]) -> std::io::Result<()> {
     let mut temp = path.as_os_str().to_owned();
     temp.push(".tmp");
     let temp = PathBuf::from(temp);

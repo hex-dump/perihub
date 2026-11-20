@@ -507,7 +507,8 @@ pub async fn peripheral_change(
 }
 
 /// Sends one setting to a device of another brand that cannot report its settings (experimental).
-/// Nothing is saved to its memory, and nothing can be undone but by unplugging it.
+/// Unless the device keeps the setting and PeriHub remembers it (the lighting effect of a Razer keyboard: see
+/// [`peripheral_put_back_blind`]), nothing is saved to its memory, and nothing can be undone but by unplugging it.
 #[tauri::command]
 pub async fn peripheral_set_blind(
     app: AppHandle,
@@ -517,9 +518,37 @@ pub async fn peripheral_set_blind(
 ) -> CmdResult<PeripheralInfo> {
     writes_allowed()?;
     let manager = app.state::<AppState>().manager.clone();
-    let info = blocking(move || manager.peripheral(&key)?.call(move |p| p.set_blind(&id, &value))).await?;
-    peripheral_changed(&app, &info);
-    Ok(info)
+    let result = blocking({
+        let key = key.clone();
+        move || manager.peripheral(&key)?.call(move |p| p.set_blind(&id, &value))
+    })
+    .await;
+    refresh_after_send(&app, key).await;
+    result
+}
+
+/// Sends a setting of a device of another brand that PeriHub remembers (the lighting effect of a Razer keyboard) again
+/// as it was before the last change PeriHub made to it. Only what PeriHub itself sent can be put back.
+#[tauri::command]
+pub async fn peripheral_put_back_blind(app: AppHandle, key: String, id: String) -> CmdResult<PeripheralInfo> {
+    writes_allowed()?;
+    let manager = app.state::<AppState>().manager.clone();
+    let result = blocking({
+        let key = key.clone();
+        move || manager.peripheral(&key)?.call(move |p| p.put_back_blind(&id))
+    })
+    .await;
+    refresh_after_send(&app, key).await;
+    result
+}
+
+/// Tells the interface what the device shows after a setting was sent to it, also when the device refused it: what it
+/// answered is kept for the test report.
+async fn refresh_after_send(app: &AppHandle, key: String) {
+    let manager = app.state::<AppState>().manager.clone();
+    if let Ok(info) = blocking(move || manager.peripheral(&key)?.call(|p| Ok(p.info.clone()))).await {
+        peripheral_changed(app, &info);
+    }
 }
 
 /// The user keeps a change to a device of another brand: the core stops counting down to undo it.
@@ -869,6 +898,7 @@ mod tests {
         "g300_undo_last_write",
         "peripheral_change",
         "peripheral_set_blind",
+        "peripheral_put_back_blind",
         "peripheral_undo",
         "corsair_set_lighting",
         "corsair_lighting_off",
