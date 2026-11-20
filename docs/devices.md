@@ -80,6 +80,12 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   ([issue #22](https://github.com/hex-dump/perihub/issues/22)), and a G502 HERO Wireless through a
   POWERPLAY mat (`c53a`) on Windows was read and saved to ([issues #4](https://github.com/hex-dump/perihub/issues/4)
   and [#28](https://github.com/hex-dump/perihub/issues/28)): the only mouse saved to over the radio so far.
+- **The G604** (`4085` through its receiver) is also recognized over **Bluetooth** (`046d:b024`, issue
+  [#43](https://github.com/hex-dump/perihub/issues/43)): 👁 PeriHub reads its profiles, buttons, DPI,
+  polling rate and battery there and changes nothing, and the page says to use the receiver to change
+  it. On Linux a udev rule opens the mouse's Bluetooth node (`KERNELS=="0005:046D:B024.*"`). Through the
+  receiver a G604 follows its memory format (format 3 in 255-byte sectors, as its own answers say, like
+  the G502 X Wireless's): see [protocols/logitech-onboard-profiles.md](protocols/logitech-onboard-profiles.md).
 - **PRO 2 LIGHTSPEED and PRO X 2 DEX** (profile format 7) are recognized, with a cable and through
   their LIGHTSPEED receiver (`c543`, `c54d`), and only read. Format 7 is a layout PeriHub cannot
   write yet, and these mice have neither the usual adjustable DPI (`0x2201`) nor the usual polling
@@ -161,7 +167,7 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
 | PRO X 2 DEX | `046d:c0a0` | whole mouse | depends on its memory format | `40b8` |
 | G305 | wireless only | through a receiver | depends on its memory format | `4074` |
 | G603 | wireless only | through a receiver | depends on its memory format | `406c` |
-| G604 | wireless only | through a receiver | depends on its memory format | `4085` |
+| G604 | wireless only, Bluetooth `046d:b024` | through a receiver, or its Bluetooth node (whole mouse, read only) | depends on its memory format | `4085` |
 <!-- end generated -->
 
 **Memory formats known so far.** What other projects found, for mice PeriHub has not seen yet:

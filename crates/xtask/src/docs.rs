@@ -23,6 +23,9 @@ fn opened(device: &Device) -> String {
         Access::Interface(n) => format!("interface {n}"),
         Access::Whole => format!("whole {}", if device.kind == Kind::Keyboard { "keyboard" } else { "mouse" }),
         Access::ReceiverHidpp => "the receiver's HID++ interface".into(),
+        Access::Closed if device.bluetooth_id.is_some() => {
+            "through a receiver, or its Bluetooth node (whole mouse, read only)".into()
+        }
         Access::Closed if device.product_ids.is_empty() => "through a receiver".into(),
         Access::Closed => "—".into(),
     }
@@ -30,7 +33,10 @@ fn opened(device: &Device) -> String {
 
 fn usb_ids(device: &Device) -> String {
     if device.product_ids.is_empty() {
-        return "wireless only".into();
+        return match device.bluetooth_id {
+            Some(id) => format!("wireless only, Bluetooth `{:04x}:{id:04x}`", device.vendor_id),
+            None => "wireless only".into(),
+        };
     }
     device.product_ids.iter().map(|id| format!("`{:04x}:{id:04x}`", device.vendor_id)).collect::<Vec<_>>().join(", ")
 }

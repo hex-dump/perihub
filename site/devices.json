@@ -498,8 +498,11 @@
       "kind": "mouse",
       "level": "by_memory_format",
       "page": "devices/logitech-g604.html",
-      "usb_ids": [],
+      "usb_ids": [
+        "046d:b024"
+      ],
       "wireless_id": "4085",
+      "bluetooth_id": "b024",
       "linux": {
         "kind": "closed"
       }

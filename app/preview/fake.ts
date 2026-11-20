@@ -24,6 +24,7 @@ const mouse: MouseInfo = {
   experimental: false,
   pending_undo: false,
   receiver: false,
+  bluetooth: null,
   link: null,
   host_mode: false,
   firmware: [{ kind: 0, name: "U1", version: "27.3.0" }],

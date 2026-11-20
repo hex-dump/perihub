@@ -155,6 +155,13 @@ fn rule(vendor_id: u16, product_id: u16, access: Access) -> Option<String> {
     })
 }
 
+/// A mouse over Bluetooth Low Energy has one hidraw node for all of it: the HID++ collection, the movements and the keys
+/// its own buttons send, never what is typed on a keyboard. Its parent is the HID device `0005:VVVV:PPPP.NNNN` (0005 is
+/// the Bluetooth bus), whatever the Bluetooth address.
+fn bluetooth_rule(vendor_id: u16, product_id: u16) -> String {
+    format!(r#"KERNEL=="hidraw*", KERNELS=="0005:{vendor_id:04X}:{product_id:04X}.*", TAG+="uaccess""#)
+}
+
 pub fn render(devices: &[Device]) -> String {
     let mut out = format!("{PREAMBLE}\n");
     let mut families: Vec<&str> = Vec::new();
@@ -165,8 +172,10 @@ pub fn render(devices: &[Device]) -> String {
     }
     for family in families {
         let members: Vec<&Device> = devices.iter().filter(|d| d.family == family).collect();
-        let opened: Vec<&&Device> =
-            members.iter().filter(|d| d.access != Access::Closed && !d.product_ids.is_empty()).collect();
+        let opened: Vec<&&Device> = members
+            .iter()
+            .filter(|d| (d.access != Access::Closed && !d.product_ids.is_empty()) || d.bluetooth_id.is_some())
+            .collect();
         out.push('\n');
         for line in header(family).lines() {
             out.push_str(if line.is_empty() { "#" } else { "# " });
@@ -184,6 +193,11 @@ pub fn render(devices: &[Device]) -> String {
                 if let Some(rule) = rule(d.vendor_id, id, d.access) {
                     writeln!(out, "{rule}").unwrap();
                 }
+            }
+            if let Some(id) = d.bluetooth_id {
+                writeln!(out, "# Over Bluetooth Low Energy (read only): its own hidraw node, one for the whole mouse.")
+                    .unwrap();
+                writeln!(out, "{}", bluetooth_rule(d.vendor_id, id)).unwrap();
             }
         }
     }

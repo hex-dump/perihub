@@ -39,6 +39,7 @@ const info: MouseInfo = {
   experimental: false,
   pending_undo: false,
   receiver: false,
+  bluetooth: null,
   link: null,
   host_mode: false,
   firmware: [{ kind: 0, name: "U1", version: "27.2.1" }],
@@ -575,6 +576,23 @@ describe("a memory format nobody has tested", () => {
       expect(screen.getByText(/The save could not be kept: The device did not answer in time/)).toBeTruthy();
       expect(screen.getByText(/PeriHub puts the backup back/)).toBeTruthy();
     });
+  });
+
+  it("is read-only over Bluetooth, and says to use the receiver", async () => {
+    await open({
+      ...info,
+      product_id: 0x4085,
+      model: "G604",
+      verified: false,
+      experimental: false,
+      writable: false,
+      bluetooth: 0xb024,
+    });
+    expect(screen.getByText("Read-only over Bluetooth.")).toBeTruthy();
+    expect(screen.getByText(/connect it through its LIGHTSPEED receiver/)).toBeTruthy();
+    expect(screen.queryByText(/memory format PeriHub cannot write yet/)).toBeNull();
+    expect(firstLevel().matches(":disabled")).toBe(true);
+    expect((screen.getByRole("button", { name: "Save to mouse" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("is read-only through a receiver, and says to use the cable", async () => {

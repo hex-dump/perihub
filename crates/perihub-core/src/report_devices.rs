@@ -215,7 +215,13 @@ fn read_sysfs(class_dir: &Path, node_path: &str) -> NodeDetails {
 pub fn known(vendor_id: u16, product_id: u16) -> bool {
     match vendor_id {
         STEELSERIES if STEELSERIES_KEYBOARDS.contains(&product_id) => true,
-        LOGITECH if models::find(product_id).is_some() || receiver::is_receiver(product_id) => true,
+        LOGITECH
+            if models::find(product_id).is_some()
+                || models::find_bluetooth(product_id).is_some()
+                || receiver::is_receiver(product_id) =>
+        {
+            true
+        }
         LOGITECH if direct::find(product_id).is_some() => true,
         LOGITECH if product_id == g300::PRODUCT_ID => true,
         corsair::CORSAIR if corsair::models::find(product_id).is_some() || corsair::models::is_receiver(product_id) => {
@@ -304,6 +310,19 @@ mod tests {
             release: Some(0x0100),
             details: NodeDetails::default(),
         }
+    }
+
+    #[test]
+    fn a_mouse_known_only_by_its_bluetooth_id_is_not_listed_as_unknown() {
+        // The G604 over Bluetooth (issue #43), but not an id nobody knows.
+        assert!(known(0x046D, 0xB024));
+        assert!(!known(0x046D, 0xB999));
+        let devices = unknown_devices([
+            entry(0x046D, 0xB024, Some("G604"), -1, 0xFF43, 0x0202),
+            entry(0x046D, 0xB999, Some("Another Bluetooth mouse"), -1, 0xFF43, 0x0202),
+        ]);
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0].product_id, 0xB999);
     }
 
     #[test]

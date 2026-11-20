@@ -513,6 +513,17 @@ pub struct Event {
 /// At most this many events wait to be read: older ones are dropped.
 const MAX_EVENTS: usize = 64;
 
+/// How a device is reached.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Link {
+    /// Its own USB cable, device index 0xFF.
+    Cable,
+    /// A LIGHTSPEED, Bolt or Unifying receiver, in the receiver's slot.
+    Receiver,
+    /// Bluetooth Low Energy: the device's own HID++ collection, device index 0xFF.
+    Bluetooth,
+}
+
 pub struct HidppDevice {
     /// Events that came while PeriHub waited for a reply, by feature index.
     events: std::collections::VecDeque<(u8, u8, [u8; 16])>,
@@ -521,8 +532,7 @@ pub struct HidppDevice {
     access: Access,
     /// Feature indexes, 0 for a feature the device does not have.
     features: HashMap<u16, u8>,
-    /// Reached through a LIGHTSPEED receiver, in the slot `device_index`.
-    behind_receiver: bool,
+    link: Link,
     /// The receiver's short HID++ collection, when it has its own path (Windows).
     short: Option<Box<dyn Transport>>,
     /// The device's name in the write log.
@@ -534,7 +544,14 @@ pub struct HidppDevice {
 impl HidppDevice {
     /// `read_only` limits the device to [`READ_ONLY_CALLS`] until [`Self::grant`] says otherwise.
     pub fn new(dev: impl Transport + 'static, device_index: u8, read_only: bool) -> Result<Self> {
-        Self::open(Box::new(dev), None, device_index, false, read_only)
+        Self::open(Box::new(dev), None, device_index, Link::Cable, read_only)
+    }
+
+    /// A mouse connected over Bluetooth Low Energy. `dev` is its vendor HID++ collection (usage page 0xFF43,
+    /// usage 0x0202 on Windows; on Linux the hidraw node that holds it), which only takes long reports. A directly
+    /// connected HID++ 2.0 device answers to the index 0xFF there as it does on its cable.
+    pub fn over_bluetooth(dev: impl Transport + 'static, read_only: bool) -> Result<Self> {
+        Self::open(Box::new(dev), None, models::WIRED_INDEX, Link::Bluetooth, read_only)
     }
 
     /// The mouse in `slot` of a LIGHTSPEED receiver. `long` is the receiver's long HID++
@@ -545,21 +562,21 @@ impl HidppDevice {
         slot: u8,
         read_only: bool,
     ) -> Result<Self> {
-        Self::open(Box::new(long), short, slot, true, read_only)
+        Self::open(Box::new(long), short, slot, Link::Receiver, read_only)
     }
 
     fn open(
         dev: Box<dyn Transport>,
         short: Option<Box<dyn Transport>>,
         device_index: u8,
-        behind_receiver: bool,
+        link: Link,
         read_only: bool,
     ) -> Result<Self> {
         let access = if read_only { Access::ReadOnly } else { Access::Full };
-        let label = if behind_receiver {
-            format!("Logitech device in receiver slot {device_index}")
-        } else {
-            "Logitech device".to_string()
+        let label = match link {
+            Link::Receiver => format!("Logitech device in receiver slot {device_index}"),
+            Link::Bluetooth => "Logitech device over Bluetooth".to_string(),
+            Link::Cable => "Logitech device".to_string(),
         };
         // Recording only writes down what goes through: it sends nothing of its own.
         let tape = crate::replay::Recording::default();
@@ -571,7 +588,7 @@ impl HidppDevice {
             device_index,
             access,
             features: HashMap::new(),
-            behind_receiver,
+            link,
             short,
             label,
             tape,
@@ -584,7 +601,12 @@ impl HidppDevice {
     }
 
     pub fn is_behind_receiver(&self) -> bool {
-        self.behind_receiver
+        self.link == Link::Receiver
+    }
+
+    /// Connected over Bluetooth Low Energy (see [`Self::over_bluetooth`]).
+    pub fn is_over_bluetooth(&self) -> bool {
+        self.link == Link::Bluetooth
     }
 
     /// Every request and answer since the device was opened or since the last call, as a
@@ -600,7 +622,7 @@ impl HidppDevice {
         crate::replay::anonymize_hidpp(&mut events, &known);
         let mut transcript =
             crate::replay::Transcript::recorded(device, family, events, &crate::replay::Classifier::Hidpp);
-        transcript.slot = self.behind_receiver.then_some(self.device_index);
+        transcript.slot = self.is_behind_receiver().then_some(self.device_index);
         transcript
     }
 
@@ -622,8 +644,12 @@ impl HidppDevice {
 
     fn transact(&mut self, index: u8, function: u8, params: &[u8]) -> Result<[u8; 16]> {
         match self.exchange(index, function, params) {
+            // A Bluetooth mouse that does not answer, or that the system cannot write to any more, is asleep or
+            // out of range, as one behind a receiver that does not answer is: the manager asks again when it
+            // is back, instead of giving up on it. (A refusal to open it comes earlier, and is shown.)
+            Err(Error::Timeout | Error::Hid(_)) if self.is_over_bluetooth() => Err(Error::Unreachable),
             // On Windows the receiver says that the mouse is asleep on its other collection: ask there.
-            Err(Error::Timeout) if self.behind_receiver => {
+            Err(Error::Timeout) if self.is_behind_receiver() => {
                 let (channel, long) = match self.short.as_deref() {
                     Some(short) => (short, Some(&*self.dev)),
                     None => (&*self.dev, None),
@@ -635,6 +661,13 @@ impl HidppDevice {
             }
             other => other,
         }
+    }
+
+    /// Whether a report with this device index answers a request sent to `device_index`. A Bluetooth device may
+    /// answer to 0x00 when it was asked on 0xFF (Solaar's code has this for "BT device returning 0x00").
+    fn is_ours(&self, reply_index: u8) -> bool {
+        reply_index == self.device_index
+            || (self.is_over_bluetooth() && (self.device_index, reply_index) == (models::WIRED_INDEX, 0x00))
     }
 
     fn exchange(&mut self, index: u8, function: u8, params: &[u8]) -> Result<[u8; 16]> {
@@ -659,7 +692,7 @@ impl HidppDevice {
             }
             let n = self.dev.read_timeout(&mut buf, remaining.as_millis().max(1) as i32)?;
             // The mouse's keyboard/media reports also arrive on this interface: ignore them.
-            if n < 7 || !(buf[0] == REPORT_SHORT || buf[0] == REPORT_LONG) || buf[1] != self.device_index {
+            if n < 7 || !(buf[0] == REPORT_SHORT || buf[0] == REPORT_LONG) || !self.is_ours(buf[1]) {
                 continue;
             }
             if self.keep_event(&buf[..n]) {
@@ -689,7 +722,7 @@ impl HidppDevice {
     fn keep_event(&mut self, report: &[u8]) -> bool {
         let event = report.len() >= 7
             && (report[0] == REPORT_SHORT || report[0] == REPORT_LONG)
-            && report[1] == self.device_index
+            && self.is_ours(report[1])
             && report[2] != 0
             && report[2] != 0xFF
             && report[2] < 0x80

@@ -71,6 +71,9 @@
   /** Saves are possible on this connection, and read-only mode is off. */
   const writable = $derived(!!info?.writable && !readOnly.on);
 
+  /** Connected over Bluetooth Low Energy: read, never changed (the core refuses every change). */
+  const overBluetooth = $derived(typeof info?.bluetooth === "number");
+
   /** Saves over the radio are accepted apart from saves with the cable. */
   const warrantyKey = $derived(info ? (info.receiver ? `${info.product_id}-radio` : info.product_id) : 0);
 
@@ -307,7 +310,7 @@
     <span class="muted small">
       {#if info}
         Firmware {info.firmware.map((f) => `${f.name} ${f.version}`).join(" · ")}
-        {#if info.receiver}· through its {receiverName(info.link?.receiver_id)}{/if}
+        {#if info.receiver}· through its {receiverName(info.link?.receiver_id)}{:else if overBluetooth}· over Bluetooth{/if}
       {:else if asleep}
         Turned off or asleep
       {:else}
@@ -375,7 +378,17 @@
     {/if}
   {/each}
 {/if}
-{#if info?.experimental && info.receiver}
+{#if info && overBluetooth}
+  <div class="notice info">
+    <b>Read-only over Bluetooth.</b> PeriHub shows the {info.model}'s profiles, buttons, DPI levels, polling rate and battery
+    as the mouse reports them, but it changes nothing while the mouse is connected over Bluetooth: nothing has been written
+    to a Logitech mouse that way yet. To change and save its profiles, connect it through its LIGHTSPEED receiver. A mouse
+    test report on PeriHub's GitHub page tells whether what you see here matches G HUB.
+    <div class="row report">
+      <TestReport mouse={info} />
+    </div>
+  </div>
+{:else if info?.experimental && info.receiver}
   <div class="notice error" role="alert">
     <b>Experimental: saving through the receiver.</b> PeriHub has saved to this memory format with the USB cable, and
     over the radio, as Logitech G HUB does, on one mouse so far (a G502 HERO Wireless on a POWERPLAY mat). You can change and save the {info.model}'s profiles at your own risk:

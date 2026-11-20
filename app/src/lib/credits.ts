@@ -59,6 +59,7 @@ export const creditGroups: CreditGroup[] = [
         ],
         notes: [
           "The list of Logitech mice and their HID++ details, and the Logitech G300's profile format.",
+          "The Logitech G604's ids (data/devices/logitech-g604.device) and the answers of a real G604 that its issue #1477 holds (docs/protocols/logitech-onboard-profiles.md).",
           "The ASUS ROG and TUF mouse table and the ASUS protocol (Copyright (C) 2021 Kyoken), rewritten in Rust (docs/protocols/asus-rog.md).",
           "The Glorious mouse table and the SinoWealth protocol (Copyright © 2020 Marian Beermann), rewritten in Rust (docs/protocols/sinowealth-glorious.md).",
           "The Logitech G600's profile format (Copyright © 2018 Thomas Hindoe Paaboel Andersen), rewritten in Rust (docs/protocols/logitech-g600.md).",
@@ -223,7 +224,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://github.com/pwr-Solaar/Solaar",
         license: "GPL-2.0",
         notes: [
-          "The Logitech receiver ids, and how it reads and writes onboard profile lists and button entries, compared with libratbag's (docs/protocols/logitech-onboard-profiles.md); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (docs/protocols/logitech-hidpp10.md); how it reads a Logitech keyboard's layout code, HID++ 0x4540 (docs/protocols/keyboard-layouts.md); what the HID++ 2.0 root feature answers (docs/protocols/logitech-g213.md); the functions and replies of the HID++ 2.0 lighting features 0x8040, 0x8071, 0x8081 and 0x4540, how a program takes a keyboard's lights over and gives them back, and the G HUB captures and hardware tests in its pull request 3149 (docs/protocols/logitech-keyboard-lighting.md). " + NO_CODE,
+          "The Logitech receiver ids, and how it reads and writes onboard profile lists and button entries, compared with libratbag's (docs/protocols/logitech-onboard-profiles.md); that a Logitech device on Bluetooth Low Energy is asked on device index 0xFF and may answer on 0x00 (same page); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (docs/protocols/logitech-hidpp10.md); how it reads a Logitech keyboard's layout code, HID++ 0x4540 (docs/protocols/keyboard-layouts.md); what the HID++ 2.0 root feature answers (docs/protocols/logitech-g213.md); the functions and replies of the HID++ 2.0 lighting features 0x8040, 0x8071, 0x8081 and 0x4540, how a program takes a keyboard's lights over and gives them back, and the G HUB captures and hardware tests in its pull request 3149 (docs/protocols/logitech-keyboard-lighting.md). " + NO_CODE,
         ],
       },
       {

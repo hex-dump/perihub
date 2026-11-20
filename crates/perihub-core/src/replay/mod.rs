@@ -351,7 +351,7 @@ pub fn anonymize_hidpp(events: &mut [Event], known: &[(u8, u16)]) {
             Op::Write => request = event.bytes().ok(),
             Op::Read => {
                 let (Some(request), Ok(answer)) = (&request, event.bytes()) else { continue };
-                if request.len() < 7 || answer.len() < 7 || answer[1..4] != request[1..4] {
+                if request.len() < 7 || answer.len() < 7 || !is_answer_to(request, &answer) {
                     continue;
                 }
                 learn_index(&mut index, request, &answer);
@@ -429,9 +429,18 @@ fn hidpp_effect(index: &BTreeMap<u8, u16>, data: &[u8]) -> Option<Effect> {
     Some(if crate::hidpp::is_read_request(feature, function, &data[4..]) { Effect::Read } else { Effect::Change })
 }
 
+/// Whether a HID++ report answers a request: the same device index, feature index and function, but for a
+/// Bluetooth device asked on 0xFF, which may answer on 0x00 (see `HidppDevice::over_bluetooth`).
+fn is_answer_to(request: &[u8], answer: &[u8]) -> bool {
+    request.len() >= 4
+        && answer.len() >= 4
+        && answer[2..4] == request[2..4]
+        && (answer[1] == request[1] || (request[1], answer[1]) == (0xFF, 0x00))
+}
+
 /// Learns from a root feature answer (function 0) which feature `request` found at which index.
 fn learn_index(index: &mut BTreeMap<u8, u16>, request: &[u8], answer: &[u8]) {
-    if request.len() < 6 || answer.len() < 9 || answer[1..4] != request[1..4] {
+    if request.len() < 6 || answer.len() < 9 || !is_answer_to(request, answer) {
         return;
     }
     if request[2] == 0 && request[3] >> 4 == 0 && answer[4] != 0 {
@@ -623,7 +632,7 @@ impl ReplayHid {
 /// answer (0x0003 function 0) has its unit id left out.
 fn hidpp_learn(mut state: MutexGuard<'_, State>, request: &[u8], answers: &[(String, Vec<u8>)]) {
     let (index, address) = (request[2], request[3]);
-    let answer = answers.iter().map(|(_, a)| a).find(|a| a.len() >= 9 && a[1..4] == request[1..4]);
+    let answer = answers.iter().map(|(_, a)| a).find(|a| a.len() >= 9 && is_answer_to(request, a));
     let Some(answer) = answer else { return };
     learn_index(&mut state.hidpp_index, request, answer);
     let device_info = state.hidpp_index.get(&index) == Some(&crate::hidpp::feature::DEVICE_INFO);
