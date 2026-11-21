@@ -6,13 +6,16 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
-Logitech mice whose onboard memory uses profile format 4, such as the G903 HERO, can now be saved to with their USB cable as an experimental feature, and the lighting zones of a mouse that reports them through the RGB effects feature (0x8071) are shown instead of "LEDs: none reported".
+Logitech mice whose onboard memory uses profile format 4, such as the G903 HERO, can now be saved to with their USB cable as an experimental feature, and the lighting zones of a mouse that reports them through the RGB effects feature (0x8071) are shown instead of "LEDs: none reported". On the wired G502 HERO, the G logo and DPI indicator cards of the Lighting tab no longer save to each other's light.
 
 ### New devices
 - **Logitech mice with profile format 4, such as the G903 HERO** ([#115](https://github.com/hex-dump/perihub/issues/115), [#22](https://github.com/hex-dump/perihub/issues/22)): libratbag and Solaar read and write format 4 with the layout of formats 2 and 3, and a libratbag maintainer described it as the same layout with more after it, where PeriHub writes nothing (docs/protocols/logitech-onboard-profiles.md). With the USB cable such a mouse is now experimental: the **No warranty** box before the first save, a backup, every write read back, and the 15-second undo. Through a LIGHTSPEED receiver it stays read-only until a tester confirms format 4 with the cable; then saving over the radio opens too, as an experimental feature. A G903 HERO has 12 buttons: the slots past them keep their bytes. The replay test `logitech-g903-hero-receiver.json` holds the G903 HERO's reading, from the transcript of its report.
 
 ### Added
 - **Lighting zones of mice with the RGB effects feature (0x8071)** ([#115](https://github.com/hex-dump/perihub/issues/115)): the G903 HERO (and the PRO 2 LIGHTSPEED) report their lights through 0x8071 instead of 0x8070, so the test report said "LEDs: none reported". PeriHub now reads their zones with read calls only, and the mouse's **Lighting** tab lists them (where each light is, the effects it offers) with what the profile's two LED blocks hold; the test report lists them as `zone 0 at 1 (8071), effects …, no profile slot`. They are shown, never changed: the sources disagree on which LED block of a profile drives which light, so a save leaves the profile's lighting as it is, and nothing but reads is sent to 0x8071, not even a preview.
+
+### Fixed
+- **G502 HERO (wired): the G logo and DPI indicator were swapped in saved profiles.** The first LED block of a profile lights the G logo and the second the DPI indicator, but PeriHub saved the **DPI indicator** card to the first and the **G logo** card to the second, and showed a profile's two lights the same way round (the live preview was right). Checked on a real G502 HERO: red in the first block lit the logo, green in the second the DPI indicator, as logirgb found on a G502 SE HERO. Profiles saved with an older PeriHub keep their lights where they are; the Lighting tab now shows which light each one really is on. The G502 HERO Wireless was right already (issue #28), and other mice are unchanged.
 
 ## 0.9.7 — 2026-11-20
 

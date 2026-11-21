@@ -188,14 +188,21 @@ The G903 HERO lists `0x8071` (RGB effects) and not `0x8070` (colour LED effects)
     reverse of libratbag.
   - In PeriHub's issue [#28](https://github.com/hex-dump/perihub/issues/28) a G502 HERO Wireless showed the effect
     PeriHub saved for zone 0 on its logo, which fits logirgb's finding.
+  - **Checked on a wired G502 HERO (046d:c08b, firmware U1 27.03.0010) on 2026-11-21**, with PeriHub's command line:
+    a profile saved with red fixed in block 0 and green fixed in block 1 lit the G logo red and the DPI indicator
+    green; a preview in RAM of `0x8070` zone 0 (location 1) in blue then turned the DPI indicator blue, the logo
+    staying red. So on that mouse block 0 is the logo (zone 1, location 2) and block 1 the DPI indicator (zone 0,
+    location 1), as logirgb found. The profile was saved back as it was afterwards.
 
   So PeriHub does not tie a `0x8071` zone to a profile LED block. The mouse page lists the zones, where they are and
   the effects each one offers, and what the two LED blocks of the profile hold, and changes neither: a save keeps the
   LED blocks of a `0x8071` mouse byte for byte. The test report lists the zones with "(8071)" and "no profile
   slot". A tester who says which light shows what, compared with the profile's blocks, can settle it.
-- **0x8070 mice are left as they were** (zone *n* in block *n*, as PeriHub has always saved them). logirgb's test and
-  issue #28 suggest that on the G502 HERO this may be the wrong way round; it needs a check on the mouse before
-  anything changes.
+- **0x8070 mice:** on the wired G502 HERO (`c08b`) PeriHub now puts the logo (location 2) in block 0 and the DPI
+  indicator (location 1) in block 1, from the check above; before 0.9.8 it put zone *n* in block *n*, which swapped
+  the two lights in saves and in what the Lighting tab showed of a profile. Every other `0x8070` mouse keeps zone *n*
+  in block *n*: right on the G502 HERO Wireless (#28), not checked on the others (`profile_led_slot` in
+  crates/perihub-core/src/hidpp/mod.rs).
 
 ## Format 7 and the extended DPI and polling rate features
 

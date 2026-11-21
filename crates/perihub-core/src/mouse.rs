@@ -452,7 +452,10 @@ impl MouseTask {
             Err(Error::Unreachable) => return Err(Error::Unreachable),
             Err(_) => Vec::new(),
         };
-        let led_zones = read_led_zones(&mut dev, color_led_zones, &features)?;
+        let mut led_zones = read_led_zones(&mut dev, color_led_zones, &features)?;
+        for zone in led_zones.iter_mut().filter(|z| z.feature == feature::COLOR_LED_EFFECTS) {
+            zone.slot = crate::hidpp::profile_led_slot(model.product_id, zone.index, zone.location);
+        }
         let info = MouseInfo {
             product_id: model.product_id,
             model: model.name.into(),
@@ -1702,6 +1705,18 @@ mod tests {
         feature::FEATURE_SET,
     ];
 
+    /// The features of a mouse with LED effects (0x8070), such as the G502 HERO.
+    const LED_SIM_FEATURES: &[u16] = &[
+        feature::ROOT,
+        feature::DEVICE_INFO,
+        feature::DEVICE_NAME,
+        feature::ADJUSTABLE_DPI,
+        feature::REPORT_RATE,
+        feature::ONBOARD_PROFILES,
+        feature::FEATURE_SET,
+        feature::COLOR_LED_EFFECTS,
+    ];
+
     /// The features of a mouse with RGB effects (0x8071) instead of 0x8070.
     const RGB_SIM_FEATURES: &[u16] = &[
         feature::ROOT,
@@ -1770,6 +1785,8 @@ mod tests {
         /// 0x8070 functions 0 and 1 (the zones, the first zone), and function 2 for each of its effects.
         led_info: Vec<u8>,
         led_zone: Vec<u8>,
+        /// When set, the location of each 0x8070 zone, in place of the one in `led_zone` (which every zone shares).
+        led_locations: Vec<u16>,
         led_effects: Vec<Vec<u8>>,
         /// 0x8071 function 0: the zone count (asked with FF FF), each zone (zone FF), each effect of each zone.
         rgb_info: Vec<u8>,
@@ -1828,6 +1845,7 @@ mod tests {
                 battery: Vec::new(),
                 led_info: Vec::new(),
                 led_zone: Vec::new(),
+                led_locations: Vec::new(),
                 led_effects: Vec::new(),
                 rgb_info: Vec::new(),
                 rgb_zones: Vec::new(),
@@ -1917,7 +1935,15 @@ mod tests {
                 }
                 (feature::BATTERY_STATUS, 0) if !self.battery.is_empty() => self.battery.clone(),
                 (feature::COLOR_LED_EFFECTS, 0) => self.led_info.clone(),
-                (feature::COLOR_LED_EFFECTS, 1) => self.led_zone.clone(),
+                (feature::COLOR_LED_EFFECTS, 1) => match self.led_locations.get(p[0] as usize) {
+                    Some(location) => {
+                        let [high, low] = location.to_be_bytes();
+                        let mut zone = self.led_zone.clone();
+                        zone[..3].copy_from_slice(&[p[0], high, low]);
+                        zone
+                    }
+                    None => self.led_zone.clone(),
+                },
                 (feature::COLOR_LED_EFFECTS, 2) => self.led_effects.get(p[1] as usize).ok_or(INVALID_ARGUMENT)?.clone(),
                 (feature::RGB_EFFECTS, 0) => match (p[0], p[1]) {
                     (0xFF, 0xFF) if !self.rgb_info.is_empty() => self.rgb_info.clone(),
@@ -2480,6 +2506,45 @@ mod tests {
     /// What the zones of a mouse are: (zone, location, feature, profile slot).
     fn zones_of(info: &MouseInfo) -> Vec<(u8, u16, u16, Option<u8>)> {
         info.led_zones.iter().map(|z| (z.index, z.location, z.feature, z.slot)).collect()
+    }
+
+    #[test]
+    fn the_dpi_indicator_of_a_wired_g502_hero_is_saved_in_the_second_led_block() {
+        // On a real G502 HERO the first LED block of a profile lights the G logo and the second the DPI indicator,
+        // which 0x8070 reports as zone 0 at location 1 (checked on 2026-11-21).
+        let (memory, onboard) = g502_memory();
+        let mut sim = Sim::new(memory, onboard);
+        sim.features = LED_SIM_FEATURES;
+        sim.led_info = vec![2, 0, 3, 0, 4];
+        sim.led_zone = vec![0, 0, 1, 4];
+        sim.led_locations = vec![1, 2];
+        sim.led_effects = vec![
+            vec![0, 0, 0, 0, 0, 0, 0, 0],
+            vec![0, 1, 0, 1, 0, 0, 0, 0],
+            vec![0, 2, 0, 3, 0xC0, 5, 3, 0xE8],
+            vec![0, 3, 0, 0x0A, 0xC1, 5, 0, 0x3C],
+        ];
+        let (mut task, sim) = open_sim(sim, G502_HERO, false);
+        let led = feature::COLOR_LED_EFFECTS;
+        assert_eq!(zones_of(&task.info), [(0, 1, led, Some(1)), (1, 2, led, Some(0))]);
+
+        let before = sim.lock().unwrap().user.clone();
+        let state = task.state().unwrap();
+        let active = state.active_profile;
+        let mut settings = state.profiles[active as usize - 1].settings.clone();
+        let red = LedEffect::Fixed { color: crate::color::Rgb { r: 0xFF, g: 0, b: 0 } };
+        assert_ne!(settings.leds[1], red, "the fixture must not have it already");
+        settings.leds[1] = red;
+        task.save_profile(active, &settings).unwrap();
+        let mouse = sim.lock().unwrap();
+        let sector = *mouse.written.last().unwrap() as usize;
+        let changed: Vec<usize> =
+            (0..mouse.user[sector].len()).filter(|&i| mouse.user[sector][i] != before[sector][i]).collect();
+        let size = mouse.user[sector].len();
+        assert!(
+            !changed.is_empty() && changed.iter().all(|&i| (219..230).contains(&i) || i >= size - 2),
+            "{changed:?}"
+        );
     }
 
     #[test]
