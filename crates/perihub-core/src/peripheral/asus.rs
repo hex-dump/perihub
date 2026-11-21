@@ -440,6 +440,7 @@ impl Driver for Asus {
             polling_hz: POLLING_HZ.get(rate as usize).copied(),
             options: [(DEBOUNCE.to_string(), debounce), (SNAPPING.to_string(), snapping)].into(),
             leds,
+            ..Default::default()
         };
         let limits = Limits {
             dpi: (!self.has(SEPARATE_XY_DPI)).then_some(DpiLimits {
@@ -457,6 +458,7 @@ impl Driver for Asus {
                 Choice { id: SNAPPING, label: "Angle snapping", values: vec![(0, "Off".into()), (1, "On".into())] },
             ],
             leds: self.led_limits(),
+            ..Default::default()
         };
         Ok(Reading {
             firmware: Some(firmware),

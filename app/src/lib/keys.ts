@@ -1,4 +1,4 @@
-import type { KeyBinding, SpecialFunction } from "./api";
+import type { KeyAction, KeyBinding, SpecialFunction } from "./api";
 import { systemLegends, type Legends, type Physical } from "./keyboardLayout.svelte";
 
 /** Key names that do not depend on the layout (HID usage → keycap label). */
@@ -310,6 +310,28 @@ export function ledZoneName(productId: number, location: number): string {
   if (location === 1) return "Main lighting";
   if (location === 2) return "Logo";
   return `Zone ${location}`;
+}
+
+/** Media usages by name, for a key table entry. */
+const MEDIA_NAMES: Record<number, string> = {
+  ...Object.fromEntries(CONSUMER_KEYS.map((k) => [k.usage, k.label])),
+  0x183: "Media player",
+  0x196: "Browser",
+};
+
+/** What an entry of a keyboard's key table does, as the page shows it. A modifier's bit k is the key with usage
+ * 0xe0 + k, so it reads like that key. */
+export function keyActionLabel(action: KeyAction, legends: Legends = systemLegends()): string {
+  switch (action.type) {
+    case "key": return action.usage === 0 ? "Disabled" : keyLabel(action.usage, legends);
+    case "modifier": {
+      const bit = Math.log2(action.bit);
+      return Number.isInteger(bit) ? keyLabel(0xe0 + bit, legends) : `Modifiers 0x${action.bit.toString(16).padStart(2, "0")}`;
+    }
+    case "media": return MEDIA_NAMES[action.usage] ?? `Media 0x${action.usage.toString(16).padStart(3, "0")}`;
+    case "fn": return "Fn";
+    case "other": return action.bytes.map((b) => b.toString(16).padStart(2, "0")).join(" ");
+  }
 }
 
 export function reportRateLabel(ms: number): string {

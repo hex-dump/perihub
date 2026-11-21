@@ -217,7 +217,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://gitlab.com/CalcProgrammer1/OpenRGB",
         license: "GPL-2.0-or-later",
         notes: [
-          "Commit 91714d1: the EVision keyboards' USB ids, interface and usage page, report format and checksum, the configuration read and write commands, the lighting header and its modes, and the layout of the newer controller's profiles (docs/protocols/evision.md). " + NO_CODE,
+          "Commit 91714d1: the EVision keyboards' USB ids, interface and usage page, report format and checksum, the configuration read and write commands, the lighting header and its modes, and the layout of the newer controller's profiles; commit 6b681e3: the older controller's colours per key (126 LEDs, their map, 54 bytes per request) (docs/protocols/evision.md). " + NO_CODE,
         ],
       },
       {
@@ -225,7 +225,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://github.com/iefedev/OpenEVision",
         license: "GPL-2.0",
         notes: [
-          "Commit 1cca304: what it checked on a 320f:505b: the reads and writes of the configuration memory, the layout of the lighting header and of the key table, the regions it never writes, and that every program with the collection open receives every answer (docs/protocols/evision.md). " + NO_CODE,
+          "Commit 1cca304: what it checked on a 320f:505b: the reads and writes of the configuration memory, the layout of the lighting header and of the key table, the regions it never writes, and that every program with the collection open receives every answer; in app/Device, how it reads and writes the colours per key and the key table, what a key may be set to, and which key each LED is on its keyboard (docs/protocols/evision.md). " + NO_CODE,
         ],
       },
       {

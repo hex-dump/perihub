@@ -18,7 +18,7 @@ vi.mock("../lib/api", async (original) => ({
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.7.0" }));
 api.appSettings.mockResolvedValue({ system: "linux x86_64" });
 
-import type { BlindValue, PeripheralInfo } from "../lib/api";
+import type { BlindValue, KeyAction, PeripheralInfo } from "../lib/api";
 import { peripheralTest } from "../lib/testReport";
 import Peripheral from "./Peripheral.svelte";
 
@@ -1088,5 +1088,128 @@ describe("the lighting effects of a Razer keyboard", () => {
     expect(first).toContain("before that: not known (set by other software)");
     // Nothing sent: no heading, no lines.
     expect(peripheralTest(v4, "0.9.7", "Linux").report).not.toContain("Changes sent");
+  });
+});
+
+describe("an EVision keyboard with colours per key and a key table", () => {
+  const esc: KeyAction = { type: "key", usage: 0x29 };
+  const a: KeyAction = { type: "key", usage: 0x04 };
+  const caps: KeyAction = { type: "key", usage: 0x39 };
+  const ctrl: KeyAction = { type: "modifier", bit: 0x01 };
+  const colors = Array.from({ length: 126 }, (_, i) => (i === 0 ? "#ff0000" : "#000000"));
+  const evision: PeripheralInfo = {
+    ...info,
+    key: "320f:5000",
+    vendor_id: 0x320f,
+    product_id: 0x5000,
+    brand: "EVision",
+    model: "RGB keyboard 320f 5000",
+    kind: "keyboard",
+    source: "OpenRGB, OpenEVision (GPL-2.0, facts only)",
+    profiles: 1,
+    firmware: null,
+    active_profile: null,
+    active_dpi: null,
+    can_save: false,
+    changes_stay: true,
+    settings: {
+      dpi_levels: [],
+      polling_hz: null,
+      options: { speed: 3 },
+      leds: [{ mode: 20, brightness: 100, color: "#000000" }],
+      key_colors: colors,
+      // Esc, A, left Shift, Fn, an entry no source describes, and Caps Lock changed to Esc.
+      keys: [esc, a, { type: "modifier", bit: 0x02 }, { type: "fn" }, { type: "other", bytes: [0xd0, 0xa2, 0x01] }, esc],
+    },
+    limits: {
+      dpi: null,
+      polling_hz: [],
+      options: [{ id: "speed", label: "Speed", values: [[3, "3 (normal)"], [0, "0 (fastest)"]] }],
+      leds: [{ name: "Lighting", modes: [[6, "Static"], [20, "Custom (per key)"]], brightness_step: 25, color: true }],
+      key_colors: {
+        columns: 21,
+        keys: colors.map((_, i) => (i === 0 ? esc : null)),
+        note: "Key names from OpenRGB's map for these keyboards.",
+      },
+      keys: {
+        factory: [esc, a, { type: "modifier", bit: 0x02 }, null, null, caps],
+        actions: [{ type: "key", usage: 0 }, a, esc, caps, ctrl, { type: "media", usage: 0xcd }],
+      },
+    },
+    buttons: [],
+    details: [["Key table", "6 entries"]],
+  };
+
+  /** The No warranty box is asked once per device and session: the first test that saves meets it. */
+  async function save() {
+    await fireEvent.click(screen.getByRole("button", { name: "Save to memory…" }));
+    if (screen.queryByRole("checkbox")) {
+      expect(api.peripheralChange).not.toHaveBeenCalled();
+      await fireEvent.click(screen.getByRole("checkbox"));
+      await fireEvent.click(screen.getByRole("button", { name: "Save to memory" }));
+    }
+    await wait(0);
+  }
+
+  it("shows each LED by row and column with the key a source names, and the keys changed since the first reading", () => {
+    render(Peripheral, { props: { info: evision, error: null } });
+    const first = screen.getByLabelText("Esc (row 1, column 1)") as HTMLInputElement;
+    expect(first.value).toBe("#ff0000");
+    expect(screen.getByLabelText("LED 22 (row 2, column 1)")).toBeTruthy();
+    expect(document.body.textContent).toContain("Key names from OpenRGB's map for these keyboards.");
+    expect(document.body.textContent).toContain("They show when the lighting mode is Custom (per key).");
+    // Caps Lock sends Esc: named by what it sent first.
+    const row = screen.getAllByText("Caps Lock").find((e) => e.tagName === "TH")!.closest("tr")!;
+    expect(row.textContent).toContain("→ Esc");
+  });
+
+  it("offers neither the Fn key nor the entries no source describes", () => {
+    render(Peripheral, { props: { info: evision, error: null } });
+    const key = screen.getByRole("combobox", { name: "Key to change" }) as HTMLSelectElement;
+    const offered = [...key.options].map((o) => o.textContent);
+    expect(offered).toEqual(["Choose a key…", "Esc", "A", "Shift", "Caps Lock"]);
+  });
+
+  it("sets every LED and one key, and saves them only after the No warranty box, undone unless kept", async () => {
+    render(Peripheral, { props: { info: evision, error: null } });
+    const fill = screen.getByLabelText("Colour for every LED") as HTMLInputElement;
+    fill.value = "#00ff00";
+    await fireEvent.input(fill);
+    await fireEvent.click(screen.getByRole("button", { name: "Set every LED" }));
+    const key = screen.getByRole("combobox", { name: "Key to change" }) as HTMLSelectElement;
+    key.value = "1";
+    await fireEvent.change(key);
+    const sends = screen.getByRole("combobox", { name: "What A sends" }) as HTMLSelectElement;
+    sends.value = JSON.stringify(ctrl);
+    await fireEvent.change(sends);
+    await fireEvent.click(screen.getByRole("button", { name: "Save to memory…" }));
+    expect(api.peripheralChange).not.toHaveBeenCalled();
+    await fireEvent.click(screen.getByRole("checkbox"));
+    await fireEvent.click(screen.getByRole("button", { name: "Save to memory" }));
+    await wait(0);
+    const [deviceKey, settings, saved] = api.peripheralChange.mock.calls[0];
+    expect(deviceKey).toBe("320f:5000");
+    expect(saved).toBe(false);
+    expect(settings.key_colors).toEqual(colors.map(() => "#00ff00"));
+    expect(settings.keys).toEqual([esc, ctrl, ...evision.settings.keys!.slice(2)]);
+    expect(screen.getByRole("alertdialog").textContent).toContain("try the keys you changed");
+    await wait(15_000);
+    expect(api.peripheralUndo).toHaveBeenCalledWith("320f:5000");
+  });
+
+  it("puts a changed key back to what it sent first", async () => {
+    render(Peripheral, { props: { info: evision, error: null } });
+    await fireEvent.click(screen.getByRole("button", { name: "Put back" }));
+    await save();
+    expect(api.peripheralChange.mock.calls[0][1].keys[5]).toEqual(caps);
+  });
+
+  it("shows the colours and the changed keys without anything to change on a read-only connection", () => {
+    render(Peripheral, { props: { info: { ...evision, editable: false }, error: null } });
+    expect(screen.queryByLabelText("Esc (row 1, column 1)")).toBeNull();
+    expect(screen.getByRole("img", { name: "Esc (row 1, column 1): #ff0000" })).toBeTruthy();
+    expect(screen.queryByRole("combobox", { name: "Key to change" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Put back" })).toBeNull();
+    expect(screen.getByText("Caps Lock")).toBeTruthy();
   });
 });

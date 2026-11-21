@@ -165,6 +165,7 @@ fn parse(profile: &[u8], problems: &mut Vec<String>) -> (Settings, Limits) {
             values: durations.into_iter().map(|s| (s, format!("{s} s"))).collect(),
         }],
         leds: vec![LedLimits { name: "Lighting".into(), modes: EFFECTS.to_vec(), brightness_step: None, color: true }],
+        ..Default::default()
     };
     (settings, limits)
 }

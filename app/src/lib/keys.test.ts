@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  G502_HERO, G502_HERO_WIRELESS, G502_X_WIRELESS, LAYOUT_HEIGHT, LAYOUT_WIDTH, bindingLabel, capLabel, isG502, keyLabel,
-  layoutCaps, ledZoneName, mouseButtonName,
+  G502_HERO, G502_HERO_WIRELESS, G502_X_WIRELESS, LAYOUT_HEIGHT, LAYOUT_WIDTH, bindingLabel, capLabel, isG502, keyActionLabel,
+  keyLabel, layoutCaps, ledZoneName, mouseButtonName,
 } from "./keys";
 import { PHYSICALS, type Physical } from "./keyboardLayout.svelte";
 
@@ -77,5 +77,21 @@ describe("keyboard drawings", () => {
     expect(capLabel(0x31, "it", "ansi")).toBe("ù");
     expect(capLabel(0x31, "us", "ansi")).toBe("\\");
     expect(bindingLabel({ type: "key", usage: 0x2f }, "de")).toBe("Ü");
+  });
+});
+
+describe("keyActionLabel", () => {
+  it("names a key table entry: a key, nothing, a modifier by its bit, a media usage, Fn and the rest by their bytes", () => {
+    expect(keyActionLabel({ type: "key", usage: 0x29 }, "us")).toBe("Esc");
+    expect(keyActionLabel({ type: "key", usage: 0 }, "us")).toBe("Disabled");
+    expect(keyActionLabel({ type: "modifier", bit: 0x01 }, "us")).toBe("Ctrl");
+    expect(keyActionLabel({ type: "modifier", bit: 0x20 }, "us")).toBe("R Shift");
+    expect(keyActionLabel({ type: "modifier", bit: 0x40 }, "it")).toBe("Alt Gr");
+    expect(keyActionLabel({ type: "modifier", bit: 0x03 }, "us")).toBe("Modifiers 0x03");
+    expect(keyActionLabel({ type: "media", usage: 0xcd }, "us")).toBe("Play / Pause");
+    expect(keyActionLabel({ type: "media", usage: 0x183 }, "us")).toBe("Media player");
+    expect(keyActionLabel({ type: "media", usage: 0x999 }, "us")).toBe("Media 0x999");
+    expect(keyActionLabel({ type: "fn" }, "us")).toBe("Fn");
+    expect(keyActionLabel({ type: "other", bytes: [0xd0, 0xa2, 0x01] }, "us")).toBe("d0 a2 01");
   });
 });

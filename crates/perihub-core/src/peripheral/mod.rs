@@ -169,6 +169,37 @@ pub struct Settings {
     /// Other settings with a few values each, such as button response, by id (see [`Choice`]).
     pub options: BTreeMap<String, u16>,
     pub leds: Vec<Led>,
+    /// A keyboard's colours per LED, for its per-key lighting mode, in the keyboard's LED order (see
+    /// [`KeyColorLimits`]). Empty where they are not read.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub key_colors: Vec<Rgb>,
+    /// What each entry of a keyboard's key table does, in the table's order (see [`KeyLimits`]). Empty where
+    /// the table is not read.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub keys: Vec<KeyAction>,
+}
+
+/// What an entry of a keyboard's key table does.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum KeyAction {
+    /// A key, by its HID usage on the keyboard page; usage 0: the key does nothing.
+    Key { usage: u8 },
+    /// A modifier key, by its bit in the modifier byte (0x01 left Ctrl, 0x02 left Shift … 0x80 right Win).
+    Modifier { bit: u8 },
+    /// A consumer-control (media) usage.
+    Media { usage: u16 },
+    /// The Fn key: never changed.
+    Fn,
+    /// An entry no source describes, as read: never changed.
+    Other { bytes: Vec<u8> },
+}
+
+impl KeyAction {
+    /// One of the forms a source documents, which may be written: a key, a modifier or a media usage.
+    pub fn changeable(&self) -> bool {
+        matches!(self, Self::Key { .. } | Self::Modifier { .. } | Self::Media { .. })
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -188,6 +219,32 @@ pub struct Limits {
     pub polling_hz: Vec<u16>,
     pub options: Vec<Choice>,
     pub leds: Vec<LedLimits>,
+    /// The colours per key may be changed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_colors: Option<KeyColorLimits>,
+    /// Entries of the key table may be changed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub keys: Option<KeyLimits>,
+}
+
+/// A keyboard's colours per LED: LED `i` is in row `i / columns`, column `i % columns`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct KeyColorLimits {
+    pub columns: u8,
+    /// The key at each LED, by what it sends, where a source names it; `None`: a position no source names.
+    pub keys: Vec<Option<KeyAction>>,
+    /// Where those names come from, and what they are worth on this keyboard: shown with them.
+    pub note: &'static str,
+}
+
+/// The entries of a keyboard's key table that may be changed, and to what.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct KeyLimits {
+    /// What each entry did when PeriHub first read this keyboard, which names the key after it is changed;
+    /// `None`: the entry is never changed (the Fn key, an entry no source describes).
+    pub factory: Vec<Option<KeyAction>>,
+    /// What a key may be set to.
+    pub actions: Vec<KeyAction>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -916,6 +973,30 @@ pub fn check_settings(limits: &Limits, current: &Settings, wanted: &Settings) ->
             return Err(Error::Invalid(format!("{}: colour", led.name)));
         }
     }
+    if wanted.key_colors != current.key_colors {
+        let colors =
+            limits.key_colors.as_ref().ok_or_else(|| Error::Invalid("the colours per key are not changed".into()))?;
+        if wanted.key_colors.len() != current.key_colors.len() || wanted.key_colors.len() != colors.keys.len() {
+            return Err(Error::Invalid(format!("this keyboard has {} colours per key", current.key_colors.len())));
+        }
+    }
+    if wanted.keys != current.keys {
+        let keys = limits.keys.as_ref().ok_or_else(|| Error::Invalid("the keys are not changed".into()))?;
+        if wanted.keys.len() != current.keys.len() || wanted.keys.len() != keys.factory.len() {
+            return Err(Error::Invalid(format!("this keyboard has {} key table entries", current.keys.len())));
+        }
+        for (i, (new, old)) in wanted.keys.iter().zip(&current.keys).enumerate() {
+            if new == old {
+                continue;
+            }
+            if keys.factory[i].is_none() || !old.changeable() {
+                return Err(Error::Invalid(format!("key table entry {i} is not changed")));
+            }
+            if !keys.actions.contains(new) {
+                return Err(Error::Invalid(format!("key table entry {i}: {new:?} is not offered")));
+            }
+        }
+    }
     Ok(())
 }
 
@@ -1179,6 +1260,7 @@ mod tests {
             polling_hz: Some(1000),
             options: [("debounce".to_string(), 1)].into(),
             leds: vec![Led { mode: 0, brightness: Some(100), color: Rgb::WHITE }],
+            ..Default::default()
         };
         let limits = Limits {
             dpi: Some(DpiLimits { min: 100, max: 12000, step: 100 }),
@@ -1194,6 +1276,7 @@ mod tests {
                 brightness_step: Some(25),
                 color: true,
             }],
+            ..Default::default()
         };
         let ok = |change: fn(&mut Settings)| {
             let mut s = current.clone();
@@ -1221,5 +1304,45 @@ mod tests {
         let mut s = current.clone();
         s.dpi_levels[0] = 900;
         assert!(check_settings(&no_dpi, &current, &s).is_err(), "DPI shown but not changed");
+    }
+
+    #[test]
+    fn colours_per_key_and_key_table_entries_outside_the_limits_are_refused() {
+        let key = |usage| KeyAction::Key { usage };
+        let current = Settings {
+            key_colors: vec![Rgb::BLACK; 3],
+            keys: vec![key(0x04), KeyAction::Fn, KeyAction::Other { bytes: vec![0xd0, 0xa2, 1] }, key(0x05)],
+            ..Default::default()
+        };
+        let limits = Limits {
+            key_colors: Some(KeyColorLimits { columns: 3, keys: vec![None; 3], note: "" }),
+            keys: Some(KeyLimits {
+                factory: vec![Some(key(0x04)), None, None, Some(key(0x06))],
+                actions: vec![key(0x29), KeyAction::Modifier { bit: 1 }],
+            }),
+            ..Default::default()
+        };
+        let ok = |limits: &Limits, change: &dyn Fn(&mut Settings)| {
+            let mut s = current.clone();
+            change(&mut s);
+            check_settings(limits, &current, &s).is_ok()
+        };
+        assert!(ok(&limits, &|s| s.key_colors[2] = Rgb::WHITE));
+        assert!(!ok(&limits, &|s| s.key_colors.push(Rgb::WHITE)), "one LED more");
+        assert!(ok(&limits, &|s| s.keys[0] = key(0x29)));
+        assert!(ok(&limits, &|s| s.keys[3] = KeyAction::Modifier { bit: 1 }));
+        assert!(!ok(&limits, &|s| s.keys[0] = key(0x2a)), "not offered");
+        assert!(!ok(&limits, &|s| s.keys[1] = key(0x29)), "the Fn key");
+        assert!(!ok(&limits, &|s| s.keys[2] = key(0x29)), "an entry no source describes");
+        assert!(!ok(&limits, &|s| s.keys[0] = KeyAction::Fn), "Fn is not an action");
+        assert!(
+            !ok(&limits, &|s| {
+                s.keys.pop();
+            }),
+            "one entry less"
+        );
+        let none = Limits::default();
+        assert!(!ok(&none, &|s| s.key_colors[0] = Rgb::WHITE), "colours shown but not changed");
+        assert!(!ok(&none, &|s| s.keys[0] = key(0x29)), "keys shown but not changed");
     }
 }
