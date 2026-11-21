@@ -13,6 +13,8 @@
   import PeripheralSaveDialog from "../components/PeripheralSaveDialog.svelte";
   import BlindSettings from "../components/BlindSettings.svelte";
   import KeyboardLayout from "../components/KeyboardLayout.svelte";
+  import PerKeyColors from "../components/PerKeyColors.svelte";
+  import KeyRemap from "../components/KeyRemap.svelte";
   import { readOnly } from "../lib/readOnly.svelte";
 
   interface Props {
@@ -169,7 +171,9 @@
 
   {#if confirmKeep}
     <KeepChangesDialog model={info.model} undoText="puts the settings from before back"
-      checkText={info.kind === "keyboard" ? "look at its lighting" : "move it, click, check what you changed"}
+      checkText={info.kind === "keyboard"
+        ? info.limits.keys ? "look at its lighting, try the keys you changed" : "look at its lighting"
+        : "move it, click, check what you changed"}
       onkeep={keep} onundo={undo} />
   {/if}
   {#if asking}
@@ -293,6 +297,19 @@
             {/each}
           </tbody>
         </table>
+      {/if}
+
+      {#if shown.key_colors?.length}
+        <h2>Colours per key</h2>
+        <PerKeyColors colors={shown.key_colors} limits={info.limits.key_colors} editable={info.editable} disabled={!!busy}
+          onchange={(i, color) => edit((s) => (s.key_colors![i] = color))}
+          onfill={(color) => edit((s) => (s.key_colors = s.key_colors!.map(() => color)))} />
+      {/if}
+
+      {#if shown.keys?.length && info.limits.keys}
+        <h2>Keys</h2>
+        <KeyRemap keys={shown.keys} limits={info.limits.keys} editable={info.editable} disabled={!!busy}
+          onchange={(i, action) => edit((s) => (s.keys![i] = action))} />
       {/if}
 
       {#if info.blind.some((b) => !b.remembered)}

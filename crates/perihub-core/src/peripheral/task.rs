@@ -63,6 +63,14 @@ pub trait Driver: Send {
     fn private_answers(&self) -> Vec<crate::replay::Private> {
         Vec::new()
     }
+    /// Bytes to keep from the first reading of the device, such as the key table a keyboard had then, which
+    /// names its keys once they are changed. The task writes them to the device's backup folder once, and hands
+    /// them back with [`Driver::recall_first_reading`] before the first read every time the device is opened.
+    fn first_reading(&self) -> Option<Vec<u8>> {
+        None
+    }
+    /// What [`Driver::first_reading`] gave the first time, read back from the backup folder.
+    fn recall_first_reading(&mut self, _bytes: &[u8]) {}
     /// Where the protocol is documented, for the page and the test report.
     fn source(&self) -> &'static str;
     fn profiles(&self) -> u8;
@@ -136,6 +144,8 @@ const REFRESH: Duration = Duration::from_secs(5);
 const SETTINGS_FILE: &str = "settings.json";
 const RAW_FILE: &str = "answers.txt";
 const PENDING_FILE: &str = "pending-undo";
+/// What the driver kept from the first reading of the device (see [`Driver::first_reading`]).
+const FIRST_READING_FILE: &str = "first-reading.bin";
 
 pub struct PeripheralTask {
     io: Io,
@@ -197,6 +207,9 @@ impl PeripheralTask {
         let mut io = Io::new(hid, driver.commands(), changes)
             .with_short(short)
             .with_device(format!("{} {}", who.brand, who.name));
+        if let Ok(first) = std::fs::read(backups.join(FIRST_READING_FILE)) {
+            driver.recall_first_reading(&first);
+        }
         let reading = driver.read(&mut io)?;
         let info = PeripheralInfo {
             key: format!("{:04x}:{:04x}", who.vendor_id, who.product_id),
@@ -245,6 +258,7 @@ impl PeripheralTask {
             histories: BTreeMap::new(),
         };
         task.take(reading);
+        task.keep_first_reading();
         task.recall();
         log::info!(
             "{} {} connected (experimental, from {}): {}",
@@ -330,6 +344,19 @@ impl PeripheralTask {
     pub fn info(&mut self) -> Result<PeripheralInfo> {
         self.read()?;
         Ok(self.info.clone())
+    }
+
+    /// Writes what the driver keeps from the first reading, once, on a connection opened to change things (the
+    /// command line writes nothing). Before any change, so before anything PeriHub sends.
+    fn keep_first_reading(&self) {
+        let path = self.backups.join(FIRST_READING_FILE);
+        if !self.io.granted() || path.exists() {
+            return;
+        }
+        let Some(bytes) = self.driver.first_reading() else { return };
+        if let Err(e) = std::fs::create_dir_all(&self.backups).and_then(|()| std::fs::write(&path, bytes)) {
+            log::warn!("{} {}: the first reading could not be kept: {e}", self.info.brand, self.info.model);
+        }
     }
 
     /// What PeriHub sent before to each remembered setting is read from its settings folder, and shown with the

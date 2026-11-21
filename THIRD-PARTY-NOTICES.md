@@ -576,11 +576,13 @@ was copied.
 - [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) (GPL-2.0-or-later), its EVision keyboard controllers
   (`Controllers/EVisionKeyboardController`, commit 91714d1): the EVision keyboards' USB ids, interface and usage page,
   report format and checksum, the configuration read and write commands, the lighting header and its modes, and the
-  layout of the newer controller's profiles (see `docs/protocols/evision.md`).
+  layout of the newer controller's profiles; at commit 6b681e3, the older controller's colours per key (126 LEDs, their
+  map, 54 bytes per request) (see `docs/protocols/evision.md`).
 - [OpenEVision](https://github.com/iefedev/OpenEVision) (GPL-2.0), commit 1cca304 (`docs/PROTOCOL.md`): what it checked on
   a `320f:505b`: the reads and writes of the configuration memory, the layout of the lighting header and of the key table,
-  the regions it never writes, and that every program with the collection open receives every answer (see
-  `docs/protocols/evision.md`). No code was copied.
+  the regions it never writes, and that every program with the collection open receives every answer; and in
+  `app/Device`, how it reads and writes the colours per key and the key table, what a key may be set to, and which key
+  each LED is on its keyboard (see `docs/protocols/evision.md`). No code was copied.
 - The [Linux kernel](https://github.com/torvalds/linux) (GPL-2.0): that the Roccat Kone mice are configured
   through their boot mouse interface (`drivers/hid/hid-roccat-konepure.c`, `hid-roccat-koneplus.c`), and the
   product ids of the Logitech receivers (`drivers/hid/hid-logitech-dj.c`), and how a HID++ 2.0 request and an error answer are laid

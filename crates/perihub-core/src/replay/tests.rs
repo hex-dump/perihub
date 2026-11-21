@@ -285,9 +285,13 @@ fn differences(at: &str, expected: &Value, actual: &Value, out: &mut Vec<String>
 
 /// Transcripts that cannot replay the current code until a real capture replaces them. The G303
 /// transcript was rebuilt from values, with no bytes, and has no answer for the battery read of
-/// the receiver page (the G303 does list 0x1004, so the read is right). No answer is invented.
-const NEEDS_CAPTURE: &[(&str, &str)] =
-    &[("logitech-g303-receiver.json", "issue #34: needs a test report from a version with the battery read")];
+/// the receiver page (the G303 does list 0x1004, so the read is right). The K580 transcript has no
+/// answer for the colours per key (command 10), which PeriHub 0.9.7 did not read; its other answers
+/// are still checked by `peripheral::evision`'s tests. No answer is invented.
+const NEEDS_CAPTURE: &[(&str, &str)] = &[
+    ("logitech-g303-receiver.json", "issue #34: needs a test report from a version with the battery read"),
+    ("evision-k580.json", "issue #117: needs a test report from a version that reads the colours per key"),
+];
 
 #[test]
 fn every_transcript_replays_and_reads_what_it_expects() {

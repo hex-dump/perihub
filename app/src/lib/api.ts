@@ -728,7 +728,24 @@ export interface PeripheralSettings {
   /** Other settings with a few values, by id (see PeripheralChoice). */
   options: Record<string, number>;
   leds: PeripheralLed[];
+  /** A keyboard's colours per LED, "#rrggbb", in its LED order (see PeripheralLimits.key_colors); left out where
+   * they are not read. */
+  key_colors?: string[];
+  /** What each entry of a keyboard's key table does, in the table's order; left out where it is not read. */
+  keys?: KeyAction[];
 }
+
+/** What an entry of a keyboard's key table does (the core's peripheral::KeyAction). */
+export type KeyAction =
+  /** A key by its HID usage; usage 0: the key does nothing. */
+  | { type: "key"; usage: number }
+  /** A modifier by its bit: 0x01 left Ctrl, 0x02 left Shift, 0x04 left Alt, 0x08 left Win, 0x10… the right ones. */
+  | { type: "modifier"; bit: number }
+  | { type: "media"; usage: number }
+  /** Never changed. */
+  | { type: "fn" }
+  /** An entry no source describes, as read: never changed. */
+  | { type: "other"; bytes: number[] };
 
 export interface PeripheralLed {
   /** The device's own mode number. */
@@ -758,6 +775,21 @@ export interface PeripheralLimits {
     brightness_step: number | null;
     color: boolean;
   }[];
+  /** The colours per key may be changed: LED i is in row i / columns, column i % columns. */
+  key_colors?: {
+    columns: number;
+    /** The key at each LED where a source names it. */
+    keys: (KeyAction | null)[];
+    /** Where those names come from and what they are worth, shown with them. */
+    note: string;
+  };
+  /** Entries of the key table may be changed. */
+  keys?: {
+    /** What each entry held when PeriHub first read the keyboard, which names the key; null: never changed. */
+    factory: (KeyAction | null)[];
+    /** What a key may be set to. */
+    actions: KeyAction[];
+  };
 }
 
 /** One effect of an "effect" setting, and what it takes. */

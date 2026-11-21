@@ -919,10 +919,20 @@ they may be changed.
 - PeriHub reads the lighting in use (mode, brightness, speed, direction, random colour, colour) and, on the older layout,
   counts the key table for the test report. On `320f:5041`, which stores three profiles, it reads the profile in use and
   its lighting. A value outside what OpenRGB documents leaves the keyboard read-only, with the reason.
-- On `320f:505b` and `320f:5000` only, **Save to memory** changes the mode, brightness, colour and speed, after the **No warranty** box, with the
-  same backup, read-back and 15-second undo. Every change stays in the keyboard's flash, as the sources say.
-- Left out, waiting for captures from a tester (`docs/captures.md`): key remapping (the table's format is known, but not
-  which entry is which key), macros and onboard profiles (no source), per-key colours, the Fn layers and the polling rate.
+- On `320f:505b` and `320f:5000` only, **Save to memory** changes, after the **No warranty** box, with the same backup,
+  read-back and 15-second undo, everything the sources document:
+  - the lighting: mode (Custom per key included; Starlight slow and Surmount on `320f:505b`), brightness, colour,
+    speed, direction and random colour;
+  - the **colours per key**, LED by LED or all at once, in a grid of rows and columns named with OpenRGB's and
+    OpenEVision's maps (not checked on every keyboard: a key may sit elsewhere, and macro keys have no name);
+  - the **key table**: a key, a modifier or a media key can be set to another key, a modifier, a media key, or
+    nothing. Each key is named by what it sent the first time PeriHub read the keyboard, which PeriHub keeps. The Fn
+    key and the entries no source describes (the K580's macro keys among them) are never changed.
+
+  Every change stays in the keyboard's flash, as the sources say.
+- Left out, waiting for captures from a tester (`docs/captures.md`): macros and the macro keys, onboard profiles, the Fn
+  layers, the polling rate and Surmount's colour: no source documents them (see
+  [protocols/evision.md](protocols/evision.md#left-out-waiting-for-captures)).
 - **Not opened on Linux.** The vendor collection is on interface 1 together with a keyboard, a mouse and two more
   collections, and Linux has one hidraw node per interface: opening it also gives access to what is typed, and a udev
   rule would give that to any program running as you. **Send a report** lists the keyboard with its interfaces. Opening it

@@ -12,7 +12,8 @@
   "source": "issue #117, test report of a Redragon K580 RGB",
   "notes": [
     "The key table is 128 entries of 3 bytes read in seven requests (offsets c0 to 210). The last answer's trailing zeros are left out by the transcript format: its last entry is 02 00 00, which makes 16 of them, one at the end of each group of 8 entries.",
-    "Five entries d0 a2 01 to d0 a2 05 stand where the K580's five macro keys would be; no source names them, so PeriHub counts them as not described and prints their bytes."
+    "Five entries d0 a2 01 to d0 a2 05 stand where the K580's five macro keys would be; no source names them, so PeriHub counts them as not described and prints their bytes.",
+    "PeriHub 0.9.7 did not read the colours per key (command 10), which later versions read on this id: the replay test leaves this transcript out (NEEDS_CAPTURE) until a report from such a version, and the tests of peripheral::evision play its other answers with no answer to command 10."
   ],
   "expect": {
     "firmware": null,
