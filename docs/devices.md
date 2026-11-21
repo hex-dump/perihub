@@ -908,18 +908,18 @@ colours, direction, full colour).
 
 ## EVision keyboards
 
-🧪 Experimental on `320f:505b`, 👁 read-only on the other ids, **on Windows only for now**: nobody has tried PeriHub on one yet.
+🧪 Experimental on `320f:505b` and `320f:5000`, 👁 read-only on the other ids, **on Windows only for now**. A Redragon K580 (`320f:5000`, [issue #117](https://github.com/hex-dump/perihub/issues/117)) has been read with PeriHub; no one has tried changing a keyboard yet.
 These are keyboards on an EVision controller, which many brands use (the Surmen V400 of
 [issue #80](https://github.com/hex-dump/perihub/issues/80) is a `320f:505b`). The protocol is described in
 [protocols/evision.md](protocols/evision.md) from facts found in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVision
 controllers and in [OpenEVision](https://github.com/iefedev/OpenEVision) (both GPL-2.0), a Windows app that tried it on
-a `320f:505b`: no code was copied. The ids are the ones OpenRGB lists; only `320f:505b` has been seen answering, so only
-it may be changed.
+a `320f:505b`: no code was copied. The ids are the ones OpenRGB lists; only `320f:505b` and `320f:5000` have been seen answering, so only
+they may be changed.
 
 - PeriHub reads the lighting in use (mode, brightness, speed, direction, random colour, colour) and, on the older layout,
   counts the key table for the test report. On `320f:5041`, which stores three profiles, it reads the profile in use and
   its lighting. A value outside what OpenRGB documents leaves the keyboard read-only, with the reason.
-- On `320f:505b` only, **Save to memory** changes the mode, brightness, colour and speed, after the **No warranty** box, with the
+- On `320f:505b` and `320f:5000` only, **Save to memory** changes the mode, brightness, colour and speed, after the **No warranty** box, with the
   same backup, read-back and 15-second undo. Every change stays in the keyboard's flash, as the sources say.
 - Left out, waiting for captures from a tester (`docs/captures.md`): key remapping (the table's format is known, but not
   which entry is which key), macros and onboard profiles (no source), per-key colours, the Fn layers and the polling rate.
@@ -932,7 +932,7 @@ it may be changed.
 | Keyboard | USB ID | Opened on Linux | Level |
 |---|---|---|---|
 | RGB keyboard 320f 505b | `320f:505b` | — | 🧪 Experimental |
-| RGB keyboard 320f 5000 | `320f:5000` | — | 👁 Read-only |
+| RGB keyboard 320f 5000 | `320f:5000` | — | 🧪 Experimental |
 | RGB keyboard 320f 502a | `320f:502a` | — | 👁 Read-only |
 | RGB keyboard 320f 5064 | `320f:5064` | — | 👁 Read-only |
 | RGB keyboard 320f 5078 | `320f:5078` | — | 👁 Read-only |

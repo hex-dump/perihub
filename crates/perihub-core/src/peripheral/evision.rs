@@ -1,10 +1,12 @@
 //! EVision keyboards (320f and 0c45 ids), reached through their vendor collection (usage page `ff1c`).
 //! The protocol is in `docs/protocols/evision.md`, from facts found in OpenRGB (GPL-2.0) and OpenEVision
-//! (GPL-2.0), which tried it on a `320f:505b`. No code was copied. Nobody has tried it with PeriHub yet.
+//! (GPL-2.0), which tried it on a `320f:505b`. No code was copied. A Redragon K580 (`320f:5000`, issue #117)
+//! has answered the reads with PeriHub 0.9.7 as documented.
 //!
-//! Every listed id is read; only `320f:505b`, the one OpenEVision checked on a keyboard, may have its lighting
-//! changed, as an experimental feature that stays in the keyboard's flash. The key table is read once for
-//! the test report and never written. On Linux these keyboards are not opened: the interface also carries
+//! Every listed id is read; only `320f:505b` (the one OpenEVision checked on a keyboard) and `320f:5000` (the same
+//! controller and writes in OpenRGB, and a keyboard that answered the reads) may have their lighting changed, as an
+//! experimental feature that stays in the keyboard's flash. The key table is read once for the test report and
+//! never written. On Linux these keyboards are not opened: the interface also carries
 //! what is typed (see `peripheral::opened_on_linux`).
 
 use std::collections::BTreeMap;
@@ -89,7 +91,8 @@ pub enum Layout {
 #[derive(Debug, Clone, Copy)]
 pub struct Params {
     pub layout: Layout,
-    /// The lighting may be changed (experimental). Only where a source tried the reads and writes.
+    /// The lighting may be changed (experimental). Only where a source tried the reads and writes, or lists the id
+    /// on the same controller and a keyboard answered the reads as documented.
     pub edit: bool,
 }
 
@@ -113,7 +116,7 @@ const fn keyboard(vendor_id: u16, product_ids: &'static [u16], name: &'static st
 /// OpenRGB's detection lists, one model per id so that a confirmation confirms only that id.
 pub const MODELS: &[Model] = &[
     keyboard(0x320F, &[0x505B], "RGB keyboard 320f 505b", EDIT),
-    keyboard(0x320F, &[0x5000], "RGB keyboard 320f 5000", READ),
+    keyboard(0x320F, &[0x5000], "RGB keyboard 320f 5000", EDIT),
     keyboard(0x320F, &[0x502A], "RGB keyboard 320f 502a", READ),
     keyboard(0x320F, &[0x5064], "RGB keyboard 320f 5064", READ),
     keyboard(0x320F, &[0x5078], "RGB keyboard 320f 5078", READ),
@@ -216,9 +219,14 @@ fn mode_name(mode: u8) -> String {
     }
 }
 
+/// Most kinds of not-described entry the summary spells out: a keyboard has a handful of them.
+const OTHER_SHOWN: usize = 8;
+
 /// How many entries of the key table are of each kind: key, disabled key, modifier, media, Fn, other.
+/// The other entries are no source's to name, so the test report gets their bytes, to tell what they are.
 fn key_table_summary(table: &[u8]) -> String {
     let (mut keys, mut disabled, mut modifiers, mut media, mut fn_keys, mut other) = (0, 0, 0, 0, 0, 0);
+    let mut unknown: BTreeMap<[u8; 3], usize> = BTreeMap::new();
     for e in table.as_chunks::<3>().0 {
         match (e[0], e[1], e[2]) {
             (0x02, 0x02, 0x00) => disabled += 1,
@@ -226,21 +234,28 @@ fn key_table_summary(table: &[u8]) -> String {
             (0x02, 0x01, _) => modifiers += 1,
             (0x03, _, _) => media += 1,
             (0x05, _, _) => fn_keys += 1,
-            _ => other += 1,
+            _ => {
+                other += 1;
+                *unknown.entry(*e).or_default() += 1;
+            }
         }
     }
-    let parts: Vec<String> = [
-        (keys, "keys"),
-        (disabled, "disabled"),
-        (modifiers, "modifiers"),
-        (media, "media"),
-        (fn_keys, "Fn"),
-        (other, "not described"),
-    ]
-    .into_iter()
-    .filter(|(n, _)| *n > 0)
-    .map(|(n, what)| format!("{n} {what}"))
-    .collect();
+    let mut seen: Vec<String> = unknown
+        .iter()
+        .take(OTHER_SHOWN)
+        .map(|(e, n)| if *n > 1 { format!("{n}× {}", super::hex(e)) } else { super::hex(e) })
+        .collect();
+    if unknown.len() > OTHER_SHOWN {
+        seen.push(format!("{} more kinds", unknown.len() - OTHER_SHOWN));
+    }
+    let other_text = format!("not described: {}", seen.join(", "));
+    let parts: Vec<String> =
+        [(keys, "keys"), (disabled, "disabled"), (modifiers, "modifiers"), (media, "media"), (fn_keys, "Fn")]
+            .into_iter()
+            .filter(|(n, _)| *n > 0)
+            .map(|(n, what)| format!("{n} {what}"))
+            .chain((other > 0).then(|| format!("{other} {other_text}")))
+            .collect();
     format!("{} entries: {}", table.len() / 3, parts.join(", "))
 }
 
@@ -726,7 +741,7 @@ mod tests {
 
     #[test]
     fn the_other_ids_are_only_read_even_on_a_connection_that_may_change() {
-        for (vendor, id) in [(0x320F, 0x5000), (0x0C45, 0x5004), (0x0C45, 0x8520)] {
+        for (vendor, id) in [(0x320F, 0x502A), (0x0C45, 0x5004), (0x0C45, 0x8520)] {
             let state = keyboard_505b();
             let mut task =
                 start_for_test(Box::new(fake(state.clone())), model(vendor, id), id, true, temp("other")).unwrap();
@@ -860,13 +875,15 @@ mod tests {
         sorted.sort_unstable();
         sorted.dedup();
         assert_eq!(sorted.len(), ids.len(), "no id twice");
-        // Only the id OpenEVision tried may have its lighting changed; the newer layout is only read.
+        // Only the ids OpenEVision tried (505b) or a keyboard answered as documented (5000, issue #117) may have
+        // their lighting changed; the newer layout is only read.
         let edits: Vec<_> = MODELS
             .iter()
             .filter(|m| matches!(m.protocol, Protocol::Evision(p) if p.edit))
             .map(|m| (m.vendor_id, m.product_ids[0]))
             .collect();
-        assert_eq!(edits, [(0x320F, 0x505B)]);
+        assert_eq!(edits, [(0x320F, 0x505B), (0x320F, 0x5000)]);
+        assert!(!super::super::opened_on_linux(model(0x320F, 0x5000)), "the interface also carries typing");
         assert!(!super::super::opened_on_linux(model(0x320F, 0x505B)), "the interface also carries typing");
     }
 
@@ -875,7 +892,15 @@ mod tests {
         let table = [2, 2, 4, 2, 2, 0, 2, 1, 2, 3, 0xe9, 0, 5, 0, 0, 9, 9, 9];
         assert_eq!(
             key_table_summary(&table),
-            "6 entries: 1 keys, 1 disabled, 1 modifiers, 1 media, 1 Fn, 1 not described"
+            "6 entries: 1 keys, 1 disabled, 1 modifiers, 1 media, 1 Fn, 1 not described: 09 09 09"
+        );
+        // The same bytes together are counted, the kinds are in byte order, and a long list is cut.
+        let table: Vec<u8> = [[2, 0, 0], [2, 0, 0], [0xd0, 0xa2, 1], [2, 0, 0]].concat();
+        assert_eq!(key_table_summary(&table), "4 entries: 4 not described: 3× 02 00 00, d0 a2 01");
+        let table: Vec<u8> = (0..10u8).flat_map(|i| [0xd0, 0xa2, i]).collect();
+        assert_eq!(
+            key_table_summary(&table),
+            "10 entries: 10 not described: d0 a2 00, d0 a2 01, d0 a2 02, d0 a2 03, d0 a2 04, d0 a2 05, d0 a2 06, d0 a2 07, 2 more kinds"
         );
     }
 
