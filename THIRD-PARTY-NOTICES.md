@@ -36,7 +36,11 @@ goes with every PeriHub package.
   Rossi) and #1806 (nt-slug), which are contributed under the project's MIT license;
 - the functions of the HID++ 2.0 RGB effects feature 0x8071 and the layout of its device, zone and effect
   information (`src/hidpp20.c`, `src/hidpp20.h`, Copyright © 2015-2017 Red Hat, Inc.), read in
-  `crates/perihub-core/src/hidpp/lighting.rs` (see `docs/protocols/logitech-keyboard-lighting.md`).
+  `crates/perihub-core/src/hidpp/lighting.rs` (see `docs/protocols/logitech-keyboard-lighting.md`);
+- that Logitech profile format 4 has the layout of formats 2 and 3 (its issue #774 and pull request #777), the
+  0x8071 zones of a G903 HERO (pull request #778), and how it ties the LED blocks of a profile to the lighting zones,
+  with its `G502X_PLUS` quirk (`src/driver-hidpp20.c`, `data/devices/logitech-g502-x-plus.device`,
+  `logitech-g705.device`), see `docs/protocols/logitech-onboard-profiles.md`.
 
 ```
 Copyright © 2015-2017 Red Hat, Inc.
@@ -582,7 +586,7 @@ was copied.
   product ids of the Logitech receivers (`drivers/hid/hid-logitech-dj.c`), and how a HID++ 2.0 request and an error answer are laid
   out (`drivers/hid/hid-logitech-hidpp.c`, see `docs/protocols/logitech-g213.md`).
 - [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0): the Logitech receiver ids, and how it reads and writes
-  onboard profile lists and button entries, compared with libratbag's (see
+  onboard profile lists and button entries and every profile format up to 5 with one layout, compared with libratbag's (see
   `docs/protocols/logitech-onboard-profiles.md`); that a Logitech device on Bluetooth Low Energy is asked on device index
   0xFF and may answer on 0x00 (`base.py`, same page); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak
   HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (see `docs/protocols/logitech-hidpp10.md`);
@@ -598,7 +602,12 @@ was copied.
 - Logitech's HID++ 2.0 feature specifications "x8071 – RGB Effects", "x8081 – Per-Key Lighting" and "x8040 –
   Brightness Control", from Logitech's public HID++ folder, read from the copy in
   [logirgb](https://github.com/mevdschee/logirgb) (MIT): the byte layouts of the effects, power modes, activity
-  notices and per-key colours (see `docs/protocols/logitech-keyboard-lighting.md`).
+  notices and per-key colours (see `docs/protocols/logitech-keyboard-lighting.md`). Also logirgb's research notes on
+  `0x8100` (`research/8100-onboard-profiles.md`): which LED block of a profile drove which zone in its tests on a
+  G502 SE HERO (see `docs/protocols/logitech-onboard-profiles.md`).
+- [libhidpp](https://github.com/cvuchener/hidpp) (GPL-3.0), `src/libhidpp/hidpp20/ProfileFormat.cpp` and
+  `profile_format.md`: the profile formats it documents (1 to 3) and the names it gives the two LED blocks of a
+  profile, logo and side (see `docs/protocols/logitech-onboard-profiles.md`).
 - The `lsusb -v` dumps of [linuxhw/LsUSB](https://github.com/linuxhw/LsUSB): which interfaces the Logitech G600
   and the Roccat Kone mice have.
 - [OpenRazer](https://github.com/openrazer/openrazer) (GPL-2.0): the Razer report layout and commands, and per mouse
