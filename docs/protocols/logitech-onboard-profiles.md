@@ -28,6 +28,18 @@ Sources studied (read only, for the protocol facts):
   behind a LIGHTSPEED receiver (every request and answer): everything marked **(G604)**.
 - [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0), `base.py`: how a Bluetooth Low Energy
   device is addressed and how it answers.
+- For profile format 4 and the lights of the G903 HERO (issues [#22](https://github.com/hex-dump/perihub/issues/22)
+  and [#115](https://github.com/hex-dump/perihub/issues/115)): libratbag's issue
+  [#774](https://github.com/libratbag/libratbag/issues/774) (a G903 HERO refused as "profile layout not supported:
+  0x04", with its debug log), its pull requests [#777](https://github.com/libratbag/libratbag/pull/777) (format 4
+  accepted) and [#778](https://github.com/libratbag/libratbag/pull/778) (0x8071), both merged in July 2019, and its
+  `src/driver-hidpp20.c` and `data/devices/logitech-g502-x-plus.device`, `logitech-g705.device` (MIT);
+  Solaar's `hidpp20.py` (`OnboardProfile`, `OnboardProfiles`); [libhidpp](https://github.com/cvuchener/hidpp)
+  (GPL-3.0), `src/libhidpp/hidpp20/ProfileFormat.cpp` and `profile_format.md`; the research notes of
+  [logirgb](https://github.com/mevdschee/logirgb) (MIT), `research/8100-onboard-profiles.md`, with its tests on a
+  G502 SE HERO. Logitech has not published a `0x8100` specification: its public HID++ folder (the copy in logirgb's
+  `research/drive-download.zip`) has `0x8070` and `0x8071` but no `0x8100`. See
+  [Profile format 4](#profile-format-4-the-g903-hero) and [Lights through 0x8071](#lights-through-0x8071-on-a-mouse).
 
 What is not marked **(G502)** comes from the two projects above and has not been seen by PeriHub
 on a real mouse. In particular, PeriHub has never met a mouse without a profile list.
@@ -43,8 +55,8 @@ on a real mouse. In particular, PeriHub has never met a mouse without a profile 
   **(G502)**. With 256-byte sectors it sits in bytes 254–255, with 255-byte sectors in 253–254.
 - Sector sizes seen: 256 (G502 HERO, U1 27.03), 255 (G502 HERO, U1 74.00, #20; G502 X Wireless,
   #15). A 255-byte sector is written as 16 blocks, the last one carrying 15 bytes.
-- Profile formats seen: 2 (G502 HERO), 3 (G502 X Wireless). libratbag and Solaar read and write
-  formats 1 to 5 with one layout.
+- Profile formats seen: 2 (G502 HERO), 3 (G502 X Wireless), 4 (G903 HERO, issues #22 and #115). libratbag and
+  Solaar read and write formats 1 to 5 with one layout.
 
 ## The profile list
 
@@ -117,6 +129,80 @@ and the name of the firmware in ASCII (`U127.03_B0010`): the same entries with a
   takes effect by itself **(G502)**. A switch the mouse refuses once every sector is written and read
   back is only logged: the save stands, and on an experimental save the 15-second undo is still
   offered.
+
+## Profile format 4 (the G903 HERO)
+
+The G903 HERO (`046d:c091`, `4087` through its receiver) reports memory model 1, profile format 4, macro format
+1, 5 profiles of which 1 is a factory profile, 12 buttons and 16 sectors of 255 bytes, in issue #115 (PeriHub
+0.9.7, Windows) as in issue #22 (0.8.2, Linux) and in libratbag's issue #774 (2019, the same `01 04 01 05 01 0c 10
+00 ff 0a 04` answer).
+
+### What the sources say
+
+- **libratbag** refused format 4 until its pull request #777. In issue #774 a libratbag maintainer wrote that, like
+  the profile layouts before it, the new one is backwards compatible and only adds more. Since then libratbag reads
+  and writes formats 1 to 5 with one layout, the same 256-byte structure for all of them (format 4 is named after
+  the G915), and nothing in its code depends on the format number once it is accepted.
+- **Solaar** reads and writes every format up to 5 with one layout, and refuses the formats above 5.
+- **libratbag's pull request #1676** (open) was tried on a G203 that reports format 4: profile names read and
+  written with the shared layout.
+- **libhidpp** documents formats 1 to 3 only (2 and 3 with the same 230 bytes): it says nothing of format 4.
+- What PeriHub reads and writes is at the same place in every one of these: polling interval (byte 0), default
+  and shift DPI level (1, 2), five DPI levels (3 to 12, little-endian), 16 button slots of 4 bytes (32 to 95), the
+  16 G-shift slots (96 to 159), two LED blocks of 11 bytes (208 to 229), the CRC in the last two bytes. What the
+  sources place after that (the alternate LED blocks from 230, a custom animation byte at 252 for format 5) PeriHub
+  never writes: a save starts from the sector's own bytes and changes only its fields.
+
+No source shows a format 4 field where PeriHub writes something else, so format 4 is written like 2 and 3.
+
+### What PeriHub does with it
+
+- **With the USB cable**, a mouse with format 4 is **experimental**, as for any memory format nobody has saved to:
+  the **No warranty** box before the first save, a backup, every write read back, and the 15-second undo.
+- **Through a receiver** it stays **read-only** until a tester confirms format 4 in 255-byte sectors with the cable
+  (`cargo xtask confirm --memory-format 4:255`); then saving over the radio opens too, as an experimental feature,
+  as for format 3.
+- The G903 HERO has 12 buttons: PeriHub writes the 12 slots the mouse reports in each layer and leaves the other
+  four as they are. Its profile list (sector 0) in issue #115 enables profile 1 only, with `FF` as the last byte of
+  each entry, and its CRC (`40 37`) matches: PeriHub reads it like any other list
+  (`crates/perihub-core/tests/fixtures/transcripts/logitech-g903-hero-receiver.json`).
+
+## Lights through 0x8071 on a mouse
+
+The G903 HERO lists `0x8071` (RGB effects) and not `0x8070` (colour LED effects), so PeriHub 0.9.7 reported
+"LEDs: none reported" (issue #115).
+
+- **Reading.** A mouse that has no `0x8070` and whose feature table lists `0x8071` is asked `0x8071` function 0
+  only, which reads: the zone count, each zone's location and number of effects, and each effect's id (the layout
+  of the answers is in [logitech-keyboard-lighting.md](logitech-keyboard-lighting.md)). In libratbag's pull request
+  #778 a G903 HERO answered 2 zones: zone 0 at location 1 (primary) and zone 1 at location 2 (logo), each with 4
+  effects. A zone that cannot be read leaves the list empty; the mouse still opens. Nothing else of `0x8071` is
+  sent, not even a preview in RAM.
+- **Which LED block of a profile holds which zone: the sources disagree.**
+  - libratbag puts zone *n* in LED block *n*, for `0x8070` and `0x8071` alike, except on the G502 X PLUS and the
+    G705 (its `G502X_PLUS` quirk): their one zone is in the second block. The tester of pull request #778 said he
+    could control the G903 HERO's lights with Piper, not which light took which setting.
+  - libhidpp names the block at 208 the logo effect and the block at 219 the side effect.
+  - logirgb wrote green to block 0 and red to block 1 of a G502 SE HERO: its `0x8070` then reported zone 1 (logo)
+    green, and the logo was green. Block 0 drives the logo (zone 1) and block 1 the DPI indicator (zone 0), the
+    reverse of libratbag.
+  - In PeriHub's issue [#28](https://github.com/hex-dump/perihub/issues/28) a G502 HERO Wireless showed the effect
+    PeriHub saved for zone 0 on its logo, which fits logirgb's finding.
+  - **Checked on a wired G502 HERO (046d:c08b, firmware U1 27.03.0010) on 2026-11-21**, with PeriHub's command line:
+    a profile saved with red fixed in block 0 and green fixed in block 1 lit the G logo red and the DPI indicator
+    green; a preview in RAM of `0x8070` zone 0 (location 1) in blue then turned the DPI indicator blue, the logo
+    staying red. So on that mouse block 0 is the logo (zone 1, location 2) and block 1 the DPI indicator (zone 0,
+    location 1), as logirgb found. The profile was saved back as it was afterwards.
+
+  So PeriHub does not tie a `0x8071` zone to a profile LED block. The mouse page lists the zones, where they are and
+  the effects each one offers, and what the two LED blocks of the profile hold, and changes neither: a save keeps the
+  LED blocks of a `0x8071` mouse byte for byte. The test report lists the zones with "(8071)" and "no profile
+  slot". A tester who says which light shows what, compared with the profile's blocks, can settle it.
+- **0x8070 mice:** on the wired G502 HERO (`c08b`) PeriHub now puts the logo (location 2) in block 0 and the DPI
+  indicator (location 1) in block 1, from the check above; before 0.9.8 it put zone *n* in block *n*, which swapped
+  the two lights in saves and in what the Lighting tab showed of a profile. Every other `0x8070` mouse keeps zone *n*
+  in block *n*: right on the G502 HERO Wireless (#28), not checked on the others (`profile_led_slot` in
+  crates/perihub-core/src/hidpp/mod.rs).
 
 ## Format 7 and the extended DPI and polling rate features
 

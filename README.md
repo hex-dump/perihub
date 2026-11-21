@@ -159,8 +159,8 @@ Some devices have not been tested yet. PeriHub reads them and changes nothing, u
 What decides how PeriHub saves a Logitech mouse's profiles is the format of its onboard memory, not the model: many models share one format, and the same model can change format with a firmware update. So PeriHub reads the format from the mouse every time it connects:
 
 - **A format tested on a real mouse** (format 2 in 256-byte sectors, from the G502 HERO; format 3 in 255-byte sectors, from the G502 X Wireless): the mouse is supported, whatever the model.
-- **A format PeriHub can write but nobody has tried yet** (format 2 or 3, in 255- or 256-byte sectors): the mouse page says so, and you can save at your own risk with the USB cable. Before your first save to that mouse PeriHub asks you to tick the **No warranty** box below. Each save is undone after 15 seconds unless you keep it.
-- **Any other format** (4, 5 and newer): read-only.
+- **A format PeriHub can write but nobody has tried yet** (format 2, 3 or 4, in 255- or 256-byte sectors): the mouse page says so, and you can save at your own risk with the USB cable. Before your first save to that mouse PeriHub asks you to tick the **No warranty** box below. Each save is undone after 15 seconds unless you keep it.
+- **Any other format** (5 and newer): read-only.
 - **Through a receiver**, as G HUB does: with a tested format, saving is experimental, because PeriHub has saved over the radio on one mouse so far, a G502 HERO Wireless on a POWERPLAY mat ([issue #28](https://github.com/hex-dump/perihub/issues/28)). It asks for the **No warranty** box before the first save through the receiver, undoes each save after 15 seconds unless you keep it, and does not save below 15% battery. With any other format it only reads.
 - **Over Bluetooth** (the G604 so far, [issue #43](https://github.com/hex-dump/perihub/issues/43)): PeriHub reads the profiles, buttons, DPI, polling rate and battery, and changes nothing. Use the LIGHTSPEED receiver to change the mouse.
 
@@ -172,7 +172,7 @@ One test report is enough to make a format tested for every mouse that uses it: 
 | | Logitech mice with an untested memory format | Corsair devices: **Try experimental lighting…** |
 |---|---|---|
 | What you can change | Profiles: DPI, polling rate, buttons, lighting, macros | One colour on every LED or key, for this session |
-| When it is offered | USB cable, and a memory format PeriHub can write (profile format 2 or 3, 255- or 256-byte sectors) | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |
+| When it is offered | USB cable, and a memory format PeriHub can write (profile format 2, 3 or 4, 255- or 256-byte sectors) | Always, except while iCUE, OpenRGB, ckb-next or OpenLinkHub runs |
 | What stays off | Enabling or disabling profiles, creating the profile list of a mouse nothing was saved to, saving an untested format through a receiver | Everything else: DPI, polling rate, buttons, the device's memory |
 | Safety net | Only values the mouse accepts; a backup before every save; every write read back | Only the commands lighting needs; nothing is saved in the device |
 | If something looks wrong | Each save is undone after 15 seconds unless you keep it, also after PeriHub closed or the mouse was unplugged | The device gets its own settings back after 15 seconds unless you keep it, when you quit PeriHub, and as soon as anything fails |

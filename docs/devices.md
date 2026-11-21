@@ -61,8 +61,9 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   same model can change format with a firmware update, so the level is not fixed per model:
   - ✅ **a tested format**: profile format 2 in 256-byte sectors (the G502 HERO's) or format 3 in
     255-byte sectors (the G502 X Wireless's). The mouse is supported, whatever the model.
-  - 🧪 **a format PeriHub can write but nobody has tried yet** (format 2 or 3, in 255- or 256-byte
-    sectors): you can save at your own risk with the USB cable. Before the first save to that
+  - 🧪 **a format PeriHub can write but nobody has tried yet** (format 2, 3 or 4, in 255- or 256-byte
+    sectors; format 4 is the G903 HERO's, with the layout of 2 and 3 where PeriHub writes, see
+    [protocols/logitech-onboard-profiles.md](protocols/logitech-onboard-profiles.md)): you can save at your own risk with the USB cable. Before the first save to that
     mouse PeriHub asks you to tick a **No warranty** box, and each save is undone after 15 seconds
     unless you keep it. Enabling or disabling profiles stays off.
   - 👁 **any other format**: read-only.
@@ -77,8 +78,8 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   `c53d`, `c53f`, `c541`, `c543`, `c545`, `c547` or `c54d`). With a tested memory format PeriHub
   switches the profile and DPI level, and saves over the radio as G HUB does, as an experimental
   feature (No warranty box, 15-second undo, not below 15% battery); otherwise it only reads. A G903 HERO
-  was reached and read through a `c539` receiver on Linux
-  ([issue #22](https://github.com/hex-dump/perihub/issues/22)), and a G502 HERO Wireless through a
+  was reached and read through a `c539` receiver on Linux and Windows
+  ([issues #22](https://github.com/hex-dump/perihub/issues/22) and [#115](https://github.com/hex-dump/perihub/issues/115)), and a G502 HERO Wireless through a
   POWERPLAY mat (`c53a`) on Windows was read and saved to ([issues #4](https://github.com/hex-dump/perihub/issues/4)
   and [#28](https://github.com/hex-dump/perihub/issues/28)): the only mouse saved to over the radio so far.
 - **The G604** (`4085` through its receiver) is also recognized over **Bluetooth** (`046d:b024`, issue
@@ -96,8 +97,11 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   their onboard mode: another project found that a PRO X 2 loses its button assignments when it
   does. Nothing is changed and nothing is saved until testers confirm the readings against G HUB
   ([issues #32](https://github.com/hex-dump/perihub/issues/32) and
-  [#33](https://github.com/hex-dump/perihub/issues/33)). The lights of the PRO 2 LIGHTSPEED
-  (`0x8071`) are not read yet.
+  [#33](https://github.com/hex-dump/perihub/issues/33)).
+- **Lights through `0x8071`** (the G903 HERO, the PRO 2 LIGHTSPEED): 👁 a mouse with `0x8071` and no `0x8070` gets
+  its lighting zones read and shown (where each one is, the effects it offers, and what the profile's two LED blocks
+  hold), and they are never changed: the sources disagree on which LED block of a profile drives which zone, and
+  PeriHub sends `0x8071` reads only. A save leaves the profile's lighting as it is.
 - **The Logi Bolt receiver** (`046d:c548`) and **the Unifying receivers** (`046d:c52b`, `c532`)
   are recognized. Every device paired with them that answers, mouse or keyboard, gets a page of
   its own in the sidebar, built from the HID++ features it reports: what kind of device it is, what

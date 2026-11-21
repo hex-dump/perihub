@@ -66,6 +66,7 @@ export const creditGroups: CreditGroup[] = [
           "The Roccat Kone Pure, Kone XTD and Kone EMP settings (Copyright © 2015 Red Hat, Inc., and Copyright © 2021 Alexandre Laurent), read in Rust (docs/protocols/roccat-kone.md).",
           "The HID++ 1.0 registers, memory pages and profile layouts of the Logitech G9, G9x, G500, G500s, G700 and G700s (Copyright © 2015-2017 Red Hat, Inc.), rewritten in Rust (docs/protocols/logitech-hidpp10.md).",
           "The extended DPI (0x2202) and polling rate (0x8061) features and the layout of Logitech profile format 7, from libratbag's open pull requests #1676 (Nathan Rossi) and #1806 (nt-slug), contributed under the project's MIT license (docs/protocols/logitech-onboard-profiles.md).",
+          "The functions of the HID++ 2.0 RGB effects feature 0x8071 and the layout of its zone and effect information (docs/protocols/logitech-keyboard-lighting.md); that Logitech profile format 4 has the layout of formats 2 and 3 (issue #774, pull request #777), the 0x8071 zones of a G903 HERO (pull request #778), and how it ties a profile's LED blocks to the lighting zones (docs/protocols/logitech-onboard-profiles.md).",
         ],
       },
       {
@@ -240,7 +241,7 @@ export const creditGroups: CreditGroup[] = [
         link: "https://github.com/pwr-Solaar/Solaar",
         license: "GPL-2.0",
         notes: [
-          "The Logitech receiver ids, and how it reads and writes onboard profile lists and button entries, compared with libratbag's (docs/protocols/logitech-onboard-profiles.md); that a Logitech device on Bluetooth Low Energy is asked on device index 0xFF and may answer on 0x00 (same page); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (docs/protocols/logitech-hidpp10.md); how it reads a Logitech keyboard's layout code, HID++ 0x4540 (docs/protocols/keyboard-layouts.md); what the HID++ 2.0 root feature answers (docs/protocols/logitech-g213.md); the functions and replies of the HID++ 2.0 lighting features 0x8040, 0x8071, 0x8081 and 0x4540, how a program takes a keyboard's lights over and gives them back, and the G HUB captures and hardware tests in its pull request 3149 (docs/protocols/logitech-keyboard-lighting.md). " + NO_CODE,
+          "The Logitech receiver ids, and how it reads and writes onboard profile lists and button entries and every profile format up to 5 with one layout, compared with libratbag's (docs/protocols/logitech-onboard-profiles.md); that a Logitech device on Bluetooth Low Energy is asked on device index 0xFF and may answer on 0x00 (same page); that the Logitech G9, G9x, G500, G500s, G700 and G700s speak HID++ 1.0 on USB interface 1, and how it codes the DPI of the G9 and G9x (docs/protocols/logitech-hidpp10.md); how it reads a Logitech keyboard's layout code, HID++ 0x4540 (docs/protocols/keyboard-layouts.md); what the HID++ 2.0 root feature answers (docs/protocols/logitech-g213.md); the functions and replies of the HID++ 2.0 lighting features 0x8040, 0x8071, 0x8081 and 0x4540, how a program takes a keyboard's lights over and gives them back, and the G HUB captures and hardware tests in its pull request 3149 (docs/protocols/logitech-keyboard-lighting.md). " + NO_CODE,
         ],
       },
       {
@@ -257,6 +258,15 @@ export const creditGroups: CreditGroup[] = [
         license: "MIT",
         notes: [
           "Its copy of Logitech's public HID++ 2.0 feature specifications \"x8071 – RGB Effects\", \"x8081 – Per-Key Lighting\" and \"x8040 – Brightness Control\": the byte layouts of the effects, power modes, activity notices and per-key colours (docs/protocols/logitech-keyboard-lighting.md). " + NO_CODE,
+          "Its research notes on 0x8100: which LED block of a profile drove which zone in its tests on a G502 SE HERO (docs/protocols/logitech-onboard-profiles.md). " + NO_CODE,
+        ],
+      },
+      {
+        name: "libhidpp",
+        link: "https://github.com/cvuchener/hidpp",
+        license: "GPL-3.0",
+        notes: [
+          "The Logitech profile formats it documents (1 to 3) and the names it gives the two LED blocks of a profile, logo and side (docs/protocols/logitech-onboard-profiles.md). " + NO_CODE,
         ],
       },
       {

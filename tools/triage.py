@@ -392,8 +392,8 @@ SAVING_MOUSE = (
     "A change I saved took effect on the device",
     "It was still there after unplugging the device and plugging it back in",
 )
-# What mouse.rs writes: profile formats 2 and 3, in 255- or 256-byte sectors.
-WRITABLE_FORMATS = (2, 3)
+# What mouse.rs writes: profile formats 2, 3 and 4, in 255- or 256-byte sectors.
+WRITABLE_FORMATS = (2, 3, 4)
 WRITABLE_SECTORS = (255, 256)
 CHANGES_OK = ("Changes: available (experimental)", "Changes: off (read-only)")
 TRANSCRIPT = "Transcript (every request and answer"

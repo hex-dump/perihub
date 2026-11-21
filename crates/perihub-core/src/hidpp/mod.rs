@@ -296,11 +296,48 @@ fn capabilities_from_values(values: Vec<u16>) -> Result<DpiCapabilities> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LedZone {
+    /// The zone's number in the feature that reported it.
     pub index: u8,
-    /// 1 = primary, 2 = logo (per the HID++ 0x8070 specification).
+    /// 1 = primary, 2 = logo (per the HID++ 0x8070 specification; 0x8071 uses the same numbers).
     pub location: u16,
     pub effects: Vec<u16>,
+    /// The feature that reported the zone: [`feature::COLOR_LED_EFFECTS`] (0x8070), whose zones PeriHub can
+    /// preview in RAM, or [`feature::RGB_EFFECTS`] (0x8071), which PeriHub only reads.
+    pub feature: u16,
+    /// The LED slot of the onboard profile that holds the zone's effect, if PeriHub knows it: for 0x8070 the mouse
+    /// sets it from the light the zone is (see [`profile_led_slot`]); for 0x8071 it stays `None` and the zone is
+    /// only shown (docs/protocols/logitech-onboard-profiles.md).
+    pub slot: Option<u8>,
 }
+
+/// The wired G502 HERO (and G502 SE HERO), whose profile keeps its two lights the other way round from its 0x8070
+/// zones.
+const G502_HERO: u16 = 0xC08B;
+
+/// The profile LED slot of 0x8070 zone `index` at `location`.
+///
+/// On the wired G502 HERO the first slot is the G logo (location 2) and the second the DPI indicator (location 1).
+/// Checked on a real one (046d:c08b) on 2026-11-21: a profile saved red in the first slot and green in the second
+/// lit the G logo red and the DPI indicator green, while a preview of zone 0 (location 1) lit the DPI indicator. It
+/// agrees with logirgb's test on a G502 SE HERO and with libhidpp, which calls the first block the logo effect.
+/// Before 0.9.8 PeriHub put zone *n* in slot *n* there too, which swapped the two lights.
+///
+/// Elsewhere zone *n* stays in slot *n*, as PeriHub has always saved it: right on the G502 HERO Wireless, whose zone
+/// 0 is its logo (issue #28), and not checked on other mice, where the sources disagree
+/// (docs/protocols/logitech-onboard-profiles.md).
+pub fn profile_led_slot(product_id: u16, index: u8, location: u16) -> Option<u8> {
+    let slot = match (product_id, location) {
+        (G502_HERO, 2) => 0,
+        (G502_HERO, 1) => 1,
+        (G502_HERO, _) => return None,
+        _ => index,
+    };
+    ((slot as usize) < profile::LED_SLOTS).then_some(slot)
+}
+
+/// At most this many 0x8071 zones and effects per zone are read: the device says how many it has.
+const MAX_RGB_ZONES: u8 = 16;
+const MAX_RGB_EFFECTS: u8 = 32;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct OnboardInfo {
@@ -1059,7 +1096,38 @@ impl HidppDevice {
                 let e = self.call(feature::COLOR_LED_EFFECTS, 2, &[zone, effect])?;
                 effects.push(u16::from_be_bytes([e[2], e[3]]));
             }
-            zones.push(LedZone { index: zone, location: u16::from_be_bytes([info[1], info[2]]), effects });
+            zones.push(LedZone {
+                index: zone,
+                location: u16::from_be_bytes([info[1], info[2]]),
+                effects,
+                feature: feature::COLOR_LED_EFFECTS,
+                // Which light the zone is depends on the model: the mouse sets it (`profile_led_slot`).
+                slot: None,
+            });
+        }
+        Ok(zones)
+    }
+
+    /// The zones of 0x8071 (RGB effects), for a mouse that has it instead of 0x8070: function 0 only, which
+    /// reads (with `FF FF` the zone count, with `zone FF` a zone's location and effect count, with `zone effect`
+    /// an effect's id). The layout of the answers is in docs/protocols/logitech-keyboard-lighting.md.
+    pub fn rgb_led_zones(&mut self) -> Result<Vec<LedZone>> {
+        let count = self.call(feature::RGB_EFFECTS, 0, &[0xFF, 0xFF, 0])?[2];
+        let mut zones = Vec::new();
+        for zone in 0..count.min(MAX_RGB_ZONES) {
+            let info = self.call(feature::RGB_EFFECTS, 0, &[zone, 0xFF, 0])?;
+            let mut effects = Vec::new();
+            for effect in 0..info[4].min(MAX_RGB_EFFECTS) {
+                let e = self.call(feature::RGB_EFFECTS, 0, &[zone, effect, 0])?;
+                effects.push(u16::from_be_bytes([e[2], e[3]]));
+            }
+            zones.push(LedZone {
+                index: zone,
+                location: u16::from_be_bytes([info[2], info[3]]),
+                effects,
+                feature: feature::RGB_EFFECTS,
+                slot: None,
+            });
         }
         Ok(zones)
     }
@@ -1068,6 +1136,9 @@ impl HidppDevice {
     /// `zone.effects` is needed because here the mouse wants the effect's position in its list,
     /// while saved profiles use the effect code.
     pub fn preview_led_effect(&mut self, zone: &LedZone, effect: &LedEffect) -> Result<()> {
+        if zone.feature != feature::COLOR_LED_EFFECTS {
+            return Err(Error::Invalid("only 0x8070 zones are previewed".into()));
+        }
         let mut encoded = effect.encode();
         let position = zone
             .effects
@@ -1191,6 +1262,20 @@ pub(crate) mod tests {
     use super::*;
 
     type Responder = Box<dyn FnMut(&[u8]) -> Vec<Vec<u8>> + Send>;
+
+    #[test]
+    fn the_wired_g502_hero_keeps_its_logo_in_the_first_led_slot_of_a_profile() {
+        // Seen on a real G502 HERO (046d:c08b): the first slot lit the G logo (location 2), the second the DPI
+        // indicator (location 1).
+        assert_eq!(profile_led_slot(G502_HERO, 0, 1), Some(1));
+        assert_eq!(profile_led_slot(G502_HERO, 1, 2), Some(0));
+        assert_eq!(profile_led_slot(G502_HERO, 2, 3), None, "a light it does not have");
+        // The G502 HERO Wireless (issue #28) and the others keep zone n in slot n.
+        assert_eq!(profile_led_slot(0xC08D, 0, 1), Some(0));
+        assert_eq!(profile_led_slot(0xC08D, 1, 2), Some(1));
+        assert_eq!(profile_led_slot(0x4085, 0, 1), Some(0), "the G604's one zone");
+        assert_eq!(profile_led_slot(0xC08F, 2, 3), None, "past the two slots of a profile");
+    }
 
     /// A simulated HID connection: `respond` turns each report written into the reports read back.
     pub(crate) struct FakeDevice {

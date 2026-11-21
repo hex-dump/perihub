@@ -27,7 +27,7 @@ const api = vi.hoisted(() => ({
 vi.mock("../lib/api", async (original) => ({ ...(await original<typeof import("../lib/api")>()), api }));
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: async () => "0.5.2" }));
 
-import type { MouseInfo, MouseState, ProfileSettings } from "../lib/api";
+import type { LedZone, MouseInfo, MouseState, ProfileSettings } from "../lib/api";
 import { acceptNoWarranty } from "../lib/noWarranty";
 import Mouse from "./Mouse.svelte";
 
@@ -733,9 +733,9 @@ describe("Lighting", () => {
   const BLUE = { mode: "fixed", color: "#0000ff" } as const;
   const ALL_EFFECTS = [0, 1, 10, 3];
   // The G502 HERO: zone 0 is the DPI indicator, zone 1 the G logo.
-  const zones = [
-    { index: 0, location: 1, effects: ALL_EFFECTS },
-    { index: 1, location: 2, effects: ALL_EFFECTS },
+  const zones: LedZone[] = [
+    { index: 0, location: 1, effects: ALL_EFFECTS, feature: 0x8070, slot: 0 },
+    { index: 1, location: 2, effects: ALL_EFFECTS, feature: 0x8070, slot: 1 },
   ];
 
   async function openLighting(leds: ProfileSettings["leds"], ledZones = zones) {
@@ -794,8 +794,29 @@ describe("Lighting", () => {
     expect(api.previewLed).not.toHaveBeenCalled();
   });
 
+  it("shows the 0x8071 zones of a G903 HERO, with what each profile slot holds, and changes nothing (issue #115)", async () => {
+    const rgb = zones.map((z) => ({ ...z, effects: [0, 1, 3, 10], feature: 0x8071, slot: null }));
+    await openLighting([RED, { mode: "cycle", period_ms: 5000, brightness: 50 }], rgb);
+    const card = cardOf("Lighting zones the mouse reports");
+    expect(within(card).getByText(/DPI indicator/).closest("li")?.textContent).toBe(
+      "DPI indicator (location 1): Off, Fixed colour, Colour cycle, Breathing",
+    );
+    expect(within(card).getByText(/G logo/)).toBeTruthy();
+    expect(within(card).getByText(/slot 1, fixed #ff0000; slot 2, colour cycle, 5.0 s, 50%/)).toBeTruthy();
+    expect(screen.getByText("PeriHub cannot control the lighting of this mouse.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Breathing" })).toBeNull();
+    expect(api.previewLed).not.toHaveBeenCalled();
+  });
+
+  it("lists a zone whose profile slot PeriHub does not know, next to the editors of the others", async () => {
+    await openLighting([RED, BLUE], [zones[0], { index: 2, location: 3, effects: [0, 1], feature: 0x8071, slot: null }]);
+    expect(within(cardOf("Lighting zones the mouse reports")).getByText(/Zone 3/)).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Zone 3" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "DPI indicator" })).toBeTruthy();
+  });
+
   it("in sync, offers only the effects every zone can show", async () => {
-    await openLighting([RED, RED], [zones[0], { index: 1, location: 2, effects: [0, 1, 3] }]);
+    await openLighting([RED, RED], [zones[0], { index: 1, location: 2, effects: [0, 1, 3], feature: 0x8070, slot: 1 }]);
     const card = cardOf("All zones");
     expect(within(card).queryByRole("button", { name: "Breathing" })).toBeNull();
     expect(within(card).getByRole("button", { name: "Color cycle" })).toBeTruthy();
@@ -849,7 +870,7 @@ describe("a read-only mouse without lights (G502 X)", () => {
   });
 
   it("keeps the Lighting tab on a mouse with LED zones", async () => {
-    await open({ ...readOnly, led_zones: [{ index: 0, location: 1, effects: [0, 1] }] });
+    await open({ ...readOnly, led_zones: [{ index: 0, location: 1, effects: [0, 1], feature: 0x8070, slot: 0 }] });
     expect(screen.getByRole("button", { name: "Lighting" })).toBeTruthy();
   });
 

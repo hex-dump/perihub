@@ -1,7 +1,17 @@
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
-  import { api, debounce, errorText, type LedEffect, type LedZone, type MouseInfo, type ProfileSettings } from "../lib/api";
+  import {
+    api,
+    COLOR_LED_EFFECTS,
+    debounce,
+    errorText,
+    type LedEffect,
+    type LedZone,
+    type MouseInfo,
+    type ProfileSettings,
+  } from "../lib/api";
   import { ledZoneName } from "../lib/keys";
+  import { effectName } from "../lib/logitechFeatures";
 
   interface Props {
     info: MouseInfo;
@@ -21,7 +31,14 @@
     { mode: "cycle", id: 3, label: "Color cycle" },
   ];
 
-  const zones = $derived(info.led_zones.filter((z) => z.index < settings.leds.length));
+  /** A zone the editor shows: the profile has its LED slot. */
+  type SlotZone = LedZone & { slot: number };
+  const inProfile = (z: LedZone): z is SlotZone => z.slot !== null && z.slot < settings.leds.length;
+  const zones = $derived(info.led_zones.filter(inProfile));
+  /** Zones the mouse reports whose profile slot PeriHub does not know: listed, not edited. */
+  const others = $derived(info.led_zones.filter((z) => !inProfile(z)));
+  /** Zones of 0x8070 are previewed in the mouse's RAM; PeriHub never sends 0x8071 anything but reads. */
+  const previewable = (z: LedZone) => z.feature === COLOR_LED_EFFECTS;
   const modeId = (effect: LedEffect) => MODES.find((m) => m.mode === effect.mode)?.id ?? -1;
   const supports = (zone: LedZone, effect: LedEffect) => zone.effects.includes(modeId(effect));
   /** The modes every zone can show: the only ones offered while the zones are in sync. */
@@ -42,12 +59,12 @@
     void settings;
     untrack(() => {
       fullColors = {};
-      const first = zones[0] ? settings.leds[zones[0].index] : undefined;
-      synced = canSync && !!first && first.mode !== "raw" && zones.every((z) => same(settings.leds[z.index], first));
+      const first = zones[0] ? settings.leds[zones[0].slot] : undefined;
+      synced = canSync && !!first && first.mode !== "raw" && zones.every((z) => same(settings.leds[z.slot], first));
     });
   });
 
-  // Effects waiting to be previewed, by zone: an edit of another zone within the wait is sent too.
+  // Effects waiting to be previewed, by zone number: an edit of another zone within the wait is sent too.
   // Batches go one after the other, in the order they were made.
   let destroyed = false;
   const waiting = new Map<number, LedEffect>();
@@ -70,24 +87,24 @@
     });
   }, 120);
 
-  function set(targets: LedZone[], effect: LedEffect) {
+  function set(targets: SlotZone[], effect: LedEffect) {
     for (const z of targets) {
-      settings.leds[z.index] = { ...effect };
-      delete fullColors[z.index];
-      waiting.set(z.index, { ...effect });
+      settings.leds[z.slot] = { ...effect };
+      delete fullColors[z.slot];
+      if (previewable(z)) waiting.set(z.index, { ...effect });
     }
-    flush();
+    if (waiting.size > 0) flush();
   }
 
   /** The zones an edit made on `zone`'s card goes to. */
-  const targets = (zone: LedZone) => (synced ? zones : [zone]);
+  const targets = (zone: SlotZone) => (synced ? zones : [zone]);
 
   function colorOf(effect: LedEffect): string {
     return effect.mode === "fixed" || effect.mode === "breathing" ? effect.color : "#ff5200";
   }
 
-  function changeMode(zone: LedZone, mode: Mode) {
-    const current = settings.leds[zone.index];
+  function changeMode(zone: SlotZone, mode: Mode) {
+    const current = settings.leds[zone.slot];
     const color = colorOf(current);
     const period = "period_ms" in current ? current.period_ms : 4000;
     const brightness = "brightness" in current ? current.brightness : 100;
@@ -99,8 +116,8 @@
     }
   }
 
-  function patch(zone: LedZone, change: Partial<{ color: string; period_ms: number; brightness: number }>) {
-    set(targets(zone), { ...$state.snapshot(settings.leds[zone.index]), ...change } as LedEffect);
+  function patch(zone: SlotZone, change: Partial<{ color: string; period_ms: number; brightness: number }>) {
+    set(targets(zone), { ...$state.snapshot(settings.leds[zone.slot]), ...change } as LedEffect);
   }
 
   /**
@@ -111,9 +128,9 @@
     synced = on;
     if (!on) return;
     const effect = zones
-      .map((z) => $state.snapshot(settings.leds[z.index]) as LedEffect)
+      .map((z) => $state.snapshot(settings.leds[z.slot]) as LedEffect)
       .find((e) => e.mode !== "raw" && zones.every((z) => supports(z, e)));
-    if (effect && zones.some((z) => !same(settings.leds[z.index], effect))) set(zones, effect);
+    if (effect && zones.some((z) => !same(settings.leds[z.slot], effect))) set(zones, effect);
   }
 
   // Fixed colors have no brightness setting in the mouse, so brightness scales the color itself.
@@ -125,12 +142,12 @@
     return Math.max(1, Math.round((Math.max(...channels(color)) / 255) * 100));
   }
 
-  function setFixedBrightness(zone: LedZone, color: string, percent: number) {
+  function setFixedBrightness(zone: SlotZone, color: string, percent: number) {
     const rgb = channels(color);
     const max = Math.max(...rgb);
-    const full = fullColors[zone.index] ?? (max === 0 ? "#ffffff" : toHex(rgb.map((v) => (v * 255) / max)));
+    const full = fullColors[zone.slot] ?? (max === 0 ? "#ffffff" : toHex(rgb.map((v) => (v * 255) / max)));
     patch(zone, { color: toHex(channels(full).map((v) => (v * percent) / 100)) });
-    fullColors[zone.index] = full;
+    fullColors[zone.slot] = full;
   }
 
   /** The cards on screen: one for all the zones in sync, one per zone otherwise. */
@@ -146,6 +163,18 @@
         })),
   );
 
+  /** A saved effect in words, for the zones PeriHub only shows. */
+  function describe(e: LedEffect): string {
+    const s = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
+    switch (e.mode) {
+      case "off": return "off";
+      case "fixed": return `fixed ${e.color}`;
+      case "breathing": return `breathing ${e.color}, ${s(e.period_ms)}, ${e.brightness}%`;
+      case "cycle": return `colour cycle, ${s(e.period_ms)}, ${e.brightness}%`;
+      case "raw": return `effect 0x${e.bytes[0].toString(16).padStart(2, "0")} (set by another program)`;
+    }
+  }
+
   const num = (e: Event) => Number((e.target as HTMLInputElement).value);
   onDestroy(() => {
     destroyed = true;
@@ -154,10 +183,12 @@
 </script>
 
 <div class="col gap">
-  <p class="muted small">
-    Changes are previewed on the mouse right away and become permanent with “Save to mouse”.
-    The preview uses the connected mouse even when you are editing a profile that is not active.
-  </p>
+  {#if zones.length}
+    <p class="muted small">
+      Changes are previewed on the mouse right away and become permanent with “Save to mouse”.
+      The preview uses the connected mouse even when you are editing a profile that is not active.
+    </p>
+  {/if}
   {#if canSync}
     <label class="row small sync">
       <input type="checkbox" checked={synced} onchange={(e) => setSynced((e.target as HTMLInputElement).checked)} />
@@ -174,7 +205,7 @@
   {#if error}<div class="notice error" role="alert">{error}</div>{/if}
 
   {#each cards as { zone, title, subtitle, modes } (synced ? "all" : zone.index)}
-    {@const effect = settings.leds[zone.index]}
+    {@const effect = settings.leds[zone.slot]}
     <div class="card col">
       <h2>{title}</h2>
       {#if subtitle}<p class="muted small">{subtitle}</p>{/if}
@@ -223,6 +254,22 @@
   {:else}
     <div class="notice info">PeriHub cannot control the lighting of this mouse.</div>
   {/each}
+  {#if others.length}
+    <div class="card col">
+      <h2>Lighting zones the mouse reports</h2>
+      <ul class="small zones">
+        {#each others as z (z.index)}
+          <li><b>{zoneName(z)}</b> (location {z.location}): {z.effects.map(effectName).join(", ") || "no effects"}</li>
+        {/each}
+      </ul>
+      <p class="muted small">
+        PeriHub does not know yet which of these lights each lighting effect saved in a profile drives, so it only shows
+        them and leaves the profile's lighting as it is. Saved in this profile: {settings.leds
+          .map((e, i) => `slot ${i + 1}, ${describe(e)}`)
+          .join("; ")}.
+      </p>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -246,5 +293,10 @@
 
   .sliders {
     gap: 30px;
+  }
+
+  .zones {
+    margin: 0;
+    padding-left: 18px;
   }
 </style>
