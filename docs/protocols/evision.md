@@ -3,7 +3,7 @@
 Keyboards on an EVision controller, sold under many brands (Redragon, Glorious, Ajazz, Tecware, Cosmic Byte, Surmen…).
 Their lighting, key assignments and macros are configured through one vendor HID collection, usage page `ff1c`, on
 USB interface 1. **On Linux PeriHub does not open them** (see "Linux" below); on Windows the collection is a device
-of its own. For now PeriHub reads, and on one id it can change the lighting, as an experimental feature.
+of its own. For now PeriHub reads, and on two ids it can change the lighting, as an experimental feature.
 
 ## Sources, in PeriHub's own words
 
@@ -75,7 +75,8 @@ A read of more than 56 bytes is several requests, each with the offset moved on 
 
 There are two layouts of the configuration memory, told apart by the controller, not by anything the keyboard says:
 
-**Layout 1** (OpenRGB's older controller, and `320f:505b`, checked by OpenEVision): the lighting header is at offset 0,
+**Layout 1** (OpenRGB's older controller, `320f:505b` checked by OpenEVision, and `320f:5000` read on a keyboard, see
+"Seen on a keyboard" below): the lighting header is at offset 0,
 8 bytes, and covers offsets `00`–`bf` (the rest of that range is not described). The key table follows at `c0`.
 
 **Layout 2** (OpenRGB's newer controller): offset 0 is one byte, the profile in use (0 to 2; OpenRGB treats a larger
@@ -108,7 +109,8 @@ without the app").
 usage 0 disables the key), `02 01 <bit>` a modifier (its bit in the modifier byte), `03 <lo> <hi>` a consumer
 (media) usage, `05 …` the Fn key. The entries are in the order the keyboard's own live colours use; which entry is
 which physical key is only known from the keyboard's factory table (OpenEVision keeps a backup of it), so PeriHub
-cannot name a key from the table alone. Two more copies of the table (at `2c0` and `4c0`) have an unknown purpose.
+cannot name a key from the table alone. Two more copies of the table (at `2c0` and `4c0`) have an unknown purpose. An entry of any other shape is not
+described by any source: the test report prints the bytes of those, grouped, to tell what they are.
 
 **Custom colours** (command `10`, OpenEVision): 3 bytes per LED, `row * 21 + column` on the keyboard it tried (126
 LEDs, 378 bytes).
@@ -136,7 +138,7 @@ From OpenRGB's detection lists, interface 1 and usage page `ff1c` for each:
 
 - Older controller (layout 1), vendor `320f`: `5000`, `502a`, `505b`, `5064`, `5078`, `5084`; vendor `0c45` (Sonix, whose
   controller EVision rebranded): `5004`, `5104`, `5204`, `652f`, `7672`, `7698`, `8520`. OpenRGB names none of them by
-  product. Only `320f:505b` has been seen answering the reads, by OpenEVision.
+  product. Only `320f:505b` (by OpenEVision) and `320f:5000` (see below) have been seen answering the reads.
 - Newer controller (layout 2): `320f:5041` (OpenRGB's source calls it Bygg CSB-ICL01) and `3299:0012` (the Endorfy
   Omnis, another maker's id).
 
@@ -146,13 +148,32 @@ From OpenRGB's detection lists, interface 1 and usage page `ff1c` for each:
   on `320f:5041` the profile in use at `00` and then the profile's header, after the capabilities read `03`, which
   must answer `aa 55`), and on layout 1 the key table, once, for the test report. A header that is out of range
   (mode not in the list, brightness over 4, speed over 5) makes the page read-only with the reason.
-- On `320f:505b` only, changes the lighting as an **experimental** feature: mode, brightness, colour and speed. It
+- On `320f:505b` and `320f:5000` only, changes the lighting as an **experimental** feature: mode, brightness, colour and speed. It
   reads the header, writes all 8 bytes at offset 0 (changed values only; direction and the random flag are written
   back as read) between a begin and an end, and reads the header back: a header that does not read back is undone.
   Every change stays in the keyboard's flash, so it goes through PeriHub's No warranty box, backup, read-back
   and 15-second undo. Modes 15, 17 and 20 are shown when the keyboard is in them but not offered.
 - Never sent: the custom colours, the live colours, the key table, any other offset. They wait for a tester's report
   and, for the key table, for captures that say which entry is which key.
+
+## Seen on a keyboard
+
+A Redragon K580 RGB, `320f:5000`, on Windows with PeriHub 0.9.7 (issue #117, read only): it answers the reads as
+documented. Header `14 04 00 00 00 …`: mode 20 (custom, per key), brightness 4, colour 0 (so the page shows #000000).
+The key table is 128 entries read in seven requests from `c0` (the answers are in
+`crates/perihub-core/tests/fixtures/transcripts/evision-k580.json`). Entries seen, by shape:
+
+- 94 keys (`02 02 <usage>`), 7 modifiers (`02 01 <bit>`), 3 media (`03 <lo> <hi>`: b6, cd, b5), 3 Fn (`05 02 02`,
+  `05 1b 00`, `05 1d 00`: the Fn key is not always `05 00 00`).
+- 16 entries `02 00 00`, one at the end of every group of 8 entries, and 5 entries `d0 a2 01` to `d0 a2 05`, the
+  seventh of five consecutive groups. **No source documents either shape.** They are only an observation: the first
+  looks like an empty position at the end of each group, the second like five numbered entries, and the K580 has five macro keys, but nobody has checked this, so PeriHub does not name them.
+- The firmware version is not in the answers; OpenEVision says it is the USB device version (`bcdDevice`), which is
+  not a command, so PeriHub does not read it from the keyboard.
+
+Why `320f:5000` may change its lighting: OpenRGB's older controller lists it next to `505b` and sends both the
+same write, and this keyboard answered as the documented layout 1. The other ids of OpenRGB's
+older controller are listed the same way, but no report has shown one yet, so those stay read only.
 
 ## Left out: waiting for captures
 

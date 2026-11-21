@@ -92,7 +92,7 @@
 | **Lamzu Atlantis** on its USB cable | 👁 Read-only |
 | <!-- generated: count coolermaster -->4<!-- end generated --> **Cooler Master mice** (MM530, MM711, MM720, MM730) | 🧪 Lighting only: colour, brightness and mode can be saved at your own risk |
 | **EVGA X12, X20** with a cable | 🧪 Lighting only: on the X12 colour, brightness and off can be saved at your own risk; the X20 is read-only |
-| **EVision keyboards** (<!-- generated: count EVision -->14<!-- end generated --> ids on an EVision controller, such as the Surmen V400 `320f:505b`) | 🧪 On Windows: the lighting in use and the key table are read, and on `320f:505b` the lighting can be changed at your own risk; the other ids are read only. Not opened on Linux (the interface also carries what is typed) |
+| **EVision keyboards** (<!-- generated: count EVision -->14<!-- end generated --> ids on an EVision controller, such as the Surmen V400 `320f:505b`) | 🧪 On Windows: the lighting in use and the key table are read, and on `320f:505b` and `320f:5000` (a Redragon K580) the lighting can be changed at your own risk; the other ids are read only. Not opened on Linux (the interface also carries what is typed) |
 | **Roccat Kone Pure, Kone XTD, Kone EMP** | 👁 Profile in use, DPI levels and polling rate |
 | **Keyboards with QMK firmware**: every Vial keyboard, and VIA keyboards you turn on | 🧪 Read; lighting can be changed at your own risk, keymaps are left to VIA and Vial |
 
@@ -262,7 +262,7 @@ The lighting of two **EVGA mice** is supported from facts in [OpenRGB](https://g
 <details>
 <summary><b>EVision keyboards</b></summary>
 
-Keyboards on an **EVision controller** (sold as Surmen, Ajazz, Redragon, Tecware and many other brands) are supported from facts found in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVision controllers and in [OpenEVision](https://github.com/iefedev/OpenEVision), a Windows app that tried them on a `320f:505b`, with no code copied. PeriHub reads the lighting in use and counts the key table; on `320f:505b` it changes the mode, brightness, colour and speed with **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo (every change stays in the keyboard). Key remapping, macros and onboard profiles wait for captures. **On Linux these keyboards are not opened**: their vendor collection shares an interface with the keyboard's own, and a udev rule would let any program read what is typed.
+Keyboards on an **EVision controller** (sold as Surmen, Ajazz, Redragon, Tecware and many other brands) are supported from facts found in [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB)'s EVision controllers and in [OpenEVision](https://github.com/iefedev/OpenEVision), a Windows app that tried them on a `320f:505b`, with no code copied. PeriHub reads the lighting in use and counts the key table; on `320f:505b` and `320f:5000` it changes the mode, brightness, colour and speed with **Save to memory**, after the **No warranty** box, with the same backup, read-back and 15-second undo (every change stays in the keyboard). Key remapping, macros and onboard profiles wait for captures. **On Linux these keyboards are not opened**: their vendor collection shares an interface with the keyboard's own, and a udev rule would let any program read what is typed.
 
 </details>
 

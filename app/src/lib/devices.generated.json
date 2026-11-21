@@ -1652,7 +1652,7 @@
         {
           "name": "RGB keyboard 320f 5000",
           "kind": "keyboard",
-          "level": "read_only"
+          "level": "experimental"
         },
         {
           "name": "RGB keyboard 320f 502a",

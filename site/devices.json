@@ -5387,7 +5387,7 @@
       "brand": "EVision",
       "name": "RGB keyboard 320f 5000",
       "kind": "keyboard",
-      "level": "read_only",
+      "level": "experimental",
       "page": "devices/evision-rgb-keyboard-320f-5000.html",
       "usb_ids": [
         "320f:5000"
