@@ -1170,5 +1170,57 @@ class StandardInterfacesOnly(unittest.TestCase):
         result = triage.triage(saw_request("c0f4:03f5", ""), "0.9.6", self.devices, upstream={})
         self.assertIn("A maintainer will look", result["comment"])
 
+class ReportInAnotherField(unittest.TestCase):
+    """Issue #117: the Test report field left as the placeholder, the app's report pasted in "Messages and errors"
+    after a sentence of the tester's, without a code block."""
+
+    REPORT = (
+        "PeriHub 0.9.7 on windows x86_64\n"
+        "Device: EVision RGB keyboard 320f 5000 (keyboard), USB ID 320f:5000, protocol from OpenRGB, OpenEVision (GPL-2.0, facts only)\n"
+        "Firmware: not read\n"
+        "Changes: off (read-only)\n"
+        "Transcript (every request and answer, for a replay test):\n"
+        '{\n  "format": "perihub-transcript",\n  "events": [\n    {"op":"write","data":"04 0d 00 05 08","len":64}\n  ]\n}\n'
+        "Writes this session: 0 sent, 0 refused"
+    )
+    PLACEHOLDER = "Paste the report here (PeriHub copied it to the clipboard)."
+
+    def issue(self, notices, report=PLACEHOLDER, version="0.9.7"):
+        body = (
+            answer("Device type", "Keyboard") + answer("Brand", "Other") + answer("Device", "EVision RGB keyboard 320f 5000")
+            + answer("USB ID (vendor:product)", "320f:5000") + answer("PeriHub version", version)
+            + answer("Test report", f"```text\n{report}\n```")
+            + boxes(FORM, "matches", "What PeriHub shows correctly", [*triage.SHOWS_MOUSE])
+            + answer("Messages and errors", notices) + answer("What is wrong or missing", None)
+        )
+        return {"number": 117, "labels": [{"name": "test report"}], "body": body}
+
+    def test_the_report_is_found_after_free_text(self):
+        issue = self.issue("it's a reddragon K580 RBG\n" + self.REPORT)
+        lines = triage.app_report(triage.fields(issue["body"]))
+        self.assertEqual(lines[0], "PeriHub 0.9.7 on windows x86_64")
+        self.assertEqual(lines[-1], "Writes this session: 0 sent, 0 refused")
+        self.assertNotIn("it's a reddragon K580 RBG", lines)
+
+    def test_it_stops_at_the_writes_line(self):
+        issue = self.issue(self.REPORT + "\nthanks, it works")
+        lines = triage.app_report(triage.fields(issue["body"]))
+        self.assertEqual(lines[-1], "Writes this session: 0 sent, 0 refused")
+
+    def test_the_placeholder_alone_is_no_report(self):
+        self.assertIsNone(triage.app_report(triage.fields(self.issue("nothing to add")["body"])))
+
+    def test_nothing_is_confirmed_and_the_labels_are_right(self):
+        result = run(self.issue("it's a reddragon K580 RBG\n" + self.REPORT))
+        self.assertNotIn("confirm", result)
+        self.assertEqual(result["labels"], ["brand: Other", "keyboard"])
+        self.assertIsNone(result["comment"])
+
+    def test_an_older_version_in_the_wrong_field_is_still_asked_to_update(self):
+        result = run(self.issue(self.REPORT.replace("0.9.7", "0.9.5"), version="0.9.5"), latest="0.9.7")
+        self.assertIn("0.9.5", result["comment"])
+        self.assertNotIn("confirm", result)
+
+
 if __name__ == "__main__":
     unittest.main()

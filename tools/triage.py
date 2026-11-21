@@ -407,9 +407,25 @@ def ticked(value: str) -> set[str]:
 
 
 def app_report(answers: dict[str, str]) -> list[str] | None:
-    """The lines of the Test report answer, if it starts the way PeriHub's report does."""
+    """The lines of the app's report: the Test report answer if it starts the way PeriHub's report does. A tester
+    sometimes leaves that field as it was and pastes the report in another one (issue #117: "Messages and
+    errors", after a sentence of their own, without a code block): then it is the lines from the first
+    "PeriHub x.y.z on <os> <arch>" line of that field up to the "Writes this session" line, or the field's end.
+    The placeholder of the Test report field has no such line and is never taken for a report."""
     lines = [line.rstrip() for line in answers.get("Test report", "").splitlines() if not line.startswith("```")]
-    return lines if lines and REPORT_FIRST.match(lines[0]) else None
+    if lines and REPORT_FIRST.match(lines[0]):
+        return lines
+    for label, value in answers.items():
+        if label == "Test report":
+            continue
+        lines = [line.rstrip() for line in value.splitlines() if not line.startswith("```")]
+        start = next((i for i, line in enumerate(lines) if REPORT_FIRST.match(line.strip())), None)
+        if start is None:
+            continue
+        lines = [line.strip() if i == 0 else line for i, line in enumerate(lines[start:])]
+        end = next((i for i, line in enumerate(lines) if line.startswith(WRITES_HEADER)), len(lines) - 1)
+        return lines[: end + 1]
+    return None
 
 
 def tested_memory_formats(source: str) -> set[tuple[int, int]]:
