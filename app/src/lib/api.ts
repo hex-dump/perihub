@@ -266,10 +266,18 @@ export interface MouseState {
 export type ProfileList = "own" | "factory" | "damaged";
 
 export interface LedZone {
+  /** The zone's number in the feature that reported it. */
   index: number;
   location: number;
   effects: number[];
+  /** 0x8070 (colour LED effects), whose zones PeriHub previews, or 0x8071 (RGB effects), which it only reads. */
+  feature: number;
+  /** The LED slot of the onboard profile that holds the zone's effect, or null when PeriHub does not know it. */
+  slot: number | null;
 }
+
+/** The feature whose zones PeriHub previews in the mouse's RAM. */
+export const COLOR_LED_EFFECTS = 0x8070;
 
 export interface ReceiverLink {
   /** USB product id of the receiver. */

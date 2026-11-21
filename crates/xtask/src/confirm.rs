@@ -378,7 +378,9 @@ mod tests {
         assert!(check(&memory(3, 256), &[], &seeded).is_ok());
         assert!(check(&memory(2, 256), &[], &seeded).unwrap_err().contains("tested already"));
         assert!(check(&memory(3, 255), &[], &seeded).unwrap_err().contains("tested already"));
-        assert!(check(&memory(4, 255), &[], &seeded).unwrap_err().contains("does not write"));
+        // Format 4 (the G903 HERO's, issue #115) is written like 2 and 3, and waits for a tester.
+        assert!(check(&memory(4, 255), &[], &seeded).is_ok());
+        assert!(check(&memory(5, 255), &[], &seeded).unwrap_err().contains("does not write"));
         assert!(check(&memory(2, 512), &[], &seeded).unwrap_err().contains("does not write"));
     }
 

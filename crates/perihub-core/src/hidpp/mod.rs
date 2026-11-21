@@ -296,11 +296,28 @@ fn capabilities_from_values(values: Vec<u16>) -> Result<DpiCapabilities> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LedZone {
+    /// The zone's number in the feature that reported it.
     pub index: u8,
-    /// 1 = primary, 2 = logo (per the HID++ 0x8070 specification).
+    /// 1 = primary, 2 = logo (per the HID++ 0x8070 specification; 0x8071 uses the same numbers).
     pub location: u16,
     pub effects: Vec<u16>,
+    /// The feature that reported the zone: [`feature::COLOR_LED_EFFECTS`] (0x8070), whose zones PeriHub can
+    /// preview in RAM, or [`feature::RGB_EFFECTS`] (0x8071), which PeriHub only reads.
+    pub feature: u16,
+    /// The LED slot of the onboard profile that holds the zone's effect, if PeriHub knows it: zone *n* is slot *n*
+    /// for 0x8070, as PeriHub has always written it. For 0x8071 the sources disagree on which slot holds which
+    /// zone, so it is `None` and the zone is only shown (docs/protocols/logitech-onboard-profiles.md).
+    pub slot: Option<u8>,
 }
+
+/// The profile LED slot of zone `index`: the same number, while the profile has that slot.
+fn profile_slot(index: u8) -> Option<u8> {
+    ((index as usize) < profile::LED_SLOTS).then_some(index)
+}
+
+/// At most this many 0x8071 zones and effects per zone are read: the device says how many it has.
+const MAX_RGB_ZONES: u8 = 16;
+const MAX_RGB_EFFECTS: u8 = 32;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct OnboardInfo {
@@ -1059,7 +1076,37 @@ impl HidppDevice {
                 let e = self.call(feature::COLOR_LED_EFFECTS, 2, &[zone, effect])?;
                 effects.push(u16::from_be_bytes([e[2], e[3]]));
             }
-            zones.push(LedZone { index: zone, location: u16::from_be_bytes([info[1], info[2]]), effects });
+            zones.push(LedZone {
+                index: zone,
+                location: u16::from_be_bytes([info[1], info[2]]),
+                effects,
+                feature: feature::COLOR_LED_EFFECTS,
+                slot: profile_slot(zone),
+            });
+        }
+        Ok(zones)
+    }
+
+    /// The zones of 0x8071 (RGB effects), for a mouse that has it instead of 0x8070: function 0 only, which
+    /// reads (with `FF FF` the zone count, with `zone FF` a zone's location and effect count, with `zone effect`
+    /// an effect's id). The layout of the answers is in docs/protocols/logitech-keyboard-lighting.md.
+    pub fn rgb_led_zones(&mut self) -> Result<Vec<LedZone>> {
+        let count = self.call(feature::RGB_EFFECTS, 0, &[0xFF, 0xFF, 0])?[2];
+        let mut zones = Vec::new();
+        for zone in 0..count.min(MAX_RGB_ZONES) {
+            let info = self.call(feature::RGB_EFFECTS, 0, &[zone, 0xFF, 0])?;
+            let mut effects = Vec::new();
+            for effect in 0..info[4].min(MAX_RGB_EFFECTS) {
+                let e = self.call(feature::RGB_EFFECTS, 0, &[zone, effect, 0])?;
+                effects.push(u16::from_be_bytes([e[2], e[3]]));
+            }
+            zones.push(LedZone {
+                index: zone,
+                location: u16::from_be_bytes([info[2], info[3]]),
+                effects,
+                feature: feature::RGB_EFFECTS,
+                slot: None,
+            });
         }
         Ok(zones)
     }
@@ -1068,6 +1115,9 @@ impl HidppDevice {
     /// `zone.effects` is needed because here the mouse wants the effect's position in its list,
     /// while saved profiles use the effect code.
     pub fn preview_led_effect(&mut self, zone: &LedZone, effect: &LedEffect) -> Result<()> {
+        if zone.feature != feature::COLOR_LED_EFFECTS {
+            return Err(Error::Invalid("only 0x8070 zones are previewed".into()));
+        }
         let mut encoded = effect.encode();
         let position = zone
             .effects

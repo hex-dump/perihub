@@ -31,8 +31,8 @@ const mouse: MouseInfo = {
   dpi: { min: 100, max: 25600, step: 50, list: [] },
   report_rates_ms: [1, 2, 4, 8],
   led_zones: [
-    { index: 0, location: 1, effects: [0, 1, 3, 10] },
-    { index: 1, location: 2, effects: [0, 1, 3, 10] },
+    { index: 0, location: 1, effects: [0, 1, 3, 10], feature: 0x8070, slot: 0 },
+    { index: 1, location: 2, effects: [0, 1, 3, 10], feature: 0x8070, slot: 1 },
   ],
   features: [],
   onboard: {

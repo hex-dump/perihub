@@ -168,7 +168,7 @@ Support: read-only (memory format PeriHub cannot write)
 Software control: yes
 Firmware: U1 88.5.6
 Profiles: 5, buttons: 11
-Memory: model 1, profile format 4, macro format 1, 16 sectors of 255 bytes, 5 factory profiles
+Memory: model 1, profile format 5, macro format 1, 16 sectors of 255 bytes, 5 factory profiles
 Profile list: saved in the mouse
 G-Shift: yes, DPI shift: yes
 DPI: 100-25600, step 50
@@ -270,6 +270,11 @@ class Confirms(unittest.TestCase):
         self.assertEqual(result["confirm"], {"memory_format": [2, 255]})
         self.assertEqual(result["issue"], 41)
 
+    def test_a_g903_hero_saved_to_with_its_cable_confirms_format_4(self):
+        # Issue #115: format 4 is written like 2 and 3, and one clean report with the cable makes it tested.
+        report = MOUSE.replace("profile format 2", "profile format 4")
+        self.assertEqual(run(mouse_issue(report))["confirm"], {"memory_format": [4, 255]})
+
     def test_the_boxes_of_the_form_are_the_ones_the_script_asks_for(self):
         for form in (FORM, *LEGACY_FORMS):
             shows = options(form, "matches")
@@ -294,7 +299,7 @@ class Confirms(unittest.TestCase):
 
     def test_the_memory_rules_are_the_core_s(self):
         source = (ROOT / "crates/perihub-core/src/mouse.rs").read_text()
-        self.assertIn("WRITABLE_PROFILE_FORMATS: &[u8] = &[2, 3];", source)
+        self.assertIn("WRITABLE_PROFILE_FORMATS: &[u8] = &[2, 3, 4];", source)
         self.assertIn("profile::MIN_WRITE_SECTOR_SIZE..=profile::VERIFIED_SECTOR_SIZE", source)
         profile = (ROOT / "crates/perihub-core/src/hidpp/profile.rs").read_text()
         self.assertIn("VERIFIED_SECTOR_SIZE: usize = 256;", profile)
@@ -385,7 +390,7 @@ class DoesNotConfirm(unittest.TestCase):
         self.none(mouse_issue(MOUSE), tested={(2, 255)})
         self.none(mouse_issue(MOUSE, usb="046d:c08b"))
         self.none(mouse_issue(MOUSE.replace("sectors of 255", "sectors of 512")))
-        self.none(mouse_issue(MOUSE.replace("profile format 2", "profile format 4")))
+        self.none(mouse_issue(MOUSE.replace("profile format 2", "profile format 5")))
         self.none(mouse_issue(MOUSE.replace("Features: 0001 v1, 8071 v4 (flags 40)", "Features: not read")))
         self.none(mouse_issue(MOUSE.replace("Support: experimental (memory format not tested yet)", "Support: read-only on this connection")))
 

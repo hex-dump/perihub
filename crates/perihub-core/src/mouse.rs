@@ -20,9 +20,10 @@ use crate::hidpp::{
 };
 use crate::worker::DeviceTask;
 
-/// Profile formats PeriHub writes, with one layout for both, as libratbag and Solaar do. The others
-/// can be read but not written.
-pub const WRITABLE_PROFILE_FORMATS: &[u8] = &[2, 3];
+/// Profile formats PeriHub writes, with one layout for all three, as libratbag and Solaar do: format 4 (the
+/// G903 HERO's, issue #115) only adds fields after the ones PeriHub writes (docs/protocols/logitech-onboard-profiles.md).
+/// The others can be read but not written.
+pub const WRITABLE_PROFILE_FORMATS: &[u8] = &[2, 3, 4];
 /// Sector sizes PeriHub writes: 256 bytes, or 255 with the CRC one byte earlier (other mice, and
 /// newer G502 HERO firmware: issue #20).
 pub const WRITABLE_SECTOR_SIZES: std::ops::RangeInclusive<usize> =
@@ -81,7 +82,7 @@ pub struct MouseInfo {
     pub extended: Option<ExtendedReads>,
     pub led_zones: Vec<LedZone>,
     /// The HID++ features the mouse lists, for test reports: they show what a mouse has that
-    /// PeriHub does not read yet (such as lighting through another feature than 0x8070).
+    /// PeriHub does not read yet.
     pub features: Vec<FeatureEntry>,
     pub onboard: OnboardInfo,
     pub writable: bool,
@@ -383,6 +384,35 @@ fn reload_method(active: u8, enabled: &[bool]) -> Reload {
     }
 }
 
+/// The mouse's lighting zones: from 0x8070, or from 0x8071 on a mouse that has that one instead (the G903 HERO,
+/// issue #115), which PeriHub only reads and shows: which LED slot of a profile holds which 0x8071 zone is not
+/// known (docs/protocols/logitech-onboard-profiles.md), so their profile slots are left alone. A 0x8071 answer
+/// PeriHub cannot use leaves the list empty instead of the mouse unopened.
+///
+/// `zones` is what 0x8070 gave (`None` without that feature); 0x8071 is asked only of a mouse whose feature table
+/// lists it, so that the others are asked nothing more than before.
+fn read_led_zones(
+    dev: &mut HidppDevice,
+    zones: Option<Vec<LedZone>>,
+    features: &[FeatureEntry],
+) -> Result<Vec<LedZone>> {
+    if let Some(zones) = zones {
+        return Ok(zones);
+    }
+    if !features.iter().any(|f| f.id == feature::RGB_EFFECTS) {
+        return Ok(Vec::new());
+    }
+    match dev.rgb_led_zones() {
+        Ok(zones) => Ok(zones),
+        Err(Error::FeatureMissing(_)) => Ok(Vec::new()),
+        Err(Error::Hidpp(code)) => {
+            log::warn!("the lighting zones (0x8071) could not be read: {code:?}");
+            Ok(Vec::new())
+        }
+        Err(other) => Err(other),
+    }
+}
+
 /// Features that some mice lack (no LEDs, a different polling rate feature) leave an empty list.
 fn missing_as_empty<T>(result: Result<Vec<T>>) -> Result<Vec<T>> {
     match result {
@@ -408,10 +438,25 @@ impl MouseTask {
         }
         dev.grant(support.access());
         dev.set_label(model.name.to_string());
+        let name = dev.device_name()?;
+        let firmware = dev.firmware()?;
+        let dpi = dev.any_dpi_capabilities()?;
+        let report_rates_ms = missing_as_empty(dev.report_rates())?;
+        let color_led_zones = match dev.led_zones() {
+            Err(Error::FeatureMissing(_)) => None,
+            other => Some(other?),
+        };
+        // For the test report and the lighting zones: a list that cannot be read leaves it empty.
+        let features = match dev.feature_table() {
+            Ok(features) => features,
+            Err(Error::Unreachable) => return Err(Error::Unreachable),
+            Err(_) => Vec::new(),
+        };
+        let led_zones = read_led_zones(&mut dev, color_led_zones, &features)?;
         let info = MouseInfo {
             product_id: model.product_id,
             model: model.name.into(),
-            name: dev.device_name()?,
+            name,
             verified: support.tested,
             experimental: support.experimental,
             pending_undo: false,
@@ -420,17 +465,12 @@ impl MouseTask {
             link: None,
             host_mode: false,
             switches_back: model.verified,
-            firmware: dev.firmware()?,
-            dpi: dev.any_dpi_capabilities()?,
-            report_rates_ms: missing_as_empty(dev.report_rates())?,
+            firmware,
+            dpi,
+            report_rates_ms,
             extended: None,
-            led_zones: missing_as_empty(dev.led_zones())?,
-            // Only for the test report: a list that cannot be read leaves it empty.
-            features: match dev.feature_table() {
-                Ok(features) => features,
-                Err(Error::Unreachable) => return Err(Error::Unreachable),
-                Err(_) => Vec::new(),
-            },
+            led_zones,
+            features,
             writable: support.writable,
             writable_format: support.writable_format,
             profile_list: ProfileList::Own,
@@ -1168,11 +1208,11 @@ impl MouseTask {
         }
     }
 
-    /// On a model not tested as a whole, LED slots that the mouse does not report as zones keep
+    /// On a model not tested as a whole, LED slots that are not the slot of one of the mouse's zones keep
     /// their bytes: PeriHub only knows what they mean on the G502 HERO.
     fn check_led_slots(&self, sector: &[u8], settings: &ProfileSettings) -> Result<()> {
         let current = ProfileSettings::parse(sector, self.info.onboard.button_count as usize)?;
-        let zones: Vec<u8> = self.info.led_zones.iter().map(|z| z.index).collect();
+        let zones: Vec<u8> = self.info.led_zones.iter().filter_map(|z| z.slot).collect();
         if unknown_led_slots_changed(&current, settings, &zones) {
             return Err(Error::Invalid("this mouse has no such LED zone".into()));
         }
@@ -1357,6 +1397,11 @@ impl MouseTask {
             .find(|z| z.index == zone)
             .cloned()
             .ok_or_else(|| Error::Invalid(format!("LED zone {zone}")))?;
+        if zone.feature != feature::COLOR_LED_EFFECTS {
+            return Err(Error::Invalid(
+                "this mouse's lights (0x8071) are only read: PeriHub neither previews nor changes them".into(),
+            ));
+        }
         self.dev.preview_led_effect(&zone, effect)?;
         self.previewing = true;
         Ok(())
@@ -1545,8 +1590,15 @@ mod tests {
         // A model tested as a whole stays tested: the G502 HERO with 255-byte sectors (issue #20).
         assert_eq!(support(hero, &untested, false, false), supported);
 
+        // Format 4 has the layout of formats 2 and 3 where PeriHub writes (the G903 HERO of issue #115):
+        // experimental with the cable, read-only through a receiver until a tester confirms it.
+        let format_4 = OnboardInfo { profile_format: 4, sector_size: 255, ..g502.clone() };
+        assert_eq!(support(g403, &format_4, false, true), experimental);
+        assert_eq!(support(g403, &format_4, false, false), read_only, "the command line");
+        assert_eq!(support(g403, &format_4, true, true), read_only, "through a receiver");
+
         // Memories PeriHub cannot write.
-        for format in [0, 1, 4, 5, 6, 7] {
+        for format in [0, 1, 5, 6, 7] {
             let other = OnboardInfo { profile_format: format, ..g502.clone() };
             assert_eq!(support(g403, &other, false, true), unknown, "profile format {format}");
         }
@@ -1650,6 +1702,18 @@ mod tests {
         feature::FEATURE_SET,
     ];
 
+    /// The features of a mouse with RGB effects (0x8071) instead of 0x8070.
+    const RGB_SIM_FEATURES: &[u16] = &[
+        feature::ROOT,
+        feature::DEVICE_INFO,
+        feature::DEVICE_NAME,
+        feature::ADJUSTABLE_DPI,
+        feature::REPORT_RATE,
+        feature::ONBOARD_PROFILES,
+        feature::FEATURE_SET,
+        feature::RGB_EFFECTS,
+    ];
+
     /// The features of a PRO X 2 style mouse: extended DPI and polling rate instead of 0x2201 and 0x8060.
     const PRO_FEATURES: &[u16] = &[
         feature::ROOT,
@@ -1707,6 +1771,12 @@ mod tests {
         led_info: Vec<u8>,
         led_zone: Vec<u8>,
         led_effects: Vec<Vec<u8>>,
+        /// 0x8071 function 0: the zone count (asked with FF FF), each zone (zone FF), each effect of each zone.
+        rgb_info: Vec<u8>,
+        rgb_zones: Vec<Vec<u8>>,
+        rgb_effects: Vec<Vec<Vec<u8>>>,
+        /// Bytes 0x8100 function 0 sends after the ones PeriHub reads.
+        onboard_extra: Vec<u8>,
     }
 
     impl Sim {
@@ -1759,6 +1829,10 @@ mod tests {
                 led_info: Vec::new(),
                 led_zone: Vec::new(),
                 led_effects: Vec::new(),
+                rgb_info: Vec::new(),
+                rgb_zones: Vec::new(),
+                rgb_effects: Vec::new(),
+                onboard_extra: Vec::new(),
             }
         }
 
@@ -1845,12 +1919,22 @@ mod tests {
                 (feature::COLOR_LED_EFFECTS, 0) => self.led_info.clone(),
                 (feature::COLOR_LED_EFFECTS, 1) => self.led_zone.clone(),
                 (feature::COLOR_LED_EFFECTS, 2) => self.led_effects.get(p[1] as usize).ok_or(INVALID_ARGUMENT)?.clone(),
+                (feature::RGB_EFFECTS, 0) => match (p[0], p[1]) {
+                    (0xFF, 0xFF) if !self.rgb_info.is_empty() => self.rgb_info.clone(),
+                    (zone, 0xFF) => self.rgb_zones.get(zone as usize).ok_or(INVALID_ARGUMENT)?.clone(),
+                    (zone, effect) => self
+                        .rgb_effects
+                        .get(zone as usize)
+                        .and_then(|effects| effects.get(effect as usize))
+                        .ok_or(INVALID_ARGUMENT)?
+                        .clone(),
+                },
                 (feature::ADJUSTABLE_DPI, 3) => vec![],
                 // 1, 2, 4 and 8 ms.
                 (feature::REPORT_RATE, 0) => vec![0x8B],
                 (feature::ONBOARD_PROFILES, 0) => {
                     let [hi, lo] = info.sector_size.to_be_bytes();
-                    vec![
+                    let mut answer = vec![
                         info.memory_model,
                         info.profile_format,
                         info.macro_format,
@@ -1861,7 +1945,9 @@ mod tests {
                         hi,
                         lo,
                         0x0A,
-                    ]
+                    ];
+                    answer.extend(&self.onboard_extra);
+                    answer
                 }
                 (feature::ONBOARD_PROFILES, 1) => vec![],
                 (feature::ONBOARD_PROFILES, 2) => vec![ONBOARD_MODE],
@@ -2235,8 +2321,8 @@ mod tests {
     #[test]
     fn a_memory_format_perihub_cannot_write_is_locked_down_to_the_hidpp_layer() {
         let (memory, onboard) = g502_memory();
-        let format_4 = Sim::new(memory, onboard).resized(256, 4);
-        let (mut task, sim) = open_sim(format_4, G502_X_PLUS, true);
+        let format_5 = Sim::new(memory, onboard).resized(256, 5);
+        let (mut task, sim) = open_sim(format_5, G502_X_PLUS, true);
         assert!(!task.info.verified && !task.info.writable && !task.info.experimental);
         let state = task.state().unwrap();
         assert!(task.save_profile(2, &edited(&state, 2)).is_err());
@@ -2250,13 +2336,240 @@ mod tests {
 
     #[test]
     fn the_feature_list_is_read_from_a_read_only_mouse_behind_a_receiver() {
-        // Issue #22: a G903 HERO, profile format 4 with 255-byte sectors, through its receiver.
+        // Issue #22: a G903 HERO, profile format 4 with 255-byte sectors, through its receiver. PeriHub can
+        // write format 4, but nobody has tested it yet: through the receiver it only reads.
         let (memory, onboard) = g502_memory();
-        let format_4 = Sim::new(memory, onboard).resized(255, 4);
+        let format_4 = Sim::new(memory.clone(), onboard.clone()).resized(255, 4);
         let (task, _) = open_sim_through(format_4, G502_X_PLUS, true, true);
-        assert!(!task.info.writable && !task.info.writable_format && !task.info.experimental);
+        assert!(!task.info.writable && task.info.writable_format && !task.info.experimental);
         let ids: Vec<u16> = task.info.features.iter().map(|f| f.id).collect();
         assert_eq!(ids, SIM_FEATURES[1..]);
+        // A format PeriHub cannot write, the same way.
+        let format_5 = Sim::new(memory, onboard).resized(255, 5);
+        let (task, _) = open_sim_through(format_5, G502_X_PLUS, true, true);
+        assert!(!task.info.writable && !task.info.writable_format && !task.info.experimental);
+        assert_eq!(task.info.features.len(), SIM_FEATURES.len() - 1);
+    }
+
+    // ---- The G903 HERO of issue #115: profile format 4, lights through 0x8071 ----
+
+    const G903_HERO: u16 = 0xC091;
+
+    /// The feature table of the G903 HERO, as the test report of issue #115 lists it (the same as in the debug log of
+    /// libratbag's issue #774, a G903 HERO on its cable).
+    const G903_FEATURES: &[u16] = &[
+        feature::ROOT,
+        0x0001,
+        0x0003,
+        0x0005,
+        0x1D4B,
+        0x0020,
+        0x1001,
+        feature::RGB_EFFECTS,
+        feature::ONBOARD_PROFILES,
+        0x8110,
+        feature::REPORT_RATE,
+        feature::ADJUSTABLE_DPI,
+        0x00C2,
+        0x1802,
+        0x1803,
+        0x1805,
+        0x1806,
+        0x1811,
+        0x1830,
+        0x1890,
+        0x1891,
+        0x18A1,
+        0x1801,
+        0x18B1,
+        0x1DF3,
+        0x1E00,
+        0x1EB0,
+        0x1863,
+        0x1E22,
+        0x2121,
+        0x18C0,
+    ];
+    /// The type (flags) and version of each G903 HERO feature after the root.
+    const G903_TABLE: &[(u8, u8)] = &[
+        (0, 1),
+        (0, 2),
+        (0, 0),
+        (0, 0),
+        (0, 0),
+        (0, 2),
+        (0, 0),
+        (0, 0),
+        (0, 0),
+        (0, 0),
+        (0, 1),
+        (0, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 4),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 4),
+        (0x60, 4),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0x40, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0x60, 0),
+        (0, 0),
+        (0x60, 0),
+    ];
+
+    /// A G903 HERO as the test report of issue #115 shows it: its name, firmware, feature table, memory (format 4,
+    /// 16 sectors of 255 bytes, 5 profiles, 1 factory profile, 12 buttons), DPI range, polling rates, active profile
+    /// and its profile list, byte for byte (profile 1 enabled, 2 to 5 disabled). Its two 0x8071 zones (location 1
+    /// with 4 effects, location 2 with 4 effects) are what a G903 HERO answered in libratbag's issue #774. Made up:
+    /// the unit id (12 34 56 78, which the transcript leaves out), the ids of the zones' effects (off, fixed, colour
+    /// cycle, breathing) and the profiles themselves (the G502's, in 255-byte sectors), which the report did not read.
+    fn g903_hero() -> Sim {
+        let (memory, _) = g502_memory();
+        let onboard = OnboardInfo {
+            memory_model: 1,
+            profile_format: 4,
+            macro_format: 1,
+            profile_count: 5,
+            rom_profile_count: 1,
+            button_count: 12,
+            sector_count: 16,
+            sector_size: 255,
+            has_gshift: true,
+            has_dpi_shift: true,
+        };
+        let mut sim = Sim::new(memory, onboard).resized(255, 4);
+        let mut list = vec![0xFF; 255];
+        for n in 1..=5u8 {
+            let at = 4 * (n as usize - 1);
+            list[at..at + 4].copy_from_slice(&[0x00, n, (n == 1) as u8, 0xFF]);
+        }
+        list[253..].copy_from_slice(&[0x40, 0x37]);
+        sim.user[0] = list;
+        sim.features = G903_FEATURES;
+        sim.table = G903_TABLE.to_vec();
+        sim.name = "G903 LIGHTSPEED Wireless Gaming Mouse w/ HERO";
+        sim.device_info = vec![0x03, 0x12, 0x34, 0x56, 0x78, 0x00, 0x0C, 0x40, 0x87, 0xC0, 0x91, 0, 0, 0, 0, 0];
+        sim.firmware = vec![
+            vec![0x01, b'B', b'L', b'1', 0x06, 0x01, 0x00, 0x13, 0, 0, 0, 0x04, 0x70, 0x72, 0xFE, 0],
+            vec![0x00, b'M', b'P', b'M', 0x23, 0x01, 0x00, 0x13, 0x01, 0x40, 0x87, 0x04, 0x70, 0x72, 0xFE, 0],
+            vec![0x05, 0, 0, 0, 0, 0, 0, 0xAE],
+        ];
+        sim.onboard_extra = vec![0x04];
+        sim.rgb_info = vec![0xFF, 0x00, 0x02, 0x00, 0x0B, 0x00, 0x04];
+        sim.rgb_zones = vec![vec![0x00, 0x00, 0x00, 0x01, 0x04, 0x07], vec![0x01, 0x00, 0x00, 0x02, 0x04, 0x00]];
+        sim.rgb_effects = (0..2u8)
+            .map(|zone| {
+                vec![
+                    vec![zone, 0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+                    vec![zone, 1, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00],
+                    vec![zone, 2, 0x00, 0x03, 0x00, 0x04, 0x27, 0x10],
+                    vec![zone, 3, 0x00, 0x0A, 0x00, 0x05, 0x0F, 0xA0],
+                ]
+            })
+            .collect();
+        sim
+    }
+
+    /// What the zones of a mouse are: (zone, location, feature, profile slot).
+    fn zones_of(info: &MouseInfo) -> Vec<(u8, u16, u16, Option<u8>)> {
+        info.led_zones.iter().map(|z| (z.index, z.location, z.feature, z.slot)).collect()
+    }
+
+    #[test]
+    fn the_profile_list_of_the_g903_hero_is_the_one_its_report_shows() {
+        let list = &g903_hero().user[0];
+        assert!(profile::crc_is_valid(list), "the CRC the mouse sent matches the bytes before it");
+        assert_eq!(profile::parse_directory(list, 5), [true, false, false, false, false]);
+    }
+
+    #[test]
+    fn a_g903_hero_with_its_cable_saves_format_4_as_an_experimental_feature_and_only_shows_its_8071_zones() {
+        let (fake, sim) = sim_transport(g903_hero(), None);
+        let requests = fake.written.clone();
+        let dev = HidppDevice::new(fake, models::WIRED_INDEX, true).unwrap();
+        let mut task = MouseTask::open(dev, model_of(G903_HERO), true).unwrap();
+        assert!(task.info.writable && task.info.writable_format && task.info.experimental && !task.info.verified);
+        // The zones of 0x8071 are read and shown, with no profile slot: the sources disagree on which slot is which.
+        let rgb = feature::RGB_EFFECTS;
+        assert_eq!(zones_of(&task.info), [(0, 1, rgb, None), (1, 2, rgb, None)]);
+        assert_eq!(task.info.led_zones[1].effects, [0, 1, 3, 10]);
+        // 0x8071 is only read: no preview in RAM.
+        assert!(task.preview_led(0, &LedEffect::Off).is_err());
+
+        let before = sim.lock().unwrap().user.clone();
+        let state = task.state().unwrap();
+        let settings = edited(&state, 1);
+        assert_eq!((settings.buttons.len(), settings.gshift_buttons.len()), (12, 12));
+        // A change of a profile LED slot is refused, before anything is written.
+        let mut lights = settings.clone();
+        lights.leds[1] = LedEffect::Fixed { color: crate::color::Rgb { r: 0x12, g: 0x34, b: 0x56 } };
+        let error = task.save_profile(1, &lights).unwrap_err().to_string();
+        assert!(error.contains("no such LED zone"), "{error}");
+        assert!(sim.lock().unwrap().written.is_empty());
+
+        task.save_profile(1, &settings).unwrap();
+        assert!(task.pending_undo_path().exists(), "the 15-second undo is armed");
+        {
+            let mouse = sim.lock().unwrap();
+            assert_eq!(mouse.written, [1]);
+            assert!(mouse.selected.is_empty(), "profile 1 is the only one enabled: no switch");
+            // The first DPI level and the CRC: not the four button slots past the twelfth, nor the lights.
+            let changed: Vec<usize> = (0..255).filter(|&i| mouse.user[1][i] != before[1][i]).collect();
+            assert_eq!(changed, [3, 4, 253, 254]);
+        }
+        task.undo_last_write().unwrap();
+        assert_eq!(sim.lock().unwrap().user, before);
+
+        // Only function 0 of 0x8071 reached the mouse.
+        let index = G903_FEATURES.iter().position(|&f| f == rgb).unwrap() as u8;
+        for request in requests.lock().unwrap().iter().filter(|r| r[2] == index) {
+            assert_eq!(request[3] >> 4, 0, "{request:02x?}");
+        }
+        forget_test_files();
+    }
+
+    #[test]
+    fn through_its_receiver_a_g903_hero_is_read_with_its_lights_and_not_saved_to() {
+        let (mut task, sim) = open_sim_through(g903_hero(), G903_HERO, true, true);
+        let info = task.info.clone();
+        assert!(info.receiver && info.writable_format && !info.writable && !info.experimental && !info.verified);
+        assert_eq!(zones_of(&info).len(), 2);
+        let state = task.state().unwrap();
+        assert_eq!(state.profiles[0].settings.buttons.len(), 12);
+        assert!(task.save_profile(1, &edited(&state, 1)).is_err());
+        assert!(task.preview_led(1, &LedEffect::Off).is_err());
+        let mouse = sim.lock().unwrap();
+        assert!(mouse.written.is_empty() && mouse.selected.is_empty());
+    }
+
+    /// The replay test of the G903 HERO (`tests/fixtures/transcripts`) holds what PeriHub records when it opens
+    /// the mouse of issue #115 through its receiver: run with PERIHUB_WRITE_TRANSCRIPTS=1 to write it again.
+    #[test]
+    fn the_replay_of_the_g903_hero_is_what_perihub_records_of_it() {
+        let (task, _) = open_sim_through(g903_hero(), G903_HERO, true, true);
+        assert_eq!(task.info.name, "G903 LIGHTSPEED Wireless Gaming Mouse w/ HERO");
+        let text = &task.info.transcript;
+        assert!(!text.contains("12 34 56 78"), "the unit id stays out of the transcript");
+        let recorded = crate::replay::Transcript::from_json(text).unwrap();
+        assert_eq!(recorded.access, crate::replay::Access::ReadOnly);
+        crate::replay::tests::recorded_fixture("logitech-g903-hero-receiver.json", &recorded);
+    }
+
+    #[test]
+    fn a_mouse_whose_8071_zones_cannot_be_read_still_opens() {
+        let mut sim = untested_memory();
+        sim.features = RGB_SIM_FEATURES;
+        // No answer to the zone count: "invalid argument".
+        let (task, _) = open_sim(sim, G903_HERO, true);
+        assert!(task.info.led_zones.is_empty());
+        forget_test_files();
     }
 
     const PRO_2: u16 = 0xC09A;

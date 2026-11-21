@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("./api", () => ({}));
 
 import type { CorsairInfo, MouseInfo, ReceiverReport } from "./api";
-import { corsairTest, deviceTestFormUrl, receiverTest, testFormUrl, testReport } from "./testReport";
+import { corsairTest, deviceTestFormUrl, ledZoneText, receiverTest, testFormUrl, testReport } from "./testReport";
 
 const cable: MouseInfo = {
   product_id: 0xc08b,
@@ -19,7 +19,7 @@ const cable: MouseInfo = {
   firmware: [{ kind: 0, name: "U1", version: "27.2.1" }],
   dpi: { min: 100, max: 25600, step: 50, list: [] },
   report_rates_ms: [1, 2, 4, 8],
-  led_zones: [{ index: 0, location: 1, effects: [0, 1, 3] }],
+  led_zones: [{ index: 0, location: 1, effects: [0, 1, 3], feature: 0x8070, slot: 0 }],
   features: [
     { id: 0x0001, kind: 0, version: 1 },
     { id: 0x8071, kind: 0x40, version: 4 },
@@ -129,6 +129,15 @@ describe("testReport", () => {
     expect(report).toContain("DPI: 400, 800, 1600");
     expect(report).toContain("LEDs: none reported");
     expect(report).toContain("Polling (ms): none reported");
+  });
+
+  // Issue #115: the G903 HERO's lights come from 0x8071; the line says so, and which profile slot a zone is in.
+  it("names the zones of 0x8071 and a profile slot that is not the zone's number", () => {
+    const rgb = { index: 0, location: 1, effects: [0, 1, 3, 10], feature: 0x8071, slot: 0 };
+    const report = testReport({ ...cable, led_zones: [rgb, { ...rgb, index: 1, location: 2, slot: 1 }] }, "0.9.8", "windows x86_64");
+    expect(report).toContain("LEDs: zone 0 at 1 (8071), effects 0 1 3 10; zone 1 at 2 (8071), effects 0 1 3 10");
+    expect(ledZoneText({ ...rgb, slot: 1 })).toBe("zone 0 at 1 (8071), effects 0 1 3 10, profile slot 1");
+    expect(ledZoneText({ ...rgb, index: 2, slot: null })).toBe("zone 2 at 1 (8071), effects 0 1 3 10, no profile slot");
   });
 
   // Issue #22: "LEDs: none reported" on a G903 HERO; the feature list shows what it has instead.
@@ -331,7 +340,7 @@ describe("receiverTest", () => {
           { id: 0x8070, kind: 0, version: 4 },
         ],
         dpi: null,
-        led_zones: [{ index: 0, location: 1, effects: [0, 1, 3] }],
+        led_zones: [{ index: 0, location: 1, effects: [0, 1, 3], feature: 0x8070, slot: 0 }],
         read_only: true,
       },
     ],

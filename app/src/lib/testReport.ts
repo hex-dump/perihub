@@ -3,7 +3,8 @@ import type {
   CorsairInfo, G300Info, G300Profile, LogitechLive, PeripheralInfo, ReceiverReport, UnsupportedReceiverDevice,
 } from "./api";
 import type {
-  Battery, DescriptorCollection, DescriptorReports, HidppFeature, HidppLighting, InterfaceFeatures, LightsLook, MouseInfo, ReportDevice,
+  Battery, DescriptorCollection, DescriptorReports, HidppFeature, HidppLighting, InterfaceFeatures, LedZone, LightsLook, MouseInfo,
+  ReportDevice,
 } from "./api";
 import { blindText } from "./blind";
 import { effectName, kindName, zoneName } from "./logitechFeatures";
@@ -22,6 +23,14 @@ function ranges(ids: number[]): string {
     i = j;
   }
   return out.join(",");
+}
+
+/** One lighting zone of a test report: "zone 0 at 1, effects 0 1 3". A zone of 0x8071 says so, and a zone whose
+ * profile LED slot is not its own number says which slot it is (or that it has none). */
+export function ledZoneText(z: LedZone): string {
+  const via = z.feature === 0x8071 ? " (8071)" : "";
+  const slot = z.slot === z.index ? "" : z.slot === null ? ", no profile slot" : `, profile slot ${z.slot}`;
+  return `zone ${z.index} at ${z.location}${via}, effects ${z.effects.join(" ")}${slot}`;
 }
 
 /** What a device's lighting features told, in a few lines, with every reply as it came: the
@@ -155,7 +164,7 @@ export function reportVersion(version: string, build?: string | null): string {
 
 export function testReport(mouse: MouseInfo, version: string, system: string): string {
   const { onboard } = mouse;
-  const zones = mouse.led_zones.map((z) => `zone ${z.index} at ${z.location}, effects ${z.effects.join(" ")}`);
+  const zones = mouse.led_zones.map(ledZoneText);
   return [
     `PeriHub ${version} on ${system}`,
     `Mouse: ${mouse.model} (reports itself as "${mouse.name}")`,
@@ -267,7 +276,7 @@ export function receiverTest(
     const onboard = device.onboard
       ? `profile format ${device.onboard.profile_format}, ${device.onboard.sector_count} sectors of ${device.onboard.sector_size} bytes`
       : "none";
-    const zones = device.led_zones.map((z) => `zone ${z.index} at ${z.location}, effects ${z.effects.join(" ")}`);
+    const zones = device.led_zones.map(ledZoneText);
     lines.push(
       `${receiver.direct ? `Device index ${device.slot.toString(16).padStart(2, "0")}` : `Slot ${device.slot}`}: ${device.name ?? "name not read"}, HID++ ${device.protocol}`,
       `Kind: ${kindName(device.kind)}${device.kind === null ? "" : ` (${device.kind})`}`,
