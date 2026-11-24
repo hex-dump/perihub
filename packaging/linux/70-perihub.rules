@@ -712,5 +712,4 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="a8a5", ATTRS{idProduct}=="2255", ENV{ID_USB
 # YJX mouse (YJX, on its cable) (read only)
 KERNEL=="hidraw*", ATTRS{idVendor}=="a8a4", ATTRS{idProduct}=="2255", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 
-# Wraith W60 (read only, untested): not opened on Linux. Its configuration collection can carry how far
-# each key is pressed, so it will need a rule the user turns on. Windows only for now.
+# Wraith W60 and Artery W669 keyboards (2e3c:c368, 2e3c:c365; read only): not opened on Linux. Their configuration collection can carry how far each key is pressed, so it will need a rule the user turns on. Windows only for now.

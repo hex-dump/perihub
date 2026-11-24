@@ -5607,6 +5607,20 @@
       "linux": {
         "kind": "closed"
       }
+    },
+    {
+      "family": "wraith",
+      "brand": "Artery",
+      "name": "W669 keyboard 2e3c c365",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/artery-w669-keyboard-2e3c-c365.html",
+      "usb_ids": [
+        "2e3c:c365"
+      ],
+      "linux": {
+        "kind": "closed"
+      }
     }
   ]
 }
