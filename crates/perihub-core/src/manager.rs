@@ -531,6 +531,8 @@ struct Slots {
     /// Set by the mouse's thread while another program controls the mouse.
     mouse_host_mode: Option<Arc<AtomicBool>>,
     reported_host_mode: bool,
+    /// Enabled profiles from the mouse's last directory read.
+    mouse_enabled_profiles: Option<Arc<Mutex<Vec<bool>>>>,
     conflicts: Vec<Conflict>,
     keyboard_error: Option<String>,
     mouse_error: Option<String>,
@@ -876,6 +878,15 @@ impl Manager {
             slots.reported_host_mode = host_mode;
             changed = true;
         }
+        if let Some(flag) = slots.mouse_enabled_profiles.clone()
+            && let Some((_, mouse)) = &mut slots.mouse
+        {
+            let enabled = flag.lock().unwrap().clone();
+            if mouse.enabled_profiles != enabled {
+                mouse.enabled_profiles = enabled;
+                changed = true;
+            }
+        }
         changed
     }
 
@@ -894,6 +905,7 @@ impl Manager {
                 let mouse = task.info.clone();
                 slots.mouse_host_mode = Some(task.host_mode_flag());
                 slots.reported_host_mode = mouse.host_mode;
+                slots.mouse_enabled_profiles = Some(task.enabled_profiles_flag());
                 log::info!(
                     "mouse connected: {} ({}{}), firmware {}",
                     mouse.model,
@@ -1918,6 +1930,24 @@ impl Manager {
     /// Updates the settings to reapply whenever the keyboard is reconnected.
     pub fn set_keyboard_config(&self, config: KeyboardConfig) {
         *self.keyboard_config.lock_recover() = config;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_mouse_for_test(task: MouseTask) -> Self {
+        let mut slots = Slots::default();
+        let mouse = task.info.clone();
+        slots.mouse_host_mode = Some(task.host_mode_flag());
+        slots.reported_host_mode = mouse.host_mode;
+        slots.mouse_enabled_profiles = Some(task.enabled_profiles_flag());
+        slots.mouse = Some((Worker::spawn("perihub-mouse-test", task), mouse));
+        Self {
+            slots: Arc::new(Mutex::new(slots)),
+            keyboard_config: Arc::new(Mutex::new(KeyboardConfig::default())),
+            untested_saves: false,
+            logitech_dpi: Arc::new(Mutex::new(HashMap::new())),
+            logitech_lights: Arc::new(Mutex::new(HashMap::new())),
+            qmk_enabled: Arc::new(Mutex::new(HashSet::new())),
+        }
     }
 }
 

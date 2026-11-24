@@ -365,6 +365,8 @@ export interface MouseInfo {
   switches_back: boolean;
   /** The mouse's profile list when it was connected (MouseState.profile_list is the state now). */
   profile_list: ProfileList;
+  /** Enabled profiles (`true`: selectable on the mouse). */
+  enabled_profiles?: boolean[];
 }
 
 export interface KeyboardInfo {
