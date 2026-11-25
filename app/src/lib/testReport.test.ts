@@ -116,6 +116,17 @@ describe("testReport", () => {
     expect(support({ ...cable, verified: false, writable: false, writable_format: false })).toContain(
       "Support: read-only (memory format PeriHub cannot write)",
     );
+    expect(
+      support({
+        ...cable,
+        model: "G502 X Wireless",
+        product_id: 0xc098,
+        verified: false,
+        writable: false,
+        writable_format: false,
+        onboard: { ...cable.onboard, profile_format: 10 },
+      }),
+    ).toContain("Support: read-only (memory format PeriHub cannot write)");
   });
 
   it("lists fixed DPI values and says when a mouse reports no LEDs or polling rates", () => {

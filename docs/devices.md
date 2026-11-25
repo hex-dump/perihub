@@ -54,8 +54,10 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
 [libratbag](https://github.com/libratbag/libratbag).
 
 - **Logitech G502 HERO** (`046d:c08b`): ✅ supported.
-- **Logitech G502 X Wireless** (`046d:c098`): ✅ supported with the USB cable, confirmed by a user
-  on a real mouse ([issue #15](https://github.com/hex-dump/perihub/issues/15)).
+- **Logitech G502 X Wireless** (`046d:c098`): ✅ supported with the USB cable on its tested memory format
+  (format 3 in 255-byte sectors, [issue #15](https://github.com/hex-dump/perihub/issues/15)). A firmware
+  update that moves to an untested memory format (such as profile format 10 on newer 44K firmware) stays read-only
+  until that format is added.
 - **Every other mouse below**: the level depends on the format of the mouse's onboard memory,
   which PeriHub reads from the mouse every time it connects. Many models share a format, and the
   same model can change format with a firmware update, so the level is not fixed per model:
