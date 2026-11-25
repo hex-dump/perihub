@@ -1,8 +1,8 @@
 //! Logitech mouse state and operations, run on the device's dedicated thread.
 
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
@@ -92,6 +92,10 @@ pub struct MouseInfo {
     /// The mouse's profile list when it was connected (for test reports;
     /// [`MouseState::profile_list`] is the state now).
     pub profile_list: ProfileList,
+    /// Which profiles are enabled (`true`: selectable in the mouse's profile list or factory
+    /// profiles). Updated whenever the profile list is read or saved.
+    #[serde(default)]
+    pub enabled_profiles: Vec<bool>,
     /// Every request and answer of the reading when PeriHub connected, in full, as a transcript
     /// (`crate::replay`) in JSON, for test reports. Nothing in it tells the unit apart.
     pub transcript: String,
@@ -242,6 +246,8 @@ pub struct MouseTask {
     pub info: MouseInfo,
     /// Another program controls the mouse now (shared with the manager, for the status).
     host_mode: Arc<AtomicBool>,
+    /// Enabled profiles from the last profile list read (shared with the manager, for the status).
+    enabled_profiles_state: Arc<Mutex<Vec<bool>>>,
     last_mode_check: Instant,
     /// The slow battery read for a mouse on its receiver (see [`crate::battery::Schedule`]).
     battery_read: crate::battery::Schedule,
@@ -477,14 +483,17 @@ impl MouseTask {
             writable: support.writable,
             writable_format: support.writable_format,
             profile_list: ProfileList::Own,
+            enabled_profiles: vec![true; onboard.profile_count as usize],
             onboard,
             transcript: String::new(),
         };
+        let enabled_profiles_state = Arc::new(Mutex::new(info.enabled_profiles.clone()));
         let mut task = Self {
             dev,
             model,
             info,
             host_mode: Arc::new(AtomicBool::new(false)),
+            enabled_profiles_state,
             last_mode_check: Instant::now(),
             battery_read: crate::battery::Schedule::new(Instant::now()),
             no_battery: false,
@@ -494,8 +503,16 @@ impl MouseTask {
             undo_at: None,
             list: ProfileList::Own,
         };
-        task.read_directory()?;
+        let directory = task.read_directory()?;
         task.info.profile_list = task.list;
+        let count = task.profile_count() as usize;
+        let initial_enabled = match directory.as_deref() {
+            Some(dir) => profile::parse_directory(dir, count),
+            None if task.factory_memory() => (1..=count).map(|n| n as u8 <= task.selectable_profiles()).collect(),
+            None => vec![true; count],
+        };
+        task.sync_enabled_profiles(&initial_enabled);
+        task.last_profile = initial_enabled.iter().position(|&on| on).map_or(1, |i| i as u8 + 1);
         task.read_extended()?;
         task.check_mode()?;
         task.info.host_mode = task.host_mode.load(Ordering::SeqCst);
@@ -557,6 +574,16 @@ impl MouseTask {
     /// Set while another program controls the mouse; read by the manager for the status.
     pub fn host_mode_flag(&self) -> Arc<AtomicBool> {
         self.host_mode.clone()
+    }
+
+    /// Enabled profile flags (`1..=profile_count`); read by the manager for the status.
+    pub fn enabled_profiles_flag(&self) -> Arc<Mutex<Vec<bool>>> {
+        self.enabled_profiles_state.clone()
+    }
+
+    fn sync_enabled_profiles(&mut self, enabled: &[bool]) {
+        self.info.enabled_profiles = enabled.to_vec();
+        *self.enabled_profiles_state.lock().unwrap() = enabled.to_vec();
     }
 
     /// Reads the mouse's mode and acts on it (see [`mode_action`]). G HUB, for example, takes the
@@ -780,6 +807,7 @@ impl MouseTask {
     pub fn state(&mut self) -> Result<MouseState> {
         let directory = self.read_directory()?;
         let enabled = self.enabled_profiles(directory.as_deref())?;
+        self.sync_enabled_profiles(&enabled);
         let mut profiles = Vec::new();
         let mut macro_sectors = HashMap::new();
         let mut used = self.reserved_sectors(directory.as_deref());
@@ -1351,6 +1379,19 @@ impl MouseTask {
         Ok(active)
     }
 
+    /// Whether profile `number` can be switched to (`true` = enabled in the profile list or
+    /// selectable among the factory profiles). Refreshes [`MouseInfo::enabled_profiles`].
+    pub fn is_profile_enabled(&mut self, number: u8) -> Result<bool> {
+        self.check_number(number)?;
+        if number > self.selectable_profiles() {
+            return Ok(false);
+        }
+        let directory = self.read_directory()?;
+        let enabled = self.enabled_profiles(directory.as_deref())?;
+        self.sync_enabled_profiles(&enabled);
+        Ok(enabled.get(number as usize - 1).copied().unwrap_or(false))
+    }
+
     pub fn set_active_profile(&mut self, number: u8) -> Result<()> {
         self.check_controllable()?;
         self.check_number(number)?;
@@ -1358,6 +1399,9 @@ impl MouseTask {
             return Err(Error::Invalid(format!(
                 "profile {number} is not in use yet: the mouse has only its factory profiles until one is saved to it"
             )));
+        }
+        if !self.is_profile_enabled(number)? {
+            return Err(Error::Invalid(format!("profile {number} is disabled on the mouse")));
         }
         match self.select_profile(number) {
             // The mouse refuses while another program controls it: check, then try once more.
@@ -3337,5 +3381,29 @@ mod tests {
         let silent = FakeDevice::new(|_| Vec::new());
         // The ping of the connection finds nobody: not an error to show, the manager asks again.
         assert!(matches!(HidppDevice::over_bluetooth(silent, true), Err(Error::Unreachable)));
+    }
+
+    #[test]
+    fn set_active_profile_refuses_a_disabled_profile_before_sending_anything() {
+        let mut sim = Sim::g502();
+        sim.user[0] = profile::build_directory(&[true, true, false, true, false], 256);
+        sim.refuses_disabled_profiles = true;
+        let (mut task, sim) = open_sim(sim, G502_HERO, false);
+        assert_eq!(task.info.enabled_profiles, vec![true, true, false, true, false]);
+
+        let err = task.set_active_profile(3).unwrap_err().to_string();
+        assert!(err.contains("disabled"), "{err}");
+        {
+            let mouse = sim.lock().unwrap();
+            assert!(mouse.selected.is_empty() && mouse.refused_switches.is_empty());
+        }
+
+        // Enabling profile 3 updates `enabled_profiles` and lets the switch proceed.
+        let state = task.set_profile_enabled(3, true).unwrap();
+        assert_eq!(state.profiles.iter().map(|p| p.enabled).collect::<Vec<_>>(), [true, true, true, true, false]);
+        assert_eq!(task.info.enabled_profiles, vec![true, true, true, true, false]);
+        task.set_active_profile(3).unwrap();
+        assert_eq!(sim.lock().unwrap().selected, [[0, 3]]);
+        forget_test_files();
     }
 }

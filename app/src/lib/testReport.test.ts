@@ -107,6 +107,9 @@ describe("testReport", () => {
     expect(support({ ...cable, verified: false, experimental: true })).toContain(
       "Support: experimental (memory format not tested yet)",
     );
+    expect(support({ ...cable, receiver: true, verified: true, experimental: true, writable: true })).toContain(
+      "Support: experimental (saves through this receiver)",
+    );
     expect(support({ ...cable, receiver: true, writable: false })).toContain(
       "Support: tested, no saves on this connection",
     );

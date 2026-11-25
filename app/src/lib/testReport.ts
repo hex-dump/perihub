@@ -107,7 +107,11 @@ function connection(mouse: MouseInfo): string {
 
 function support(mouse: MouseInfo): string {
   if (overBluetooth(mouse)) return "read-only over Bluetooth (nothing is written to a mouse that way yet)";
-  if (mouse.experimental) return "experimental (memory format not tested yet)";
+  if (mouse.experimental) {
+    return mouse.verified
+      ? "experimental (saves through this receiver)"
+      : "experimental (memory format not tested yet)";
+  }
   if (mouse.verified) return mouse.writable ? "tested" : "tested, no saves on this connection";
   return mouse.writable_format ? "read-only on this connection" : "read-only (memory format PeriHub cannot write)";
 }

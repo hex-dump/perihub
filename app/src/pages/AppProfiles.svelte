@@ -78,7 +78,12 @@
 
   const recentApps = $derived((info?.recent ?? []).filter((a) => !SELF.includes(a)));
   const mouse = $derived(status.mouse);
-  const mouseProfiles = $derived(mouse?.verified ? mouse.onboard.profile_count : 0);
+  const mouseControllable = $derived(!!mouse && mouse.verified && mouse.bluetooth === null);
+  const mouseProfiles = $derived(mouseControllable ? mouse!.onboard.profile_count : 0);
+  const profileEnabled = (n: number) => mouse?.enabled_profiles?.[n - 1] ?? true;
+  const usesDisabledProfile = $derived(
+    mouseControllable && profiles.rules.some((r) => r.mouse_profile !== null && !profileEnabled(r.mouse_profile)),
+  );
 
   function addRule() {
     const used = new Set(profiles.rules.map((r) => r.app.toLowerCase()));
@@ -190,7 +195,9 @@
                 onchange={(e) => { rule.mouse_profile = value(e) ? Number(value(e)) : null; changed(); }}>
                 <option value="">Don't change</option>
                 {#each Array.from({ length: mouseProfiles }, (_, n) => n + 1) as n (n)}
-                  <option value={String(n)}>Profile {n}</option>
+                  <option value={String(n)} disabled={!profileEnabled(n)}>
+                    Profile {n}{profileEnabled(n) ? "" : " (disabled on mouse)"}
+                  </option>
                 {/each}
               </select>
               <button class="ghost" aria-label="Remove rule" title="Remove" onclick={() => removeRule(i)}>×</button>
@@ -235,10 +242,20 @@
         {#if !info.presets.length}
           <p class="muted small">To change the keyboard lighting, first save a lighting on the Apex 3 TKL page (Lighting → Saved lightings).</p>
         {/if}
-        {#if mouse && !mouse.verified}
+        {#if usesDisabledProfile}
           <p class="muted small">
-            PeriHub switches profiles by itself only on mice whose memory format has been tested, so the {mouse.model}'s
-            profile cannot be switched here yet.
+            Rules set to a disabled profile are skipped: enable the profile on the Mouse page or pick an enabled one.
+          </p>
+        {/if}
+        {#if mouse && !mouseControllable}
+          <p class="muted small">
+            {#if mouse.bluetooth !== null}
+              PeriHub only reads a mouse over Bluetooth, so the {mouse.model}'s profile cannot be switched here. Use its
+              LIGHTSPEED receiver or USB cable.
+            {:else}
+              PeriHub switches profiles by itself only on mice whose memory format has been tested, so the {mouse.model}'s
+              profile cannot be switched here yet.
+            {/if}
           </p>
         {/if}
       </div>

@@ -130,4 +130,26 @@ describe("App profiles", () => {
     expect(screen.getByText("There is already a rule for steam_app_1245620.")).toBeTruthy();
     expect(screen.getAllByPlaceholderText("window class")).toHaveLength(1);
   });
+
+  it("marks disabled mouse profiles unavailable and warns if a rule points to one", async () => {
+    const g502 = {
+      model: "G502 HERO Wireless",
+      verified: true,
+      bluetooth: null,
+      onboard: { profile_count: 5 },
+      enabled_profiles: [true, true, true, false, false],
+    } as unknown as DeviceStatus["mouse"];
+    api.profiles.mockResolvedValue({
+      ...info({ kind: "supported", desktop: "Windows" }),
+      profiles: { enabled: true, rules: [{ app: "game.exe", lighting: null, mouse_profile: 4 }] },
+    });
+    render(AppProfiles, { status: { ...status, mouse: g502 } });
+    await flush();
+
+    const options = screen.getAllByRole("option") as HTMLOptionElement[];
+    expect(options.find((o) => o.textContent?.includes("Profile 3"))?.disabled).toBe(false);
+    const p4 = options.find((o) => o.textContent?.includes("Profile 4 (disabled on mouse)"));
+    expect(p4?.disabled).toBe(true);
+    expect(screen.getByText(/Rules set to a disabled profile are skipped/)).toBeTruthy();
+  });
 });
