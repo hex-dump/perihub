@@ -1,8 +1,9 @@
-//! The Wraith W60, a magnetic (Hall effect) keyboard on the platform of the AULA WIN60 HE. The
-//! protocol is in `docs/protocols/wraith-he.md`, from AulaControl (Apache-2.0), which documents the
-//! WIN60 HE (`2e3c:c365`); the W60 (`2e3c:c368`) has the same configuration collection. No code was
-//! copied. A W60 with firmware V3.22.19 answered the reads on Windows (issue #35): for now PeriHub
-//! only reads the model, the firmware and the key and side lighting.
+//! Hall-effect keyboards on the W669 / Artery platform (`2e3c:c368` Wraith W60 and `2e3c:c365`
+//! AULA WIN60 HE / X68HE / other W669 keyboards). The protocol is in `docs/protocols/wraith-he.md`,
+//! from AulaControl (Apache-2.0), which documents the WIN60 HE (`2e3c:c365`); the W60 (`2e3c:c368`)
+//! and X68HE (`2e3c:c365`, issue #123) have the same configuration collection. No code was copied.
+//! A W60 with firmware V3.22.19 answered the reads on Windows (issue #35): for now PeriHub only
+//! reads the model, the firmware and the key and side lighting.
 //!
 //! The configuration collection can also send how far each key is pressed while the vendor's travel
 //! test runs. PeriHub never asks for that, skips such reports, and on Linux the keyboard needs a rule
@@ -36,16 +37,28 @@ pub const COMMANDS: &[Command] = &[
 #[derive(Debug, Clone, Copy)]
 pub struct Params;
 
-pub const MODELS: &[Model] = &[Model {
-    vendor_id: 0x2E3C,
-    product_ids: &[0xC368],
-    brand: "Wraith",
-    name: "W60",
-    kind: Kind::Keyboard,
-    interface: Some(2),
-    usage_page: Some(0xFF1B),
-    protocol: Protocol::Wraith(Params),
-}];
+pub const MODELS: &[Model] = &[
+    Model {
+        vendor_id: 0x2E3C,
+        product_ids: &[0xC368],
+        brand: "Wraith",
+        name: "W60",
+        kind: Kind::Keyboard,
+        interface: Some(2),
+        usage_page: Some(0xFF1B),
+        protocol: Protocol::Wraith(Params),
+    },
+    Model {
+        vendor_id: 0x2E3C,
+        product_ids: &[0xC365],
+        brand: "Artery",
+        name: "W669 keyboard 2e3c c365",
+        kind: Kind::Keyboard,
+        interface: Some(2),
+        usage_page: Some(0xFF1B),
+        protocol: Protocol::Wraith(Params),
+    },
+];
 
 /// A request: the report number, the command and its second byte, zeros up to 64 bytes.
 fn request(command: u8, second: u8) -> [u8; REPORT] {
@@ -367,5 +380,28 @@ mod tests {
         let backups = std::env::temp_dir().join(format!("perihub-test-wraith-short-{}", std::process::id()));
         let task = start_for_test(Box::new(hid), model, 0xC368, true, backups).unwrap();
         assert!(task.info.problem.as_deref().unwrap_or("").contains("Key lighting: length 4"));
+    }
+
+    #[test]
+    fn recognizes_w669_2e3c_c365_as_read_only_and_closed_on_linux() {
+        let model = find(0x2E3C, 0xC365).unwrap();
+        assert_eq!(model.brand, "Artery");
+        assert_eq!(model.interface, Some(2));
+        assert_eq!(model.usage_page, Some(0xFF1B));
+        assert!(!super::super::opened_on_linux(model));
+
+        let hid = FakeHid::new(|req| match req[1] {
+            DEVICE_INFO => vec![
+                answer(DEVICE_INFO, 0, 0x32, b"W669,34,KB,SI,SI2825KZHEARGB,V3.17.07"),
+                answer(DEVICE_INFO, 1, 0x32, b"Apr 15 2026,11:20:35"),
+            ],
+            KEY_LIGHT => vec![answer(KEY_LIGHT, 0, 0x0c, &[0x04, 0x03, 0x03, 0xff, 0xff, 0xff, 0, 0, 0, 0, 0, 0])],
+            _ => Vec::new(),
+        });
+        hid.0.lock().unwrap().numbered_output = true;
+        let backups = std::env::temp_dir().join(format!("perihub-test-w669-c365-{}", std::process::id()));
+        let task = start_for_test(Box::new(hid), model, 0xC365, true, backups).unwrap();
+        assert_eq!(task.info.firmware.as_deref(), Some("V3.17.07"));
+        assert!(!task.info.editable);
     }
 }

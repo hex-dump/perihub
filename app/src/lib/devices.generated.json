@@ -1740,6 +1740,16 @@
           "level": "read_only"
         }
       ]
+    },
+    {
+      "brand": "Artery",
+      "models": [
+        {
+          "name": "W669 keyboard 2e3c c365",
+          "kind": "keyboard",
+          "level": "read_only"
+        }
+      ]
     }
   ]
 }

@@ -37,7 +37,7 @@ the same format.
 - [Cooler Master mice](#cooler-master-mice)
 - [EVGA mice](#evga-mice)
 - [YJX mice](#yjx-mice)
-- [Wraith W60](#wraith-w60)
+- [Wraith W60 and Artery W669 keyboards](#wraith-w60)
 - [EVision keyboards](#evision-keyboards)
 - [Keyboards with QMK firmware (Vial, VIA)](#keyboards-with-qmk-firmware-vial-via)
 
@@ -889,8 +889,7 @@ from [claws-mouse-linux](https://github.com/naevui/claws-mouse-linux) and
 
 ## Wraith W60
 
-👁 Read-only, on Windows only for now: read on a real W60 (firmware V3.22.19, issue #35). It is a magnetic (Hall
-effect) keyboard on the platform of the AULA WIN60 HE, described in [protocols/wraith-he.md](protocols/wraith-he.md)
+👁 Read-only, on Windows only for now: read on a real W60 (`2e3c:c368`, firmware V3.22.19, [issue #35](https://github.com/hex-dump/perihub/issues/35)). `2e3c:c365` is the shared USB ID of other keyboards on the same Artery/W669 platform (such as the AULA WIN60 HE and the X68HE of [issue #123](https://github.com/hex-dump/perihub/issues/123)), whose configuration collection matches byte-for-byte. Described in [protocols/wraith-he.md](protocols/wraith-he.md)
 from [AulaControl](https://github.com/sgtflixy/AulaControl) (Apache-2.0): no code was copied. PeriHub reads the model,
 the firmware version, the firmware date and the key and side lighting (mode as a number, speed, brightness, both
 colours, direction, full colour).
@@ -903,7 +902,8 @@ colours, direction, full colour).
 <!-- generated: table wraith -->
 | Keyboard | USB ID | Opened on Linux |
 |---|---|---|
-| W60 | `2e3c:c368` | — |
+| Wraith W60 | `2e3c:c368` | — |
+| Artery W669 keyboard 2e3c c365 | `2e3c:c365` | — |
 <!-- end generated -->
 
 ## EVision keyboards

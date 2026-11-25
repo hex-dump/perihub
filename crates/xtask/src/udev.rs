@@ -86,8 +86,7 @@ them the interface OpenRazer sends to also carries typed keys."#
 which holds the vendor configuration collection and nothing else."#
         }
         "wraith" => {
-            r#"Wraith W60 (read only, untested): not opened on Linux. Its configuration collection can carry how far
-each key is pressed, so it will need a rule the user turns on. Windows only for now."#
+            r#"Wraith W60 and Artery W669 keyboards (2e3c:c368, 2e3c:c365; read only): not opened on Linux. Their configuration collection can carry how far each key is pressed, so it will need a rule the user turns on. Windows only for now."#
         }
         "evision" => {
             r#"EVision keyboards (read only, untested; facts from OpenRGB and OpenEVision): not opened on Linux. Their vendor

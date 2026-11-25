@@ -1,8 +1,10 @@
-# Wraith W60 (AULA WIN60 HE platform)
+# Wraith W60 and Artery W669 keyboards (WIN60 HE / X68HE platform)
 
-The Wraith W60 (`2e3c:c368`) is a magnetic (Hall effect) keyboard configured from `wraith.software`. `2e3c` is the
-vendor id of Artery, the maker of its microcontroller, not of Wraith. It has the configuration collection of the
-AULA WIN60 HE (`2e3c:c365`): USB interface 2, usage page `ff1b`, usage `91`. For now PeriHub only reads.
+The Wraith W60 (`2e3c:c368`) and `2e3c:c365` keyboards on the same W669 platform (such as the AULA WIN60 HE and the
+X68HE of [issue #123](https://github.com/hex-dump/perihub/issues/123)) are magnetic (Hall effect) keyboards. `2e3c` is
+the vendor id of Artery, the maker of their microcontroller. Both share USB interface 2, usage page `ff1b`, usage
+`0091` with identical 64-byte input/output reports on report id `01` (confirmed by #123's report descriptor). For now
+PeriHub only reads.
 
 Source, in PeriHub's own words: [AulaControl](https://github.com/sgtflixy/AulaControl) (Apache-2.0, commit
 9a526ee), which documents the WIN60 HE and confirms the lighting and per-key actuation on a real keyboard.
