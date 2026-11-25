@@ -121,6 +121,25 @@ impl Entry {
     }
 }
 
+/// Whether the device name identifies a headset or microphone rather than a mouse or keyboard.
+fn is_headset_name(product: Option<&str>) -> bool {
+    let Some(name) = product else { return false };
+    let lower = name.to_ascii_lowercase();
+    ["headset", "headphone", "earbud", "microphone"].iter().any(|word| lower.contains(word))
+}
+
+/// Headsets and audio devices are out of scope (PeriHub is for mice, keyboards, and receivers only).
+/// A device counts as a headset if its product name says so or if it has a Telephony HID collection
+/// (`0x000b`) without a standard mouse (`0x0002`) or keyboard (`0x0006`) collection.
+fn is_headset(device: &ReportDevice) -> bool {
+    if is_headset_name(device.product.as_deref()) {
+        return true;
+    }
+    let has_telephony = device.collections.iter().any(|c| c.usage_page == 0x0B);
+    let has_pointer_or_keys = device.collections.iter().any(|c| c.usage_page == 0x01 && matches!(c.usage, 0x02 | 0x06));
+    has_telephony && !has_pointer_or_keys
+}
+
 /// The entries of every HID device hidapi lists, with the descriptor of each device PeriHub does not
 /// know, read once (see [`DetailsCache`]). `features`: also its feature reports, once each, which
 /// needs the node opened (see [`feature_reports`]): only for the Send a report page.
@@ -133,7 +152,11 @@ pub fn entries(api: &HidApi, cache: &mut DetailsCache, features: bool) -> Vec<En
             if !known(entry.vendor_id, entry.product_id) {
                 let path = d.path().to_string_lossy().into_owned();
                 let details = cache.entry(path.clone()).or_insert_with(|| read_node(api, d, &path));
-                if features && details.features.is_none() {
+                if features
+                    && details.features.is_none()
+                    && entry.collection.usage_page != 0x0B
+                    && !is_headset_name(entry.product.as_deref())
+                {
                     details.features = Some(read_features(api, d, details.descriptor.as_deref()));
                 }
                 entry.details = details.clone();
@@ -291,6 +314,7 @@ pub fn unknown_devices(entries: impl IntoIterator<Item = Entry>) -> Vec<ReportDe
         let read: Vec<i32> = d.descriptors.iter().filter(|x| x.hex.is_some()).map(|x| x.interface).collect();
         d.descriptors.retain(|x| x.hex.is_some() || !read.contains(&x.interface));
     }
+    devices.retain(|d| !is_headset(d));
     devices.sort_by(|a, b| (&a.product, a.vendor_id, a.product_id).cmp(&(&b.product, b.vendor_id, b.product_id)));
     devices
 }
@@ -357,10 +381,23 @@ mod tests {
             entry(0x3710, 0x3414, Some("X2 CrazyLight"), 1, 1, 2),
             entry(0x046D, 0xC52B, Some("Unifying receiver"), 2, 0xFF00, 2),
             entry(0x046D, 0xC339, Some("PRO K/DA"), 1, 0xFF43, 0x0604),
-            entry(0x046D, 0x0A87, Some("A Logitech headset"), 3, 0x0C, 1),
+            entry(0x046D, 0x085C, Some("A Logitech webcam"), 3, 0x0C, 1),
         ]);
         let names: Vec<_> = devices.iter().map(|d| d.product.as_deref().unwrap()).collect();
-        assert_eq!(names, ["A Logitech headset"]);
+        assert_eq!(names, ["A Logitech webcam"]);
+    }
+
+    #[test]
+    fn headsets_and_telephony_devices_are_excluded() {
+        let devices = unknown_devices([
+            entry(0x046D, 0x0AAA, Some("PRO X"), 3, 0x0B, 5),
+            entry(0x046D, 0x0AAA, Some("PRO X"), 3, 0xFF43, 0x0202),
+            entry(0x1532, 0x0529, Some("Razer BlackShark V2 Pro Headset"), 2, 0xFF00, 1),
+            entry(0x1234, 0x0003, Some("Named Microphone"), 1, 0x0C, 1),
+            entry(0x1234, 0x0004, Some("Kept Keyboard"), 0, 1, 6),
+        ]);
+        let names: Vec<_> = devices.iter().map(|d| d.product.as_deref().unwrap()).collect();
+        assert_eq!(names, ["Kept Keyboard"]);
     }
 
     #[test]

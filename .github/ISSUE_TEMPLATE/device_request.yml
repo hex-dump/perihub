@@ -1,11 +1,11 @@
 name: Device request
-description: Ask for support for a new device
+description: Ask for support for a new mouse, keyboard or receiver
 labels: ["device request"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping PeriHub support more hardware. Devices are added once their protocol can be verified on real hardware, so the more details you share, the better. A USB capture is optional help, never required: the request counts without it.
+        Thanks for helping PeriHub support more mice and keyboards. Devices are added once their protocol can be verified on real hardware, so the more details you share, the better. A USB capture is optional help, never required: the request counts without it.
   - type: input
     id: model
     attributes:
@@ -66,7 +66,7 @@ body:
     attributes:
       label: Anything else it can do
       description: What the boxes above do not cover, or details such as the number of DPI levels or lighting zones.
-      placeholder: Sensor settings, lift-off distance, sidetone, equalizer…
+      placeholder: Sensor settings, lift-off distance, debounce time, actuation…
   - type: input
     id: software
     attributes:

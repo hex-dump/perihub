@@ -1222,5 +1222,55 @@ class ReportInAnotherField(unittest.TestCase):
         self.assertNotIn("confirm", result)
 
 
+class HeadsetRequests(unittest.TestCase):
+    """PeriHub only supports mice, keyboards, and receivers: headset and audio requests close as not planned."""
+
+    def test_telephony_headset_from_perihub_is_closed_even_without_headset_in_the_name(self):
+        saw = (
+            "PeriHub 0.9.7 on windows x86_64\n"
+            "Device: Logitech PRO X\n"
+            "Kind: Headset\n"
+            "USB ID: 046d:0aaa (USB)\n"
+            "HID collections:\n"
+            "  interface 3, usage page 000b, usage 0005\n"
+            "  interface 3, usage page 000c, usage 0001\n"
+            "  interface 3, usage page ff43, usage 0202"
+        )
+        body = (
+            answer("Device model", "Logitech PRO X")
+            + answer("Brand", "Logitech")
+            + answer("USB ID (vendor:product)", "046d:0aaa")
+            + answer("What PeriHub saw", "```text\n" + saw + "\n```")
+        )
+        issue = {
+            "number": 136,
+            "title": "Device request: Logitech PRO X",
+            "labels": [{"name": "device request"}, {"name": "needs captures"}],
+            "body": body,
+        }
+        result = triage.triage(issue, "0.9.7", [], upstream={"OpenRGB": ["046d:0aaa"]})
+        self.assertEqual(result["close"], "not_planned")
+        self.assertEqual(result["labels"], ["brand: Logitech", "wontfix"])
+        self.assertEqual(result["remove_labels"], ["needs captures"])
+        self.assertIn("mice, keyboards, and their receivers", result["comment"])
+
+    def test_named_headset_drops_mistaken_mouse_kind_label(self):
+        body = (
+            answer("Device model", "HyperX Cloud II Headset")
+            + answer("Device type", "Mouse")
+            + answer("Brand", "Other")
+            + answer("USB ID (vendor:product)", "0951:16a4")
+        )
+        issue = {"number": 200, "title": "Device request: HyperX Cloud II Headset", "labels": [{"name": "device request"}], "body": body}
+        result = triage.triage(issue, "0.9.7", [])
+        self.assertEqual(result["close"], "not_planned")
+        self.assertEqual(result["labels"], ["brand: Other", "wontfix"])
+
+    def test_a_mouse_or_keyboard_is_not_mistaken_for_a_headset(self):
+        result = triage.triage(saw_request("046d:c077", PLAIN_MOUSE), "0.9.7", StandardInterfacesOnly.devices, upstream={})
+        self.assertNotIn("close", result)
+        self.assertNotIn("wontfix", result["labels"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -74,7 +74,7 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c0a0", TAG+="uacc
 # Over Bluetooth Low Energy (read only): its own hidraw node, one for the whole mouse.
 KERNEL=="hidraw*", KERNELS=="0005:046D:B024.*", TAG+="uaccess"
 
-# Logitech keyboards and headsets with HID++ on their own USB connection, without a receiver (read only,
+# Logitech keyboards with HID++ on their own USB connection, without a receiver (read only,
 # untested): only the interface with their HID++ collections (usage page ff43). A keyboard whose HID++
 # collections share an interface with what is typed on it is left out: one hidraw node holds both.
 

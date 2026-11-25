@@ -100,9 +100,22 @@ describe("candidates", () => {
     expect(candidates(status({ receivers: [receiver([], { unifying: true, denied: true })] }), [])).toEqual([]);
   });
 
-  it("leaves out the QMK keyboards, which have a page of their own, and offers nothing with no device", () => {
+  it("leaves out the QMK keyboards, which have a page of their own, and headsets", () => {
     const qmk = [{ key: "1234:abcd" }] as DeviceStatus["qmk"];
+    const telephonyHeadset: ReportDevice = {
+      ...unknown,
+      product_id: 0x0aaa,
+      product: "PRO X",
+      collections: [{ interface: 3, usage_page: 0x0b, usage: 5 }],
+    };
+    const namedHeadset: ReportDevice = {
+      ...unknown,
+      product_id: 0x0a87,
+      product: "Logitech Headset",
+      collections: [{ interface: 3, usage_page: 0x0c, usage: 1 }],
+    };
     expect(candidates(status({ qmk }), [unknown])).toEqual([]);
+    expect(candidates(status({}), [telephonyHeadset, namedHeadset])).toEqual([]);
     expect(candidates(status({}), [])).toEqual([]);
   });
 });

@@ -31,6 +31,7 @@ class Board(unittest.TestCase):
             request(3, "Logitech G213", "046d:c336", ["ready to add", "waiting for reporter"]),
             request(4, "Some Mouse", "dead:beef", ["needs captures"]),
             request(5, "Logitech MX Master 3S", "1038:1622"),
+            request(7, "Logitech PRO X", "046d:0aaa", ["wontfix"]),
             {"number": 6, "title": "Bug", "body": "", "labels": [{"name": "bug"}]},
         ]
         text = status_board.board(issues, RELEASED, MAIN, BRANCHES, NOW, {})
@@ -44,6 +45,7 @@ class Board(unittest.TestCase):
         # The id of another device (an Apex for an MX Master): not called supported.
         self.assertIn("the USB ID given is of another device", section("Being looked at"))
         self.assertNotIn("#6", text)
+        self.assertNotIn("#7", text)
         self.assertIn("**5 open requests.**", text)
         self.assertTrue(text.endswith(status_board.MARK))
 

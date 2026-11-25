@@ -23,7 +23,7 @@ The interfaces that report key presses stay closed: see 71-perihub-keys.rules."#
         }
         "logitech-onboard" => r#"Logitech mice (the G502 HERO is tested, the others are read-only until they are)"#,
         "logitech-direct" => {
-            r#"Logitech keyboards and headsets with HID++ on their own USB connection, without a receiver (read only,
+            r#"Logitech keyboards with HID++ on their own USB connection, without a receiver (read only,
 untested): only the interface with their HID++ collections (usage page ff43). A keyboard whose HID++
 collections share an interface with what is typed on it is left out: one hidraw node holds both."#
         }
