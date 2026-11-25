@@ -1,7 +1,7 @@
 # Logitech HID++ devices on their own USB connection
 
 How PeriHub finds and reads a Logitech HID++ 2.0 device that is not behind a receiver: a keyboard on its
-USB cable. Headsets are out of scope for now. The code is
+USB cable. PeriHub is for mice and keyboards only; headsets are out of scope. The code is
 `crates/perihub-core/src/hidpp/direct.rs` (the table and the probe) and `direct_devices` / `poll_direct` in
 `crates/perihub-core/src/manager.rs`. What is read once the device answers is the same as for a device
 behind a receiver that PeriHub knows only by its features (`UnsupportedDevice` in

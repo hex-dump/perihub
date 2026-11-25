@@ -176,7 +176,7 @@
       </div>
       <label class="field">
         Something else (one per line)
-        <textarea rows="2" bind:value={other} placeholder="Sidetone, lift-off distance, sensor settings…"></textarea>
+        <textarea rows="2" bind:value={other} placeholder="Debounce time, lift-off distance, sensor settings…"></textarea>
       </label>
       <label class="row small">
         <input type="checkbox" bind:checked={understood} />

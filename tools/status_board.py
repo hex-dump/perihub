@@ -93,7 +93,7 @@ def board(
     rows: dict[str, list[str]] = {key: [] for key, _, _ in GROUPS}
     for issue in sorted(issues, key=lambda i: i["number"]):
         labels = {label["name"] for label in issue["labels"]}
-        if "pull_request" in issue or "device request" not in labels:
+        if "pull_request" in issue or "device request" not in labels or "wontfix" in labels:
             continue
         group, note = place(issue, released, main, branches, upstream or {})
         usb = usb_id(fields(issue.get("body") or "").get("USB ID (vendor:product)", "")) or "?"

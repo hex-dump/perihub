@@ -18,10 +18,10 @@ const device: ReportDevice = {
 
 describe("the steps of a recording", () => {
   it("follow the boxes in the form's order, then each line of something else, then putting back", () => {
-    expect(recordingSteps(["lighting", "dpi"], "  Sidetone \n\n Lift-off distance")).toEqual([
+    expect(recordingSteps(["lighting", "dpi"], "  Debounce time \n\n Lift-off distance")).toEqual([
       CAPABILITIES[0].step,
       CAPABILITIES[2].step,
-      "Sidetone",
+      "Debounce time",
       "Lift-off distance",
       PUT_BACK,
     ]);

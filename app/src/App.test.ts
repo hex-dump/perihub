@@ -179,6 +179,23 @@ describe("Sidebar", () => {
     expect(await screen.findByText("ITE Device")).toBeTruthy();
   });
 
+  it("hides headsets from Send a report even if returned by the backend", async () => {
+    const headset: ReportDevice = {
+      ...ite,
+      vendor_id: 0x046d,
+      product_id: 0x0aaa,
+      manufacturer: "Logitech",
+      product: "Logitech PRO X",
+      collections: [{ interface: 3, usage_page: 0x0b, usage: 5 }],
+    };
+    calls.status = vi.fn(async () => empty());
+    calls.devicesForReport = vi.fn(async () => [headset, ite]);
+    render(App);
+    await wait();
+    expect(await screen.findByText("ITE Device")).toBeTruthy();
+    expect(screen.queryByText("Logitech PRO X")).toBeNull();
+  });
+
   it("with a device, lists it alone and opens it", async () => {
     calls.status = vi.fn(async () => ({ ...empty(), mouse_asleep: "G502 X PLUS" }));
     render(App);

@@ -20,7 +20,7 @@ the same format.
 - [SteelSeries](#steelseries)
 - [Logitech mice with onboard profiles](#logitech-mice-with-onboard-profiles)
 - [Logitech G300](#logitech-g300)
-- [Logitech keyboards and headsets on their own USB connection](#logitech-keyboards-and-headsets-on-their-own-usb-connection)
+- [Logitech keyboards on their own USB connection](#logitech-keyboards-on-their-own-usb-connection)
 - [Corsair](#corsair)
 - [ASUS](#asus)
 - [SteelSeries mice](#steelseries-mice)
@@ -219,7 +219,7 @@ they were still there after the mouse was unplugged and plugged back in, and a s
 kept was undone. No G300 has been tried on Linux yet. Something does not work on yours? Send a
 [test report](https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml).
 
-## Logitech keyboards and headsets on their own USB connection
+## Logitech keyboards on their own USB connection
 
 👁 Read-only: Logitech devices with HID++ 2.0 on a USB connection of their own, without a receiver,
 whose HID++ collections use the newer vendor usage page `ff43`

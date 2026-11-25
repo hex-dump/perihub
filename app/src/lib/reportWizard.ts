@@ -12,8 +12,8 @@ import { describe } from "./g300";
 import { kindName } from "./logitechFeatures";
 import { type Hidden, mergeHidden, redact } from "./redact";
 import {
-  corsairTest, deviceRequestUrl, deviceTestFormUrl, g300Test, peripheralTest, RECORDING_HEADING, receiverTest,
-  reportDeviceName, reportUsbId, testFormUrl,
+  corsairTest, deviceKind, deviceRequestUrl, deviceTestFormUrl, g300Test, peripheralTest, RECORDING_HEADING,
+  receiverTest, reportDeviceName, reportUsbId, testFormUrl,
 } from "./testReport";
 
 export type DeviceKind = "mouse" | "keyboard" | "other";
@@ -106,7 +106,7 @@ export function candidates(status: DeviceStatus, unknown: ReportDevice[]): Candi
   }
   const qmk = status.qmk.map((k) => k.key);
   for (const device of unknown) {
-    if (qmk.includes(reportUsbId(device))) continue;
+    if (qmk.includes(reportUsbId(device)) || deviceKind(device) === "Headset") continue;
     list.push({
       id: `unknown:${reportUsbId(device)}`,
       name: reportDeviceName(device),

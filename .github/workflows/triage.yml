@@ -79,9 +79,13 @@ jobs:
               "test report") gh label create "$label" --repo "$GITHUB_REPOSITORY" --color 0e8a16 --description "A device's test report" 2>/dev/null || true ;;
               "ready to add") gh label create "$label" --repo "$GITHUB_REPOSITORY" --color 0e8a16 --description "Documented by another project: can be added directly" 2>/dev/null || true ;;
               "needs captures") gh label create "$label" --repo "$GITHUB_REPOSITORY" --color fbca04 --description "No public documentation: needs USB captures" 2>/dev/null || true ;;
+              "wontfix") gh label create "$label" --repo "$GITHUB_REPOSITORY" --color ffffff --description "This will not be worked on" 2>/dev/null || true ;;
             esac
             gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label "$label"
           done
+          if [ "$(jq -r '.close // empty' "$RUNNER_TEMP/triage.json")" = "not_planned" ]; then
+            gh issue close "$ISSUE" --repo "$GITHUB_REPOSITORY" --reason "not planned"
+          fi
 
   # The report confirms a device: a pull request for the maintainer to merge (confirm.yml decides again
   # from the issue itself, and needs its number, and the test branch when the device is only there).

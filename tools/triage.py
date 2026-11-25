@@ -291,6 +291,23 @@ TYPES = ("device request", "test report")
 # The brands that have a label of their own: the options of the "Brand" dropdown of the forms, and "Other".
 BRANDS = ("Logitech", "SteelSeries", "Corsair", "Razer", "ASUS")
 KINDS = ("mouse", "keyboard")  # "Receiver" has no label
+HEADSET_WORDS = re.compile(r"\b(headsets?|headphones?|earbuds?|microphones?)\b", re.I)
+TELEPHONY_COLLECTION = re.compile(r"usage page 000b\b", re.I)
+STANDARD_INPUT_COLLECTION = re.compile(r"usage page 0001,\s*usage 000[26]\b", re.I)
+
+
+def is_headset_request(issue: dict, answers: dict[str, str], body: str) -> bool:
+    """Whether a device request asks for a headset or audio device, which PeriHub does not support."""
+    saw = answers.get("What PeriHub saw", "")
+    # Pasted reports (from_form=False) keep their PeriHub lines in the issue body instead of a form field.
+    report_text = saw or (body or "")
+    if re.search(r"^Kind:\s*Headset\b", report_text, re.M | re.I):
+        return True
+    if TELEPHONY_COLLECTION.search(report_text) and not STANDARD_INPUT_COLLECTION.search(report_text):
+        return True
+    device_line = "\n".join(re.findall(r"^Device:\s*(.+)$", report_text, re.M | re.I))
+    names = " ".join(part for part in (issue.get("title", ""), answers.get("Device model", ""), device_line) if part)
+    return bool(HEADSET_WORDS.search(names))
 
 
 def form_type(body: str) -> str | None:
@@ -642,6 +659,19 @@ def triage(
         result["remove_labels"] = wrong
 
     if "device request" in labels:
+        if is_headset_request(issue, answers, issue.get("body", "")):
+            result["labels"] = [l for l in result["labels"] if l not in KINDS]
+            if "wontfix" not in present and "wontfix" not in result["labels"]:
+                result["labels"].append("wontfix")
+            stale = sorted(present & (set(KINDS) | {"needs captures", "ready to add"}))
+            if stale:
+                result["remove_labels"] = sorted(set(result.get("remove_labels", [])) | set(stale))
+            result["close"] = "not_planned"
+            result["comment"] = (
+                "Thanks for the request! PeriHub is only for **mice, keyboards, and their receivers** — headsets "
+                "and other audio devices are out of scope, so this issue is being closed as not planned."
+            )
+            return result
         given = answers.get("USB ID (vendor:product)", "")
         found = usb_id(given)
         if not found:
