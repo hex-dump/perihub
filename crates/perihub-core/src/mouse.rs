@@ -311,7 +311,7 @@ impl Support {
 pub fn support(model: &MouseModel, onboard: &OnboardInfo, receiver: bool, untested_saves: bool) -> Support {
     let known = WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
         && WRITABLE_SECTOR_SIZES.contains(&(onboard.sector_size as usize));
-    let tested = model.verified || (known && tested_memory(onboard.profile_format, onboard.sector_size));
+    let tested = known && (model.verified || tested_memory(onboard.profile_format, onboard.sector_size));
     let writable = known && if receiver { tested && untested_saves } else { tested || untested_saves };
     Support { tested, experimental: writable && (!tested || receiver), writable, writable_format: known }
 }
@@ -473,7 +473,7 @@ impl MouseTask {
             bluetooth: if dev.is_over_bluetooth() { model.bluetooth_id } else { None },
             link: None,
             host_mode: false,
-            switches_back: model.verified,
+            switches_back: model.verified && support.writable_format,
             firmware,
             dpi,
             report_rates_ms,
@@ -532,7 +532,9 @@ impl MouseTask {
     }
 
     /// The reads of mice with the extended features, and the profiles of memory format 7 as lines
-    /// for the test report. Nothing is written.
+    /// for the test report. On an unknown/unwritable memory format, also reads profile 1 and
+    /// factory profile 1 once (read-only) so its layout lands in the test report transcript. Nothing
+    /// is written.
     fn read_extended(&mut self) -> Result<()> {
         let mut reads = ExtendedReads::read(&mut self.dev)?;
         if ExtendedProfile::is_format(self.info.onboard.profile_format) {
@@ -546,6 +548,24 @@ impl MouseTask {
                     Err(Error::Unreachable) => return Err(Error::Unreachable),
                     Err(error) => reads.errors.push(format!("profile {number}: {error}")),
                 }
+            }
+        } else if !self.info.writable_format && self.sector_size() >= 16 {
+            let size = self.sector_size();
+            let user_sector = !self.factory_memory() && self.profile_count() >= 1;
+            let rom_sector = self.info.onboard.rom_profile_count >= 1;
+            let mut read_opt = |sector: u16| -> Result<()> {
+                match self.dev.read_sector(sector, size) {
+                    Ok(_) => Ok(()),
+                    Err(Error::Unreachable) => Err(Error::Unreachable),
+                    Err(Error::Hidpp(_) | Error::Protocol(_)) => Ok(()),
+                    Err(e) => Err(e),
+                }
+            };
+            if user_sector {
+                read_opt(1)?;
+            }
+            if rom_sector {
+                read_opt(ROM_SECTOR_BASE + 1)?;
             }
         }
         self.info.extended = (!reads.is_empty()).then_some(reads);
@@ -593,7 +613,7 @@ impl MouseTask {
         let mode = self.dev.onboard_mode()?;
         // Processes are listed only when the mouse is not in its onboard mode.
         let conflict_running = mode != ONBOARD_MODE && !conflicts::running().is_empty();
-        let host_mode = match mode_action(mode, self.model.verified, conflict_running) {
+        let host_mode = match mode_action(mode, self.info.switches_back, conflict_running) {
             ModeAction::Fine => false,
             ModeAction::Report => true,
             // Read-only mode: the mouse stays as it is, and the interface says another program has it.
@@ -1645,10 +1665,15 @@ mod tests {
         assert_eq!(support(g403, &format_4, true, true), read_only, "through a receiver");
 
         // Memories PeriHub cannot write.
-        for format in [0, 1, 5, 6, 7] {
+        for format in [0, 1, 5, 6, 7, 10] {
             let other = OnboardInfo { profile_format: format, ..g502.clone() };
             assert_eq!(support(g403, &other, false, true), unknown, "profile format {format}");
         }
+        // Even a model tested on its original format becomes read-only once firmware moves to an unknown format.
+        let g502_x = model_of(G502_X_WIRELESS);
+        let format_10 = OnboardInfo { profile_format: 10, sector_size: 255, ..g502.clone() };
+        assert_eq!(support(g502_x, &format_10, false, true), unknown);
+        assert_eq!(support(g502_x, &format_10, true, true), unknown);
         for size in [240, 512] {
             let other = OnboardInfo { sector_size: size, ..g502.clone() };
             assert_eq!(support(g403, &other, false, true), unknown, "{size}-byte sectors");
@@ -3405,5 +3430,30 @@ mod tests {
         task.set_active_profile(3).unwrap();
         assert_eq!(sim.lock().unwrap().selected, [[0, 3]]);
         forget_test_files();
+    }
+
+    #[test]
+    fn a_known_model_with_an_unknown_memory_format_stays_read_only_and_records_profile_one() {
+        let (memory, onboard) = g502_memory();
+        let onboard = OnboardInfo { rom_profile_count: 2, ..onboard };
+        let mut sim = Sim::new(memory, onboard).resized(255, 10);
+        sim.features = PRO_FEATURES;
+        let (mut task, sim) = open_sim(sim, G502_X_WIRELESS, true);
+        assert!(!task.info.verified);
+        assert!(!task.info.writable);
+        assert!(!task.info.writable_format);
+        assert!(!task.info.experimental);
+        assert!(!task.info.switches_back);
+
+        // Both user sector 1 (00 01) and factory sector 1 (01 01) were recorded read-only in the transcript.
+        assert!(task.info.transcript.contains("00 01 00 00"));
+        assert!(task.info.transcript.contains("01 01 00 00"));
+
+        // Mode switches back and profile writes stay off for the unknown memory format.
+        let state = task.state().unwrap();
+        assert!(task.save_profile(1, &edited(&state, 1)).is_err());
+        assert!(task.set_active_profile(2).is_err());
+        assert!(task.dev.set_onboard_mode(ONBOARD_MODE).is_err());
+        assert!(sim.lock().unwrap().written.is_empty());
     }
 }
