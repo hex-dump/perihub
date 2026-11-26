@@ -201,7 +201,7 @@ From OpenRGB's detection lists, interface 1 and usage page `ff1c` for each:
   - the **colours per key**, LED by LED or all at once: only the 54-byte packets that hold a changed LED, at offsets
     0, 54 … 324, so no LED is split over two requests and nothing is written past the 126th LED;
   - the **key table**: an entry that holds a key, a modifier or a media usage can be set to any of what OpenEVision
-    offers, plus the ANSI backslash (`31`) and the international keys (`87` to `8b`, `90`, `91`) that the K580's
+    offers, plus the ANSI backslash (`31`), F13 to F24 (`68` to `73`: standard keyboard-page usages, encoded `02 02 NN` like the others; OpenEVision does not offer them, PeriHub's own choice) and the international keys (`87` to `8b`, `90`, `91`) that the K580's
     own table holds: one write of 3 bytes at the entry's offset per changed entry. Each entry is named by what it
     held the first time PeriHub read the keyboard, before any change: PeriHub keeps that table in the keyboard's
     backup folder (`first-reading.bin`). The Fn entries, the entries no source describes (`02 00 00`, `d0 a2 NN` on
