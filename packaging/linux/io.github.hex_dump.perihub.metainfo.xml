@@ -433,6 +433,11 @@
   </provides>
 
   <releases>
+    <release version="0.9.8" date="2026-11-26">
+      <description>
+        <p>Logitech mice whose onboard memory uses profile format 4, such as the G903 HERO, can now be saved to with their USB cable as an experimental feature, and the lighting zones of mice that report them through the RGB effects feature (0x8071) are shown. EVision keyboards 320f:505b and 320f:5000 (Redragon K580) get everything the sources document, as an experimental feature: colours per key, key remapping, direction and random colour. Keyboards on the Artery W669 platform with the id 2e3c:c365 (such as the X68HE) are read on Windows. App profiles no longer switch a mouse to a profile that is turned off in its memory and wait for the focus to settle before switching, a Logitech mouse whose firmware moved to a memory format PeriHub cannot write stays read-only even on a tested model, the wired G502 HERO's logo and DPI indicator lights are saved to the right blocks, headsets are left out of device requests, and two dependencies with RustSec advisories are updated.</p>
+      </description>
+    </release>
     <release version="0.9.7" date="2026-11-20">
       <description>
         <p>More devices, written from public documentation, now come with the release itself as experimental instead of waiting on a test build: the Razer BlackWidow V4 Mini HyperSpeed (brightness, game mode, macro light and its lighting effects, with the effect before put back), the Razer Viper V3 Pro and Pro SE over their dongle, the SteelSeries Apex Pro, Apex 7, Apex 7 TKL and Apex 5, EVision keyboards and the Logitech G213 (Windows), and, read only, the Corsair KATAR PRO WIRELESS, the Logitech PRO K/DA and the Logitech G604 over Bluetooth. Razer mice show their battery, a Logitech keyboard behind a receiver gets its lights read and driven (experimental), the SteelSeries Rival 700/710 is confirmed by a tester, and device requests are answered more accurately.</p>

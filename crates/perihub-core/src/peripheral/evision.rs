@@ -334,10 +334,11 @@ fn key_entry(action: &KeyAction) -> Option<[u8; ENTRY]> {
 }
 
 /// What a key may be set to: nothing (usage 0), the keys OpenEVision offers (keyboard page 04 to 65, with the ANSI
-/// backslash 31 that its ISO keyboard has not), the international keys the K580's own table holds (87 to 8b, 90,
-/// 91), one modifier, or one of OpenEVision's media usages.
+/// backslash 31 that its ISO keyboard has not), F13 to F24 (68 to 73: standard usages of the HID Usage Tables that
+/// OpenEVision does not offer, added as PeriHub's own choice), the international keys the K580's own table holds
+/// (87 to 8b, 90, 91), one modifier, or one of OpenEVision's media usages.
 fn actions() -> Vec<KeyAction> {
-    let keys = std::iter::once(0).chain(0x04..=0x65).chain(0x87..=0x8B).chain(0x90..=0x91);
+    let keys = std::iter::once(0).chain(0x04..=0x65).chain(0x68..=0x73).chain(0x87..=0x8B).chain(0x90..=0x91);
     keys.map(|usage| KeyAction::Key { usage })
         .chain((0..8).map(|b| KeyAction::Modifier { bit: 1 << b }))
         .chain(MEDIA.iter().map(|&usage| KeyAction::Media { usage }))
@@ -1567,6 +1568,8 @@ mod tests {
         let offered = &task.info.limits.keys.as_ref().unwrap().actions;
         assert!(offered.contains(&KeyAction::Key { usage: 0 }), "disabled");
         assert!(offered.contains(&KeyAction::Key { usage: 0x31 }) && offered.contains(&KeyAction::Key { usage: 0x8B }));
+        assert!(offered.contains(&KeyAction::Key { usage: 0x68 }) && offered.contains(&KeyAction::Key { usage: 0x73 }));
+        assert_eq!(key_entry(&KeyAction::Key { usage: 0x68 }), Some([0x02, 0x02, 0x68]));
         assert!(offered.iter().all(|a| a.changeable()));
         let from = sent_count(&state);
         for action in [
