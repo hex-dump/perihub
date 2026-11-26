@@ -183,8 +183,11 @@ device, "can be added directly" (label `ready to add`: the device goes into the 
 test build earlier if one is made, posted on the issue to try with **Test my device**; a clean report makes it
 supported) when the id is in
 `tools/upstream-seen.json` for a vendor PeriHub has a driver for (libratbag for Logitech, OpenRazer for
-Razer, rivalcfg for SteelSeries), and "needs USB captures" (label `needs captures`, linking [captures.md](captures.md))
-otherwise.
+Razer, rivalcfg for SteelSeries), or when the HID descriptors of the request show the configuration collection of a
+device family PeriHub has a driver for (`tools/platforms.py`: the collection, and its report ids and lengths where
+the request has them). Otherwise the answer says what was checked (the catalogue and the test branches, the upstream
+projects, the vendor collections it saw) and that a recording of the official software is the optional help (label
+`needs captures`, linking [captures.md](captures.md)); it promises no search for documentation.
 
 ## Releasing
 
@@ -218,9 +221,9 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 | Release comment | a release is published | one comment on each open issue the notes or commits name, saying the version is out; nothing is closed |
 | AUR package | a release is published | PKGBUILD and .SRCINFO for it, committed to the `aur` branch (not main, which takes no pushes from bots) |
 | Website | main, a published release | builds and publishes `site/` |
-| Triage | a new issue | answers requests (the device's level, "ready to add" or "needs captures"), asks old test reports to retry, labels brand and kind; a clean test report starts Confirm a device |
+| Triage | a new issue | answers requests (the device's level; "ready to add" when a project documents it or its descriptors show the collection of a family PeriHub has a driver for, `tools/platforms.py`; else "needs captures" with what was checked), asks old test reports to retry, labels brand and kind; a clean test report starts Confirm a device, and an id that can be added without a person starts Auto-add a device |
 | Refresh test branches | a release is published, or by hand (one `test/…` branch or all) | every `test/…` branch whose own commits name an open issue with `Test: #N` gets main merged in (`tools/refresh-test-branches.sh`: generated files from main and `cargo xtask gen`, files with generated blocks keep both sides' lines, the branch's CHANGELOG entries move under Unreleased with `tools/changelog_carry.py`), then its Test build is started, whose notify job posts the new link and deletes the old one. A branch with any other conflict is left alone and named in the run's summary (the run fails) |
-| Auto-add a device | triage when a request is "ready to add" with an id a generator can write, or by hand (`issue` and `usb`) | for OpenRazer's mice (`tools/triage.py` `MECHANICAL`, `tools/auto_add.py` `GENERATORS`): the id goes in `tools/auto-add.json`, `tools/openrazer_facts.py` writes the table from the source at the commit the table names, `cargo xtask gen` and the checks run, and the commit (`Test: #N`) goes on `test/auto-VVVV-PPPP`; the branch is pushed, Test build is started by hand (a push made with the workflow token starts nothing), and a pull request to main (not a draft) is opened for the maintainer to merge after CI, so the device is in the next release as experimental; a clean test report makes it supported. If the generator cannot produce the id or a check fails, nothing is commented and the issue gets the label `needs maintainer`. Nothing is pushed to main |
+| Auto-add a device | triage when a request is "ready to add" with an id that can be added without a person, or by hand (`issue`, `usb`, and `family` for a request whose collection matches but has no report descriptor) | two ways (`tools/auto_add.py`): OpenRazer's mice (`tools/triage.py` `MECHANICAL`, `GENERATORS`): the id goes in `tools/auto-add.json` and `tools/openrazer_facts.py` writes the table from the source at the commit the table names; a sibling id of a family whose configuration collection and reports the request shows (`tools/platforms.py`, checked again from the issue): the id goes into the family's table in its driver, read only, named after the request's Device model, and keeps the family's Linux rule. Then `cargo xtask gen`, a line under New devices in CHANGELOG.md, the checks, and the commit (`Test: #N`) on `test/auto-VVVV-PPPP`; the branch is pushed, Test build is started by hand (a push made with the workflow token starts nothing), and a pull request to main (not a draft) is opened for the maintainer to merge after CI (close and reopen it: a pull request opened by a workflow starts no CI), so the device is in the next release; a clean test report makes it supported. If it cannot be written or a check fails, nothing is commented and the issue gets the label `needs maintainer`. Nothing is pushed to main |
 | Confirm a device | triage, or by hand | `cargo xtask confirm` for the report in an issue, checks, and a pull request that makes the device supported; for a device only on a `test/…` branch, the commit goes to that branch and the pull request is from it to main |
 | Status board | issues, releases, main's catalogue, daily, or by hand | `tools/status_board.py` keeps the pinned, locked issue "Device support: where every request stands": every open device request grouped by where it stands (latest release, next release, test build, being written, needs a recording), edited only when something moved |
 | Reminders | every day | `tools/remind.py`: one reminder when an author has not answered the maintainer's question for 7 days (device requests, test reports and unlabeled issues). Where closing is surely right it says so, and the issue is closed as "not planned" with the label `no answer` 14 days after the question and at least 7 after that warning. Only then: the label `waiting for reporter`, no label but device request, test report, needs captures, mouse, keyboard, question and `brand: …` (so never `ready to add`, `needs maintainer`, `keep open`, bugs, packaging), no open pull request or `test/…` branch names it, not the maintainer's own. When its author comments, Waiting for reporter reopens it |
@@ -234,9 +237,22 @@ Removed, Known limitations. `python3 tools/release.py lint` checks them, and CI 
 ### Devices added without a person
 
 Which ids can be added by the Auto-add workflow is decided in two places that agree (a test keeps them in step):
-`tools/triage.py` (`MECHANICAL`, a pure function `auto_addable` that needs only the catalogue and the ids the
-upstream projects list) and `tools/auto_add.py` (`GENERATORS`, the (project, vendor) pairs whose table a script
-writes from the project's source). Only OpenRazer's mice (1532) are such a pair today: at the commit the table
+`tools/triage.py` (`MECHANICAL` and `tools/platforms.py`, a pure function `auto_addable` that needs only the catalogue,
+the ids the upstream projects list and the request's descriptors) and `tools/auto_add.py` (`GENERATORS`, the
+(project, vendor) pairs whose table a script writes from the project's source, and the same `tools/platforms.py`).
+
+**Sibling ids.** `tools/platforms.py` is the one table of the configuration collections of the families PeriHub has a
+driver for, each with the driver it comes from (`tools/test_platforms.py` checks the driver still has that interface,
+usage page and report): the Artery W669 keyboards (`wraith.rs`), EVision (`evision.rs`), YJX (`yjx.rs`), and,
+recognized but never added without a person, Logitech HID++ (models written by hand) and QMK (found by its collection,
+whatever the id). A request whose collection, report ids and lengths match exactly one family that has `sibling` is
+added read only, as `2e3c:c365` (#123) was by hand; one with the collection but no report descriptor (PeriHub older than
+0.9.7) is "ready to add" for a maintainer, who can start Auto-add with `family`. Razer and SteelSeries have no vendor
+collection that tells their protocol apart (Razer uses a feature report of the mouse's own collection), so they are
+not in it. To try it without GitHub: `python3 tools/auto_add.py 2e3c:c365 123 --request issue.json --dry-run`, with
+the issue from `gh api repos/hex-dump/perihub/issues/123` (in a checkout where the id is not in the catalogue yet).
+
+**OpenRazer.** Only OpenRazer's mice (1532) are such a pair today: at the commit the table
 names, every Razer mouse is in the table except the receivers, docks and wireless dongles the generator leaves out,
 and `tools/auto-add.json` (`{"allow": ["1532:00c1"]}`) lets an id through. Not the others: libratbag's Logitech
 devices and the other brands have no generator (their drivers and models are written by hand), rivalcfg's table

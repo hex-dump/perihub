@@ -9,8 +9,12 @@ A request for a device the latest release recognizes gets an answer with its lev
 that any project lists is "ready to add": added directly if PeriHub has a driver for it, else by writing a driver from
 the documentation, no captures needed. "Ready to add" means it is added to the next release as experimental (read-only
 where the documentation does not allow checking it), with a test build earlier if one is made; nothing waits for a tester,
-and a clean report from Test my device makes it supported. One nobody lists is told a maintainer will look for documentation, and that
-USB captures are optional help ("needs captures"). A test report from an
+and a clean report from Test my device makes it supported. A request whose HID descriptors ("What PeriHub saw") show the
+configuration collection of a family PeriHub already has a driver for (tools/platforms.py) is "ready to add" too; when the
+collection and its reports match a family whose table takes a new id read only, the id is added without a person
+({"auto_add": ..., "platform": ...}). One nothing recognizes is told what was checked (the catalogue, the projects PeriHub
+learns from, its collections) and that a recording of its official software is the optional help ("needs captures"),
+with no promise of a search nobody makes. A test report from an
 older version gets asked to try the latest one. A test report from the latest version with nothing
 wrong in it, for a device or a Logitech memory format nobody had confirmed, says so in "confirm"
 ({"usb": "1532:00b7"} or {"memory_format": [4, 255]}): the confirm workflow takes it from there, and
@@ -18,8 +22,8 @@ a person reviews what it opens. Anything doubtful confirms nothing. Everything e
 RELEASED_DEVICES.json is site/devices.json as of the latest release's tag: a device that is only on
 main is not in it, and is left to the maintainer, since no published version has it. Without it,
 site/devices.json is used for both.
-"Ready to add" with a project and vendor whose table a generator writes (MECHANICAL: OpenRazer's mice) says
-{"auto_add": "1532:00c1"}: the auto-add workflow writes the support on a test branch, starts its test
+"Ready to add" with a project and vendor whose table a generator writes (MECHANICAL: OpenRazer's mice), or with a
+full match of a family's collection (platforms.py, "sibling"), says {"auto_add": "1532:00c1"}: the auto-add workflow writes the support on a test branch, starts its test
 build by itself and opens a pull request the maintainer merges after CI, and the answer says so. A new device goes into
 main and the next release as experimental without waiting for a tester; a test build (a test/<name> branch) is for
 trying it earlier, and its reports start "PeriHub 0.9.5 (test build test/x@abc1234) on ...".
@@ -34,6 +38,9 @@ import re
 import sys
 from pathlib import Path
 from urllib.parse import quote
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import platforms  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIRMED_RS = ROOT / "crates/perihub-core/src/confirmed.rs"
@@ -151,7 +158,7 @@ TEST_BUILD_STEPS = (
 # The same, when the support is written by the repository's own workflow: nobody has to do anything.
 AUTO_TEST_BUILD_STEPS = (
     "The support is being **written and built automatically** right now (a pull request and a **test build** on a "
-    "`test/` branch): it goes into the **next release** as experimental once the maintainer merges it, without waiting "
+    "`test/` branch): it goes into the **next release** as {level} once the maintainer merges it, without waiting "
     "for a test. The link to the test build is posted on this issue when it is ready. Install it, connect the device, "
     "and try it with **Test my device**: it reads the device, and the report says which test build it is from. Once a "
     "clean report comes in, the device is confirmed and becomes **supported**. Nothing is needed from you for it to be "
@@ -167,14 +174,10 @@ ON_BRANCH_STEPS = (
     "experimental whether or not you try it; once a clean report comes in, it is confirmed and becomes **supported**."
 )
 TEST_BUILD_RUNS = "https://github.com/hex-dump/perihub/actions/workflows/test-build.yml?query=branch%3A{branch}"
-# A Logitech device that has a vendor collection on usage page ff00 with usage 0001 or 0002 (HID++ short and long
-# reports) speaks HID++ 2.0, which is self-describing: the Logitech driver of PeriHub reads what the device has.
-HIDPP_COLLECTION = re.compile(r"usage page ff00, usage 000[12]\b", re.I)
-
-
 def speaks_hidpp(usb: str, saw: str) -> bool:
-    """Whether a Logitech device's "What PeriHub saw" block shows HID++ report collections."""
-    return usb.startswith("046d:") and bool(HIDPP_COLLECTION.search(saw or ""))
+    """Whether a Logitech device's "What PeriHub saw" block shows HID++ collections (platforms.py, "logitech": usage page
+    ff00 with usage 0001 or 0002, or ff43): HID++ 2.0 is self-describing, the Logitech driver reads what the device has."""
+    return platforms.level(platforms.BY_KEY["logitech"], usb, saw) is not None
 
 
 COLLECTION = re.compile(r"usage page ([0-9a-f]{4}), usage [0-9a-f]{4}", re.I)
@@ -207,16 +210,46 @@ def branch_with(usb: str, branches: dict[str, list[dict]] | None) -> str | None:
     return having[0] if having else None
 
 
-def auto_addable(usb: str, upstream: dict[str, list[str]], devices: list[dict], branches: dict[str, list[dict]] | None = None) -> bool:
+def auto_addable(
+    usb: str, upstream: dict[str, list[str]], devices: list[dict], branches: dict[str, list[dict]] | None = None, saw: str = ""
+) -> bool:
     """Whether tools/auto_add.py can add this id without a person, from what is known without the sources: a project
-    whose table a generator writes (MECHANICAL) lists it, and no device of the catalogue (the devices of main) or of
-    a test branch has it already. Whether the generator really produces it is found out by the auto-add workflow,
-    which hands the issue to a person when it does not."""
+    whose table a generator writes (MECHANICAL) lists it, or the request's descriptors match the collection and reports
+    of a family whose table takes a new id read only (platforms.py, a "full" match with "sibling"); and no device of the
+    catalogue (the devices of main) or of a test branch has it already. Whether it really can be added is found out by
+    the auto-add workflow (it checks the request again), which hands the issue to a person when it cannot."""
     if not re.fullmatch(r"[0-9a-f]{4}:[0-9a-f]{4}", usb):
         return False
     if any(usb in d["usb_ids"] for d in devices) or any(usb in d["usb_ids"] for ds in (branches or {}).values() for d in ds):
         return False
-    return any((project, usb.split(":")[0]) in MECHANICAL for project in listed_by(usb, upstream))
+    if any((project, usb.split(":")[0]) in MECHANICAL for project in listed_by(usb, upstream)):
+        return True
+    match = platforms.recognize(usb, saw)
+    return bool(match and match.auto)
+
+
+def checked(usb: str, saw: str, projects: list[str]) -> str:
+    """What the bot looked at for a device it does not recognize, in a few sentences."""
+    sources = ", ".join(f"[{p.replace('openrazer', 'OpenRazer')}]({url})" for p, url in UPSTREAM_URLS.items())
+    out = [f"`{usb}` is not in PeriHub's catalogue (main included) or on a test branch."]
+    if projects:
+        out.append(f"{', '.join(projects)} lists it, but PeriHub has no driver for that protocol yet.")
+    else:
+        out.append(f"None of the projects PeriHub takes facts from ({sources}) lists it.")
+    seen = platforms.collections_of(saw)
+    vendor = sorted({(i, p, u) for i, p, u in seen if p >= 0xFF00})
+    if not seen:
+        out.append(
+            "The request has no HID descriptors to compare with the device families PeriHub supports: **Send a report** "
+            "→ **Request support** in PeriHub (0.9.7 or newer) adds them."
+        )
+    elif vendor:
+        names = "; ".join(f"usage page {p:04x}, usage {u:04x}" + (f" on interface {i}" if i >= 0 else "") for i, p, u in vendor[:4])
+        out.append(
+            f"Its vendor-defined collections ({names}) are not the configuration collection of any device family "
+            "PeriHub has a driver for."
+        )
+    return " ".join(out)
 
 
 def next_steps(
@@ -247,11 +280,40 @@ def next_steps(
         documented = [p for p in documented if p != "libratbag"]
     if documented:
         project = documented[0]
-        steps = AUTO_TEST_BUILD_STEPS if auto_addable(usb, upstream, devices, branches) else TEST_BUILD_STEPS
+        steps = AUTO_TEST_BUILD_STEPS.format(level="experimental") if auto_addable(usb, upstream, devices, branches) else TEST_BUILD_STEPS
         return (
             f"Thanks! `{usb}` is not in PeriHub {latest} yet, but [{project}]({UPSTREAM_URLS[project]}) lists it, and "
             f"PeriHub already has a driver for {brand} devices of that kind. So it **can be added directly**, as "
             f"**read-only or experimental**. {steps}",
+            "ready to add",
+        )
+    match = platforms.recognize(usb, saw)
+    if match and match.platform.key != "logitech":
+        p = match.platform
+        if p.found_by_collection:
+            return (
+                f"Thanks! `{usb}` has the collection of **{p.name}** ({platforms.signature(p)}), which PeriHub finds "
+                f"by itself, whatever the USB id: see [{p.name}]({DEVICES_MD}#keyboards-with-qmk-firmware-vial-via). If "
+                "PeriHub does not show it, please say here what it shows.",
+                "ready to add",
+            )
+        if match.auto and auto_addable(usb, upstream, devices, branches, saw):
+            linux = f" {p.sibling.linux}" if p.sibling.linux else ""
+            return (
+                f"Thanks! `{usb}` is not in PeriHub {latest} yet, but its configuration collection "
+                f"({platforms.signature(p)}) and its reports are the ones of the **{p.name}** PeriHub already reads. So it "
+                f"**is added automatically, read-only**.{linux} {AUTO_TEST_BUILD_STEPS.format(level='read-only')}",
+                "ready to add",
+            )
+        why = (
+            "the request has no report descriptor for that collection (PeriHub 0.9.7 and newer show it), so a maintainer "
+            "checks it before it is added"
+            if p.sibling
+            else "the models of this family are written by a maintainer"
+        )
+        return (
+            f"Thanks! `{usb}` is not in PeriHub {latest} yet, but it has the configuration collection of the "
+            f"**{p.name}** PeriHub already has a driver for ({platforms.signature(p)}): {why}. {TEST_BUILD_STEPS}",
             "ready to add",
         )
     if brand and speaks_hidpp(usb, saw):
@@ -277,12 +339,11 @@ def next_steps(
             "ready to add",
         )
     return (
-        f"Thanks! `{usb}` is not in PeriHub {latest}, and no public documentation of its protocol was found in the "
-        "projects PeriHub learns from. A maintainer will look for documentation of it; you do not need to do anything "
-        "for the request to count. If you are comfortable with it, a recording of its official software changing each "
-        "setting would help a lot: in PeriHub, **Send a report** → **Record the official software** on this device (the "
-        f"[capture guide]({CAPTURE_GUIDE}) explains the same by hand). It is optional and never required. Until the "
-        "device is added, PeriHub sends nothing to it.",
+        f"Thanks for the request! What was checked automatically: {checked(usb, saw, projects)}\n\n"
+        "The request stays open and counts. If you want to help, the one thing that lets PeriHub add a device like this "
+        "is a recording of its official software changing each setting: in PeriHub, **Send a report** → **Record the "
+        f"official software** on this device (the [capture guide]({CAPTURE_GUIDE}) explains the same by hand). It is "
+        "optional. Until the device is added, PeriHub sends nothing to it.",
         "needs captures",
     )
 
@@ -698,13 +759,17 @@ def triage(
         elif not any(found in d["usb_ids"] for d in current):
             # Only on main: no published version has it, so what to say is up to the maintainer.
             result["comment"], label = next_steps(
-                found, latest, current, upstream or {}, branches, answers.get("What PeriHub saw", "")
+                found, latest, current, upstream or {}, branches, answers.get("What PeriHub saw", "") or issue.get("body", "")
             )
             result["labels"].append(label)
             # The workflow that writes and builds it (auto-add.yml) is started with the id and this issue.
-            if label == "ready to add" and issue.get("number") and auto_addable(found, upstream or {}, current, branches):
+            saw = answers.get("What PeriHub saw", "") or issue.get("body", "")
+            if label == "ready to add" and issue.get("number") and auto_addable(found, upstream or {}, current, branches, saw):
                 result["auto_add"] = found
                 result["issue"] = issue["number"]
+                match = platforms.recognize(found, saw)
+                if match and match.auto:
+                    result["platform"] = match.platform.key
         return result
 
     if "test report" in labels:

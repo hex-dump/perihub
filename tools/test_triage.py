@@ -678,12 +678,17 @@ class DeviceRequestAnswers(unittest.TestCase):
 
     def test_an_id_nobody_lists_gets_optional_captures_and_links_the_guide(self):
         result = run_req("dead:beef")
-        self.assertIn("A maintainer will look for documentation", result["comment"])
+        # What the bot checked, not a promise of a search nobody makes (the answer #123 got).
+        self.assertIn("What was checked automatically", result["comment"])
+        self.assertIn("not in PeriHub's catalogue", result["comment"])
+        self.assertIn("None of the projects PeriHub takes facts from", result["comment"])
+        for gone in ("maintainer will look", "no public documentation", "look for documentation"):
+            self.assertNotIn(gone, result["comment"])
         self.assertIn("optional", result["comment"])
-        self.assertIn("never required", result["comment"])
+        self.assertIn("Record the official software", result["comment"])
         self.assertIn(triage.CAPTURE_GUIDE, result["comment"])
         self.assertEqual(result["labels"], ["needs captures"])
-        self.assertNotIn("OpenRGB", result["comment"])
+        self.assertNotIn("OpenRGB lists", result["comment"])
 
     def test_a_missing_usb_id_is_asked_for_and_gets_no_next_step_label(self):
         result = triage.triage(req("_No response_"), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM)
@@ -769,8 +774,15 @@ class NoDocsButHidpp(unittest.TestCase):
         self.assertNotIn("auto_add", result)
 
     def test_without_hidpp_collections_the_same_logitech_id_needs_captures(self):
-        result = self.run_body(G604.replace("046d:b024", "046d:b999"))
+        result = self.run_body(G604.replace("046d:b024", "046d:b999").replace("usage page ff43, usage 0202", "usage page ff43, usage 0001"))
         self.assertEqual(result["labels"][-1], "needs captures")
+
+    def test_the_bluetooth_hidpp_collection_counts_as_hidpp(self):
+        # ff43/0202 is the HID++ collection of a Logitech mouse over Bluetooth (manager.rs, BLE_HIDPP_PAGE).
+        result = self.run_body(G604.replace("046d:b024", "046d:b999"))
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("HID++", result["comment"])
+        self.assertNotIn("auto_add", result)
 
     def test_another_vendor_with_the_same_collections_is_not_told_it_speaks_hidpp(self):
         result = self.run_body(HIDPP.replace("046d:b999", "24ae:2015"))
@@ -814,7 +826,7 @@ class ReleaseRule(unittest.TestCase):
 
     TEXTS = {
         "a maintainer writes it": triage.TEST_BUILD_STEPS,
-        "written automatically": triage.AUTO_TEST_BUILD_STEPS,
+        "written automatically": triage.AUTO_TEST_BUILD_STEPS.format(level="experimental"),
         "already on a test branch": triage.ON_BRANCH_STEPS,
     }
 
@@ -1166,9 +1178,12 @@ class StandardInterfacesOnly(unittest.TestCase):
         self.assertEqual(result["labels"][-1], "needs captures")
         self.assertIn("no vendor-specific one", result["comment"])
 
-    def test_nothing_seen_keeps_the_old_answer(self):
+    def test_nothing_seen_says_the_descriptors_were_missing(self):
         result = triage.triage(saw_request("c0f4:03f5", ""), "0.9.6", self.devices, upstream={})
-        self.assertIn("A maintainer will look", result["comment"])
+        self.assertIn("no HID descriptors to compare", result["comment"])
+        self.assertIn("Request support", result["comment"])
+        self.assertNotIn("maintainer will look", result["comment"])
+        self.assertEqual(result["labels"][-1], "needs captures")
 
 class ReportInAnotherField(unittest.TestCase):
     """Issue #117: the Test report field left as the placeholder, the app's report pasted in "Messages and errors"
@@ -1274,3 +1289,92 @@ class HeadsetRequests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# The request of issue #123 (X68HE), as PeriHub 0.9.7 wrote it: the collection and reports of the Wraith W60's family.
+X68HE_SAW = """PeriHub 0.9.7 on windows x86_64
+Device: (Standardsystemgeräte) X68HE
+Kind: Keyboard
+USB ID: 2e3c:c365 (USB)
+HID collections:
+  interface 0, usage page 0001, usage 0006
+  interface 1, usage page 0001, usage 0002
+  interface 1, usage page 0001, usage 0006
+  interface 1, usage page 0001, usage 0080
+  interface 1, usage page 000c, usage 0001
+  interface 2, usage page ff1b, usage 0091
+Report descriptors (lengths in bytes, with the id byte):
+  interface 0, 66 bytes: usage page 0001, usage 0006: no id (in 8, out 1)
+  interface 1, 66 bytes: usage page 0001, usage 0002: id 02 (in 7)
+  interface 1, 25 bytes: usage page 0001, usage 0006: id 05 (in 21)
+  interface 1, 29 bytes: usage page 0001, usage 0080: id 04 (in 2)
+  interface 1, 25 bytes: usage page 000c, usage 0001: id 03 (in 3)
+  interface 2, 40 bytes: usage page ff1b, usage 0091: id 01 (in 64, out 64)
+Raw descriptors (hex):
+  interface 2: 061bff0991a10185011900293e150026ff007508953f81021900293e150026ff007508953f9102c0"""
+# The request of issue #69 (0c45:8513, PeriHub 0.9.4): EVision's collection, no report descriptors yet.
+SGK30_SAW = """PeriHub 0.9.4 on windows x86_64
+Device: SONiX USB DEVICE
+USB ID: 0c45:8513 (USB)
+HID collections:
+  interface 0, usage page 0001, usage 0006
+  interface 1, usage page 0001, usage 0006
+  interface 1, usage page 0001, usage 0080
+  interface 1, usage page 000c, usage 0001
+  interface 1, usage page ff1c, usage 0092"""
+
+
+class Platforms(unittest.TestCase):
+    """A request whose descriptors show the configuration collection of a family PeriHub has a driver for (#123)."""
+
+    W60 = {"family": "wraith", "brand": "Wraith", "name": "W60", "kind": "keyboard", "level": "read_only", "usb_ids": ["2e3c:c368"]}
+
+    def run_saw(self, usb, saw, number=123, devices=None):
+        issue = dict(saw_request(usb, saw), number=number)
+        return triage.triage(issue, "0.9.7", devices or [self.W60], upstream={})
+
+    def test_the_x68he_is_added_automatically_read_only(self):
+        result = self.run_saw("2e3c:c365", X68HE_SAW)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertEqual(result["auto_add"], "2e3c:c365")
+        self.assertEqual(result["platform"], "wraith")
+        self.assertEqual(result["issue"], 123)
+        c = result["comment"]
+        self.assertIn("is added automatically, read-only", c)
+        self.assertIn("usage page ff1b, usage 0091, report id 01 (in 64, out 64 bytes)", c)
+        self.assertIn("On Linux it is not opened", c)
+        self.assertNotIn("documentation", c)
+
+    def test_a_different_report_is_no_match(self):
+        saw = X68HE_SAW.replace("id 01 (in 64, out 64)", "id 01 (in 32, out 32)")
+        result = self.run_saw("2e3c:c365", saw)
+        self.assertEqual(result["labels"][-1], "needs captures")
+        self.assertIn("usage page ff1b, usage 0091 on interface 2", result["comment"])
+        self.assertNotIn("auto_add", result)
+
+    def test_another_vendor_with_the_same_collection_is_not_recognized(self):
+        result = self.run_saw("1234:c365", X68HE_SAW.replace("2e3c:c365", "1234:c365"))
+        self.assertNotIn("auto_add", result)
+        self.assertEqual(result["labels"][-1], "needs captures")
+
+    def test_a_collection_without_its_report_descriptor_is_left_to_a_maintainer(self):
+        result = self.run_saw("0c45:8513", SGK30_SAW, number=69)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("EVision keyboards", result["comment"])
+        self.assertIn("no report descriptor", result["comment"])
+        self.assertNotIn("auto_add", result)
+
+    def test_an_id_a_device_has_already_is_not_added_twice(self):
+        known = dict(self.W60, usb_ids=["2e3c:c368", "2e3c:c365"])
+        result = triage.triage(dict(saw_request("2e3c:c365", X68HE_SAW), number=123), "0.9.7", [self.W60], current=[known], upstream={})
+        self.assertNotIn("auto_add", result)
+
+    def test_a_qmk_keyboard_is_found_by_its_collection(self):
+        saw = "PeriHub 0.9.7 on linux x86_64\nDevice: Board\nUSB ID: feed:6060 (USB)\nHID collections:\n  interface 1, usage page ff60, usage 0061"
+        result = self.run_saw("feed:6060", saw)
+        self.assertIn("finds by itself", result["comment"])
+        self.assertNotIn("auto_add", result)
+
+    def test_the_workflow_reads_the_platform_from_the_json(self):
+        self.assertTrue(triage.auto_addable("2e3c:c365", {}, [self.W60], None, X68HE_SAW))
+        self.assertFalse(triage.auto_addable("2e3c:c365", {}, [self.W60], None, SGK30_SAW))
+        self.assertFalse(triage.auto_addable("2e3c:c368", {}, [self.W60], None, X68HE_SAW.replace("c365", "c368")))

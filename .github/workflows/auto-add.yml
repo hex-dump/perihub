@@ -1,31 +1,41 @@
 name: Auto-add a device
 
-# A device request is "ready to add" and its USB id can be added without a person (tools/triage.py,
-# MECHANICAL: today OpenRazer's mice): this writes the support on a test branch, starts its test build and
-# opens a pull request for the maintainer to merge after CI, so that nobody has to do anything else. The device
-# then goes into the next release as experimental, without waiting for a tester; a clean test report later
-# makes it supported.
+# A device request is "ready to add" and its USB id can be added without a person (tools/triage.py
+# auto_addable): this writes the support on a test branch, starts its test build and opens a pull request for the
+# maintainer to merge after CI, so that nobody has to do anything else. The device then goes into the next release
+# (experimental, or read only for a sibling id), without waiting for a tester; a clean test report later makes it
+# supported.
 #
-#   1. tools/auto_add.py puts the id in the allow list tools/auto-add.json, runs the generator of its table
-#      (tools/openrazer_facts.py) on the upstream source at the commit the table already names, runs
-#      cargo xtask gen and the checks (format, clippy, tests, generated files, CHANGELOG lint), and commits on
-#      test/auto-VVVV-PPPP with a "Test: #N" line. The generated table may only gain this one device.
+#   1. tools/auto_add.py writes the support in one of two ways. OpenRazer's mice (MECHANICAL/GENERATORS): the id
+#      goes in the allow list tools/auto-add.json and the generator of its table (tools/openrazer_facts.py) runs on
+#      the upstream source at the commit the table already names; the generated table may only gain this one
+#      device. A sibling id of a family PeriHub has a driver for: the request (fetched here from the issue) must
+#      show that family's configuration collection with the same reports (tools/platforms.py, checked again by the
+#      script), and the id is added to the family's table read only, named after the request's Device model; the
+#      family's Linux rule (not opened, for those that share an interface with the keyboard) comes with the driver.
+#      Then cargo xtask gen, a line under "New devices" in CHANGELOG.md, the checks (format, clippy, tests,
+#      generated files, tools tests, CHANGELOG lint), and a commit on test/auto-VVVV-PPPP with a "Test: #N" line.
 #   2. The branch is pushed. A push made with GITHUB_TOKEN does not start the Test build workflow, so it is
 #      started here by hand (workflow_dispatch, which is allowed): there is exactly one build. Its notify job
 #      (tools/notify.py) comments the link on the issue named by the commit's "Test: #N" line, as for a
 #      push: a dispatched run has no "before" commit, so every commit of the branch not on main counts.
 #   3. A pull request to main titled for the device is opened, a normal one, not a draft: the maintainer merges
-#      it after CI (the Changelog check asks for a line under "New devices" first). The test build is for trying
+#      it after CI. A pull request opened with GITHUB_TOKEN does not start CI (main's ruleset needs it): the
+#      maintainer closes and reopens it, as for the Confirm workflow's. The test build is for trying
 #      the device earlier, and nothing waits for it. The confirm workflow reuses this pull request when a
 #      tester's report from the test build is clean while the branch is not merged yet, and adds the
 #      confirmation to the branch. Main is never pushed to.
 #
-# If the generator cannot produce the id (a laptop, a keyboard, a mouse with no command PeriHub knows, an id
-# upstream added after the pinned commit) or a check fails, nothing is commented and the issue gets the
-# label "needs maintainer" for a person to take over. A branch that exists already is left alone.
+# If the support cannot be written (a laptop, a keyboard, a mouse with no command PeriHub knows, an id
+# upstream added after the pinned commit, a request whose descriptors no longer match, a model with no row on the
+# website) or a check fails, nothing is commented and the issue gets the label "needs maintainer" for a person to
+# take over. A branch that exists already is left alone.
 #
-# Started by the triage workflow, or by hand (Actions → Auto-add a device → Run workflow). The inputs are
-# checked for their shape, and are only passed to commands as environment variables.
+# Started by the triage workflow, or by hand (Actions → Auto-add a device → Run workflow; "family" names the
+# family when the request shows its collection but no report descriptor, which the triage answer says). The inputs
+# are checked for their shape, and are only passed to commands as environment variables. Why it had never run until
+# the sibling ids: the only ids it took were OpenRazer mice missing from the catalogue, and no request asked for one
+# after it was added (2026-11-19).
 on:
   workflow_call:
     inputs:
@@ -37,6 +47,11 @@ on:
         description: The USB id, vvvv:pppp in lower case
         type: string
         required: true
+      family:
+        description: The family, for a request whose collection matches without report descriptors (by hand only)
+        type: string
+        required: false
+        default: ""
   workflow_dispatch:
     inputs:
       issue:
@@ -47,6 +62,11 @@ on:
         description: The USB id, vvvv:pppp in lower case
         type: string
         required: true
+      family:
+        description: Only for a request without report descriptors whose collection matches, the family (tools/platforms.py), such as evision
+        type: string
+        required: false
+        default: ""
 
 permissions: {}
 
@@ -66,6 +86,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       ISSUE: ${{ inputs.issue }}
       USB: ${{ inputs.usb }}
+      FAMILY: ${{ inputs.family }}
     steps:
       # Always from main: the branch starts there, and what is built is main plus the device.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -78,6 +99,7 @@ jobs:
           set -euo pipefail
           case "$ISSUE" in ''|*[!0-9]*) echo "::error::The issue must be a number."; exit 1 ;; esac
           [[ "$USB" =~ ^[0-9a-f]{4}:[0-9a-f]{4}$ ]] || { echo "::error::Not a USB id."; exit 1; }
+          [[ "$FAMILY" =~ ^[a-z0-9-]{0,40}$ ]] || { echo "::error::Not a family name."; exit 1; }
           if ! gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE" --jq 'select(.pull_request == null and .state == "open") | .number' | grep -q .; then
             echo "::error::#$ISSUE is not an open issue."
             exit 1
@@ -102,15 +124,19 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         if: steps.check.outputs.exists != 'true'
 
-      # Fetches the source at the pinned commit, runs the generator and the checks, commits locally.
-      # Exits 1 when it cannot (the last step then hands the issue to a person), and prints nothing when
-      # the device is in the catalogue already.
+      # Fetches the request (for a sibling id) or the source at the pinned commit (OpenRazer), writes the support,
+      # runs the checks, commits locally. Exits 1 when it cannot (the last step then hands the issue to a person),
+      # and prints nothing when the device is in the catalogue already.
       - name: Write the support
         id: build
         if: steps.check.outputs.exists != 'true'
         run: |
           set -euo pipefail
-          python3 -I tools/auto_add.py "$USB" "$ISSUE" --src "$RUNNER_TEMP/upstream" > "$RUNNER_TEMP/result.json"
+          # The issue as the API gives it: the script only parses its body.
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE" > "$RUNNER_TEMP/request.json"
+          family=()
+          if [ -n "$FAMILY" ]; then family=(--family "$FAMILY"); fi
+          python3 -I tools/auto_add.py "$USB" "$ISSUE" --src "$RUNNER_TEMP/upstream" --request "$RUNNER_TEMP/request.json" "${family[@]}" > "$RUNNER_TEMP/result.json"
           if [ ! -s "$RUNNER_TEMP/result.json" ]; then
             echo "Nothing to add."
             exit 0
@@ -142,9 +168,9 @@ jobs:
         run: |
           set -euo pipefail
           {
-            echo "Adds **$NAME** (\`$USB\`) for #$ISSUE, written and built automatically by the Auto-add workflow: the id is in \`tools/auto-add.json\`, the table was written by its generator from the source at the commit it already names, and \`cargo xtask gen\` wrote the rest. The format, clippy, the tests, the generated-file check and the CHANGELOG lint passed before the branch was pushed."
+            echo "Adds **$NAME** (\`$USB\`) for #$ISSUE, written and built automatically by the Auto-add workflow (\`tools/auto_add.py\`): an OpenRazer mouse from its generator at the commit the table already names, or a sibling id of a family whose configuration collection and reports the request shows (\`tools/platforms.py\`), added read only. \`cargo xtask gen\` wrote the rest and the line under **New devices** in CHANGELOG.md is there. The format, clippy, the tests, the generated-file check, the tools tests and the CHANGELOG lint passed before the branch was pushed."
             echo
-            echo "**Not tried on hardware.** It goes into the next release as experimental (read-only, or with its changes behind the No warranty box, the read-back and the undo) without waiting for a test: merge it after CI. The Changelog check asks for a line under \`## Unreleased\` → \`### New devices\` first. A test build of this branch is being made and its link comes on #$ISSUE; a clean test report makes the device supported (the Confirm workflow opens that pull request)."
+            echo "**Not tried on hardware.** It goes into the next release (read-only, or experimental with its changes behind the No warranty box, the read-back and the undo) without waiting for a test: merge it after CI. CI does not start on a pull request opened by a workflow (and main's ruleset needs it): close and reopen this pull request to start it. A test build of this branch is being made and its link comes on #$ISSUE; a clean test report makes the device supported (the Confirm workflow opens that pull request)."
             echo
             # Not "Closes": the request stays open until the release, whose comment tells the requester it is out.
             echo "For #$ISSUE"
