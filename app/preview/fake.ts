@@ -139,9 +139,14 @@ export const answers: Record<string, unknown> = {
   app_open_release_notes: null,
 };
 
-// ?devices=more (with npm run screenshots untouched): also a low battery on the mouse, an experimental Corsair
-// mouse and a read-only keyboard of another brand, to look at every kind of device state in the sidebar.
+// ?devices=more: also a low battery on the mouse, an experimental Corsair mouse, an experimental Razer mouse
+// and a read-only keyboard of another brand, to look at every kind of device state in the sidebar. The
+// screenshots of the Corsair and Razer pages of the website are taken with it.
 if (typeof location !== "undefined" && new URLSearchParams(location.search).get("devices") === "more") {
+  // &quiet: no one-time prompt to send a test report, as if it had been shown already (the screenshots).
+  if (new URLSearchParams(location.search).has("quiet")) {
+    localStorage.setItem("perihub.confirmPrompted", JSON.stringify(["1b1c:1b7a", "1532:0084", "1e7d:2dcd"]));
+  }
   live.battery = { percent: 12, estimated: false, state: "discharging" };
   status.corsair = [
     {
@@ -160,6 +165,49 @@ if (typeof location !== "undefined" && new URLSearchParams(location.search).get(
     },
   ];
   status.peripherals = [
+    {
+      key: "1532:0084",
+      vendor_id: 0x1532,
+      product_id: 0x0084,
+      brand: "Razer",
+      model: "DeathAdder V2",
+      kind: "mouse",
+      source: "OpenRazer (facts only)",
+      tested: false,
+      profiles: 1,
+      firmware: "1.03",
+      battery: null,
+      active_profile: null,
+      active_dpi: null,
+      readable: true,
+      settings: {
+        dpi_levels: [1600],
+        polling_hz: 1000,
+        options: {},
+        leds: [
+          { mode: 0, brightness: 100, color: "#000000" },
+          { mode: 0, brightness: 60, color: "#000000" },
+        ],
+      },
+      limits: {
+        dpi: { min: 100, max: 20000, step: 50 },
+        polling_hz: [125, 500, 1000],
+        options: [],
+        leds: [
+          { name: "Logo", modes: [], brightness_step: 1, color: false },
+          { name: "Scroll wheel", modes: [], brightness_step: 1, color: false },
+        ],
+      },
+      buttons: [],
+      details: [],
+      blind: [{ id: "color", label: "One colour, not saved", kind: { type: "color" }, last: null }],
+      editable: true,
+      can_save: false,
+      changes_stay: true,
+      problem: null,
+      pending_undo: false,
+      raw: [],
+    },
     {
       key: "1e7d:2dcd",
       vendor_id: 0x1e7d,

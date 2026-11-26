@@ -211,6 +211,8 @@ main:focus { outline: none; }
 .gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); margin-top: var(--space-7); }
 .gallery figure { margin: 0; }
 .gallery figcaption { color: var(--muted); font-size: 0.9rem; margin-top: var(--space-2); text-align: center; }
+.section h2 + .gallery { margin-top: var(--space-5); }
+.gallery.single { grid-template-columns: minmax(0, 46rem); justify-content: center; }
 
 /* Devices: by support level, then one row per brand that opens on click. A status LED, as on the
    app's sidebar, marks each level; the level is always written next to it too. */
