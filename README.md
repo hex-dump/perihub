@@ -452,13 +452,13 @@ More: [how the release files are signed](CODE_SIGNING.md) · [reporting a securi
 |---|---|
 | Download | **5.3 MB** installer |
 | On disk | **21 MB** |
-| In the tray | **3 MB** of memory, **0.04%** of one CPU core |
-| Window open | **45 MB** of memory, **0.55%** of one CPU core |
+| In the tray | **3 MB** of memory |
+| Window open | **45 MB** of memory |
 | Background services, account, ads, telemetry | none |
 
-These numbers come from a clean Windows virtual machine with no devices connected ([run](https://github.com/hex-dump/perihub/actions/runs/45883743025), 26 November 2026). On a real Windows 11 PC with a keyboard and a mouse connected, PeriHub 0.8.2 used 4 MB of memory and 0.4 to 0.7% of one core in the tray.
+These numbers come from a clean Windows virtual machine with no devices connected ([run](https://github.com/hex-dump/perihub/actions/runs/45883743025), 26 November 2026). On a real Windows 11 PC with a keyboard and a mouse connected, PeriHub 0.8.2 used 4 MB of memory in the tray.
 
-PeriHub is written in Rust and draws its window with WebView2, the web engine of Windows, instead of shipping its own browser. The engine runs only while the window is open. An animated lighting effect, drawn by PeriHub frame by frame, adds about 0.6% of one core. How these numbers were measured: [docs/development.md](docs/development.md#performance-measurements).
+PeriHub is written in Rust and draws its window with WebView2, the web engine of Windows, instead of shipping its own browser. The engine runs only while the window is open. How these numbers were measured: [docs/development.md](docs/development.md#performance-measurements).
 
 We do not publish numbers for G HUB or GG: we have not measured them on the same machine, and they support many more devices and features. To compare on your PC, run one app at a time and look at Task Manager → Processes. G HUB is a trademark of Logitech, SteelSeries GG of SteelSeries, iCUE of Corsair, Synapse of Razer; PeriHub is not affiliated with them.
 
