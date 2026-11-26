@@ -8,8 +8,8 @@
       already on main or on another origin/test/* branch are not new. A plain "#N" does nothing.
   notify.py release VERSION RELEASE_URL [--notes FILE] [--apply]
       VERSION is published: one comment on each open issue the CHANGELOG notes of that version name,
-      quoting those lines, unless the maintainer commented since the previous release that the fix
-      ships (next version, will ship, fixed in...). It mentions switching from a test build only if
+      quoting those lines (also when the maintainer said it would ship: that comment promised this
+      one). The CHANGELOG names an issue as "issue #N" or as a link to it. It mentions switching from a test build only if
       an automatic test build comment was posted since the previous release.
   notify.py waiting EVENT.json [--apply]
       the issue_comment event: the maintainer asked something, so the issue is waiting for its
@@ -180,13 +180,6 @@ def previous_tag(version: str) -> str | None:
     return max(older, key=key) if older else None
 
 
-# A maintainer comment that already promised the fix: "will ship", "in the next version/release",
-# "fixed in", "coming in". Deliberately loose, a false match only means one comment less.
-PROMISED = re.compile(
-    r"\b(next (release|version|update)|will (ship|be (in|part of|included|released|fixed|out))|"
-    r"(ships|shipping|included|fixed|coming|landing|lands) in|in the (next|upcoming) )",
-    re.I,
-)
 MAX_LINE = 160
 
 
@@ -196,8 +189,10 @@ def changelog_lines(notes: str) -> dict[int, list[str]]:
     for line in notes.splitlines():
         if not line.strip() or line.startswith("#"):
             continue
-        # Only "issue #N", "issues #N and #M": other "#N" are pull requests of other projects.
+        # Only "issue #N", "issues #N and #M" and links to this repository's issues ("[#N](…/issues/N)"):
+        # other "#N" are pull requests of other projects.
         named = re.findall(r"issues? #\d{1,6}(?:(?:,| and|, and) #\d{1,6})*", line, re.I)
+        named += [f"#{n}" for n in re.findall(rf"github\.com/{REPO}/issues/(\d{{1,6}})\b", line)]
         for number in refs(" ".join(named)):
             text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", line.strip().lstrip("-* ").strip())
             text = re.sub(r"[*_`]", "", text)
@@ -224,9 +219,6 @@ def release(version: str, url: str, notes: str, apply: bool) -> None:
             print(f"#{number}: already told about {version}")
             continue
         recent = [c for c in comments if since is None or when(c["created_at"]) > since]
-        if any(c["user"]["login"] == MAINTAINER and PROMISED.search(c["body"]) for c in recent):
-            print(f"#{number}: the maintainer already said it ships")
-            continue
         quoted = "\n".join(f"> {t}" for t in lines[:1])
         body = f"{version} has this: {url}\n\n{quoted}"
         if any(TESTBUILD_MARK in c["body"] for c in recent):
