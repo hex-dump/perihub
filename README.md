@@ -53,12 +53,10 @@ Hundreds more are recognized, as experimental or read-only: **[all devices and t
 
 ### Measured
 
-| PeriHub 0.9.8 on Windows | |
+| PeriHub 0.9.8 on Windows | Memory (RAM) |
 |---|---|
-| Installer | **5.3 MB** |
-| In the tray | **3 MB** of memory |
-| Window open | **45 MB** of memory |
-| Account, ads, telemetry, background services | none |
+| In the tray | **3 MB** |
+| Window open | **45 MB** |
 
 Measured on a clean Windows virtual machine with no devices connected, on 26 November 2026 ([how](#performance)). We do not publish numbers for the official apps: we have not measured them on the same machine.
 
