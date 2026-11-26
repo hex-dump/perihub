@@ -12,17 +12,17 @@
     "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
-    "@tauri-apps/api": "2.12.4"
+    "@tauri-apps/api": "2.12.5"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "7.3.1",
-    "@tauri-apps/cli": "2.12.4",
+    "@tauri-apps/cli": "2.12.6",
     "@testing-library/svelte": "5.4.2",
-    "jsdom": "31.0.0",
-    "svelte": "5.57.3",
+    "jsdom": "31.0.1",
+    "svelte": "5.58.0",
     "svelte-check": "4.7.8",
     "typescript": "6.0.3",
     "vite": "8.3.8",
-    "vitest": "5.1.0"
+    "vitest": "5.1.1"
   }
 }
