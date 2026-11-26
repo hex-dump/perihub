@@ -56,8 +56,8 @@ Hundreds more are recognized, as experimental or read-only: **[all devices and t
 | PeriHub 0.9.8 on Windows | |
 |---|---|
 | Installer | **5.3 MB** |
-| In the tray | **3 MB** of memory, **1** process, 0.04% of one CPU core |
-| Window open | **45 MB** of memory, **7** processes (PeriHub and the WebView2 engine of Windows), 0.55% of one core |
+| In the tray | **3 MB** of memory |
+| Window open | **45 MB** of memory |
 | Account, ads, telemetry, background services | none |
 
 Measured on a clean Windows virtual machine with no devices connected, on 26 November 2026 ([how](#performance)). We do not publish numbers for the official apps: we have not measured them on the same machine.
@@ -454,8 +454,8 @@ More: [how the release files are signed](CODE_SIGNING.md) · [reporting a securi
 |---|---|
 | Download | **5.3 MB** installer |
 | On disk | **21 MB** |
-| In the tray | **3 MB** of memory, **0.04%** of one CPU core, 1 process |
-| Window open | **45 MB** of memory, **0.55%** of one CPU core, 7 processes (6 of them WebView2) |
+| In the tray | **3 MB** of memory, **0.04%** of one CPU core |
+| Window open | **45 MB** of memory, **0.55%** of one CPU core |
 | Background services, account, ads, telemetry | none |
 
 These numbers come from a clean Windows virtual machine with no devices connected ([run](https://github.com/hex-dump/perihub/actions/runs/45883743025), 26 November 2026). On a real Windows 11 PC with a keyboard and a mouse connected, PeriHub 0.8.2 used 4 MB of memory and 0.4 to 0.7% of one core in the tray.
