@@ -21,7 +21,11 @@ fn header(family: &str) -> &'static str {
             r#"SteelSeries Apex 3 TKL: only the configuration interface (lighting, brightness, key mapping).
 The interfaces that report key presses stay closed: see 71-perihub-keys.rules."#
         }
-        "logitech-onboard" => r#"Logitech mice (the G502 HERO is tested, the others are read-only until they are)"#,
+        "logitech-onboard" => {
+            r#"Logitech mice with onboard memory (supported, experimental or read-only by the memory format each one
+reports): the whole mouse. Their HID++ collection shares an interface with the mouse's movements and the
+keys assigned to its buttons, so that interface is readable too; keyboards stay closed."#
+        }
         "logitech-direct" => {
             r#"Logitech keyboards with HID++ on their own USB connection, without a receiver (read only,
 untested): only the interface with their HID++ collections (usage page ff43). A keyboard whose HID++
@@ -59,7 +63,7 @@ Logitech mice above. Where no source names that interface, the whole mouse is op
 receiver (0b05:1ace) is left out: it is shared with other devices and may carry a keyboard's typing."#
         }
         "steelseries-mice" => {
-            r#"SteelSeries mice (experimental, untested; commands from rivalcfg): only the interface rivalcfg sends
+            r#"SteelSeries mice (experimental, except the Rival 700 / 710, tested; commands from rivalcfg): only the interface rivalcfg sends
 to. On the mice where that is interface 0 it also carries the mouse's movements and clicks, as on
 the Logitech mice above. The 2.4 GHz receivers listed are the mice's own, not shared ones."#
         }
