@@ -187,7 +187,13 @@ Razer, rivalcfg for SteelSeries), or when the HID descriptors of the request sho
 device family PeriHub has a driver for (`tools/platforms.py`: the collection, and its report ids and lengths where
 the request has them). Otherwise the answer says what was checked (the catalogue and the test branches, the upstream
 projects, the vendor collections it saw) and that a recording of the official software is the optional help (label
-`needs captures`, linking [captures.md](captures.md)); it promises no search for documentation.
+`needs captures`, linking [captures.md](captures.md)); it promises no search for documentation. An id any upstream
+project lists never gets `needs captures`. A device only main has (not the latest release) is told it is already added
+and comes with the next release. The ids are read from PeriHub's own report in the request ("USB ID:", and the
+"wireless id" of a mouse behind its receiver) and from the form's USB ID field, in any way they are written
+(`046D:C094`, `0x046d 0xc094`, `VID_046D&PID_C094`...); where they differ, the report's goes first. A device is
+found by any of the catalogue's ids: its USB ids, its `wireless_id` (behind a Logitech receiver) and its
+`bluetooth_id`; a mouse is preferred to the receiver it is paired with.
 
 ## Releasing
 

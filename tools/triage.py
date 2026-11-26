@@ -20,8 +20,10 @@ wrong in it, for a device or a Logitech memory format nobody had confirmed, says
 ({"usb": "1532:00b7"} or {"memory_format": [4, 255]}): the confirm workflow takes it from there, and
 a person reviews what it opens. Anything doubtful confirms nothing. Everything else is left to a person.
 RELEASED_DEVICES.json is site/devices.json as of the latest release's tag: a device that is only on
-main is not in it, and is left to the maintainer, since no published version has it. Without it,
-site/devices.json is used for both.
+main is not in it, and its request is told it is already added and comes with the next release. Without it,
+site/devices.json is used for both. A device is found by any id the catalogue gives it (its USB ids, the id it has behind
+a Logitech receiver, its Bluetooth id: catalogue_ids), and the ids of a request are read from PeriHub's own report and
+from the form's field, the report's first (request_ids). An id a project lists never gets "needs captures".
 "Ready to add" with a project and vendor whose table a generator writes (MECHANICAL: OpenRazer's mice), or with a
 full match of a family's collection (platforms.py, "sibling"), says {"auto_add": "1532:00c1"}: the auto-add workflow writes the support on a test branch, starts its test
 build by itself and opens a pull request the maintainer merges after CI, and the answer says so. A new device goes into
@@ -45,6 +47,7 @@ import platforms  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 CONFIRMED_RS = ROOT / "crates/perihub-core/src/confirmed.rs"
 MARK = "<!-- perihub-triage -->"
+LOGITECH = "046d"
 DEVICES_MD = "https://github.com/hex-dump/perihub/blob/main/docs/devices.md"
 TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml"
 CAPTURE_GUIDE = "https://github.com/hex-dump/perihub/blob/main/docs/captures.md"
@@ -87,12 +90,116 @@ def fields(body: str) -> dict[str, str]:
     return {k: v.strip() for k, v in out.items() if v.strip() and v.strip() != "_No response_"}
 
 
+# The ways a USB id is written in a request: 046d:c094 (lsusb, PeriHub), 046D:C094, 0x046d:0xc094, VID_046D&PID_C094
+# (Windows' Hardware IDs), "VID 046d PID c094", 0x046d 0xc094, and macOS' System Information ("Product ID: 0xc094",
+# "Vendor ID: 0x046d", in that order). Any case, with spaces around the colon.
+ID_FORMS = (
+    re.compile(r"(?<![0-9a-z])(?:0x)?([0-9a-f]{4})\s*:\s*(?:0x)?([0-9a-f]{4})(?![0-9a-z])", re.I),
+    re.compile(r"\bVID[\s_:=#-]*(?:0x)?([0-9a-f]{4})\b.{0,3}?\bPID[\s_:=#-]*(?:0x)?([0-9a-f]{4})\b", re.I),
+    re.compile(r"\b0x([0-9a-f]{4})\W+0x([0-9a-f]{4})\b", re.I),
+)
+VENDOR_FIELD = re.compile(r"\bVendor\s*ID\s*[:=]?\s*(?:0x)?([0-9a-f]{4})\b", re.I)
+PRODUCT_FIELD = re.compile(r"\bProduct\s*ID\s*[:=]?\s*(?:0x)?([0-9a-f]{4})\b", re.I)
+# A field that is nothing but the id, written with a space, a dash or a slash between the halves: "046d c094".
+BARE_ID = re.compile(r"\s*`?(?:0x)?([0-9a-f]{4})[\s/_-]+(?:0x)?([0-9a-f]{4})`?\s*", re.I)
+
+
+def usb_ids(text: str) -> list[str]:
+    """Every USB id the text gives, as vvvv:pppp, in the order they come, without repeats."""
+    text = text or ""
+    found = [(m.start(), f"{m.group(1)}:{m.group(2)}".lower()) for form in ID_FORMS for m in form.finditer(text)]
+    vendor, product = VENDOR_FIELD.search(text), PRODUCT_FIELD.search(text)
+    if vendor and product:
+        found.append((min(vendor.start(), product.start()), f"{vendor.group(1)}:{product.group(1)}".lower()))
+    bare = BARE_ID.fullmatch(text)
+    if bare:
+        found.append((0, f"{bare.group(1)}:{bare.group(2)}".lower()))
+    out = []
+    for _, usb in sorted(found, key=lambda f: f[0]):
+        if usb not in out:
+            out.append(usb)
+    return out
+
+
 def usb_id(text: str) -> str | None:
-    """046d:c094, 046D:C094, VID_046D&PID_C094 or 0x046d 0xc094, as vvvv:pppp."""
-    m = re.search(r"\b([0-9a-fA-F]{4}):([0-9a-fA-F]{4})\b", text) or re.search(
-        r"VID_([0-9a-fA-F]{4}).{0,3}PID_([0-9a-fA-F]{4})", text, re.I
-    ) or re.search(r"0x([0-9a-fA-F]{4})\W+0x([0-9a-fA-F]{4})", text)
-    return f"{m.group(1)}:{m.group(2)}".lower() if m else None
+    """The first USB id of the text (usb_ids), as vvvv:pppp: 046d:c094, 046D:C094, VID_046D&PID_C094, 0x046d 0xc094..."""
+    ids = usb_ids(text)
+    return ids[0] if ids else None
+
+
+# The ids PeriHub's own report gives (app/src/lib/testReport.ts): "USB ID: 046d:c094 (USB)" in What PeriHub saw and in
+# a mouse's report, "Device: X (mouse), USB ID 1532:0078", "Device: USB ID 046d:c547, on its ... receiver",
+# "Receiver: LIGHTSPEED receiver, USB ID 046d:c539", and the
+# id a Logitech device has behind its receiver, "Connection: LIGHTSPEED receiver 046d:c539, slot 1, wireless id 4087".
+REPORT_ID = re.compile(r"^\s*(?:USB ID: |(?:Device|Receiver): (?:.*?, )?USB ID )([0-9a-f]{4}:[0-9a-f]{4})\b", re.I | re.M)
+WIRELESS_ID = re.compile(r"\breceiver ([0-9a-f]{4}):[0-9a-f]{4}, slot \d+, wireless id ([0-9a-f]{4})\b", re.I)
+
+
+def report_ids(report: str) -> list[str]:
+    """The ids PeriHub's own report gives: the device's behind a receiver first, then the others in order."""
+    wireless = [f"{v}:{p}".lower() for v, p in WIRELESS_ID.findall(report or "")]
+    out = []
+    for usb in wireless + [m.lower() for m in REPORT_ID.findall(report or "")]:
+        if usb not in out:
+            out.append(usb)
+    return out
+
+
+def request_ids(answers: dict[str, str], report: str = "") -> tuple[list[str], list[str]]:
+    """The ids of a request or report: (those of PeriHub's own report, those of the form's USB ID field). Both are used;
+    where they differ, PeriHub's report comes first: it is what the app read from the device, while the field is typed
+    (or left as another device's id, issue #17)."""
+    return report_ids(report), usb_ids(answers.get("USB ID (vendor:product)", ""))
+
+
+def catalogue_ids(device: dict) -> dict[str, str]:
+    """Every id the catalogue gives a device, and how it connects with it: its USB ids ("usb", the cable or its own
+    dongle), the id of a Logitech device behind its receiver ("wireless", wireless_id: 046d:4087 for the G903 HERO) and
+    its Bluetooth id ("bluetooth", bluetooth_id: 046d:b024 for the G604)."""
+    out = {usb.lower(): "usb" for usb in device.get("usb_ids", [])}
+    vendors = sorted({usb.split(":")[0].lower() for usb in device.get("usb_ids", [])})
+    if not vendors and device.get("brand") == "Logitech":
+        vendors = [LOGITECH]
+    for key, how in (("bluetooth_id", "bluetooth"), ("wireless_id", "wireless")):
+        product = (device.get(key) or "").lower()
+        if re.fullmatch(r"[0-9a-f]{4}", product):
+            for vendor in vendors:
+                # The Bluetooth id is in usb_ids too (the G604's): it is still said to be the Bluetooth one.
+                if how == "bluetooth" or f"{vendor}:{product}" not in out:
+                    out[f"{vendor}:{product}"] = how
+    return out
+
+
+_INDEXES: dict[int, tuple[list[dict], int, dict[str, list[tuple[dict, str]]]]] = {}
+
+
+def index(devices: list[dict]) -> dict[str, list[tuple[dict, str]]]:
+    """Every id of the devices (catalogue_ids), with the devices that have it and how: made once per list."""
+    cached = _INDEXES.get(id(devices))
+    if cached and cached[0] is devices and cached[1] == len(devices):
+        return cached[2]
+    out: dict[str, list[tuple[dict, str]]] = {}
+    for d in devices:
+        for usb, how in catalogue_ids(d).items():
+            out.setdefault(usb, []).append((d, how))
+    if len(_INDEXES) > 16:
+        _INDEXES.clear()  # a run uses two or three lists: the release's, main's, the branches'
+    _INDEXES[id(devices)] = (devices, len(devices), out)
+    return out
+
+
+def knows(usb: str, device: dict) -> bool:
+    """Whether the catalogue gives this device this id, in any of its forms (catalogue_ids)."""
+    return usb.lower() in catalogue_ids(device)
+
+
+def find(ids: list[str], devices: list[dict]) -> tuple[dict, str, str] | None:
+    """The device of the catalogue the ids name: (device, the id, how it connects with it). A mouse or keyboard is
+    preferred to a receiver (a request can give both the receiver's id and the device's), else the first id wins."""
+    by_id = index(devices)
+    hits = [(d, usb, how) for usb in ids for d, how in by_id.get(usb.lower(), [])]
+    devices_first = [h for h in hits if h[0].get("kind") != "receiver"] + [h for h in hits if h[0].get("kind") == "receiver"]
+    return devices_first[0] if devices_first else None
 
 
 # The first line of a report: "PeriHub 0.9.5 on windows x86_64", and from a test build
@@ -120,10 +227,10 @@ def brand_labels(usb: str | None, devices: list[dict]) -> list[str]:
         return []
     labels = []
     vendor = usb.split(":")[0]
-    brands = sorted({d["brand"] for d in devices if any(i.startswith(vendor + ":") for i in d["usb_ids"])})
+    brands = sorted({d["brand"] for i, having in index(devices).items() if i.startswith(vendor + ":") for d, _ in having})
     if len(brands) == 1:
         labels.append(f"brand: {brands[0]}")
-    known = [d for d in devices if usb in d["usb_ids"]]
+    known = [d for d, _ in index(devices).get(usb, [])]
     if known and known[0]["kind"] in ("mouse", "keyboard"):
         labels.append(known[0]["kind"])
     return labels
@@ -206,7 +313,7 @@ RECORD_STEPS = (
 
 def branch_with(usb: str, branches: dict[str, list[dict]] | None) -> str | None:
     """The first test/* branch (by name) that has this id."""
-    having = sorted(b for b, ds in (branches or {}).items() if any(usb in d["usb_ids"] for d in ds))
+    having = sorted(b for b, ds in (branches or {}).items() if any(knows(usb, d) for d in ds))
     return having[0] if having else None
 
 
@@ -220,7 +327,7 @@ def auto_addable(
     the auto-add workflow (it checks the request again), which hands the issue to a person when it cannot."""
     if not re.fullmatch(r"[0-9a-f]{4}:[0-9a-f]{4}", usb):
         return False
-    if any(usb in d["usb_ids"] for d in devices) or any(usb in d["usb_ids"] for ds in (branches or {}).values() for d in ds):
+    if find([usb], devices) or any(find([usb], ds) for ds in (branches or {}).values()):
         return False
     if any((project, usb.split(":")[0]) in MECHANICAL for project in listed_by(usb, upstream)):
         return True
@@ -232,10 +339,8 @@ def checked(usb: str, saw: str, projects: list[str]) -> str:
     """What the bot looked at for a device it does not recognize, in a few sentences."""
     sources = ", ".join(f"[{p.replace('openrazer', 'OpenRazer')}]({url})" for p, url in UPSTREAM_URLS.items())
     out = [f"`{usb}` is not in PeriHub's catalogue (main included) or on a test branch."]
-    if projects:
-        out.append(f"{', '.join(projects)} lists it, but PeriHub has no driver for that protocol yet.")
-    else:
-        out.append(f"None of the projects PeriHub takes facts from ({sources}) lists it.")
+    # Only reached when no project lists it (next_steps answers the others): never "lists it, but...".
+    out.append(f"None of the projects PeriHub takes facts from ({sources}) lists it.")
     seen = platforms.collections_of(saw)
     vendor = sorted({(i, p, u) for i, p, u in seen if p >= 0xFF00})
     if not seen:
@@ -323,11 +428,23 @@ def next_steps(
             f"directly**, as **read-only or experimental**. {TEST_BUILD_STEPS}",
             "ready to add",
         )
-    if vendor is False and not [p for p in projects if p != "libratbag"]:
+    if vendor is False and not projects:
         return (
             f"Thanks! `{usb}` is not in PeriHub {latest}. {NO_VENDOR_INTERFACE} {RECORD_STEPS} Until then PeriHub "
             "sends nothing to it.",
             "needs captures",
+        )
+    # An id a project lists never gets "needs captures" nor "no documentation". The one case that is not "ready to
+    # add": libratbag lists a Logitech id, but the request shows no vendor collection for its HID++ driver (046d:c077,
+    # issue #95, which libratbag gives to the MX Vertical too): a person checks which device it is.
+    if projects == ["libratbag"] and usb.startswith(LOGITECH + ":") and vendor is False:
+        return (
+            f"Thanks! `{usb}` is not in PeriHub {latest} yet. [libratbag]({UPSTREAM_URLS['libratbag']}) lists this id, "
+            "but what PeriHub saw has only standard interfaces (mouse, keyboard, media keys) and not the HID++ one "
+            "libratbag's Logitech driver talks to, so it may be another model with the same id, or a mouse with "
+            "nothing to set. A maintainer checks it: **no USB captures are needed** for that. If its official software "
+            "does change settings on it (DPI, lighting, buttons...), please say which program and what it changes.",
+            "needs maintainer",
         )
     if projects:
         project = projects[0]
@@ -346,6 +463,97 @@ def next_steps(
         "optional. Until the device is added, PeriHub sends nothing to it.",
         "needs captures",
     )
+
+
+def asked_device(reported: list[str], typed: list[str], devices: list[dict]) -> tuple[dict, str, str] | None:
+    """The device of the catalogue a request or report is about: by PeriHub's report's ids if it has any, else by the
+    form's; a receiver's id in the report and a mouse or keyboard's in the form is the mouse or keyboard."""
+    hit = find(reported or typed, devices)
+    if hit and hit[0].get("kind") == "receiver":
+        behind = find(typed, devices)
+        if behind and behind[0].get("kind") != "receiver":
+            return behind
+    return hit
+
+
+def how_text(usb: str, how: str) -> str:
+    """The id, and how the device has it when it is not its USB one."""
+    if how == "wireless":
+        return f"`{usb}`, the id it has behind its receiver"
+    if how == "bluetooth":
+        return f"`{usb}`, its Bluetooth id"
+    return f"`{usb}`"
+
+
+def known_answer(d: dict, usb: str, how: str, latest: str) -> str:
+    """The answer to a request for a device the latest release knows, under any of its ids (catalogue_ids)."""
+    if d.get("kind") == "receiver":
+        return (
+            f"Thanks! PeriHub {latest} already recognizes this receiver: **{d['brand']} {d['name']}** (`{usb}`), "
+            f"{LEVELS[d['level']]}. The mouse or keyboard connected through it is reached through the receiver, under "
+            f"its own name: the [device list]({DEVICES_MD}) says which models PeriHub knows.\n\n"
+            "If your device does not show up in PeriHub, please say so here, with its model and the message PeriHub "
+            f"shows. If it does, a [device test report]({TEST_FORM}) (**Open test form** on its page) is the most useful "
+            "thing you can send."
+        )
+    return (
+        f"Thanks! PeriHub {latest} already recognizes this device: **{d['brand']} {d['name']}** "
+        f"({how_text(usb, how)}), {LEVELS[d['level']]}. The [device list]({DEVICES_MD}) has the details.\n\n"
+        "If it does not show up in PeriHub, please say so here, with the message PeriHub shows. "
+        + (
+            "If something on its page does not work, a bug report helps."
+            if d["level"] == "supported"
+            else f"If it does, a [device test report]({TEST_FORM}) (**Open test form** on its page) is the most "
+            "useful thing you can send: one report moves the device up for everyone who has it."
+        )
+    )
+
+
+def next_release_answer(d: dict, usb: str, how: str, latest: str) -> str:
+    """The answer to a request for a device that is on main but in no release yet: it is added, and comes with the next
+    release (not "not in PeriHub", which is what these requests used to be told, nor nothing at all)."""
+    return (
+        f"Thanks! This device is **already added** to PeriHub: **{d['brand']} {d['name']}** ({how_text(usb, how)}), "
+        f"{LEVELS[d['level']]}. It is not in PeriHub {latest}, the latest release, yet: it comes with the **next "
+        "release**, and nothing is needed from you for that. Once it is out, a "
+        f"[device test report]({TEST_FORM}) (**Test my device** on its page) is the most useful thing you can send: "
+        "one clean report moves the device up for everyone who has it."
+    )
+
+
+def divergence(reported: list[str], typed: list[str], devices: list[dict], current: list[dict], latest: str) -> str:
+    """A sentence for when the form's USB ID field names another id than PeriHub's own report: the answer is about the
+    report's id, and says what the field's is, so that neither is taken for "not in the list" by mistake."""
+    other = [usb for usb in typed if usb not in reported]
+    if not reported or not other:
+        return ""
+    usb = other[0]
+    hit = find([usb], devices)
+    if hit:
+        what = f"which PeriHub {latest} recognizes as **{hit[0]['brand']} {hit[0]['name']}**"
+    elif find([usb], current):
+        hit = find([usb], current)
+        what = f"**{hit[0]['brand']} {hit[0]['name']}**, already added for the next release"
+    else:
+        what = "which is not in PeriHub's catalogue"
+    return (
+        f"\n\nThe form's USB ID field says `{usb}` ({what}), while PeriHub's own report says `{reported[0]}`: this "
+        "answer goes by the report, which PeriHub read from the device. If the field is the right one, please say so here."
+    )
+
+
+def best_next_steps(
+    ids: list[str],
+    latest: str,
+    devices: list[dict],
+    upstream: dict[str, list[str]],
+    branches: dict[str, list[dict]] | None,
+    saw: str,
+) -> tuple[str, tuple[str, str]]:
+    """next_steps for the first of the ids that can be added (a test branch, a project, a family), else for the
+    first one: a request with several ids is not told "needs captures" for one while another is documented."""
+    answers = [(usb, next_steps(usb, latest, devices, upstream, branches, saw)) for usb in ids]
+    return next((a for a in answers if a[1][1] == "ready to add"), answers[0])
 
 
 TYPES = ("device request", "test report")
@@ -710,7 +918,9 @@ def triage(
             kind, answers = found
             from_form = False
         labels.add(kind)
-    catalogue = brand_labels(usb_id(answers.get("USB ID (vendor:product)", "")), current)
+    reported, typed = request_ids(answers, answers.get("What PeriHub saw", "") or "\n".join(app_report(answers) or []) or issue.get("body", ""))
+    hit = asked_device(reported, typed, current)
+    catalogue = brand_labels(hit[1] if hit else (reported or typed or [None])[0], current)
     wanted = sorted(labels - present) + form_labels(answers, catalogue, reported_kind)
     result = {"comment": None, "labels": [l for i, l in enumerate(wanted) if l not in present and l not in wanted[:i]]}
     # A kind label the issue has that the device is not (the app's guess or the form's dropdown, whichever lost): taken off.
@@ -733,38 +943,39 @@ def triage(
                 "and other audio devices are out of scope, so this issue is being closed as not planned."
             )
             return result
-        given = answers.get("USB ID (vendor:product)", "")
-        found = usb_id(given)
-        if not found:
+        saw = answers.get("What PeriHub saw", "") or issue.get("body", "")
+        reported, typed = request_ids(answers, saw)
+        if not reported and not typed:
             result["comment"] = (
                 "Thanks for the request! The USB ID is missing or not in the form `vvvv:pppp`, and it is what "
                 "tells devices apart. On Linux, `lsusb` shows it; on Windows, Device Manager → the device → "
                 "Properties → Details → Hardware IDs shows `VID_xxxx&PID_xxxx`. Could you add it?"
             )
             return result
-        known = [d for d in devices if found in d["usb_ids"]]
-        if known:
-            d = known[0]
-            result["comment"] = (
-                f"Thanks! PeriHub {latest} already recognizes this device: **{d['brand']} {d['name']}** "
-                f"(`{found}`), {LEVELS[d['level']]}. The [device list]({DEVICES_MD}) has the details.\n\n"
-                "If it does not show up in PeriHub, please say so here, with the message PeriHub shows. "
-                + (
-                    "If something on its page does not work, a bug report helps."
-                    if d["level"] == "supported"
-                    else f"If it does, a [device test report]({TEST_FORM}) (**Open test form** on its page) is the most "
-                    "useful thing you can send: one report moves the device up for everyone who has it."
+        # PeriHub's own report first, where it has an id: the form's field is typed by hand.
+        released_hit, main_hit = asked_device(reported, typed, devices), asked_device(reported, typed, current)
+        note = divergence(reported, typed, devices, current, latest)
+        if released_hit:
+            result["comment"] = known_answer(*released_hit, latest) + note
+        elif main_hit:
+            result["comment"] = next_release_answer(*main_hit, latest) + note
+        else:
+            # The report's ids first; the field's too, so that a documented id is never told "needs captures".
+            # (Not one the catalogue has: that one is named by the note, never told "not in PeriHub".)
+            ids = reported + [usb for usb in typed if usb not in reported and not (find([usb], devices) or find([usb], current))]
+            found, (comment, label) = best_next_steps(ids, latest, current, upstream or {}, branches, saw)
+            if reported and found not in reported:
+                note = (
+                    f"\n\nPeriHub's own report says `{reported[0]}`, which nothing PeriHub checks knows; this answer is about "
+                    f"`{found}`, the id the form's USB ID field gives. If the report's is the right one, please say so here."
                 )
-            )
-        elif not any(found in d["usb_ids"] for d in current):
-            # Only on main: no published version has it, so what to say is up to the maintainer.
-            result["comment"], label = next_steps(
-                found, latest, current, upstream or {}, branches, answers.get("What PeriHub saw", "") or issue.get("body", "")
-            )
-            result["labels"].append(label)
-            # The workflow that writes and builds it (auto-add.yml) is started with the id and this issue.
-            saw = answers.get("What PeriHub saw", "") or issue.get("body", "")
-            if label == "ready to add" and issue.get("number") and auto_addable(found, upstream or {}, current, branches, saw):
+            result["comment"] = comment + note
+            if label not in present:
+                result["labels"].append(label)
+            # The workflow that writes and builds it (auto-add.yml) is started with the id and this issue: only an id
+            # of the device the descriptors are of (PeriHub's report's, when it has one).
+            from_report = not reported or found in reported
+            if label == "ready to add" and issue.get("number") and from_report and auto_addable(found, upstream or {}, current, branches, saw):
                 result["auto_add"] = found
                 result["issue"] = issue["number"]
                 match = platforms.recognize(found, saw)

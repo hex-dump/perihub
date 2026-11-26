@@ -161,7 +161,9 @@ def request_of(path: Path) -> tuple[str | None, str, str]:
     body = data.get("body") or ""
     answers = triage.fields(body)
     saw = answers.get("What PeriHub saw", "") or body
-    usb = triage.usb_id(answers.get("USB ID (vendor:product)", "")) or triage.usb_id(saw)
+    # The id the triage answered about: PeriHub's own report first, then the form's field (triage.request_ids).
+    reported, typed = triage.request_ids(answers, saw)
+    usb = (reported or typed or [triage.usb_id(saw)])[0]
     device = re.search(r"^Device: (.+)$", saw, re.M)
     model = answers.get("Device model", "") or (device.group(1) if device else "")
     return usb, model.strip(), saw

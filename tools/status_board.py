@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from triage import fields, next_steps, usb_id  # noqa: E402
+from triage import fields, find, knows, next_steps, request_ids  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 REPO = "hex-dump/perihub"
@@ -54,21 +54,30 @@ def matches(device: dict, issue: dict) -> bool:
     return device["brand"].lower() in issue["title"].lower() or device["name"].lower() in issue["title"].lower()
 
 
+def asked_ids(issue: dict) -> list[str]:
+    """The ids a request gives, PeriHub's own report first (tools/triage.py request_ids)."""
+    answers = fields(issue.get("body") or "")
+    reported, typed = request_ids(answers, answers.get("What PeriHub saw", ""))
+    return reported or typed
+
+
 def place(
     issue: dict, released: list[dict], main: list[dict], branches: dict[str, list[dict]], upstream: dict[str, list[str]]
 ) -> tuple[str, str]:
     """The group of a device request, and a short note (level, branch...)."""
     labels = {label["name"] for label in issue["labels"]}
     answers = fields(issue.get("body") or "")
-    usb = usb_id(answers.get("USB ID (vendor:product)", ""))
+    ids = asked_ids(issue)
+    usb = ids[0] if ids else None
     if usb:
         for group, devices in (("released", released), ("next", main)):
-            known = [d for d in devices if usb in d["usb_ids"]]
-            if known and not matches(known[0], issue):
+            # Every id the catalogue gives a device (behind a receiver, over Bluetooth), as the triage reads them.
+            hit = find(ids, devices)
+            if hit and not matches(hit[0], issue):
                 return "other", "the USB ID given is of another device"
-            if known:
-                return group, LEVEL_WORDS.get(known[0]["level"], known[0]["level"])
-        having = sorted(b for b, ds in branches.items() if any(usb in d["usb_ids"] for d in ds))
+            if hit:
+                return group, LEVEL_WORDS.get(hit[0]["level"], hit[0]["level"])
+        having = sorted(b for b, ds in branches.items() if any(knows(usb, d) for d in ds))
         if having:
             return "branch", f"`{having[0]}`"
     if "ready to add" in labels:
@@ -78,7 +87,7 @@ def place(
     if usb:
         # Older requests, from before the labels: what the triage would say today.
         _, label = next_steps(usb, "", main, upstream, branches, answers.get("What PeriHub saw", ""))
-        return ("writing" if label == "ready to add" else "recording"), ""
+        return {"ready to add": "writing", "needs captures": "recording"}.get(label, "other"), ""
     return "other", "no USB ID yet"
 
 
@@ -96,7 +105,7 @@ def board(
         if "pull_request" in issue or "device request" not in labels or "wontfix" in labels:
             continue
         group, note = place(issue, released, main, branches, upstream or {})
-        usb = usb_id(fields(issue.get("body") or "").get("USB ID (vendor:product)", "")) or "?"
+        usb = (asked_ids(issue) or ["?"])[0]
         notes = [n for n in (note, "⏳ waiting for an answer" if "waiting for reporter" in labels else "") if n]
         rows[group].append(f"| #{issue['number']} | {name_of(issue)} | `{usb}` | {' · '.join(notes)} |")
     total = sum(len(r) for r in rows.values())
