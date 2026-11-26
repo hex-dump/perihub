@@ -143,6 +143,10 @@ export const answers: Record<string, unknown> = {
 // and a read-only keyboard of another brand, to look at every kind of device state in the sidebar. The
 // screenshots of the Corsair and Razer pages of the website are taken with it.
 if (typeof location !== "undefined" && new URLSearchParams(location.search).get("devices") === "more") {
+  // &quiet: no one-time prompt to send a test report, as if it had been shown already (the screenshots).
+  if (new URLSearchParams(location.search).has("quiet")) {
+    localStorage.setItem("perihub.confirmPrompted", JSON.stringify(["1b1c:1b7a", "1532:0084", "1e7d:2dcd"]));
+  }
   live.battery = { percent: 12, estimated: false, state: "discharging" };
   status.corsair = [
     {

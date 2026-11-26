@@ -24,8 +24,8 @@ const shots = [
   ["screenshots/mouse-buttons.png", "index.html#mouse:buttons", 1160, 780],
   ["screenshots/mouse-lighting.png", "index.html#mouse:lighting", 1160, 780],
   // For the website's Razer and Corsair pages: experimental devices, from ?devices=more.
-  ["screenshots/razer-mouse.png", "index.html?devices=more#peripheral:1532-0084", 1160, 780],
-  ["screenshots/corsair-mouse.png", "index.html?devices=more#corsair:1b7a", 1160, 780],
+  ["screenshots/razer-mouse.png", "index.html?devices=more&quiet#peripheral:1532-0084", 1160, 780],
+  ["screenshots/corsair-mouse.png", "index.html?devices=more&quiet#corsair:1b7a", 1160, 780],
   ["social-preview.png", "social.html", 1280, 640],
 ];
 
