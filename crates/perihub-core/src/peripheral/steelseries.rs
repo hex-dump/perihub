@@ -1,6 +1,6 @@
 //! SteelSeries mice, from rivalcfg's device profiles (WTFPL, see `THIRD-PARTY-NOTICES.md`). The
 //! table is generated into `steelseries_models.rs` by `tools/rivalcfg_to_rust.py`; the protocol is
-//! in `docs/protocols/steelseries-mice.md`. None has been tried with PeriHub.
+//! in `docs/protocols/steelseries-mice.md`. Only the Rival 700 / 710 has been confirmed with PeriHub (issue #97).
 //!
 //! These mice cannot report their settings, so PeriHub can neither show nor check nor undo them.
 //! It only sends a setting the user picks, and never the command that saves to the mouse's memory:

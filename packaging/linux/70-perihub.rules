@@ -9,7 +9,9 @@ KERNEL=="hidraw*", SUBSYSTEMS=="usb", ENV{ID_USB_INTERFACE_NUM}=="", IMPORT{buil
 # The interfaces that report key presses stay closed: see 71-perihub-keys.rules.
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1622", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"
 
-# Logitech mice (the G502 HERO is tested, the others are read-only until they are)
+# Logitech mice with onboard memory (supported, experimental or read-only by the memory format each one
+# reports): the whole mouse. Their HID++ collection shares an interface with the mouse's movements and the
+# keys assigned to its buttons, so that interface is readable too; keyboards stay closed.
 # Logitech G502 HERO
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c08b", TAG+="uaccess"
 # Logitech G502 Proteus Core
@@ -309,7 +311,7 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1a03", TAG+="uacc
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1c56", TAG+="uaccess"
 KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1c57", TAG+="uaccess"
 
-# SteelSeries mice (experimental, untested; commands from rivalcfg): only the interface rivalcfg sends
+# SteelSeries mice (experimental, except the Rival 700 / 710, tested; commands from rivalcfg): only the interface rivalcfg sends
 # to. On the mice where that is interface 0 it also carries the mouse's movements and clicks, as on
 # the Logitech mice above. The 2.4 GHz receivers listed are the mice's own, not shared ones.
 # SteelSeries Aerox 3
