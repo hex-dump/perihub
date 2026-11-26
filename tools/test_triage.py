@@ -497,21 +497,32 @@ class Triage(unittest.TestCase):
                     triage.main()
             finally:
                 sys.argv = argv
-            # Only on main, in no release: left to the maintainer, never "already recognizes".
-            self.assertIsNone(json.loads(out.getvalue())["comment"])
+            # Only on main, in no release: never "already recognizes", and never "not in PeriHub" either: it is added,
+            # and comes with the next release.
+            comment = json.loads(out.getvalue())["comment"]
+            self.assertIn("already added", comment)
+            self.assertIn("next release", comment)
+            self.assertNotIn("already recognizes", comment)
 
     def test_a_report_from_an_older_version_is_asked_to_try_the_latest(self):
         result = run(device_issue(ASUS.replace("0.9.0", "0.8.4"), "0b05:195c", version="0.8.4"))
         self.assertIn("0.8.4", result["comment"])
         self.assertNotIn("confirm", result)
 
-    def test_a_request_for_a_device_only_on_main_is_left_to_the_maintainer(self):
+    def test_a_request_for_a_device_only_on_main_is_told_it_comes_with_the_next_release(self):
+        # It used to get no answer at all (issue #123 was even told "no documentation" before its id reached main).
         released = [d for d in DEVICES if d["family"] != "asus"]
         body = answer("Device model", "ROG Keris") + answer("USB ID (vendor:product)", "0b05:195c")
         issue = {"number": 1, "labels": [{"name": "device request"}], "body": body}
         result = triage.triage(issue, LATEST, released, DEVICES, upstream={"libratbag": ["0b05:195c"]})
-        self.assertIsNone(result["comment"])
+        self.assertIn("**already added** to PeriHub: **ASUS ROG Keris**", result["comment"])
+        self.assertIn("next release", result["comment"])
+        self.assertNotIn("already recognizes", result["comment"])
+        self.assertNotIn("`0b05:195c` is not in", result["comment"])
         self.assertNotIn("ready to add", result["labels"])
+        self.assertNotIn("needs captures", result["labels"])
+        self.assertNotIn("auto_add", result)
+        self.assertEqual(result["labels"], ["brand: ASUS", "mouse"])
 
     def test_a_device_main_confirmed_already_is_not_confirmed_again(self):
         current = [{**d, "level": "supported"} if d["family"] == "asus" else d for d in DEVICES]
@@ -678,12 +689,17 @@ class DeviceRequestAnswers(unittest.TestCase):
 
     def test_an_id_nobody_lists_gets_optional_captures_and_links_the_guide(self):
         result = run_req("dead:beef")
-        self.assertIn("A maintainer will look for documentation", result["comment"])
+        # What the bot checked, not a promise of a search nobody makes (the answer #123 got).
+        self.assertIn("What was checked automatically", result["comment"])
+        self.assertIn("not in PeriHub's catalogue", result["comment"])
+        self.assertIn("None of the projects PeriHub takes facts from", result["comment"])
+        for gone in ("maintainer will look", "no public documentation", "look for documentation"):
+            self.assertNotIn(gone, result["comment"])
         self.assertIn("optional", result["comment"])
-        self.assertIn("never required", result["comment"])
+        self.assertIn("Record the official software", result["comment"])
         self.assertIn(triage.CAPTURE_GUIDE, result["comment"])
         self.assertEqual(result["labels"], ["needs captures"])
-        self.assertNotIn("OpenRGB", result["comment"])
+        self.assertNotIn("OpenRGB lists", result["comment"])
 
     def test_a_missing_usb_id_is_asked_for_and_gets_no_next_step_label(self):
         result = triage.triage(req("_No response_"), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM)
@@ -769,8 +785,15 @@ class NoDocsButHidpp(unittest.TestCase):
         self.assertNotIn("auto_add", result)
 
     def test_without_hidpp_collections_the_same_logitech_id_needs_captures(self):
-        result = self.run_body(G604.replace("046d:b024", "046d:b999"))
+        result = self.run_body(G604.replace("046d:b024", "046d:b999").replace("usage page ff43, usage 0202", "usage page ff43, usage 0001"))
         self.assertEqual(result["labels"][-1], "needs captures")
+
+    def test_the_bluetooth_hidpp_collection_counts_as_hidpp(self):
+        # ff43/0202 is the HID++ collection of a Logitech mouse over Bluetooth (manager.rs, BLE_HIDPP_PAGE).
+        result = self.run_body(G604.replace("046d:b024", "046d:b999"))
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("HID++", result["comment"])
+        self.assertNotIn("auto_add", result)
 
     def test_another_vendor_with_the_same_collections_is_not_told_it_speaks_hidpp(self):
         result = self.run_body(HIDPP.replace("046d:b999", "24ae:2015"))
@@ -814,7 +837,7 @@ class ReleaseRule(unittest.TestCase):
 
     TEXTS = {
         "a maintainer writes it": triage.TEST_BUILD_STEPS,
-        "written automatically": triage.AUTO_TEST_BUILD_STEPS,
+        "written automatically": triage.AUTO_TEST_BUILD_STEPS.format(level="experimental"),
         "already on a test branch": triage.ON_BRANCH_STEPS,
     }
 
@@ -1144,11 +1167,15 @@ class StandardInterfacesOnly(unittest.TestCase):
                {"family": "razer", "brand": "Razer", "name": "Viper", "kind": "mouse", "level": "supported", "usb_ids": ["1532:0078"]}]
 
     def test_a_logitech_id_libratbag_lists_without_hidpp_is_not_ready_to_add(self):
+        # Issue #95. Not "needs captures" either: an id a project lists never is. A person checks which device it is.
         result = triage.triage(saw_request("046d:c077", PLAIN_MOUSE), "0.9.6", self.devices, upstream={"libratbag": ["046d:c077"]})
-        self.assertEqual(result["labels"][-1], "needs captures")
-        self.assertIn("no vendor-specific one", result["comment"])
-        self.assertIn("Record the official software", result["comment"])
+        self.assertEqual(result["labels"][-1], "needs maintainer")
+        self.assertNotIn("needs captures", result["labels"])
+        self.assertIn("libratbag", result["comment"])
+        self.assertIn("only standard interfaces", result["comment"])
+        self.assertIn("no USB captures are needed", result["comment"])
         self.assertNotIn("can be added directly", result["comment"])
+        self.assertNotIn(triage.CAPTURE_GUIDE, result["comment"])
 
     def test_with_hidpp_it_is(self):
         saw = PLAIN_MOUSE + "\n  interface 1, usage page ff00, usage 0001"
@@ -1166,9 +1193,12 @@ class StandardInterfacesOnly(unittest.TestCase):
         self.assertEqual(result["labels"][-1], "needs captures")
         self.assertIn("no vendor-specific one", result["comment"])
 
-    def test_nothing_seen_keeps_the_old_answer(self):
+    def test_nothing_seen_says_the_descriptors_were_missing(self):
         result = triage.triage(saw_request("c0f4:03f5", ""), "0.9.6", self.devices, upstream={})
-        self.assertIn("A maintainer will look", result["comment"])
+        self.assertIn("no HID descriptors to compare", result["comment"])
+        self.assertIn("Request support", result["comment"])
+        self.assertNotIn("maintainer will look", result["comment"])
+        self.assertEqual(result["labels"][-1], "needs captures")
 
 class ReportInAnotherField(unittest.TestCase):
     """Issue #117: the Test report field left as the placeholder, the app's report pasted in "Messages and errors"
@@ -1272,5 +1302,409 @@ class HeadsetRequests(unittest.TestCase):
         self.assertNotIn("wontfix", result["labels"])
 
 
+# Issue #80 as it came in (PeriHub 0.9.4: collections, no report descriptors yet).
+SURMEN_V400 = (
+    answer("Device model", "Evision RGB Keyboard") + answer("Device type", "Keyboard") + answer("Brand", "Other")
+    + answer("USB ID (vendor:product)", "320f:505b")
+    + answer("What PeriHub saw", """```text
+PeriHub 0.9.4 on linux x86_64
+Device: Evision RGB Keyboard
+USB ID: 320f:505b (USB)
+HID collections:
+  interface 0, usage page 0001, usage 0006
+  interface 1, usage page 0001, usage 0002
+  interface 1, usage page 0001, usage 0006
+  interface 1, usage page 0001, usage 0080
+  interface 1, usage page 000c, usage 0001
+  interface 1, usage page ff1c, usage 0092
+```""")
+)
+# What the answers that said a listed or known device was not in the list wrote (issues #80, #111, #123).
+NOT_IN_THE_LIST = ("no public documentation", "no protocol to build on", "gives PeriHub no protocol", "None of the projects")
+# A vendor collection no family of platforms.py has, for requests with descriptors.
+OTHER_VENDOR_SAW = """PeriHub 0.9.7 on linux x86_64
+Device: Something
+Kind: Mouse
+USB ID: {usb} (USB)
+HID collections:
+  interface 0, usage page 0001, usage 0002
+  interface 1, usage page ff77, usage 0001"""
+STANDARD_ONLY_SAW = """PeriHub 0.9.7 on linux x86_64
+Device: Something
+Kind: Mouse
+USB ID: {usb} (USB)
+HID collections:
+  interface 0, usage page 0001, usage 0002"""
+
+
+def request(body, number=7):
+    return {"number": number, "labels": [{"name": "device request"}], "body": body}
+
+
+def real_catalogue():
+    return json.loads((triage.ROOT / "site/devices.json").read_text())["devices"]
+
+
+def real_upstream():
+    return json.loads((triage.ROOT / "tools/upstream-seen.json").read_text())
+
+
+class EveryKnownIdIsKnown(unittest.TestCase):
+    """The answers that said a device "is not in PeriHub" when it was: every id of the catalogue, in every form a
+    request writes it, gets "already recognizes" (or "already added", when only main has it), never a next step."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.devices = real_catalogue()
+        cls.upstream = real_upstream()
+
+    def every_id(self):
+        for d in self.devices:
+            for usb, how in triage.catalogue_ids(d).items():
+                yield d, usb, how
+
+    def assert_known(self, result, usb, d, *, released=True):
+        comment = result["comment"] or ""
+        self.assertIn("already recognizes" if released else "already added", comment, usb)
+        self.assertIn(d["name"], comment, usb)
+        self.assertNotIn(f"`{usb}` is not in", comment, usb)
+        for phrase in NOT_IN_THE_LIST:
+            self.assertNotIn(phrase, comment, usb)
+        self.assertFalse({"ready to add", "needs captures", "needs maintainer"} & set(result["labels"]), usb)
+        self.assertNotIn("auto_add", result, usb)
+
+    def test_the_catalogue_has_ids_of_every_kind(self):
+        kinds = {how for _, _, how in self.every_id()}
+        self.assertEqual(kinds, {"usb", "wireless", "bluetooth"})
+        receivers = {usb for d, usb, _ in self.every_id() if d["kind"] == "receiver"}
+        for usb in ("046d:c539", "046d:c53a", "046d:c547", "046d:c548", "046d:c52b", "046d:c545", "046d:c541"):
+            self.assertIn(usb, receivers)
+
+    def test_every_id_in_the_form_s_field_in_every_way_it_is_written(self):
+        for d, usb, how in self.every_id():
+            v, p = usb.split(":")
+            for typed in (usb, usb.upper(), f"0x{v}:0x{p}", f" {v} : {p} ", f"VID_{v.upper()}&PID_{p.upper()}&MI_02",
+                          f"vid {v} pid {p}", f"{v} {p}", f"`{usb}`", f"Product ID: 0x{p}\nVendor ID: 0x{v}  (Some Inc.)"):
+                with self.subTest(usb=usb, typed=typed):
+                    body = answer("Device model", "X") + answer("USB ID (vendor:product)", typed)
+                    result = triage.triage(request(body), "0.9.7", self.devices, upstream=self.upstream)
+                    self.assert_known(result, usb, d)
+
+    def test_every_id_in_perihub_s_own_report_with_the_field_empty(self):
+        for d, usb, how in self.every_id():
+            with self.subTest(usb=usb):
+                saw = STANDARD_ONLY_SAW.format(usb=usb)
+                body = answer("Device model", "X") + answer("USB ID (vendor:product)", None) + answer("What PeriHub saw", f"```text\n{saw}\n```")
+                result = triage.triage(request(body), "0.9.7", self.devices, upstream=self.upstream)
+                self.assert_known(result, usb, d)
+
+    def test_every_id_pasted_as_a_report(self):
+        for d, usb, how in self.every_id():
+            with self.subTest(usb=usb):
+                result = triage.triage({"labels": [], "body": STANDARD_ONLY_SAW.format(usb=usb)}, "0.9.7", self.devices, upstream=self.upstream)
+                self.assertIn("device request", result["labels"])
+                self.assert_known(result, usb, d)
+
+    def test_every_id_only_main_has_comes_with_the_next_release(self):
+        for d, usb, how in self.every_id():
+            released = [o for o in self.devices if o is not d]
+            if triage.find([usb], released):
+                continue  # another device of the release has the same id
+            with self.subTest(usb=usb):
+                body = answer("Device model", "X") + answer("USB ID (vendor:product)", usb)
+                result = triage.triage(request(body), "0.9.7", released, self.devices, upstream=self.upstream)
+                self.assert_known(result, usb, d, released=False)
+                self.assertIn("next release", result["comment"])
+
+
+class NoListedIdNeedsCaptures(unittest.TestCase):
+    """An id OpenRGB, OpenRazer, libratbag or rivalcfg lists is documented: never "needs captures", never "no public
+    documentation" or "no protocol to build on" (issue #80), whatever the request shows."""
+
+    def test_every_id_of_the_baseline(self):
+        devices, upstream = real_catalogue(), real_upstream()
+        ids = sorted({usb for listed in upstream.values() for usb in listed})
+        self.assertGreater(len(ids), 1400)
+        for usb in ids:
+            for saw in ("", STANDARD_ONLY_SAW.format(usb=usb), OTHER_VENDOR_SAW.format(usb=usb)):
+                with self.subTest(usb=usb, saw=saw[-30:]):
+                    body = answer("Device model", "X") + answer("USB ID (vendor:product)", usb)
+                    if saw:
+                        body += answer("What PeriHub saw", f"```text\n{saw}\n```")
+                    result = triage.triage(request(body), "0.9.7", devices, upstream=upstream)
+                    self.assertNotIn("needs captures", result["labels"])
+                    for phrase in NOT_IN_THE_LIST:
+                        self.assertNotIn(phrase, result["comment"] or "")
+                    self.assertNotIn(triage.CAPTURE_GUIDE, result["comment"] or "")
+
+    def test_and_with_nothing_of_the_catalogue(self):
+        # As if the release knew none of them: the answer comes from the projects alone.
+        upstream = real_upstream()
+        for project, ids in upstream.items():
+            for usb in ids:
+                with self.subTest(usb=usb):
+                    result = triage.triage(request(answer("USB ID (vendor:product)", usb)), "0.9.7", [], upstream=upstream)
+                    self.assertNotIn("needs captures", result["labels"])
+                    self.assertIn("ready to add", result["labels"])
+
+
+class WrongAnswersOfTheBot(unittest.TestCase):
+    """The requests the bot told "not in the list", answered again with what was known then."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.devices = real_catalogue()
+        cls.upstream = real_upstream()
+
+    def without(self, *ids):
+        return [d for d in self.devices if not any(triage.knows(usb, d) for usb in ids)]
+
+    def test_80_the_surmen_v400_is_documented_by_openrgb_and_has_the_evision_collection(self):
+        self.assertIn("320f:505b", self.upstream["OpenRGB"])
+        then = self.without("320f:505b")
+        result = triage.triage(request(SURMEN_V400, 80), "0.9.4", then, upstream=self.upstream)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("EVision keyboards", result["comment"])
+        for phrase in NOT_IN_THE_LIST:
+            self.assertNotIn(phrase, result["comment"])
+        # And now that main and the release have it:
+        now = triage.triage(request(SURMEN_V400, 80), "0.9.7", self.devices, upstream=self.upstream)
+        self.assertIn("already recognizes this device", now["comment"])
+
+    def test_80_without_any_collection_openrgb_alone_is_enough(self):
+        body = answer("USB ID (vendor:product)", "320f:505b")
+        result = triage.triage(request(body, 80), "0.9.4", self.without("320f:505b"), upstream=self.upstream)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("OpenRGB", result["comment"])
+        self.assertIn("no USB captures are needed", result["comment"])
+
+    def test_111_the_apex_pro_openrgb_lists(self):
+        self.assertIn("1038:1610", self.upstream["OpenRGB"])
+        result = triage.triage(request(APEX_PRO, 111), "0.9.6", self.without("1038:1610"), upstream=self.upstream)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("OpenRGB", result["comment"])
+        for phrase in NOT_IN_THE_LIST:
+            self.assertNotIn(phrase, result["comment"])
+
+    def test_123_the_x68he_on_main_comes_with_the_next_release(self):
+        issue = dict(saw_request("2e3c:c365", X68HE_SAW), number=123)
+        result = triage.triage(issue, "0.9.7", self.without("2e3c:c365"), self.devices, upstream=self.upstream)
+        self.assertIn("already added", result["comment"])
+        self.assertIn("next release", result["comment"])
+        self.assertNotIn("auto_add", result)
+        # Before it was on main: the family of the W60, added without a person.
+        before = triage.triage(issue, "0.9.7", self.without("2e3c:c365"), upstream=self.upstream)
+        self.assertEqual(before["auto_add"], "2e3c:c365")
+        self.assertEqual(before["labels"][-1], "ready to add")
+
+
+# A request from a mouse behind its LIGHTSPEED receiver: PeriHub's report gives the receiver's id, the form the mouse's.
+RECEIVER_SAW = """PeriHub 0.9.7 on windows x86_64
+Device: USB Receiver
+Kind: Mouse
+USB ID: 046d:c539 (USB)
+HID collections:
+  interface 2, usage page ff00, usage 0001
+  interface 2, usage page ff00, usage 0002"""
+
+
+class BehindAReceiver(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.devices = real_catalogue()
+
+    def run_body(self, body, devices=None, current=None):
+        return triage.triage(request(body), "0.9.7", devices or self.devices, current, upstream=real_upstream())
+
+    def test_the_id_a_logitech_mouse_has_behind_its_receiver(self):
+        # 046d:4087 is the G903 HERO's wireless id; Linux shows it for the mouse's own HID device.
+        result = self.run_body(answer("USB ID (vendor:product)", "046d:4087"))
+        self.assertIn("already recognizes this device: **Logitech G903 HERO**", result["comment"])
+        self.assertIn("the id it has behind its receiver", result["comment"])
+        self.assertIn("mouse", result["labels"])
+
+    def test_a_mouse_the_catalogue_has_only_by_its_wireless_id(self):
+        # The G305 has no USB id of its own: only its LIGHTSPEED one, 046d:4074.
+        result = self.run_body(answer("USB ID (vendor:product)", "046D:4074"))
+        self.assertIn("**Logitech G305**", result["comment"])
+
+    def test_the_g604_over_bluetooth(self):
+        result = self.run_body(answer("USB ID (vendor:product)", "046d:b024"))
+        self.assertIn("**Logitech G604**", result["comment"])
+        self.assertIn("its Bluetooth id", result["comment"])
+
+    def test_the_receiver_s_id_alone_is_the_receiver(self):
+        body = answer("USB ID (vendor:product)", None) + answer("What PeriHub saw", f"```text\n{RECEIVER_SAW}\n```")
+        result = self.run_body(body)
+        self.assertIn("already recognizes this receiver: **Logitech LIGHTSPEED receiver**", result["comment"])
+        self.assertNotIn("is not in", result["comment"])
+
+    def test_the_mouse_in_the_form_beats_the_receiver_in_the_report(self):
+        body = answer("USB ID (vendor:product)", "046d:c091") + answer("What PeriHub saw", f"```text\n{RECEIVER_SAW}\n```")
+        result = self.run_body(body)
+        self.assertIn("already recognizes this device: **Logitech G903 HERO**", result["comment"])
+
+    def test_several_ids_in_the_field(self):
+        result = self.run_body(answer("USB ID (vendor:product)", "receiver 046D:C539, mouse 046d:c08b"))
+        self.assertIn("**Logitech G502 HERO**", result["comment"])
+
+    def test_a_test_report_through_the_receiver_names_the_mouse(self):
+        # MOUSE_RECEIVER: "USB ID: 046d:c539" and "wireless id 4070" (the G703): the labels are the mouse's.
+        issue = mouse_issue(MOUSE_RECEIVER, usb="046d:c539", connection="LIGHTSPEED receiver")
+        result = triage.triage(issue, "0.9.0", self.devices)
+        self.assertIn("mouse", result["labels"])
+        self.assertIn("brand: Logitech", result["labels"])
+        self.assertNotIn("confirm", result)
+        self.assertEqual(triage.report_ids(MOUSE_RECEIVER), ["046d:4070", "046d:c539"])
+
+
+class FieldAndReport(unittest.TestCase):
+    """The form's USB ID field and the id of PeriHub's own report: both are read, and the report wins when they differ."""
+
+    def test_the_report_s_id_is_the_one_answered(self):
+        saw = STANDARD_ONLY_SAW.format(usb="1532:0078")
+        body = answer("USB ID (vendor:product)", "dead:beef") + answer("What PeriHub saw", f"```text\n{saw}\n```")
+        result = triage.triage(request(body), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM)
+        self.assertIn("already recognizes this device: **Razer Viper**", result["comment"])
+        self.assertIn("The form's USB ID field says `dead:beef` (which is not in PeriHub's catalogue)", result["comment"])
+
+    def test_a_known_id_in_the_field_is_named_when_the_report_s_is_not(self):
+        saw = OTHER_VENDOR_SAW.format(usb="dead:beef")
+        body = answer("USB ID (vendor:product)", "1532:0078") + answer("What PeriHub saw", f"```text\n{saw}\n```")
+        result = triage.triage(request(body), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM)
+        self.assertIn("`dead:beef`", result["comment"])
+        self.assertIn("which PeriHub 0.9.0 recognizes as **Razer Viper**", result["comment"])
+        # The known id of the field is never told it is not in PeriHub, whatever project lists it.
+        self.assertNotIn("`1532:0078` is not in", result["comment"])
+        listed = triage.triage(request(body), "0.9.0", REQ_DEVICES, upstream={"openrazer": ["1532:0078"]})
+        self.assertNotIn("`1532:0078` is not in", listed["comment"])
+        self.assertIn("which PeriHub 0.9.0 recognizes as **Razer Viper**", listed["comment"])
+
+    def test_a_documented_id_in_the_field_is_answered_when_the_report_s_is_unknown(self):
+        saw = OTHER_VENDOR_SAW.format(usb="dead:beef")
+        body = answer("USB ID (vendor:product)", "1532:0099") + answer("What PeriHub saw", f"```text\n{saw}\n```")
+        result = triage.triage(request(body), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("PeriHub's own report says `dead:beef`", result["comment"])
+        self.assertIn("`1532:0099`, the id the form's USB ID field gives", result["comment"])
+        # Auto-add writes the id with the descriptors of the request: never another device's.
+        self.assertNotIn("auto_add", result)
+
+    def test_the_same_id_written_differently_is_no_divergence(self):
+        saw = STANDARD_ONLY_SAW.format(usb="1532:0078")
+        body = answer("USB ID (vendor:product)", "VID_1532&PID_0078") + answer("What PeriHub saw", f"```text\n{saw}\n```")
+        result = triage.triage(request(body), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM)
+        self.assertNotIn("form's USB ID field", result["comment"])
+
+    def test_a_documented_id_among_several_is_the_one_answered(self):
+        # The first id nobody lists, the second documented: "ready to add", not "needs captures".
+        result = triage.triage(request(answer("USB ID (vendor:product)", "dead:beef / 1532:0099")), "0.9.0", REQ_DEVICES, upstream=REQ_UPSTREAM)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("1532:0099", result["comment"])
+
+    def test_the_ids_are_read_in_every_form(self):
+        for text, ids in (
+            ("046D:C08B", ["046d:c08b"]),
+            ("0x046d:0xc08b", ["046d:c08b"]),
+            ("USB\\VID_046D&PID_C08B&MI_02\\7&1234", ["046d:c08b"]),
+            ("Product ID: 0xc08b\nVendor ID: 0x046d  (Logitech Inc.)", ["046d:c08b"]),
+            ("046d c08b", ["046d:c08b"]),
+            ("046d:c539 and 046d:c08b", ["046d:c539", "046d:c08b"]),
+            ("released 2026-11-26 15:04", []),
+            ("_No response_", []),
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(triage.usb_ids(text), ids)
+
+
 if __name__ == "__main__":
     unittest.main()
+
+# The request of issue #123 (X68HE), as PeriHub 0.9.7 wrote it: the collection and reports of the Wraith W60's family.
+X68HE_SAW = """PeriHub 0.9.7 on windows x86_64
+Device: (Standardsystemgeräte) X68HE
+Kind: Keyboard
+USB ID: 2e3c:c365 (USB)
+HID collections:
+  interface 0, usage page 0001, usage 0006
+  interface 1, usage page 0001, usage 0002
+  interface 1, usage page 0001, usage 0006
+  interface 1, usage page 0001, usage 0080
+  interface 1, usage page 000c, usage 0001
+  interface 2, usage page ff1b, usage 0091
+Report descriptors (lengths in bytes, with the id byte):
+  interface 0, 66 bytes: usage page 0001, usage 0006: no id (in 8, out 1)
+  interface 1, 66 bytes: usage page 0001, usage 0002: id 02 (in 7)
+  interface 1, 25 bytes: usage page 0001, usage 0006: id 05 (in 21)
+  interface 1, 29 bytes: usage page 0001, usage 0080: id 04 (in 2)
+  interface 1, 25 bytes: usage page 000c, usage 0001: id 03 (in 3)
+  interface 2, 40 bytes: usage page ff1b, usage 0091: id 01 (in 64, out 64)
+Raw descriptors (hex):
+  interface 2: 061bff0991a10185011900293e150026ff007508953f81021900293e150026ff007508953f9102c0"""
+# The request of issue #69 (0c45:8513, PeriHub 0.9.4): EVision's collection, no report descriptors yet.
+SGK30_SAW = """PeriHub 0.9.4 on windows x86_64
+Device: SONiX USB DEVICE
+USB ID: 0c45:8513 (USB)
+HID collections:
+  interface 0, usage page 0001, usage 0006
+  interface 1, usage page 0001, usage 0006
+  interface 1, usage page 0001, usage 0080
+  interface 1, usage page 000c, usage 0001
+  interface 1, usage page ff1c, usage 0092"""
+
+
+class Platforms(unittest.TestCase):
+    """A request whose descriptors show the configuration collection of a family PeriHub has a driver for (#123)."""
+
+    W60 = {"family": "wraith", "brand": "Wraith", "name": "W60", "kind": "keyboard", "level": "read_only", "usb_ids": ["2e3c:c368"]}
+
+    def run_saw(self, usb, saw, number=123, devices=None):
+        issue = dict(saw_request(usb, saw), number=number)
+        return triage.triage(issue, "0.9.7", devices or [self.W60], upstream={})
+
+    def test_the_x68he_is_added_automatically_read_only(self):
+        result = self.run_saw("2e3c:c365", X68HE_SAW)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertEqual(result["auto_add"], "2e3c:c365")
+        self.assertEqual(result["platform"], "wraith")
+        self.assertEqual(result["issue"], 123)
+        c = result["comment"]
+        self.assertIn("is added automatically, read-only", c)
+        self.assertIn("usage page ff1b, usage 0091, report id 01 (in 64, out 64 bytes)", c)
+        self.assertIn("On Linux it is not opened", c)
+        self.assertNotIn("documentation", c)
+
+    def test_a_different_report_is_no_match(self):
+        saw = X68HE_SAW.replace("id 01 (in 64, out 64)", "id 01 (in 32, out 32)")
+        result = self.run_saw("2e3c:c365", saw)
+        self.assertEqual(result["labels"][-1], "needs captures")
+        self.assertIn("usage page ff1b, usage 0091 on interface 2", result["comment"])
+        self.assertNotIn("auto_add", result)
+
+    def test_another_vendor_with_the_same_collection_is_not_recognized(self):
+        result = self.run_saw("1234:c365", X68HE_SAW.replace("2e3c:c365", "1234:c365"))
+        self.assertNotIn("auto_add", result)
+        self.assertEqual(result["labels"][-1], "needs captures")
+
+    def test_a_collection_without_its_report_descriptor_is_left_to_a_maintainer(self):
+        result = self.run_saw("0c45:8513", SGK30_SAW, number=69)
+        self.assertEqual(result["labels"][-1], "ready to add")
+        self.assertIn("EVision keyboards", result["comment"])
+        self.assertIn("no report descriptor", result["comment"])
+        self.assertNotIn("auto_add", result)
+
+    def test_an_id_a_device_has_already_is_not_added_twice(self):
+        known = dict(self.W60, usb_ids=["2e3c:c368", "2e3c:c365"])
+        result = triage.triage(dict(saw_request("2e3c:c365", X68HE_SAW), number=123), "0.9.7", [self.W60], current=[known], upstream={})
+        self.assertNotIn("auto_add", result)
+
+    def test_a_qmk_keyboard_is_found_by_its_collection(self):
+        saw = "PeriHub 0.9.7 on linux x86_64\nDevice: Board\nUSB ID: feed:6060 (USB)\nHID collections:\n  interface 1, usage page ff60, usage 0061"
+        result = self.run_saw("feed:6060", saw)
+        self.assertIn("finds by itself", result["comment"])
+        self.assertNotIn("auto_add", result)
+
+    def test_the_workflow_reads_the_platform_from_the_json(self):
+        self.assertTrue(triage.auto_addable("2e3c:c365", {}, [self.W60], None, X68HE_SAW))
+        self.assertFalse(triage.auto_addable("2e3c:c365", {}, [self.W60], None, SGK30_SAW))
+        self.assertFalse(triage.auto_addable("2e3c:c368", {}, [self.W60], None, X68HE_SAW.replace("c365", "c368")))

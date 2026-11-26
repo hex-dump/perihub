@@ -129,5 +129,116 @@ class Build(unittest.TestCase):
                     auto_add.build(usb, issue, Path(d) / "src", Path(d))
 
 
+# The request of issue #123 as the GitHub API gives it (the fields the script reads).
+X68HE_REQUEST = {
+    "number": 123,
+    "body": (
+        "### Device model\n\n(Standardsystemgeräte) X68HE\n\n### USB ID (vendor:product)\n\n2e3c:c365\n\n"
+        "### What PeriHub saw\n\n```text\nPeriHub 0.9.7 on windows x86_64\nDevice: (Standardsystemgeräte) X68HE\n"
+        "USB ID: 2e3c:c365 (USB)\nHID collections:\n  interface 2, usage page ff1b, usage 0091\n"
+        "Report descriptors (lengths in bytes, with the id byte):\n"
+        "  interface 2, 40 bytes: usage page ff1b, usage 0091: id 01 (in 64, out 64)\n```\n"
+    ),
+}
+WRAITH = auto_add.platforms.BY_KEY["wraith"]
+
+
+class Sibling(unittest.TestCase):
+    """The second way: an id of a family the request's descriptors show (tools/platforms.py), read only."""
+
+    def test_the_name_comes_from_the_device_model_cleaned(self):
+        name = lambda text, taken=(): auto_add.model_name(text, WRAITH.sibling, "2e3c:c365", set(taken))
+        self.assertEqual(name("(Standardsystemgeräte) X68HE"), "X68HE")
+        self.assertEqual(name("Artery X68HE"), "X68HE")
+        self.assertEqual(name('Keyboard "K1" <b>'), "Keyboard K1 b")
+        self.assertEqual(name("x" * 60), "x" * 40)
+        # Nothing that tells it apart, or a name the brand has already: the family's name for the id.
+        for generic in ("", "(Standard system devices) 2.4G Wireless Device", "SONiX USB DEVICE", "USB Keyboard", "!!!"):
+            self.assertEqual(name(generic), "W669 keyboard 2e3c c365", generic)
+        self.assertEqual(name("X68HE", taken=["X68HE"]), "W669 keyboard 2e3c c365")
+
+    def test_the_name_is_safe_in_a_rust_string(self):
+        for text in ('a"b\\c', "a\nb", "{x}", "é ü"):
+            self.assertRegex(auto_add.model_name(text, WRAITH.sibling, "2e3c:c365", set()), r"^[A-Za-z0-9 +._/-]+$")
+
+    def test_the_entry_goes_at_the_end_of_the_table_in_either_layout(self):
+        entry = WRAITH.sibling.entry.format(vendor="2E3C", product="C365", name="X68HE", params="Params")
+        real = (auto_add.ROOT / WRAITH.driver).read_text()
+        added = auto_add.with_entry(real, entry)
+        self.assertEqual(added.count("pub const MODELS"), 1)
+        self.assertIn('name: "X68HE"', added)
+        self.assertLess(added.index('name: "X68HE"'), added.index("fn request("))
+        # One model written on one line (wraith.rs before #123): a comma, then the entry.
+        one = "pub const MODELS: &[Model] = &[Model {\n    product_ids: &[0xC368],\n}];\n\nfn x() {}\n"
+        self.assertEqual(
+            auto_add.with_entry(one, "    E,\n"),
+            "pub const MODELS: &[Model] = &[Model {\n    product_ids: &[0xC368],\n},\n    E,\n];\n\nfn x() {}\n",
+        )
+        with self.assertRaises(auto_add.Fail):
+            auto_add.with_entry("no table here", entry)
+
+    def test_the_changelog_line_goes_under_new_devices_of_unreleased(self):
+        text = "# Changelog\n\n## Unreleased\n\nSummary.\n\n### New devices\n- a\n\n### Fixed\n- b\n\n## 0.9.7 — x\n\n### New devices\n- c\n"
+        out = auto_add.with_changelog_line(text, "- NEW")
+        self.assertIn("### New devices\n- a\n- NEW\n\n### Fixed", out)
+        self.assertEqual(out.count("- NEW"), 1)
+        made = auto_add.with_changelog_line("# C\n\n## Unreleased\n\n### Fixed\n- b\n\n## 0.9.7\n", "- NEW")
+        self.assertIn("## Unreleased\n\n### New devices\n- NEW\n\n### Fixed\n- b", made)
+        empty = auto_add.with_changelog_line("# C\n\n## Unreleased\n\n## 0.9.7\n", "- NEW")
+        self.assertIn("## Unreleased\n\n### New devices\n- NEW\n\n## 0.9.7", empty)
+
+    def test_the_line_and_the_commit_message(self):
+        line = auto_add.sibling_line("Artery", "X68HE", "2e3c:c365", "123", WRAITH)
+        self.assertTrue(line.startswith("- **Artery X68HE (`2e3c:c365`), read only** ([#123]("))
+        self.assertIn("On Linux it is not opened", line)
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import notify
+
+        self.assertEqual(notify.trailers(auto_add.sibling_message("Artery", "X68HE", "2e3c:c365", "123", WRAITH)), [123])
+
+    def repo(self, d, request):
+        Build.repo(self, d, [{"usb_ids": ["2e3c:c368"], "brand": "Wraith", "name": "W60"}])
+        path = Path(d) / "request.json"
+        path.write_text(json.dumps(request))
+        return path
+
+    def test_the_request_is_checked_again(self):
+        with tempfile.TemporaryDirectory() as d:
+            # Another id than the request's, descriptors that do not match, a family that takes no id, or one whose
+            # collection the request does not show: nothing is written.
+            other = dict(X68HE_REQUEST, body=X68HE_REQUEST["body"].replace("(in 64, out 64)", "(in 32, out 32)"))
+            cases = [
+                ("2e3c:c366", X68HE_REQUEST, None),
+                ("2e3c:c365", other, None),
+                ("2e3c:c365", X68HE_REQUEST, "logitech"),
+                ("2e3c:c365", X68HE_REQUEST, "evision"),
+            ]
+            for usb, request, family in cases:
+                with self.subTest(usb=usb, family=family):
+                    path = self.repo(tempfile.mkdtemp(dir=d), request)
+                    with self.assertRaises(auto_add.Fail):
+                        auto_add.build(usb, "123", None, path.parent, request=path, family=family)
+                    self.assertEqual(subprocess.run(["git", "-C", str(path.parent), "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True).stdout, "")
+
+    def test_without_a_request_an_id_without_a_generator_fails(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.repo(d, X68HE_REQUEST)
+            with self.assertRaises(auto_add.Fail):
+                auto_add.build("2e3c:c365", "123", None, Path(d))
+
+    def test_the_request_is_read_like_triage_reads_it(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "r.json"
+            path.write_text(json.dumps(X68HE_REQUEST))
+            usb, model, saw = auto_add.request_of(path)
+            self.assertEqual((usb, model), ("2e3c:c365", "(Standardsystemgeräte) X68HE"))
+            self.assertTrue(auto_add.platforms.recognize(usb, saw).auto)
+
+    def test_the_site_rows_of_the_real_page(self):
+        rows = auto_add.site_rows(auto_add.ROOT)
+        self.assertIn("W60", rows)
+        self.assertIn("RGB keyboard 320f 505b", rows)
+
+
 if __name__ == "__main__":
     unittest.main()

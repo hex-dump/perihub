@@ -49,6 +49,18 @@ class Board(unittest.TestCase):
         self.assertIn("**5 open requests.**", text)
         self.assertTrue(text.endswith(status_board.MARK))
 
+    def test_a_mouse_behind_its_receiver_and_perihub_s_own_report(self):
+        # The id a Logitech mouse has behind its receiver (046d:4087, the G903 HERO's), and a request whose field is
+        # empty but whose report has the id: both are found, as the triage finds them.
+        g903 = {"brand": "Logitech", "name": "G903 HERO", "level": "by_memory_format", "usb_ids": ["046d:c091"], "wireless_id": "4087"}
+        saw = "### What PeriHub saw\n\n```text\nPeriHub 0.9.7 on linux x86_64\nDevice: Razer Viper\nUSB ID: 1532:0078 (USB)\n```\n"
+        no_field = dict(request(9, "Razer Viper", "_No response_"))
+        no_field["body"] += saw
+        issues = [request(8, "Logitech G903", "046d:4087"), no_field]
+        text = status_board.board(issues, RELEASED + [g903], MAIN + [g903], BRANCHES, NOW, {})
+        self.assertIn("| #8 | Logitech G903 | `046d:4087` | supported or experimental (by memory format) |", text)
+        self.assertIn("| #9 | Razer Viper | `1532:0078` | experimental |", text)
+
 
 if __name__ == "__main__":
     unittest.main()
