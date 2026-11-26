@@ -24,7 +24,7 @@ fn opened(device: &Device) -> String {
         Access::Whole => format!("whole {}", if device.kind == Kind::Keyboard { "keyboard" } else { "mouse" }),
         Access::ReceiverHidpp => "the receiver's HID++ interface".into(),
         Access::Closed if device.bluetooth_id.is_some() => {
-            "through a receiver, or its Bluetooth node (whole mouse, read only)".into()
+            "through a receiver, or its Bluetooth node (whole mouse)".into()
         }
         Access::Closed if device.product_ids.is_empty() => "through a receiver".into(),
         Access::Closed => "—".into(),

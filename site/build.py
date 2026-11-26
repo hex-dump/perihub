@@ -143,7 +143,7 @@ def connection(m: dict) -> str:
     if m["kind"] == "receiver":
         return "A USB receiver: wireless devices connect through it."
     if not m["usb_ids"] and m["bluetooth_ids"]:
-        return "Through a LIGHTSPEED receiver, or over Bluetooth (read only)."
+        return "Through a LIGHTSPEED receiver, or over Bluetooth (saving there is experimental)."
     if not m["usb_ids"]:
         return "Through a LIGHTSPEED receiver only."
     if m["wireless_ids"]:

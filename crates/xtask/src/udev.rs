@@ -199,8 +199,7 @@ pub fn render(devices: &[Device]) -> String {
                 }
             }
             if let Some(id) = d.bluetooth_id {
-                writeln!(out, "# Over Bluetooth Low Energy (read only): its own hidraw node, one for the whole mouse.")
-                    .unwrap();
+                writeln!(out, "# Over Bluetooth Low Energy: its own hidraw node, one for the whole mouse.").unwrap();
                 writeln!(out, "{}", bluetooth_rule(d.vendor_id, id)).unwrap();
             }
         }

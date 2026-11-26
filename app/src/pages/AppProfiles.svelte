@@ -78,7 +78,9 @@
 
   const recentApps = $derived((info?.recent ?? []).filter((a) => !SELF.includes(a)));
   const mouse = $derived(status.mouse);
-  const mouseControllable = $derived(!!mouse && mouse.verified && mouse.bluetooth === null);
+  /** A tested memory format, through any connection: over Bluetooth too, where the core only calls it tested when it
+   * changes the mouse (issue #43). */
+  const mouseControllable = $derived(!!mouse && mouse.verified);
   const mouseProfiles = $derived(mouseControllable ? mouse!.onboard.profile_count : 0);
   const profileEnabled = (n: number) => mouse?.enabled_profiles?.[n - 1] ?? true;
   const usesDisabledProfile = $derived(
@@ -250,8 +252,8 @@
         {#if mouse && !mouseControllable}
           <p class="muted small">
             {#if mouse.bluetooth !== null}
-              PeriHub only reads a mouse over Bluetooth, so the {mouse.model}'s profile cannot be switched here. Use its
-              LIGHTSPEED receiver or USB cable.
+              PeriHub switches the profile of a mouse over Bluetooth only when its memory format has been tested, so the
+              {mouse.model}'s profile cannot be switched here. Use its LIGHTSPEED receiver or USB cable.
             {:else}
               PeriHub switches profiles by itself only on mice whose memory format has been tested, so the {mouse.model}'s
               profile cannot be switched here yet.

@@ -327,8 +327,8 @@ export interface MouseInfo {
   pending_undo: boolean;
   /** Connected through a LIGHTSPEED receiver instead of its cable. */
   receiver: boolean;
-  /** Connected over Bluetooth Low Energy: the id the mouse has there (the G604's `b024`). PeriHub only reads a
-   * mouse over Bluetooth: profiles, DPI, polling rate and battery are shown, nothing is changed. */
+  /** Connected over Bluetooth Low Energy: the id the mouse has there (the G604's `b024`). As through a receiver,
+   * a tested memory format is changed and saved to as an experimental feature (issue #43); any other is only read. */
   bluetooth: number | null;
   /** Which receiver and slot, for test reports. */
   link: ReceiverLink | null;

@@ -70,9 +70,12 @@ pub(crate) fn replay(t: &Transcript, name: &str) -> (Value, Replay) {
             (serde_json::to_value(&device).unwrap(), replay)
         }
         Family::HidppMouse => {
+            // A mouse over Bluetooth is named by the id it has there (the G604's b024, issue #43).
+            let bluetooth = crate::hidpp::models::find_bluetooth(product_id);
             let model = crate::hidpp::models::MODELS
                 .iter()
                 .find(|m| m.product_id == product_id)
+                .or(bluetooth)
                 .expect("a model of the HID++ mouse table");
             let replay = Replay::new(t, Classifier::Hidpp).unwrap();
             let short =
@@ -82,6 +85,7 @@ pub(crate) fn replay(t: &Transcript, name: &str) -> (Value, Replay) {
             // allows experimental saves.
             let dev = match t.slot {
                 Some(slot) => HidppDevice::behind_receiver(main, short, slot, true),
+                None if bluetooth.is_some() => HidppDevice::over_bluetooth(main, true),
                 None => HidppDevice::new(main, model.device_index, true),
             };
             let task = dev

@@ -71,11 +71,20 @@
   /** Saves are possible on this connection, and read-only mode is off. */
   const writable = $derived(!!info?.writable && !readOnly.on);
 
-  /** Connected over Bluetooth Low Energy: read, never changed (the core refuses every change). */
+  /** Connected over Bluetooth Low Energy: experimental on a tested memory format, read-only otherwise (the core says
+   * which with `experimental`). */
   const overBluetooth = $derived(typeof info?.bluetooth === "number");
 
-  /** Saves over the radio are accepted apart from saves with the cable. */
-  const warrantyKey = $derived(info ? (info.receiver ? `${info.product_id}-radio` : info.product_id) : 0);
+  /** Saves over the radio, and over Bluetooth, are accepted apart from saves with the cable. */
+  const warrantyKey = $derived(
+    info
+      ? overBluetooth
+        ? `${info.product_id}-bluetooth`
+        : info.receiver
+          ? `${info.product_id}-radio`
+          : info.product_id
+      : 0,
+  );
 
   /** Runs a write, after the "No warranty" box the first time a save to the mouse is experimental. */
   function guarded(action: string, write: () => Promise<void>) {
@@ -378,12 +387,26 @@
     {/if}
   {/each}
 {/if}
-{#if info && overBluetooth}
+{#if info && overBluetooth && info.experimental}
+  <div class="notice error" role="alert">
+    <b>Experimental: saving over Bluetooth.</b> PeriHub has saved to this memory format (profile format
+    {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors) with the USB cable and through a receiver,
+    but never over Bluetooth yet: the commands are the same, only the connection is new. You can switch the {info.model}'s
+    profiles and DPI levels and save its profiles at your own risk: every save is backed up, every sector read back, and
+    the save undone after 15 seconds unless you keep it. Keep the mouse awake, close to the computer and with a good
+    battery while saving: if it stops answering halfway, PeriHub puts the backup back as soon as it answers again.
+    Whether it works or not, please send your feedback with a mouse test report.
+    <div class="row report">
+      <TestReport mouse={info} />
+    </div>
+  </div>
+{:else if info && overBluetooth}
   <div class="notice info">
     <b>Read-only over Bluetooth.</b> PeriHub shows the {info.model}'s profiles, buttons, DPI levels, polling rate and battery
-    as the mouse reports them, but it changes nothing while the mouse is connected over Bluetooth: nothing has been written
-    to a Logitech mouse that way yet. To change and save its profiles, connect it through its LIGHTSPEED receiver. A mouse
-    test report on PeriHub's GitHub page tells whether what you see here matches G HUB.
+    as the mouse reports them, but over Bluetooth it changes only a mouse whose memory format it has saved to before, and
+    this one (profile format {info.onboard.profile_format}, {info.onboard.sector_size}-byte sectors) is not one yet. To
+    change and save its profiles, connect it through its LIGHTSPEED receiver. A mouse test report on PeriHub's GitHub page
+    tells whether what you see here matches G HUB.
     <div class="row report">
       <TestReport mouse={info} />
     </div>
@@ -456,6 +479,7 @@
       sectorSize={info.onboard.sector_size}
       action={pendingWrite.action}
       receiver={info.receiver}
+      bluetooth={overBluetooth}
       onconfirm={confirmWrite}
       onclose={() => (pendingWrite = null)}
     />

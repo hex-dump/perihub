@@ -97,6 +97,10 @@ describe("testReport", () => {
     expect(report).toContain("USB ID: 046d:b024");
     expect(report).toContain("Connection: Bluetooth");
     expect(report).toContain("Support: read-only over Bluetooth");
+    // Issue #43: on a tested memory format, saves over Bluetooth are experimental.
+    expect(testReport({ ...g604, experimental: true, writable: true }, "0.9.8", "windows x86_64")).toContain(
+      "Support: experimental (saves over Bluetooth)",
+    );
     const fields = new URL(testFormUrl(g604, "0.9.7", "windows x86_64")).searchParams;
     expect(fields.get("usb-id")).toBe("046d:b024");
     expect(fields.get("connection")).toBe("Bluetooth");

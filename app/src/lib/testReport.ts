@@ -106,7 +106,12 @@ function connection(mouse: MouseInfo): string {
 }
 
 function support(mouse: MouseInfo): string {
-  if (overBluetooth(mouse)) return "read-only over Bluetooth (nothing is written to a mouse that way yet)";
+  if (overBluetooth(mouse)) {
+    // Issue #43: saves over Bluetooth open on a tested memory format only, as through a receiver.
+    return mouse.experimental
+      ? "experimental (saves over Bluetooth)"
+      : "read-only over Bluetooth (memory format not saved to that way)";
+  }
   if (mouse.experimental) {
     return mouse.verified
       ? "experimental (saves through this receiver)"

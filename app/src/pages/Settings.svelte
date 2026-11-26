@@ -154,7 +154,7 @@
               <li>
                 <span class="muted">{writeTime(w.time)}</span> {w.device}: {w.kind}
                 <code>{w.data}</code>
-                <span class:refused={w.result !== "ok"}>{w.result}</span>
+                <span class:refused={!w.result.startsWith("ok")}>{w.result}</span>
               </li>
             {/each}
           </ol>

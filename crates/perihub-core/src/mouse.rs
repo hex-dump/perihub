@@ -63,9 +63,9 @@ pub struct MouseInfo {
     pub pending_undo: bool,
     /// Connected through a LIGHTSPEED receiver instead of its cable.
     pub receiver: bool,
-    /// Connected over Bluetooth Low Energy: the id the mouse has there (the G604's `b024`). PeriHub only reads
-    /// such a mouse (see [`MouseTask::open`]): none of the changes the other connections allow is tried over
-    /// Bluetooth yet.
+    /// Connected over Bluetooth Low Energy: the id the mouse has there (the G604's `b024`). As through a
+    /// receiver, a tested memory format is saved to as an experimental feature in the interface only (see
+    /// [`support`]); any other memory, and the command line, only read it.
     pub bluetooth: Option<u16>,
     /// Which receiver and slot, for test reports.
     pub link: Option<ReceiverLink>,
@@ -226,9 +226,10 @@ pub struct MouseState {
     pub profile_list: ProfileList,
 }
 
-/// Said when a change is asked of a mouse connected over Bluetooth.
-const BLUETOOTH_READ_ONLY: &str =
-    "PeriHub only reads a mouse connected over Bluetooth: use its LIGHTSPEED receiver to change it";
+/// Said when a change is asked of a mouse connected over Bluetooth that PeriHub only reads there: a memory format
+/// nobody has saved to yet, or the command line, which never changes a mouse over Bluetooth.
+const BLUETOOTH_READ_ONLY: &str = "PeriHub changes a mouse over Bluetooth only from its window, and only when its memory \
+     format has been tested: use its LIGHTSPEED receiver to change it";
 
 /// What changes without PeriHub: the active profile and DPI, which the mouse's own buttons
 /// change, and the battery of a wireless mouse.
@@ -308,16 +309,26 @@ impl Support {
 /// Through a LIGHTSPEED receiver, as G HUB does, but experimental and only on a tested
 /// memory: only one mouse has been saved to over the radio (issue #28), so each save is undone unless
 /// the user keeps it, and a memory nobody has tested is not tried over the radio on top of that.
-pub fn support(model: &MouseModel, onboard: &OnboardInfo, receiver: bool, untested_saves: bool) -> Support {
+///
+/// Over Bluetooth (`radio` too), the same, but nothing at all without `untested_saves`: no write of any kind has
+/// been seen on a mouse over Bluetooth yet (issue #43), so the command line, which cannot offer the undo, sends
+/// none, not even a profile switch.
+pub fn support(model: &MouseModel, onboard: &OnboardInfo, radio: bool, untested_saves: bool) -> Support {
     let known = WRITABLE_PROFILE_FORMATS.contains(&onboard.profile_format)
         && WRITABLE_SECTOR_SIZES.contains(&(onboard.sector_size as usize));
     let tested = known && (model.verified || tested_memory(onboard.profile_format, onboard.sector_size));
-    let writable = known && if receiver { tested && untested_saves } else { tested || untested_saves };
-    Support { tested, experimental: writable && (!tested || receiver), writable, writable_format: known }
+    let writable = known && if radio { tested && untested_saves } else { tested || untested_saves };
+    Support { tested, experimental: writable && (!tested || radio), writable, writable_format: known }
 }
 
-/// Below this charge a save over the radio is refused: a mouse that turns off halfway leaves a
-/// profile half written until the undo can run.
+/// [`support`] over Bluetooth Low Energy: as through a receiver, and read-only without `untested_saves`.
+pub fn bluetooth_support(model: &MouseModel, onboard: &OnboardInfo, untested_saves: bool) -> Support {
+    let support = support(model, onboard, true, untested_saves);
+    if untested_saves { support } else { Support { tested: false, experimental: false, writable: false, ..support } }
+}
+
+/// Below this charge a save over the radio (a receiver or Bluetooth) is refused: a mouse that turns off halfway
+/// leaves a profile half written until the undo can run.
 const MIN_BATTERY_FOR_RADIO_SAVE: u8 = 15;
 
 /// Whether `new` changes an LED slot of the profile that is not one of the mouse's LED zones.
@@ -436,12 +447,11 @@ impl MouseTask {
         if onboard.memory_model != 1 || onboard.macro_format != 1 {
             return Err(Error::Protocol("onboard profile memory uses an unknown format".into()));
         }
-        let mut support = support(model, &onboard, dev.is_behind_receiver(), untested_saves);
-        if dev.is_over_bluetooth() {
-            // Nothing has been written to a mouse over Bluetooth: the connection stays read-only, whatever the
-            // memory format. The profiles, DPI, rates and battery are all read as on the other connections.
-            support = Support { tested: false, experimental: false, writable: false, ..support };
-        }
+        let support = if dev.is_over_bluetooth() {
+            bluetooth_support(model, &onboard, untested_saves)
+        } else {
+            support(model, &onboard, dev.is_behind_receiver(), untested_saves)
+        };
         dev.grant(support.access());
         dev.set_label(model.name.to_string());
         let name = dev.device_name()?;
@@ -1173,7 +1183,7 @@ impl MouseTask {
     /// put back, and the undo is armed before the first write, so that a save that stops halfway
     /// is undone too, also if PeriHub is closed or the mouse unplugged (see [`Self::finish_pending_undo`]).
     fn backup_before_writing(&mut self, label: &str) -> Result<()> {
-        if self.info.receiver {
+        if self.info.over_radio() {
             self.check_battery_for_radio_save()?;
         }
         let sectors = self.backup_all(label)?;
@@ -1197,13 +1207,23 @@ impl MouseTask {
         }
         match self.undo_last_write() {
             Ok(_) => Err(Error::Protocol(format!("{error}. The backup was put back."))),
+            // The mouse fell asleep, went out of range or was turned off in the middle of the save (over Bluetooth
+            // or through the receiver): the mark of the save that was not kept stays, and the backup goes back
+            // by itself as soon as the mouse answers again (see [`Self::finish_pending_undo`]).
+            Err(Error::Unreachable | Error::Hid(_)) if self.pending_undo_path().exists() => {
+                Err(Error::Protocol(format!(
+                    "{error}. The mouse stopped answering in the middle of the save, so the backup could not be put back \
+                 yet: wake the mouse up and keep it close, and PeriHub puts the backup back by itself as soon as it \
+                 answers again (or use Backups… then)."
+                )))
+            }
             Err(undo) => Err(Error::Protocol(format!(
                 "{error}. Putting the backup back failed too ({undo}): try Backups…, or Logitech G HUB."
             ))),
         }
     }
 
-    /// Through the receiver: a battery that is nearly empty and not charging stops the save.
+    /// Through the receiver or over Bluetooth: a battery that is nearly empty and not charging stops the save.
     fn check_battery_for_radio_save(&mut self) -> Result<()> {
         let battery = match self.dev.battery() {
             Ok(battery) => battery,
@@ -1213,7 +1233,7 @@ impl MouseTask {
         match battery {
             Some(b) if b.state == BatteryState::Discharging && b.percent < MIN_BATTERY_FOR_RADIO_SAVE => {
                 Err(Error::Invalid(format!(
-                    "nothing was saved: the battery is at {}%. Charge the mouse, or connect it with its USB cable, and save again",
+                    "nothing was saved: the battery is at {}%. Charge the mouse (or change its battery), and save again",
                     b.percent
                 )))
             }
@@ -1863,6 +1883,10 @@ mod tests {
         rgb_effects: Vec<Vec<Vec<u8>>>,
         /// Bytes 0x8100 function 0 sends after the ones PeriHub reads.
         onboard_extra: Vec<u8>,
+        /// Gone (asleep, out of range, turned off): the system refuses every write to it.
+        gone: Arc<AtomicBool>,
+        /// Goes away once this many sectors were written, before the sector is read back.
+        asleep_after_writes: Option<usize>,
     }
 
     impl Sim {
@@ -1920,6 +1944,8 @@ mod tests {
                 rgb_zones: Vec::new(),
                 rgb_effects: Vec::new(),
                 onboard_extra: Vec::new(),
+                gone: Arc::default(),
+                asleep_after_writes: None,
             }
         }
 
@@ -2095,6 +2121,9 @@ mod tests {
                     let (sector, length, data) = self.writing.take().ok_or(INVALID_ARGUMENT)?;
                     self.user[sector as usize] = data.get(..length).ok_or(INVALID_ARGUMENT)?.to_vec();
                     self.written.push(sector);
+                    if self.asleep_after_writes == Some(self.written.len()) {
+                        self.gone.store(true, Ordering::SeqCst);
+                    }
                     vec![]
                 }
                 (feature::ONBOARD_PROFILES, 0x0B) => vec![0],
@@ -2115,10 +2144,18 @@ mod tests {
     /// The simulated mouse as a HID connection. `reply_index`: the device index its answers carry, when it is
     /// not the one it was asked on (a Bluetooth mouse asked on 0xFF may answer on 0x00).
     fn sim_transport(sim: Sim, reply_index: Option<u8>) -> (FakeDevice, Arc<Mutex<Sim>>) {
-        let features = sim.features;
         let sim = Arc::new(Mutex::new(sim));
+        (sim_connection(&sim, reply_index), sim)
+    }
+
+    /// A new connection to a simulated mouse that is already there, with what was written to it.
+    fn sim_connection(sim: &Arc<Mutex<Sim>>, reply_index: Option<u8>) -> FakeDevice {
+        let (features, gone) = {
+            let mouse = sim.lock().unwrap();
+            (mouse.features, mouse.gone.clone())
+        };
         let mouse = sim.clone();
-        let fake = FakeDevice::new(move |request| {
+        let mut fake = FakeDevice::new(move |request| {
             let (index, function) = (request[2] as usize, request[3] >> 4);
             let mut replies = if index == 0 && function == 1 {
                 vec![reply(request, &[4, 2, request[6]])]
@@ -2141,7 +2178,8 @@ mod tests {
             }
             replies
         });
-        (fake, sim)
+        fake.gone = gone;
+        fake
     }
 
     /// PeriHub's connection to the simulated mouse, with its cable.
@@ -3362,15 +3400,14 @@ mod tests {
     }
 
     #[test]
-    fn a_g604_over_bluetooth_is_read_like_through_its_receiver_and_never_changed() {
+    fn a_g604_over_bluetooth_is_read_like_through_its_receiver_and_saved_to_as_an_experimental_feature() {
         let model = models::find_bluetooth(0xB024).unwrap();
         assert_eq!(model.product_id, G604);
-        // Even with saves allowed in the interface, and a memory format that was tested.
+        // In the interface, which offers the undo: format 3 in 255-byte sectors is a tested memory (issue #43).
         let (mut task, sim) = open_sim_over_bluetooth(g604(), G604, true);
         let info = task.info.clone();
         assert_eq!((info.model.as_str(), info.bluetooth, info.receiver), ("G604", Some(0xB024), false));
-        assert!(!info.verified && !info.writable && !info.experimental);
-        assert!(info.writable_format, "the memory is one PeriHub can write: only the connection is the reason");
+        assert!(info.verified && info.writable && info.experimental && info.writable_format);
         assert_eq!((info.dpi.min, info.dpi.max, info.dpi.step), (100, 25600, 50));
         assert_eq!(info.report_rates_ms, [1, 2, 4, 8]);
         assert_eq!(info.profile_list, ProfileList::Own);
@@ -3381,15 +3418,54 @@ mod tests {
         let live = task.live().unwrap();
         assert_eq!(live.battery.map(|b| b.percent), Some(90));
         assert_eq!(live.current_dpi, 4750);
-
-        // The transcript for the test report names the Bluetooth id, and holds no unit id.
+        // The transcript for the test report names the Bluetooth id, holds no unit id, and only reads.
         assert!(info.transcript.contains("b024") && !info.transcript.contains("12 34 56 78"));
+        assert!(info.transcript.contains("\"access\": \"read-only\""));
+        assert!(crate::writes::entries().is_empty(), "opening the mouse sends no change");
 
-        // Nothing is changed, and what is asked is refused before it is sent.
+        // The active profile and the DPI level, in the mouse's RAM, as through a receiver.
+        task.set_active_profile(2).unwrap();
+        task.set_active_dpi_index(0).unwrap();
+        task.preview_dpi(1600).unwrap();
+        assert_eq!(sim.lock().unwrap().selected, [[0, 2]]);
+
+        // A save: a backup first, the sector read back, and undone unless it is kept.
+        let before = sim.lock().unwrap().user.clone();
+        let saved = task.save_profile(1, &edited(&state, 1)).unwrap();
+        assert_eq!(saved.profiles[0].settings.dpi_levels[0], 3250);
+        assert_eq!(sim.lock().unwrap().written, [1]);
+        assert!(task.pending_undo_path().exists(), "the 15-second undo is armed");
+        task.undo_last_write().unwrap();
+        assert_eq!(sim.lock().unwrap().user, before);
+        assert!(!task.pending_undo_path().exists());
+        // The profile list stays as it is, as with every experimental save.
+        assert!(task.set_profile_enabled(2, false).is_err());
+        assert_eq!(sim.lock().unwrap().user[0], before[0]);
+
+        // The write log, and so the test report, has every change sent over Bluetooth with the mouse's answer.
+        let log = crate::writes::entries();
+        let kinds = |kind: &str| log.iter().filter(|e| e.kind == kind).count();
+        // The save and the undo: one sector each, 16 blocks of data for 255 bytes.
+        assert_eq!(kinds("HID++ 0x8100 function 6"), 2);
+        assert_eq!(kinds("HID++ 0x8100 function 7"), 32);
+        assert_eq!(kinds("HID++ 0x8100 function 8"), 2);
+        assert!(log.iter().all(|e| e.device == "G604" && e.result.starts_with("ok, answer empty, ")), "{log:?}");
+        assert!(log.iter().all(|e| e.result.ends_with(" ms")), "{log:?}");
+        forget_test_files();
+    }
+
+    #[test]
+    fn the_command_line_never_changes_a_mouse_over_bluetooth() {
+        // Without the interface's undo, nothing is sent over Bluetooth, not even to RAM.
+        let (mut task, sim) = open_sim_over_bluetooth(g604(), G604, false);
+        let info = task.info.clone();
+        assert!(!info.verified && !info.writable && !info.experimental);
+        assert!(info.writable_format, "the memory is one PeriHub can write: only the connection is the reason");
+        let state = task.state().unwrap();
         assert!(task.set_active_profile(2).unwrap_err().to_string().contains("Bluetooth"));
         assert!(task.set_active_dpi_index(1).is_err());
         assert!(task.preview_dpi(1600).is_err());
-        assert!(task.save_profile(1, &edited(&state, 1)).is_err());
+        assert!(task.save_profile(1, &edited(&state, 1)).unwrap_err().to_string().contains("Bluetooth"));
         assert!(task.set_profile_enabled(2, false).is_err());
         {
             let mouse = sim.lock().unwrap();
@@ -3398,6 +3474,51 @@ mod tests {
         // Not even the DPI is written to the sensor, or the mode of the mouse switched.
         assert!(task.dev.set_sensor_dpi(0, 1600).is_err());
         assert!(task.dev.set_onboard_mode(HOST_MODE).is_err());
+        assert!(crate::writes::entries().is_empty(), "nothing was sent");
+        forget_test_files();
+    }
+
+    #[test]
+    fn over_bluetooth_a_memory_format_nobody_saved_to_stays_read_only() {
+        // Format 4 is one PeriHub writes, but nobody has saved to it yet: experimental with a cable only, never
+        // over Bluetooth, as through a receiver.
+        let (mut task, sim) = open_sim_over_bluetooth(g604().resized(255, 4), G604, true);
+        let info = task.info.clone();
+        assert!(!info.verified && !info.writable && !info.experimental && info.writable_format);
+        let state = task.state().unwrap();
+        assert!(task.save_profile(1, &edited(&state, 1)).is_err());
+        assert!(task.set_active_profile(2).is_err());
+        let mouse = sim.lock().unwrap();
+        assert!(mouse.written.is_empty() && mouse.selected.is_empty());
+        drop(mouse);
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_g604_that_stops_answering_in_the_middle_of_a_save_over_bluetooth_gets_its_backup_back_when_it_is_back() {
+        let mut sim = g604();
+        // The profile sector is written whole, then the mouse goes away before PeriHub reads it back.
+        sim.asleep_after_writes = Some(1);
+        let (mut task, sim) = open_sim_over_bluetooth(sim, G604, true);
+        let before = sim.lock().unwrap().user.clone();
+        let state = task.state().unwrap();
+        let error = task.save_profile(1, &edited(&state, 1)).unwrap_err().to_string();
+        assert!(error.contains("stopped answering in the middle of the save"), "{error}");
+        assert!(error.contains("puts the backup back by itself"), "{error}");
+        assert_ne!(sim.lock().unwrap().user[1], before[1], "the new profile is in the mouse");
+        assert!(task.pending_undo_path().exists(), "the save is marked as not kept");
+        drop(task);
+
+        // The mouse is back, and the manager opens it again: the backup goes back before anything else.
+        {
+            let mouse = sim.lock().unwrap();
+            mouse.gone.store(false, Ordering::SeqCst);
+        }
+        sim.lock().unwrap().asleep_after_writes = None;
+        let dev = HidppDevice::over_bluetooth(sim_connection(&sim, Some(0x00)), true).unwrap();
+        let task = MouseTask::open(dev, model_of(G604), true).unwrap();
+        assert_eq!(sim.lock().unwrap().user, before);
+        assert!(!task.pending_undo_path().exists() && !task.info.pending_undo);
         forget_test_files();
     }
 

@@ -71,7 +71,7 @@ KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c09a", TAG+="uacc
 # Logitech PRO X 2 DEX
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c0a0", TAG+="uaccess"
 # Logitech G604
-# Over Bluetooth Low Energy (read only): its own hidraw node, one for the whole mouse.
+# Over Bluetooth Low Energy: its own hidraw node, one for the whole mouse.
 KERNEL=="hidraw*", KERNELS=="0005:046D:B024.*", TAG+="uaccess"
 
 # Logitech keyboards with HID++ on their own USB connection, without a receiver (read only,

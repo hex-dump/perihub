@@ -578,7 +578,7 @@ describe("a memory format nobody has tested", () => {
     });
   });
 
-  it("is read-only over Bluetooth, and says to use the receiver", async () => {
+  it("is read-only over Bluetooth on a memory format nobody saved to, and says to use the receiver", async () => {
     await open({
       ...info,
       product_id: 0x4085,
@@ -590,6 +590,7 @@ describe("a memory format nobody has tested", () => {
     });
     expect(screen.getByText("Read-only over Bluetooth.")).toBeTruthy();
     expect(screen.getByText(/connect it through its LIGHTSPEED receiver/)).toBeTruthy();
+    expect(screen.queryByText(/Experimental: saving over Bluetooth/)).toBeNull();
     expect(screen.queryByText(/memory format PeriHub cannot write yet/)).toBeNull();
     expect(firstLevel().matches(":disabled")).toBe(true);
     expect((screen.getByRole("button", { name: "Save to mouse" }) as HTMLButtonElement).disabled).toBe(true);
@@ -656,6 +657,37 @@ describe("a tested mouse", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).toContain("through a LIGHTSPEED receiver only on");
     expect(dialog.textContent).not.toContain("saving through a LIGHTSPEED receiver");
+    expect(api.saveProfile).not.toHaveBeenCalled();
+    await fireEvent.click(screen.getByRole("checkbox", { name: /I have read this/ }));
+    await fireEvent.click(within(dialog).getByRole("button", { name: "Save to mouse" }));
+    await wait(0);
+    expect(api.saveProfile).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Keep changes" })).toBeTruthy();
+  });
+
+  it("saves over Bluetooth after its own No warranty box, with the undo (issue #43)", async () => {
+    const g604 = {
+      ...info,
+      product_id: 0x4085,
+      model: "G604",
+      onboard: { ...info.onboard, profile_format: 3, sector_size: 255 },
+      bluetooth: 0xb024,
+      experimental: true,
+    };
+    // The box ticked for its receiver does not count over Bluetooth.
+    acceptNoWarranty("16517-radio");
+    await open(g604);
+    expect(screen.getByText(/Experimental: saving over Bluetooth/)).toBeTruthy();
+    expect(screen.queryByText(/Read-only over Bluetooth/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Open test form" })).toBeTruthy();
+    expect((screen.getAllByRole("checkbox", { name: "Enabled" })[0] as HTMLInputElement).disabled).toBe(true);
+    await changeFirstLevel(1000);
+    await fireEvent.click(screen.getByRole("button", { name: "Save to mouse" }));
+    await wait(0);
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.textContent).toContain("but never over Bluetooth yet");
+    expect(dialog.textContent?.replace(/\s+/g, " ")).toContain("loses its Bluetooth connection while saving");
+    expect(dialog.textContent).toMatch(/Over Bluetooth it does not save when the battery is below 15%/);
     expect(api.saveProfile).not.toHaveBeenCalled();
     await fireEvent.click(screen.getByRole("checkbox", { name: /I have read this/ }));
     await fireEvent.click(within(dialog).getByRole("button", { name: "Save to mouse" }));

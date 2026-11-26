@@ -26,6 +26,11 @@ const SHORT_LEN: usize = 7;
 const LONG_LEN: usize = 20;
 const SOFTWARE_ID: u8 = 0x0B;
 const TIMEOUT: Duration = Duration::from_millis(1000);
+/// How long a change sent to a mouse over Bluetooth Low Energy may take to be answered: Solaar waits 4 seconds for any
+/// request to a device (`DEFAULT_TIMEOUT` in its `base.py`), the kernel's HID++ driver 5. Reads keep [`TIMEOUT`], so
+/// that a mouse that fell asleep is noticed as quickly as before; a memory write that is answered late is not taken for
+/// a mouse that went away, which would stop a save halfway (docs/protocols/logitech-onboard-profiles.md).
+const BLUETOOTH_CHANGE_TIMEOUT: Duration = Duration::from_secs(4);
 /// HID++ 1.0 error message, which a receiver sends for a mouse it cannot reach.
 const HIDPP10_ERROR: u8 = 0x8F;
 
@@ -537,6 +542,14 @@ fn is_memory_write(feature: u16, function: u8, params: &[u8]) -> bool {
         ) && !is_read_call(feature, function, params))
 }
 
+/// "ok, answer 01 02, 35 ms": a change that went through, as the write log keeps it over Bluetooth. The answer
+/// leaves out its trailing zeros (most changes answer with none).
+fn answered(reply: &[u8; 16], took: Duration) -> String {
+    let len = reply.iter().rposition(|&b| b != 0).map_or(0, |i| i + 1);
+    let answer = if len == 0 { "empty".to_string() } else { crate::peripheral::hex(&reply[..len]) };
+    format!("ok, answer {answer}, {} ms", took.as_millis())
+}
+
 /// A report the device sent on its own (software id 0), such as a lighting feature telling that
 /// the keyboard is idle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -680,7 +693,11 @@ impl HidppDevice {
     }
 
     fn transact(&mut self, index: u8, function: u8, params: &[u8]) -> Result<[u8; 16]> {
-        match self.exchange(index, function, params) {
+        self.transact_within(index, function, params, TIMEOUT)
+    }
+
+    fn transact_within(&mut self, index: u8, function: u8, params: &[u8], timeout: Duration) -> Result<[u8; 16]> {
+        match self.exchange(index, function, params, timeout) {
             // A Bluetooth mouse that does not answer, or that the system cannot write to any more, is asleep or
             // out of range, as one behind a receiver that does not answer is: the manager asks again when it
             // is back, instead of giving up on it. (A refusal to open it comes earlier, and is shown.)
@@ -707,7 +724,7 @@ impl HidppDevice {
             || (self.is_over_bluetooth() && (self.device_index, reply_index) == (models::WIRED_INDEX, 0x00))
     }
 
-    fn exchange(&mut self, index: u8, function: u8, params: &[u8]) -> Result<[u8; 16]> {
+    fn exchange(&mut self, index: u8, function: u8, params: &[u8], timeout: Duration) -> Result<[u8; 16]> {
         if params.len() > LONG_LEN - 4 {
             return Err(Error::Invalid("too many HID++ parameters".into()));
         }
@@ -720,7 +737,7 @@ impl HidppDevice {
         packet[4..4 + params.len()].copy_from_slice(params);
         self.dev.write(&packet)?;
 
-        let deadline = Instant::now() + TIMEOUT;
+        let deadline = Instant::now() + timeout;
         let mut buf = [0u8; 64];
         loop {
             let remaining = deadline.saturating_duration_since(Instant::now());
@@ -848,9 +865,18 @@ impl HidppDevice {
             _ => {}
         }
         let index = self.feature_index(feature)?;
-        let result = self.transact(index, function, params);
-        if let Some(kind) = &change {
-            crate::writes::sent(&self.label, kind, params, &result);
+        let bluetooth_change = change.is_some() && self.is_over_bluetooth();
+        let timeout = if bluetooth_change { BLUETOOTH_CHANGE_TIMEOUT } else { TIMEOUT };
+        let started = Instant::now();
+        let result = self.transact_within(index, function, params, timeout);
+        match (&change, &result) {
+            // Over Bluetooth, where no write had been seen before issue #43, the write log (and so the test report)
+            // keeps what the mouse answered and how long it took.
+            (Some(kind), Ok(reply)) if bluetooth_change => {
+                crate::writes::note(&self.label, kind, params, &answered(reply, started.elapsed()))
+            }
+            (Some(kind), _) => crate::writes::sent(&self.label, kind, params, &result),
+            (None, _) => {}
         }
         result
     }
@@ -1282,6 +1308,9 @@ pub(crate) mod tests {
         respond: Mutex<Responder>,
         pub(crate) pending: Arc<Mutex<VecDeque<Vec<u8>>>>,
         pub(crate) written: Arc<Mutex<Vec<Vec<u8>>>>,
+        /// The device went away: the system refuses every write to it, as for a Bluetooth mouse that fell asleep
+        /// or went out of range.
+        pub(crate) gone: Arc<std::sync::atomic::AtomicBool>,
     }
 
     impl FakeDevice {
@@ -1290,12 +1319,18 @@ pub(crate) mod tests {
                 respond: Mutex::new(Box::new(respond)),
                 pending: Arc::new(Mutex::new(VecDeque::new())),
                 written: Arc::new(Mutex::new(Vec::new())),
+                gone: Arc::default(),
             }
         }
     }
 
     impl Transport for FakeDevice {
         fn write(&self, data: &[u8]) -> Result<()> {
+            if self.gone.load(std::sync::atomic::Ordering::SeqCst) {
+                return Err(Error::Hid(hidapi::HidError::HidApiError {
+                    message: "the device is not connected".into(),
+                }));
+            }
             self.written.lock().unwrap().push(data.to_vec());
             let replies = (self.respond.lock().unwrap())(data);
             self.pending.lock().unwrap().extend(replies);

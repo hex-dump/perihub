@@ -27,7 +27,13 @@ Sources studied (read only, for the protocol facts):
   [#1477](https://github.com/libratbag/libratbag/issues/1477), which holds the debug log of a G604
   behind a LIGHTSPEED receiver (every request and answer): everything marked **(G604)**.
 - [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0), `base.py`: how a Bluetooth Low Energy
-  device is addressed and how it answers.
+  device is addressed and how it answers, and how long it waits for an answer; `device.py` (long reports
+  over Bluetooth), `hidpp20.py` (`OnboardProfiles`) and `settings_templates.py` (`OnboardProfiles`): the
+  same memory writes and profile switches on every connection.
+- libratbag's `src/hidpp20.c` (`hidpp20_request_command`, `hidpp20_onboard_profiles_write_sector`,
+  `hidpp20_onboard_profiles_commit`) and `src/hidpp-generic.c` (MIT), and the Linux kernel's
+  `drivers/hid/hid-logitech-hidpp.c` (GPL-2.0): long reports where a device has no short one, and how long
+  each waits for an answer.
 - For profile format 4 and the lights of the G903 HERO (issues [#22](https://github.com/hex-dump/perihub/issues/22)
   and [#115](https://github.com/hex-dump/perihub/issues/115)): libratbag's issue
   [#774](https://github.com/libratbag/libratbag/issues/774) (a G903 HERO refused as "profile layout not supported:
@@ -341,8 +347,43 @@ the HID++ collection: Logitech devices that speak HID++ over Bluetooth Low Energ
   profile list, the active profile, DPI, polling rate, LEDs, battery and the feature table. The
   extended polling rate (`0x8061`) numbers two connections only, the cable and the receiver, so it is
   not asked over Bluetooth (the G604 has `0x8060`, which has no connection parameter).
-- **Nothing is written.** No call that changes anything is sent over Bluetooth, not even to RAM: no
-  save, no profile switch, no DPI, no change of the onboard mode. Nobody has tried a write that way, and
-  the transport (a Bluetooth HID report, a link that can drop in the middle of a transfer) is not one
-  PeriHub has seen. The mouse page says so and points to the receiver. The test report names the
-  Bluetooth id and the connection, so that a clean report can lift this later.
+- **What other programs send over Bluetooth.** Neither Solaar nor libratbag treats a Bluetooth device
+  differently when it writes onboard profiles: Solaar's `OnboardProfiles.write_sector` (`hidpp20.py`)
+  sends `0x8100` function 6 (sector, offset 0, length), function 7 for each 16-byte block and function 8,
+  and libratbag's `hidpp20_onboard_profiles_write_sector` (`src/hidpp20.c`) the same three calls, with
+  no check of the bus in either (libratbag only checks that the device has `0x8100`). Solaar switches
+  the active profile (function 3) and the onboard mode (function 1) the same way on every connection.
+  Solaar sends long reports to a Bluetooth device (`device.py`: "Bluetooth needs long messages"), and
+  libratbag and the kernel's `hid-logitech-hidpp` turn short requests into long ones on a device whose
+  descriptor has no short report, as the G604's HID++ collection does.
+- **How long an answer may take.** Solaar waits 4 seconds for the answer to any request to a device
+  (`DEFAULT_TIMEOUT` in `base.py`; 0.9 s only for the receiver's own requests), the kernel's driver 5
+  seconds (`wait_event_timeout(..., 5*HZ)`), libratbag 1 second, with one more try. PeriHub keeps 1
+  second for reads, so that a mouse that fell asleep is noticed quickly, and waits 4 seconds for the
+  answer to a change sent over Bluetooth: a memory write answered late is not taken for a mouse that went
+  away. A write is never sent twice (function 7 adds its block to the sector being written, so a second
+  try would shift the rest), and a read is not either: `0x8100` function 5 answers with the bytes only,
+  so a late answer to an earlier read could not be told apart from the answer to the next one.
+- **Saving, experimental (issue #43).** Nobody had saved to a mouse over Bluetooth with PeriHub before
+  the tester of #43, who uses the G604 mostly that way. Over Bluetooth PeriHub now does what it does through a
+  receiver, on a tested memory format only (the G604's format 3 in 255-byte sectors is one; any other
+  stays read-only, as `support` decides for every connection): the active profile and DPI level are
+  switched, and profiles saved, behind the **No warranty** box (asked apart from the one for the
+  receiver), with a backup of every sector first, every sector read back right after it is written
+  (macros first, the profile after them), no save below 15% battery, the profile list (sector 0) never
+  written, and the save undone after 15 seconds unless the user keeps it. The command line, which cannot
+  offer the undo, sends nothing over Bluetooth, not even a profile switch.
+- **A mouse that stops answering in the middle of a save.** Over Bluetooth a mouse that does not answer
+  in time, or that the system can no longer write to, is asleep or away. If that happens during a save,
+  the save stops, and PeriHub tries to put the backup back at once; when the mouse cannot be reached for
+  that either, the mark of the save that was not kept stays on disk with the backup's name, the error
+  says so, and the backup goes back by itself the next time the mouse is opened, within a day (as after a
+  save interrupted through a receiver). The profile list is never written over Bluetooth, so an
+  interrupted save leaves at most the macro sectors and the one profile it was writing different from
+  the backup until then. What a G604 does with a sector whose write was never ended (function 8) is not
+  known: nobody has seen it.
+- **What the test report shows.** Over Bluetooth the write log keeps, for each change sent, the mouse's
+  answer and how long it took ("ok, answer empty, 35 ms"), and the test report lists the last writes of
+  the session with them, and says `Support: experimental (saves over Bluetooth)`. The replay test
+  `logitech-g604-bluetooth.json` is the transcript of the 0.9.7 report of #43 (only reads), opened as
+  the interface opens it now.

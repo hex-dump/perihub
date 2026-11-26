@@ -267,8 +267,9 @@ impl AppProfileEngine {
             }
             state.mouse_before
         };
-        // Untested models and Bluetooth connections are read-only: their profile is left alone.
-        if !self.manager.status().mouse.is_some_and(|m| m.verified && m.bluetooth.is_none()) {
+        // Untested models are read-only, and so is a Bluetooth connection PeriHub does not change: their profile is
+        // left alone. A tested memory over Bluetooth is `verified` only where PeriHub changes it (issue #43).
+        if !self.manager.status().mouse.is_some_and(|m| m.verified) {
             return Ok(());
         }
         let back = self.manager.mouse()?.call(move |m| {

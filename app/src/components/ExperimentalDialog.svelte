@@ -12,11 +12,17 @@
     action: string;
     /** Through a LIGHTSPEED receiver, on a tested memory format: the radio is what is untested. */
     receiver?: boolean;
+    /** Over Bluetooth, on a tested memory format: the connection is what is untested (issue #43). */
+    bluetooth?: boolean;
     onconfirm: () => void;
     onclose: () => void;
   }
 
-  let { model, profileFormat, sectorSize, action, receiver = false, onconfirm, onclose }: Props = $props();
+  let { model, profileFormat, sectorSize, action, receiver = false, bluetooth = false, onconfirm, onclose }: Props =
+    $props();
+
+  /** A connection without a cable: what could stop a save halfway is the link, not the memory format. */
+  const radio = $derived(receiver || bluetooth);
 
   let understood = $state(false);
 
@@ -30,7 +36,14 @@
 <div class="backdrop">
   <div class="dialog col" role="dialog" aria-modal="true" aria-labelledby="experimental-title" use:trapFocus>
     <h2 id="experimental-title">Save to the {model}?</h2>
-    {#if receiver}
+    {#if bluetooth}
+      <p>
+        PeriHub has saved to the {model}'s memory format (profile format {profileFormat}, {sectorSize}-byte sectors) with
+        the USB cable and through a LIGHTSPEED receiver, but never over Bluetooth yet. Solaar and libratbag send the same
+        memory commands over Bluetooth as over the other connections, so saving should work, but nobody has tried it with
+        PeriHub.
+      </p>
+    {:else if receiver}
       <p>
         PeriHub has saved to the {model}'s memory format with the USB cable, but through a LIGHTSPEED receiver only on
         one mouse so far (a G502 HERO Wireless on a POWERPLAY mat). Logitech G HUB saves this way too, and the commands
@@ -45,19 +58,22 @@
     {/if}
     <ul>
       <li>
-        <b>What could go wrong:</b> {#if receiver}a save that stops halfway, if the mouse turns off or loses its receiver
-          while saving.{:else}a profile saved wrong, buttons or lighting that do not behave as set.{/if} In the worst
+        <b>What could go wrong:</b> {#if radio}a save that stops halfway, if the mouse turns off, falls asleep or loses
+          {bluetooth ? "its Bluetooth connection" : "its receiver"} while saving.{:else}a profile saved wrong, buttons or lighting that do not behave as set.{/if} In the worst
         case the mouse keeps a broken profile until it is fixed with a backup or with Logitech G HUB.
       </li>
       <li>
         <b>What PeriHub does to protect the mouse:</b> it accepts only the DPI and polling values the mouse itself
         reports, saves a backup before every write and reads every write back. After each save it asks whether to keep
         the changes, and puts the backup back by itself after 15 seconds without an answer. If PeriHub is closed or the
-        mouse unplugged before that, it does so the next time the mouse is connected{#if receiver}.
-          Through the receiver it does not save when the battery is below 15%.{:else} with its cable.{/if}
+        mouse unplugged before that, it does so the next time the mouse is connected{#if radio}.
+          {bluetooth ? "Over Bluetooth" : "Through the receiver"} it does not save when the battery is below 15%.{:else}
+          with its cable.{/if}
       </li>
       <li>
-        {#if receiver}
+        {#if bluetooth}
+          <b>What stays off:</b> enabling or disabling profiles, which PeriHub only does with a USB cable.
+        {:else if receiver}
           <b>What stays off:</b> enabling or disabling profiles. Use the USB cable for that.
         {:else}
           <b>What stays off:</b> enabling or disabling profiles, and saving through a LIGHTSPEED receiver. Use the USB
@@ -66,8 +82,8 @@
       </li>
     </ul>
     <p class="muted small">
-      PeriHub asks this only before your first save to the {model}{#if receiver} through its receiver{/if}. Whether it
-      works or not, please send a mouse test report{#if !receiver}: one report makes this memory format tested for every
+      PeriHub asks this only before your first save to the {model}{#if receiver} through its receiver{:else if bluetooth}
+        over Bluetooth{/if}. Whether it works or not, please send a mouse test report{#if !radio}: one report makes this memory format tested for every
         mouse that uses it{/if}.
     </p>
     <NoWarranty device={`Logitech ${model}`} bind:accepted={understood} />
