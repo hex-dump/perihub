@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--include head-->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Does PeriHub fully support any Razer device?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Not yet. Razer devices are experimental or read-only until someone with one sends a test report and it is confirmed."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I keep Razer Synapse running?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Quit it and turn off its autostart: two programs talking to the same device get in each other's way."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Will it change my lighting effect?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "PeriHub never stores a Razer lighting effect, since it cannot read one back. On 27 mice it can show one colour without saving it."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "I own a Razer device. How do I help?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Install PeriHub, open Test my device and send the report. It only reads your device, and one report counts for everyone with that model."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-light" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/></symbol>
+    <symbol id="i-keys" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h1M10 10h1M14 10h1M18 10h0M7 14h10"/></symbol>
+    <symbol id="i-mouse" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="6"/><path d="M12 6.5v4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M12 3 4 6.5v5c0 4.6 3.4 8.6 8 9.5 4.6-.9 8-4.9 8-9.5v-5z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  </svg>
+  <!--include header-->
+
+  <main id="main" tabindex="-1">
+    <section class="device-top">
+      <div class="wrap">
+        <p class="crumbs"><a href="%%ROOT%%">PeriHub</a> · <a href="%%ROOT%%#devices">All devices</a> · <a href="%%ROOT%%help-test.html">Wanted: testers</a></p>
+        <p class="eyebrow">Free and open source · Windows and Linux</p>
+        <h1>A Razer Synapse alternative for Windows and Linux, and where it stands</h1>
+        <p class="lead">PeriHub recognizes <b>76 Razer mice and 69 Razer keyboards</b>. None has been tried on real hardware yet, so every one is experimental or read-only. This page says what that means, and how a test report changes it.</p>
+        <!--include get-->
+        <div class="note warn">
+          <p><b>The Windows installer is not code-signed yet.</b> If SmartScreen blocks it, click <b>More info, then Run anyway</b>. Quit the maker's app and turn off its autostart before you open PeriHub: two apps talking to the same device get in each other's way.</p>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>The problem</h2>
+        <div class="device-cols">
+          <div><h3>One app per brand</h3><p>Razer, Logitech, Corsair and SteelSeries each want their own program for DPI, polling rate and lights. PeriHub tries to be one open-source app for all of them. For Razer it is the youngest part of that effort, so it is careful.</p></div>
+          <div><h3>Built from public documentation</h3><p>Razer support comes from facts in <a href="https://github.com/openrazer/openrazer">OpenRazer</a>, with no code copied, not from tests on a real device. That is why the label stays honest: nobody has confirmed any Razer model yet.</p></div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>What works, at your own risk</h2>
+        <div class="cards">
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-mouse"/></svg>
+            <h3>Mice (76)</h3>
+            <p>Read on their USB cable, with the battery on 28 that have one. DPI, polling rate (up to 8000 Hz on those that go that high) and the brightness of the lights can be saved to the mouse. The Viper V3 Pro and Pro SE also work behind their own dongle.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-light"/></svg>
+            <h3>One colour</h3>
+            <p>On 27 mice one colour can be sent without saving it, under a warning that it cannot be checked or undone. Lighting effects are never stored, because the mouse cannot report them back.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-keys"/></svg>
+            <h3>Keyboards (69)</h3>
+            <p>Read only, on Windows: firmware, layout, backlight brightness, game mode and battery. The BlackWidow V4 Mini HyperSpeed is experimental (brightness, game mode, macro light, effects and one colour) and is the only Razer keyboard PeriHub opens on Linux for now.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-check"/></svg>
+            <h3>Safety net</h3>
+            <p>Saving asks you to tick a No warranty box first. Each save is backed up, read back and undone after 15 seconds unless you keep it.</p>
+          </article>
+        </div>
+        <p class="small">Receivers and docks are left out, apart from the dongles of those two mice, because some can be shared with a keyboard. Use the USB cable.</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Some of the models</h2>
+        <p class="level-line"><span class="led test" aria-hidden="true"></span><b>Experimental</b>: nobody has tried them yet</p>
+        <ul class="models">
+          <li><a href="%%ROOT%%devices/razer-deathadder-v3.html">DeathAdder V3</a></li>
+          <li><a href="%%ROOT%%devices/razer-basilisk-v3.html">Basilisk V3</a></li>
+          <li><a href="%%ROOT%%devices/razer-viper-v3-pro-wired.html">Viper V3 Pro</a></li>
+          <li><a href="%%ROOT%%devices/razer-viper-v3-pro-wireless.html">Viper V3 Pro (dongle)</a></li>
+          <li><a href="%%ROOT%%devices/razer-blackwidow-v4-mini-hyperspeed.html">BlackWidow V4 Mini HyperSpeed</a></li>
+        </ul>
+        <p class="level-line"><span class="led ro" aria-hidden="true"></span><b>Read-only</b>: keyboards</p>
+        <ul class="models">
+          <li><a href="%%ROOT%%devices/razer-huntsman-v3-pro.html">Huntsman V3 Pro</a></li>
+          <li><a href="%%ROOT%%devices/razer-blackwidow-v4.html">BlackWidow V4</a></li>
+          <li><a href="%%ROOT%%devices/razer-ornata-v3.html">Ornata V3</a></li>
+        </ul>
+        <p class="small">The full list is on <a href="%%ROOT%%#devices">the device page</a>, and each model has its own page.</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Help confirm a Razer model</h2>
+        <ol class="steps">
+          <li><b>Download</b> PeriHub above, install it and quit Razer Synapse.</li>
+          <li>Connect your mouse or keyboard and open <b>Test my device</b> in the sidebar.</li>
+          <li>Press <b>Open the form</b> and send the report (a free GitHub account is needed). It only reads the device. One report moves the model up for everyone: see <a href="%%ROOT%%help-test.html">Wanted: testers</a>.</li>
+        </ol>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Questions</h2>
+        <div class="device-cols">
+          <div>
+            <details class="note"><summary>Does PeriHub fully support any Razer device?</summary><p>Not yet. Razer devices are experimental or read-only until someone with one sends a test report and it is confirmed.</p></details>
+            <details class="note"><summary>Can I keep Razer Synapse running?</summary><p>Quit it and turn off its autostart: two programs talking to the same device get in each other's way.</p></details>
+          </div>
+          <div>
+            <details class="note"><summary>Will it change my lighting effect?</summary><p>PeriHub never stores a Razer lighting effect, since it cannot read one back. On 27 mice it can show one colour without saving it.</p></details>
+            <details class="note"><summary>I own a Razer device. How do I help?</summary><p>Install PeriHub, open Test my device and send the report. It only reads your device, and one report counts for everyone with that model.</p></details>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>More from PeriHub</h2>
+        <ul class="models">
+          <li><a href="%%ROOT%%g-hub-alternative.html">Logitech G HUB alternative</a></li>
+          <li><a href="%%ROOT%%logitech-mouse-linux.html">Logitech mouse on Linux</a></li>
+          <li><a href="%%ROOT%%corsair-icue-alternative.html">Corsair iCUE alternative</a></li>
+          <li><a href="%%ROOT%%steelseries-gg-alternative.html">SteelSeries GG alternative</a></li>
+          <li><a href="%%ROOT%%">PeriHub home</a></li>
+          <li><a href="%%ROOT%%help-test.html">Wanted: testers</a></li>
+          <li><a href="%%ROOT%%#devices">All devices</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <!--include footer-->
+</body>
+</html>

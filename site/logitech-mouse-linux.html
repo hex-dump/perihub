@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--include head-->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is there a Logitech G HUB for Linux?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Neither G HUB nor SteelSeries GG exists on Linux, which is why PeriHub was written for both Windows and Linux."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does PeriHub have to keep running?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Not for settings saved in the mouse: profiles, DPI, buttons and macros keep working with PeriHub closed. Software macros and app profiles need it running, and so does re-applying the DPI of receiver devices that have no onboard memory."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "It says permission denied. What now?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "With the AppImage or Flatpak, install the udev rule by hand: the command is in the USB permissions section of the README. The .deb, .rpm and Arch packages do it for you."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I run it next to Solaar or Piper?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "PeriHub shows a warning when Solaar or logiops runs, because they may undo its DPI changes on receiver devices. Its README does not cover Piper, so use one tool at a time on a given mouse."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-mouse" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="6"/><path d="M12 6.5v4"/></symbol>
+    <symbol id="i-apps" viewBox="0 0 24 24"><rect x="3" y="3" width="13" height="13" rx="2.5"/><path d="M8 21h10.5a2.5 2.5 0 0 0 2.5-2.5V8"/></symbol>
+    <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8.5 7-5 5 5 5M15.5 7l5 5-5 5"/></symbol>
+  </svg>
+  <!--include header-->
+
+  <main id="main" tabindex="-1">
+    <section class="device-top">
+      <div class="wrap">
+        <p class="crumbs"><a href="%%ROOT%%">PeriHub</a> · <a href="%%ROOT%%#devices">All devices</a> · <a href="%%ROOT%%help-test.html">Wanted: testers</a></p>
+        <p class="eyebrow">Linux · Logitech G mice</p>
+        <h1>Configure a Logitech gaming mouse on Linux: DPI, buttons and lighting</h1>
+        <p class="lead">PeriHub sets DPI, buttons and lighting on supported Logitech G mice on Linux and saves them in the mouse. Here is what works today, and how it differs from Solaar and Piper.</p>
+        <!--include get-->
+        <div class="note warn">
+          <p><b>The Windows installer is not code-signed yet.</b> If SmartScreen blocks it, click <b>More info, then Run anyway</b>. Quit the maker's app and turn off its autostart before you open PeriHub: two apps talking to the same device get in each other's way.</p>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>The problem</h2>
+        <div class="device-cols">
+          <div><h3>The mouse works, its settings do not</h3><p>On Linux a Logitech mouse moves the pointer straight away. Changing its DPI steps, remapping the side buttons or choosing a light colour needs a tool that talks to the mouse's own settings, and Logitech's G HUB has no Linux version.</p></div>
+          <div><h3>Where PeriHub comes from</h3><p>It was started by a G502 HERO owner who moved their gaming PC to Linux. The same app runs on Windows, and settings saved in the mouse follow it to any PC.</p></div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>How it works on Linux</h2>
+        <div class="cards">
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-download"/></svg>
+            <h3>Install</h3>
+            <p>A .deb (Debian, Ubuntu), an .rpm (Fedora, openSUSE), a Flatpak, an AppImage, or the <code>perihub-bin</code> package built from the repository on Arch and CachyOS.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-lock"/></svg>
+            <h3>USB access</h3>
+            <p>The .deb and .rpm install a udev rule. With the AppImage or Flatpak you add it by hand. It covers only the devices PeriHub knows, and only for the user at the screen.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-mouse"/></svg>
+            <h3>Change settings</h3>
+            <p>Pick a profile, then change DPI, buttons and lighting. DPI and lighting are previewed live; nothing is written until you press <b>Save to mouse</b>, and a backup is kept.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-apps"/></svg>
+            <h3>App profiles</h3>
+            <p>The mouse profile can follow the game in focus, on Hyprland, KDE Plasma and GNOME. Other Linux desktops are not covered yet.</p>
+          </article>
+        </div>
+        <p class="small">On the G502 HERO that means up to 5 DPI levels from 100 to 25600, polling rate up to 1000 Hz, 11 buttons plus G-Shift, macros, and the logo and DPI indicator lights. The G300 keeps three profiles with 8 light colours, report rate and 4 DPI levels (confirmed on Windows so far).</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>PeriHub, Solaar and Piper</h2>
+        <div class="cards">
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-chip"/></svg>
+            <h3>Solaar</h3>
+            <p>A Linux manager for many Logitech keyboards and mice on Unifying, Bolt, Lightspeed or Nano receivers, and many on USB or Bluetooth. Its own README lists pairing, device settings, custom buttons and rules. See <a href="https://github.com/pwr-Solaar/Solaar">Solaar</a>.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-code"/></svg>
+            <h3>Piper</h3>
+            <p>A GTK app for gaming mice that is a frontend to the ratbagd service from libratbag, so its device list is libratbag's, which per its README covers devices from Logitech, Etekcity, GSkill, Roccat and SteelSeries. See <a href="https://github.com/libratbag/piper">Piper</a>.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-mouse"/></svg>
+            <h3>PeriHub</h3>
+            <p>One app for Windows and Linux and for several brands. Three Logitech mice are tested on real hardware; the rest depend on the memory format they report. Writes are backed up and read back.</p>
+          </article>
+        </div>
+        <p>These are different tools, not rivals. Solaar is built for receivers and pairing; PeriHub never sends a receiver's pairing commands. PeriHub also builds on libratbag's published documentation of Logitech's protocol, and credits it in its README. We have not compared the three feature by feature, so check each project's own pages for your exact mouse.</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Which Logitech mice</h2>
+        <p class="level-line"><span class="led ok" aria-hidden="true"></span><b>Supported</b>: tested on real hardware</p>
+        <ul class="models">
+          <li><a href="%%ROOT%%devices/logitech-g502-hero.html">G502 HERO</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g502-x-wireless.html">G502 X Wireless</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g300.html">G300</a></li>
+        </ul>
+        <p class="small">On Linux the G502 HERO is tested. The G502 X Wireless and the G300 were confirmed by users on Windows; nobody has saved to either on Linux yet. A G502 X Wireless read on Linux had a newer firmware whose memory format PeriHub cannot write yet, so it stays read-only.</p>
+        <p class="level-line"><span class="led dep" aria-hidden="true"></span><b>Depends on the mouse</b>: 28 more G mice</p>
+        <ul class="models">
+          <li><a href="%%ROOT%%devices/logitech-g-pro.html">G Pro</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g403.html">G403</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g703.html">G703</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g903.html">G903</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g305.html">G305</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g604.html">G604</a></li>
+        </ul>
+        <p class="small">Support follows the memory format each mouse reports. The G604 over Bluetooth is read only; use its LIGHTSPEED receiver to change it. Unifying receivers need an optional udev rule on Linux, because what you type on keyboards paired to them uses the same interface; Solaar's own rule already opens it.</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Questions</h2>
+        <div class="device-cols">
+          <div>
+            <details class="note"><summary>Is there a Logitech G HUB for Linux?</summary><p>No. Neither G HUB nor SteelSeries GG exists on Linux, which is why PeriHub was written for both Windows and Linux.</p></details>
+            <details class="note"><summary>Does PeriHub have to keep running?</summary><p>Not for settings saved in the mouse: profiles, DPI, buttons and macros keep working with PeriHub closed. Software macros and app profiles need it running, and so does re-applying the DPI of receiver devices that have no onboard memory.</p></details>
+          </div>
+          <div>
+            <details class="note"><summary>It says permission denied. What now?</summary><p>With the AppImage or Flatpak, install the udev rule by hand: the command is in the <a href="https://github.com/hex-dump/perihub#usb-permissions">USB permissions</a> section of the README. The .deb, .rpm and Arch packages do it for you.</p></details>
+            <details class="note"><summary>Can I run it next to Solaar or Piper?</summary><p>PeriHub shows a warning when Solaar or logiops runs, because they may undo its DPI changes on receiver devices. Its README does not cover Piper, so use one tool at a time on a given mouse.</p></details>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>More from PeriHub</h2>
+        <ul class="models">
+          <li><a href="%%ROOT%%g-hub-alternative.html">Logitech G HUB alternative</a></li>
+          <li><a href="%%ROOT%%razer-synapse-alternative.html">Razer Synapse alternative</a></li>
+          <li><a href="%%ROOT%%corsair-icue-alternative.html">Corsair iCUE alternative</a></li>
+          <li><a href="%%ROOT%%steelseries-gg-alternative.html">SteelSeries GG alternative</a></li>
+          <li><a href="%%ROOT%%">PeriHub home</a></li>
+          <li><a href="%%ROOT%%help-test.html">Wanted: testers</a></li>
+          <li><a href="%%ROOT%%#devices">All devices</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <!--include footer-->
+</body>
+</html>

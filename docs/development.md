@@ -281,6 +281,7 @@ starts. CPU is their processor time over 2 minutes.
 
 | Version | Date | Machine | Tray | Window open |
 |---|---|---|---|---|
+| 0.9.8 | 26 November 2026 | AMD EPYC 7763, WebView2 157 | 3 MB, 0.04% of a core, 1 process | 45 MB, 0.55%, 7 processes |
 | 0.8.2 | 13 November 2026 | AMD EPYC 7763, WebView2 156 | 3 MB, 0.08% of a core | 39 MB, 0.35% |
 | 0.5.5 | 8 November 2026 | AMD EPYC 9V45, WebView2 156 | 3 MB, 0.05% of a core | 39 MB, 0.2% |
 | 0.4.0 | 20 October 2026 | Intel Xeon Platinum 8573C, WebView2 154 | 2 MB | 42 MB |

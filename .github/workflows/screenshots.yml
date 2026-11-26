@@ -35,8 +35,9 @@ jobs:
           ref: ${{ github.event_name == 'release' && 'main' || github.ref }}
 
       # Inter is in the interface's font list; without it the pictures would use another font.
-      - name: Fonts
-        run: sudo apt-get update && sudo apt-get install -y fonts-inter
+      # ffmpeg makes the animated tour at the top of the README.
+      - name: Fonts and ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y fonts-inter ffmpeg
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -68,7 +69,7 @@ jobs:
           fi
           rm -rf "$RUNNER_TEMP/assets/screenshots"
           mkdir "$RUNNER_TEMP/assets/screenshots"
-          cp "$SHOTS_DIR"/screenshots/*.png "$RUNNER_TEMP/assets/screenshots/"
+          cp "$SHOTS_DIR"/screenshots/*.png "$SHOTS_DIR"/screenshots/*.gif "$RUNNER_TEMP/assets/screenshots/"
           cp "$SHOTS_DIR/social-preview.png" "$RUNNER_TEMP/assets/"
           cd "$RUNNER_TEMP/assets"
           git add -A

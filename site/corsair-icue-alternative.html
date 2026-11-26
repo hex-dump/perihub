@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--include head-->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Can PeriHub replace iCUE today?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. For Corsair it reads the device and can try one colour for a session. DPI, buttons and onboard memory are not offered."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it work on Linux?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "PeriHub runs on Linux and recognizes the Corsair models on both systems, but none has been tried on real hardware yet."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I run it next to iCUE, OpenRGB or ckb-next?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The experimental lighting is switched off while iCUE, OpenRGB, ckb-next or OpenLinkHub is running, so two programs do not fight over one device."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I get my Corsair model confirmed?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Send a test report from Test my device in PeriHub. It only reads the device."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-light" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/></symbol>
+    <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  </svg>
+  <!--include header-->
+
+  <main id="main" tabindex="-1">
+    <section class="device-top">
+      <div class="wrap">
+        <p class="crumbs"><a href="%%ROOT%%">PeriHub</a> · <a href="%%ROOT%%#devices">All devices</a> · <a href="%%ROOT%%help-test.html">Wanted: testers</a></p>
+        <p class="eyebrow">Free and open source · Windows and Linux</p>
+        <h1>A Corsair iCUE alternative for Windows and Linux: current status</h1>
+        <p class="lead">PeriHub recognizes <b>26 Corsair mice, 23 Corsair keyboards</b> and 6 receivers. No Corsair device has been tried on real hardware yet, so PeriHub reads them and can try one colour. It does not replace iCUE today.</p>
+        <!--include get-->
+        <div class="note warn">
+          <p><b>The Windows installer is not code-signed yet.</b> If SmartScreen blocks it, click <b>More info, then Run anyway</b>. Quit the maker's app and turn off its autostart before you open PeriHub: two apps talking to the same device get in each other's way.</p>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>The problem</h2>
+        <div class="device-cols">
+          <div><h3>Lights and settings in one app</h3><p>If you own Corsair gear alongside other brands, you end up with one program per maker. PeriHub aims to cover them all in one small app, but Corsair is still early, and it says so.</p></div>
+          <div><h3>Where the protocol comes from</h3><p>Corsair support is written from the protocol described in <a href="https://github.com/ckb-next/ckb-next">ckb-next</a> and <a href="https://github.com/jurkovic-nikola/OpenLinkHub">OpenLinkHub</a>, in PeriHub's own words with no code copied. It has not been checked on a real Corsair device.</p></div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>What it does and does not do</h2>
+        <div class="cards">
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-chip"/></svg>
+            <h3>Read</h3>
+            <p>PeriHub reads Corsair devices: what they are and what they report. It sends only property reads, apart from the lighting below.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-light"/></svg>
+            <h3>Try one colour</h3>
+            <p>On the device page, <b>Try experimental lighting</b> sends one colour to every LED or key for this session, at your own risk. The device gets its own settings back after 15 seconds unless you keep it, when you quit PeriHub, and as soon as anything fails.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-lock"/></svg>
+            <h3>Not offered</h3>
+            <p>DPI, polling rate, buttons and the device's memory. The lighting option is also not offered while iCUE, OpenRGB, ckb-next or OpenLinkHub is running.</p>
+          </article>
+        </div>
+        <div class="limits-box">
+          <ul class="limits">
+            <li>With more than one device on the same receiver, only the first one is shown.</li>
+            <li>The Slipstream V2 receiver is not recognized.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Some of the models</h2>
+        <p class="level-line"><span class="led test" aria-hidden="true"></span><b>Experimental</b>: nobody has tried them yet</p>
+        <ul class="models">
+          <li><a href="%%ROOT%%devices/corsair-m65-rgb-ultra.html">M65 RGB ULTRA</a></li>
+          <li><a href="%%ROOT%%devices/corsair-m75.html">M75</a></li>
+          <li><a href="%%ROOT%%devices/corsair-katar-pro.html">KATAR PRO</a></li>
+          <li><a href="%%ROOT%%devices/corsair-sabre-rgb-pro.html">SABRE RGB PRO</a></li>
+          <li><a href="%%ROOT%%devices/corsair-k70-pro.html">K70 PRO</a></li>
+          <li><a href="%%ROOT%%devices/corsair-k100-rgb.html">K100 RGB</a></li>
+        </ul>
+        <p class="small">All 26 mice, 23 keyboards and 6 receivers are on <a href="%%ROOT%%#devices">the device page</a>.</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Help confirm a Corsair model</h2>
+        <ol class="steps">
+          <li><b>Download</b> PeriHub above, install it and quit iCUE.</li>
+          <li>Connect the device and open <b>Test my device</b> in the sidebar.</li>
+          <li>Press <b>Open the form</b> and send the report. It only reads the device, and one report helps everyone with that model: <a href="%%ROOT%%help-test.html">Wanted: testers</a>.</li>
+        </ol>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Questions</h2>
+        <div class="device-cols">
+          <div>
+            <details class="note"><summary>Can PeriHub replace iCUE today?</summary><p>No. For Corsair it reads the device and can try one colour for a session. DPI, buttons and onboard memory are not offered.</p></details>
+            <details class="note"><summary>Does it work on Linux?</summary><p>PeriHub runs on Linux and recognizes the Corsair models on both systems, but none has been tried on real hardware yet.</p></details>
+          </div>
+          <div>
+            <details class="note"><summary>Can I run it next to iCUE, OpenRGB or ckb-next?</summary><p>The experimental lighting is switched off while iCUE, OpenRGB, ckb-next or OpenLinkHub is running, so two programs do not fight over one device.</p></details>
+            <details class="note"><summary>How do I get my Corsair model confirmed?</summary><p>Send a test report from Test my device in PeriHub. It only reads the device.</p></details>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>More from PeriHub</h2>
+        <ul class="models">
+          <li><a href="%%ROOT%%g-hub-alternative.html">Logitech G HUB alternative</a></li>
+          <li><a href="%%ROOT%%logitech-mouse-linux.html">Logitech mouse on Linux</a></li>
+          <li><a href="%%ROOT%%razer-synapse-alternative.html">Razer Synapse alternative</a></li>
+          <li><a href="%%ROOT%%steelseries-gg-alternative.html">SteelSeries GG alternative</a></li>
+          <li><a href="%%ROOT%%">PeriHub home</a></li>
+          <li><a href="%%ROOT%%help-test.html">Wanted: testers</a></li>
+          <li><a href="%%ROOT%%#devices">All devices</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <!--include footer-->
+</body>
+</html>

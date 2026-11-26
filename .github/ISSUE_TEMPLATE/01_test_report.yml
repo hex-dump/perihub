@@ -119,4 +119,4 @@ body:
     id: details
     attributes:
       label: What is wrong or missing
-      description: Anything that does not match. Screenshots are very helpful.
+      description: "Anything that does not match. Screenshots are very helpful. If something failed, attach PeriHub's log file too: **Settings → Problems → Open log folder** (it has no key presses or apps)."

@@ -5,8 +5,8 @@
 <h1 align="center">PeriHub</h1>
 
 <p align="center">
-  <b>One app for gaming mice and keyboards across brands</b><br>
-  Open source, on <b>Windows and Linux</b>, instead of Logitech G HUB, SteelSeries GG, Corsair iCUE and Razer Synapse.
+  <b>Free, open source app for gaming mice and keyboards.</b><br>
+  Instead of G HUB, GG, iCUE and Synapse. <b>Windows and Linux.</b>
 </p>
 
 <p align="center">
@@ -18,19 +18,66 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/hex-dump/perihub/releases/latest"><b>⬇️ Download</b></a> ·
+  <b>⬇️ Download:</b>
+  <a href="https://github.com/hex-dump/perihub/releases/download/v0.9.8/PeriHub_0.9.8_x64-setup.exe">Windows installer</a> ·
+  <a href="https://github.com/hex-dump/perihub/releases/download/v0.9.8/PeriHub_0.9.8_amd64.deb">.deb</a> ·
+  <a href="https://github.com/hex-dump/perihub/releases/download/v0.9.8/PeriHub-0.9.8-1.x86_64.rpm">.rpm</a> ·
+  <a href="https://github.com/hex-dump/perihub/releases/download/v0.9.8/PeriHub_0.9.8_x86_64.flatpak">Flatpak</a> ·
+  <a href="https://github.com/hex-dump/perihub/releases/download/v0.9.8/PeriHub_0.9.8_amd64.AppImage">AppImage</a> ·
+  <a href="#linux">Arch</a> ·
+  <a href="https://github.com/hex-dump/perihub/releases/latest">all files</a>
+</p>
+
+<p align="center">
   <a href="https://hex-dump.github.io/perihub/">🌐 Website</a> ·
   <a href="docs/devices.md">🖱️ Devices</a> ·
   <a href="https://github.com/hex-dump/perihub/discussions/categories/ideas">💡 Ideas</a> ·
   <a href="https://github.com/hex-dump/perihub/discussions">💬 Discussions</a>
 </p>
 
-![Keyboard lighting](https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/keyboard-lighting.png)
+![PeriHub: DPI, lighting and buttons of a Logitech G502 HERO, then the lighting and keys of a SteelSeries Apex 3 TKL](https://raw.githubusercontent.com/hex-dump/perihub/assets/screenshots/tour.gif)
+
+## Tested on real hardware
+
+| Device | Windows | Linux | What works |
+|---|---|---|---|
+| **SteelSeries Apex 3 TKL** keyboard | ✅ | ✅ | Everything: lighting, brightness, key remapping on both layers, software macros |
+| **Logitech G502 HERO** mouse | ✅ | ✅ | Everything: profiles, DPI, polling rate, buttons, G-Shift, macros, lighting |
+| **Logitech G502 X Wireless** mouse, with its cable | ✅ ([#15](https://github.com/hex-dump/perihub/issues/15)) | Not yet ¹ | Profiles, DPI, buttons and macros, confirmed by a user on a real mouse |
+| **Logitech G300** mouse | ✅ ([#21](https://github.com/hex-dump/perihub/issues/21)) | Not yet | Its three profiles, read and edited, confirmed by a user on a real G300 |
+| **SteelSeries Rival 700 / Rival 710** mouse | ✅ ([#97](https://github.com/hex-dump/perihub/issues/97)) | Not yet | Recognized and read without errors by a user; nobody has reported a DPI or polling rate change yet |
+
+¹ A G502 X Wireless was read on Linux ([#125](https://github.com/hex-dump/perihub/issues/125)), but its newer firmware uses a memory format PeriHub cannot write yet, so it stays read-only.
+
+Hundreds more are recognized, as experimental or read-only: **[all devices and their status](https://hex-dump.github.io/perihub/#devices)**. One test report moves a model up for everyone: see [below](#help-test-your-device).
+
+### Measured
+
+| PeriHub 0.9.8 on Windows | |
+|---|---|
+| Installer | **5.3 MB** |
+| In the tray | **3 MB** of memory, **1** process, 0.04% of one CPU core |
+| Window open | **45 MB** of memory, **7** processes (PeriHub and the WebView2 engine of Windows), 0.55% of one core |
+| Account, ads, telemetry, background services | none |
+
+Measured on a clean Windows virtual machine with no devices connected, on 26 November 2026 ([how](#performance)). We do not publish numbers for the official apps: we have not measured them on the same machine.
+
+## Help test your device
+
+If you own a device marked 🧪 or 👁:
+
+1. Install PeriHub and quit the official app (G HUB, Logitech Gaming Software, GG, iCUE, Synapse).
+2. Open **Test my device** in the sidebar and follow the steps, or press **Open test form** on the device's page. It opens a report on GitHub with what PeriHub read already filled in: no key presses, apps or log lines.
+3. Check that what PeriHub shows matches your device, and send it. You need a free GitHub account.
+
+The models that need a test, each with its own page, are on [Wanted: testers](https://hex-dump.github.io/perihub/help-test.html). Once someone confirms a model, it becomes fully supported for everyone. For a Logitech mouse, the confirmation counts for its memory format, so for every other mouse that uses it too.
+
+Which device should come next? Vote for yours, or add it, in [this discussion](https://github.com/hex-dump/perihub/discussions/147).
 
 ## Highlights
 
 - 🆓 **Free and open source**: no account, no ads, no telemetry.
-- 🪶 **Small**: an installer under 5 MB, about 4 MB of memory while it waits in the tray.
+- 🪶 **Small**: an installer of about 5 MB, about 4 MB of memory while it waits in the tray.
 - 💾 **Settings stay in your devices**: key mapping, mouse profiles, DPI and macros keep working with PeriHub closed, on any PC.
 - 🛡️ **Careful with your devices**: only known commands, a backup before every write, and every write read back ([how](#safety)).
 - 🧩 **Many brands in one app**: Logitech, SteelSeries, Corsair, Razer, ASUS and more ([devices](#devices)).
@@ -61,14 +108,7 @@
 
 ✅ **Supported**: tested on real hardware · 🧪 **Experimental**: recognized, changes at your own risk · 👁 **Read-only**: recognized and read
 
-### Tested on real hardware
-
-| Device | What works |
-|---|---|
-| **SteelSeries Apex 3 TKL** keyboard | ✅ Everything: lighting, brightness, key remapping on both layers, software macros |
-| **Logitech G502 HERO** mouse | ✅ Everything: profiles, DPI, polling rate, buttons, G-Shift, macros, lighting |
-| **Logitech G502 X Wireless** mouse | ✅ Profiles, DPI, buttons and macros, confirmed by a user on a real mouse |
-| **Logitech G300** mouse | ✅ Its three profiles, read and edited, confirmed by a user on a real G300 |
+The models tested on real hardware are in the [table at the top](#tested-on-real-hardware).
 
 ### Recognized, waiting for a test report
 
@@ -287,16 +327,6 @@ These keyboards (`1038:1610`, `1612`, `1618`, `161c`) are supported from facts f
 
 </details>
 
-### Help test your device
-
-If you own a device marked 🧪 or 👁:
-
-1. Install PeriHub and quit the official app (G HUB, Logitech Gaming Software, iCUE).
-2. Open the device's page in PeriHub and press **Open test form**. It opens a report on GitHub with what PeriHub read already filled in: no key presses, apps or log lines.
-3. Check that what PeriHub shows matches your device, and send it. You need a free GitHub account.
-
-The models that need a test, each with its own page, are on [Wanted: testers](https://hex-dump.github.io/perihub/help-test.html). Once someone confirms a model, it becomes fully supported for everyone. For a Logitech mouse, the confirmation counts for its memory format, so for every other mouse that uses it too.
-
 ## Download and install
 
 Get the file for your system from the [releases page](https://github.com/hex-dump/perihub/releases/latest).
@@ -420,15 +450,15 @@ More: [how the release files are signed](CODE_SIGNING.md) · [reporting a securi
 
 ## Performance
 
-| PeriHub 0.8.2 on Windows | |
+| PeriHub 0.9.8 on Windows | |
 |---|---|
-| Download | **4.6 MB** installer |
-| On disk | **19 MB** |
-| In the tray | **3 MB** of memory, **0.08%** of one CPU core |
-| Window open | **39 MB** of memory, **0.35%** of one CPU core |
+| Download | **5.3 MB** installer |
+| On disk | **21 MB** |
+| In the tray | **3 MB** of memory, **0.04%** of one CPU core, 1 process |
+| Window open | **45 MB** of memory, **0.55%** of one CPU core, 7 processes (6 of them WebView2) |
 | Background services, account, ads, telemetry | none |
 
-These numbers come from a clean Windows virtual machine with no devices connected. On a real Windows 11 PC with a keyboard and a mouse connected, PeriHub 0.8.2 used 4 MB of memory and 0.4 to 0.7% of one core in the tray.
+These numbers come from a clean Windows virtual machine with no devices connected ([run](https://github.com/hex-dump/perihub/actions/runs/45883743025), 26 November 2026). On a real Windows 11 PC with a keyboard and a mouse connected, PeriHub 0.8.2 used 4 MB of memory and 0.4 to 0.7% of one core in the tray.
 
 PeriHub is written in Rust and draws its window with WebView2, the web engine of Windows, instead of shipping its own browser. The engine runs only while the window is open. An animated lighting effect, drawn by PeriHub frame by frame, adds about 0.6% of one core. How these numbers were measured: [docs/development.md](docs/development.md#performance-measurements).
 
