@@ -71,7 +71,7 @@ TESTED_ON = {
     "devices/logitech-g502-x-wireless.html": "on Windows (nobody has saved to one on Linux yet)",
     "devices/logitech-g300.html": "on Windows (nobody has tried one on Linux yet)",  # issue #21
     # Issue #97: the report read it; nobody has reported a change yet, so the page does not say everything works.
-    "devices/steelseries-rival-700-rival-710.html": "on Windows: a user's report found and read it without errors, and nobody has reported a DPI or polling rate change on it yet (nor tried one on Linux)",
+    "devices/steelseries-rival-700-rival-710.html": "on Windows, where a user's report found and read it without errors. Nobody has reported a DPI or polling rate change on it yet, nor tried one on Linux",
 }
 # Pages written by hand for a search (G HUB alternative, Logitech mouse on Linux…): their title and description.
 ARTICLES = {
@@ -245,7 +245,7 @@ def lead(m: dict) -> str:
     full, kind = esc(full_name(m)), m["kind"]
     if m["level"] == "supported":
         where = TESTED_ON.get(m["page"])
-        if where and ":" in where:
+        if where and ". " in where:  # tested only in part: it says what
             return f"PeriHub supports the {full}: it was tested on real hardware {where}."
         if where:
             return f"PeriHub supports the {full}: it was tested on real hardware {where}, and everything PeriHub offers for it works."
