@@ -133,5 +133,15 @@ class ReopenAfterNoAnswer(unittest.TestCase):
         self.assertFalse(any(c[:2] == ("issue", "reopen") for c in self.run_waiting("closed", ["no answer"], "someone")))
         self.assertFalse(any(c[:2] == ("issue", "reopen") for c in self.run_waiting("closed", ["device request"], "tester")))
 
+
+class ChangelogLinks(unittest.TestCase):
+    def test_a_link_to_an_issue_of_this_repository_names_it(self):
+        notes = "- **G903 HERO** ([#115](https://github.com/hex-dump/perihub/issues/115), [#22](https://github.com/hex-dump/perihub/issues/22)): format 4."
+        self.assertEqual(list(notify.changelog_lines(notes)), [115, 22])
+
+    def test_a_link_to_another_project_or_a_bare_number_does_not(self):
+        notes = "- From [libratbag #774](https://github.com/libratbag/libratbag/issues/774) and PR #777."
+        self.assertEqual(notify.changelog_lines(notes), {})
+
 if __name__ == "__main__":
     unittest.main()

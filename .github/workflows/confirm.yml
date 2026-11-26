@@ -64,6 +64,7 @@ jobs:
           ref: main
           sparse-checkout: |
             tools/triage.py
+            tools/platforms.py
             tools/upstream-seen.json
             tools/test-branch-devices.sh
             site/devices.json

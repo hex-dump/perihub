@@ -36,6 +36,7 @@ jobs:
           sparse-checkout: |
             tools/status_board.py
             tools/triage.py
+            tools/platforms.py
             tools/upstream-seen.json
             tools/test-branch-devices.sh
             site/devices.json
