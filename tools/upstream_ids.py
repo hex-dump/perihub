@@ -148,6 +148,7 @@ def openrgb(root: Path):
         return everywhere.get(token)
 
     for p in sorted(files):
+        yield from wrapped(texts[p], p, controllers, literal)
         for m in head.finditer(texts[p]):
             if "_ONLY" in m.group(1):
                 continue
@@ -159,6 +160,42 @@ def openrgb(root: Path):
             elif not any(a.endswith("_ANY") for a in args[2:4]):
                 line = texts[p].count("\n", 0, m.start()) + 1
                 print(f"upstream_ids: OpenRGB: no ids in {p.relative_to(root)}:{line}: {m.group(0)[:-1].strip()}({', '.join(args[:4])})", file=sys.stderr)
+
+
+# A detector macro a folder defines for itself, which registers one HIDDeviceDetector per variant of a product id:
+# Wooting's REGISTER_WOOTING_DETECTOR(name, vid, pid) registers pid | 0x0000, pid | 0x0001 and pid | 0x0002 (one id per
+# gamepad mode), through the macros XINP_PID(pid), DINP_PID(pid) and NONE_PID(pid). The reader of REGISTER_HID_DETECTOR
+# never saw these calls, and the Wooting keyboards OpenRGB documents were missing from the baseline.
+WRAPPER_DEF = re.compile(r"#define\s+(REGISTER_\w+)\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)((?:[^\n]*\\\n)*[^\n]*)")
+MASK_DEF = re.compile(r"#define\s+(\w+)\s*\(\s*(\w+)\s*\)\s*\(\s*\2\s*\|\s*(0x[0-9a-fA-F]{1,4})\s*\)")
+DETECTOR = re.compile(r"\bHIDDeviceDetector\s+[\w#]+\s*\(")
+
+
+def wrapped(text: str, path: Path, controllers: Path, literal):
+    """The ids of the calls of the detector macros defined in this file (WRAPPER_DEF), one per HIDDeviceDetector of
+    the macro: its product id is the call's, or the call's passed through a "(pid | 0x0002)" macro of the file."""
+    masks = {name: int(value, 16) for name, _, value in MASK_DEF.findall(text)}
+    for macro, name_arg, vid_arg, pid_arg, body in WRAPPER_DEF.findall(text):
+        body = body.replace("\\\n", "\n")
+        variants = []
+        for d in DETECTOR.finditer(body):
+            args = call_args(body, d.end() - 1) or []
+            if len(args) < 4 or args[0] != name_arg or args[2] != vid_arg:
+                continue
+            pid = re.fullmatch(rf"(?:(\w+)\s*\(\s*)?{pid_arg}\s*\)?", args[3])
+            if pid and (pid.group(1) is None or pid.group(1) in masks):
+                variants.append(masks.get(pid.group(1), 0))
+        if not variants:
+            continue
+        for m in re.finditer(rf"(?<!#define )\b{macro}\s*\(", text):
+            args = call_args(text, m.end() - 1) or []
+            ids = [literal(a, path.parent) for a in args[1:3]]
+            if len(ids) != 2 or not all(i and i.startswith("0x") for i in ids):
+                continue
+            name = (literal(args[0], path.parent) or args[0]).strip('"')
+            for mask in variants:
+                yield hexid(ids[0][2:], f"{int(ids[1], 16) | mask:x}"), name, str(path.parent.relative_to(controllers))
+
 
 
 READERS = {"libratbag": libratbag, "openrazer": openrazer, "rivalcfg": rivalcfg, "OpenRGB": openrgb}

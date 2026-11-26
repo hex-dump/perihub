@@ -184,6 +184,23 @@ class OpenRGBReader(unittest.TestCase):
         self.read({"X": {"XDetect.cpp": 'REGISTER_HID_DETECTOR ("X", DetectX, X_VID, 0x0001);\n'}})
         self.assertIn("XDetect.cpp:1", self.errors)
 
+    def test_a_detector_macro_of_the_folder_s_own_gives_every_variant(self):
+        # Wooting: REGISTER_WOOTING_DETECTOR(name, vid, pid) registers one detector per gamepad mode, pid | 0, | 1, | 2.
+        # The reader never saw these calls, and the Wooting keyboards OpenRGB documents were missing from the baseline.
+        cpp = (
+            "#define WOOTING_NEW_VID 0x31E3\n#define WOOTING_TWO_HE_PID 0x1220\n"
+            "#define XINP_PID(pid) (pid | 0x0000)\n#define DINP_PID(pid) (pid | 0x0001)\n#define NONE_PID(pid) (pid | 0x0002)\n"
+            "#define REGISTER_WOOTING_DETECTOR(name, vid, pid)  \\\n"
+            "    static HIDDeviceDetector detector_wooting_##vid##_##pid##_base(name, DetectWooting, vid, NONE_PID(pid), HID_INTERFACE_ANY, HID_USAGE_PAGE_ANY, HID_USAGE_ANY); \\\n"
+            "    static HIDDeviceDetector detector_wooting_##vid##_##pid##_xinp(name, DetectWooting, vid, XINP_PID(pid), HID_INTERFACE_ANY, HID_USAGE_PAGE_ANY, HID_USAGE_ANY); \\\n"
+            "    static HIDDeviceDetector detector_wooting_##vid##_##pid##_dinp(name, DetectWooting, vid, DINP_PID(pid), HID_INTERFACE_ANY, HID_USAGE_PAGE_ANY, HID_USAGE_ANY)\n"
+            'REGISTER_WOOTING_DETECTOR("Wooting Two HE", WOOTING_NEW_VID, WOOTING_TWO_HE_PID);\n'
+        )
+        found = self.read({"WootingKeyboardController": {"WootingDetect.cpp": cpp}})
+        self.assertEqual(sorted(found), ["31e3:1220", "31e3:1221", "31e3:1222"])
+        self.assertEqual(found["31e3:1222"], ("Wooting Two HE", "WootingKeyboardController"))
+        self.assertEqual(self.errors, "")
+
     def test_an_unterminated_call_does_not_stop_the_reader(self):
         found = self.read({"X": {"XDetect.cpp": 'REGISTER_HID_DETECTOR("X", DetectX, 0x1234, 0x0001\n'}})
         self.assertEqual(found, {})
@@ -218,6 +235,9 @@ class Baseline(unittest.TestCase):
         for usb in ("1038:1610", "1038:1612", "1038:1614", "1038:1642"):
             self.assertIn(usb, seen)
         self.assertNotIn("0059:0001", seen)  # made up from a REGISTER_HID_DETECTOR_PU_ONLY, which has no ids
+        # The Wooting keyboards, registered through a macro of their folder (every gamepad mode's id).
+        for usb in ("31e3:1100", "31e3:1101", "31e3:1102", "31e3:1222", "31e3:1402"):
+            self.assertIn(usb, seen)
 
     def test_the_baseline_has_every_project_with_sorted_unique_ids(self):
         seen = json.loads(upstream_ids.SEEN.read_text())
