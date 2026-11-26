@@ -62,6 +62,39 @@ LEVELS = {
 REPLACES = {"SteelSeries": "SteelSeries GG", "Logitech": "Logitech G HUB", "Corsair": "Corsair iCUE", "Razer": "Razer Synapse"}
 KINDS = {"mouse": "Mouse", "keyboard": "Keyboard", "receiver": "Receiver"}
 DEVICE_REQUEST = "https://github.com/hex-dump/perihub/issues/new?template=device_request.yml"
+# Where the supported models were tested, from their test reports: the page of a model says so instead of
+# claiming both systems. A model confirmed later and not listed here says only "tested on real hardware".
+TESTED_ON = {
+    "devices/steelseries-apex-3-tkl.html": "on Windows and on Linux",
+    "devices/logitech-g502-hero.html": "on Windows and on Linux",
+    # Issues #15 and #39. On Linux, #125 read one whose firmware moved to a memory format PeriHub cannot write yet.
+    "devices/logitech-g502-x-wireless.html": "on Windows (nobody has saved to one on Linux yet)",
+    "devices/logitech-g300.html": "on Windows (nobody has tried one on Linux yet)",  # issue #21
+    "devices/steelseries-rival-700-rival-710.html": "on Windows (nobody has tried one on Linux yet)",  # issue #97
+}
+# Pages written by hand for a search (G HUB alternative, Logitech mouse on Linux…): their title and description.
+ARTICLES = {
+    "g-hub-alternative.html": (
+        "Logitech G HUB Alternative for Windows and Linux | PeriHub",
+        "Free, open-source alternative to Logitech G HUB for Windows and Linux: DPI, buttons, lighting and macros on supported G mice. No account, no telemetry.",
+    ),
+    "logitech-mouse-linux.html": (
+        "Logitech Mouse on Linux: DPI, Buttons, Lighting | PeriHub",
+        "Set DPI, buttons and lighting on a Logitech G mouse on Linux with PeriHub, and see how it compares with Solaar and Piper. Free and open source.",
+    ),
+    "razer-synapse-alternative.html": (
+        "Razer Synapse Alternative for Windows and Linux | PeriHub",
+        "PeriHub recognizes 76 Razer mice and 69 keyboards. None is tested on real hardware yet: what works on Windows and Linux, what does not, how to help.",
+    ),
+    "corsair-icue-alternative.html": (
+        "Corsair iCUE Alternative for Windows and Linux | PeriHub",
+        "PeriHub recognizes 26 Corsair mice and 23 keyboards on Windows and Linux. They are read only plus one colour, untested on real hardware. Help test.",
+    ),
+    "steelseries-gg-alternative.html": (
+        "SteelSeries GG Alternative for Windows and Linux | PeriHub",
+        "Free, open-source alternative to SteelSeries GG for Windows and Linux: Apex 3 TKL lighting, key remapping and macros, tested on real hardware.",
+    ),
+}
 
 
 def size(n: int) -> str:
@@ -210,7 +243,10 @@ def does(m: dict, row: dict | None) -> str:
 def lead(m: dict) -> str:
     full, kind = esc(full_name(m)), m["kind"]
     if m["level"] == "supported":
-        return f"PeriHub supports the {full}: it was tested on real hardware, and everything PeriHub offers for it works, on Windows and on Linux."
+        where = TESTED_ON.get(m["page"])
+        if where:
+            return f"PeriHub supports the {full}: it was tested on real hardware {where}, and everything PeriHub offers for it works."
+        return f"PeriHub supports the {full}: it was tested on real hardware, and everything PeriHub offers for it works."
     if m["level"] == "by_memory_format":
         return (
             f"PeriHub recognizes the {full}, a Logitech G mouse with onboard memory. Whether it is supported, experimental or "
@@ -474,6 +510,9 @@ def main() -> None:
                 "COUNT": str(len(wanted_models)),
                 "WANTED": wanted(all_models),
             }
+        elif page.name in ARTICLES:
+            title, text = ARTICLES[page.name]
+            extra = {"TITLE": esc(title), "DESCRIPTION": esc(text)}
         elif page.name in ("index.html", "privacy.html"):
             root = ""  # these two write their own links
         text = render(page.read_text(), page_values(page.name, root, **extra), missing, root)

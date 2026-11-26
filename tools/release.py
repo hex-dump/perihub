@@ -158,6 +158,12 @@ def bump(version: str, day: str) -> None:
         files["README.md"], "README.md", r"(perihub/)v\d+\.\d+\.\d+(/packaging/linux/70-perihub\.rules)", rf"\g<1>v{version}\g<2>"
     )
     files["README.md"] = replace_once(files["README.md"], "README.md", r"rule of release \d+\.\d+\.\d+", f"rule of release {version}")
+    # The download links at the top of the README name the files of the release.
+    files["README.md"], n = re.subn(
+        r"releases/download/v\d+\.\d+\.\d+/PeriHub([_-])\d+\.\d+\.\d+", rf"releases/download/v{version}/PeriHub\g<1>{version}", files["README.md"]
+    )
+    if n == 0:
+        fail("README.md: no download link to a release file")
     files["Cargo.toml"] = replace_once(files["Cargo.toml"], "Cargo.toml", r'(\[workspace\.package\]\nversion = )"[^"]+"', rf'\g<1>"{version}"')
     for crate in ("perihub-app", "perihub-core", "perihub-cli", "xtask"):
         files["Cargo.lock"] = replace_once(files["Cargo.lock"], "Cargo.lock", rf'(name = "{crate}"\nversion = )"[^"]+"', rf'\g<1>"{version}"')

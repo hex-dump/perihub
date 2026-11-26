@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--include head-->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Which SteelSeries devices are fully supported?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The Apex 3 TKL keyboard and the Rival 700 / Rival 710 mouse have been tested on real hardware. The Apex Pro, 7, 7 TKL, 5 and the other 32 mice are experimental, and the Apex 3 is recognized only."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I keep SteelSeries GG running?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Quit it and turn off its autostart: two programs talking to the same device get in each other's way."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does my Apex 3 TKL go back to the rainbow when PeriHub is closed?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The Apex 3 TKL does not store colours, with GG too. PeriHub reapplies them as soon as it sees the keyboard, and keeps running in the tray when you close its window."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it work on Linux?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, for the Apex 3 TKL. Reactive lighting and macro keys need an optional udev rule that PeriHub offers to install, with a warning about what it allows."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-light" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/></symbol>
+    <symbol id="i-keys" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h1M10 10h1M14 10h1M18 10h0M7 14h10"/></symbol>
+    <symbol id="i-macro" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5 3.5-5 3.5z"/></symbol>
+  </svg>
+  <!--include header-->
+
+  <main id="main" tabindex="-1">
+    <section class="device-top">
+      <div class="wrap">
+        <p class="crumbs"><a href="%%ROOT%%">PeriHub</a> · <a href="%%ROOT%%#devices">All devices</a> · <a href="%%ROOT%%help-test.html">Wanted: testers</a></p>
+        <p class="eyebrow">Free and open source · Windows and Linux</p>
+        <h1>A SteelSeries GG alternative for Windows and Linux</h1>
+        <p class="lead">PeriHub fully supports the <b>SteelSeries Apex 3 TKL</b>: lighting, brightness, key remapping and macros, tested on real hardware. Other SteelSeries keyboards and mice are recognized, with the limits below.</p>
+        <!--include get-->
+        <div class="note warn">
+          <p><b>The Windows installer is not code-signed yet.</b> If SmartScreen blocks it, click <b>More info, then Run anyway</b>. Quit the maker's app and turn off its autostart before you open PeriHub: two apps talking to the same device get in each other's way.</p>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>The problem</h2>
+        <div class="device-cols">
+          <div><h3>A heavy app for a few settings</h3><p>To light a keyboard or move a key you install SteelSeries GG. Neither GG nor Logitech's G HUB exists on Linux, and PeriHub started to fix that for one desk with an Apex 3 TKL and a G502 HERO.</p></div>
+          <div><h3>What PeriHub does instead</h3><p>Key remapping is saved in the keyboard, so it works without PeriHub. Lighting on the Apex 3 TKL is not stored by the keyboard, with GG too, so PeriHub reapplies it as soon as it sees the keyboard and waits in the tray with the window closed.</p></div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Apex 3 TKL: what works</h2>
+        <div class="cards">
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-light"/></svg>
+            <h3>Lighting</h3>
+            <p>8 zones: static, gradient, breathing, colour cycle, wave, reactive (the zone of each key you press lights up), built-in rainbow, or off.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-keys"/></svg>
+            <h3>Key remapping</h3>
+            <p>Any key, on the normal layer and on the layer you get while holding the SteelSeries key, shown in the layout PeriHub detects: ANSI, ISO, JIS or ABNT2.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-macro"/></svg>
+            <h3>Brightness and macros</h3>
+            <p>Brightness from 0 to 100% in 17 steps, in sync with SteelSeries + F11/F12. A key such as SteelSeries + 1 can start a software macro run by PeriHub.</p>
+          </article>
+        </div>
+        <p class="small">On Linux, reactive lighting and macro keys need a second udev rule. With it installed, every program running under your user account can read what you type on that keyboard, so install it only if you want those features.</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Other SteelSeries devices</h2>
+        <p class="level-line"><span class="led ok" aria-hidden="true"></span><b>Supported</b>: tested on real hardware</p>
+        <ul class="models">
+          <li><a href="%%ROOT%%devices/steelseries-apex-3-tkl.html">Apex 3 TKL</a></li>
+          <li><a href="%%ROOT%%devices/steelseries-rival-700-rival-710.html">Rival 700 / Rival 710</a></li>
+        </ul>
+        <p class="small">The Apex 3 TKL is tested on Windows and on Linux; a user confirmed the Rival 700 / Rival 710 on Windows.</p>
+        <p class="level-line"><span class="led test" aria-hidden="true"></span><b>Experimental</b>: nobody has tried them yet</p>
+        <ul class="models">
+          <li><a href="%%ROOT%%devices/steelseries-apex-pro.html">Apex Pro</a></li>
+          <li><a href="%%ROOT%%devices/steelseries-apex-7.html">Apex 7</a></li>
+          <li><a href="%%ROOT%%devices/steelseries-apex-7-tkl.html">Apex 7 TKL</a></li>
+          <li><a href="%%ROOT%%devices/steelseries-apex-5.html">Apex 5</a></li>
+          <li><a href="%%ROOT%%devices/steelseries-aerox-3.html">Aerox 3</a></li>
+          <li><a href="%%ROOT%%devices/steelseries-prime.html">Prime</a></li>
+          <li><a href="%%ROOT%%devices/steelseries-rival-3.html">Rival 3</a></li>
+          <li><a href="%%ROOT%%devices/steelseries-sensei-ten.html">Sensei TEN</a></li>
+        </ul>
+        <p class="small">The Apex Pro, 7, 7 TKL and 5 can have their brightness changed, plus one colour and a display picture sent without saving. The other 32 SteelSeries mice (Rival, Sensei, Aerox, Prime, Kana, Kinzu) cannot report their settings, so DPI, polling rate and colours are sent one at a time and never saved. The <a href="%%ROOT%%devices/steelseries-apex-3.html">Apex 3</a> is recognized but PeriHub sends it nothing yet.</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Not there yet</h2>
+        <div class="limits-box">
+          <ul class="limits">
+            <li>GameSense is not available yet. SteelSeries Sonar and Moments are out of scope.</li>
+            <li>Key actuation points (OmniPoint), key remapping, macros and onboard profiles of the Apex Pro, 7, 7 TKL and 5 have no public source yet.</li>
+            <li>No macOS, and the Windows installer is not code-signed yet.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Questions</h2>
+        <div class="device-cols">
+          <div>
+            <details class="note"><summary>Which SteelSeries devices are fully supported?</summary><p>The Apex 3 TKL keyboard and the Rival 700 / Rival 710 mouse have been tested on real hardware. The Apex Pro, 7, 7 TKL, 5 and the other 32 mice are experimental, and the Apex 3 is recognized only.</p></details>
+            <details class="note"><summary>Can I keep SteelSeries GG running?</summary><p>No. Quit it and turn off its autostart: two programs talking to the same device get in each other's way.</p></details>
+          </div>
+          <div>
+            <details class="note"><summary>Why does my Apex 3 TKL go back to the rainbow when PeriHub is closed?</summary><p>The Apex 3 TKL does not store colours, with GG too. PeriHub reapplies them as soon as it sees the keyboard, and keeps running in the tray when you close its window.</p></details>
+            <details class="note"><summary>Does it work on Linux?</summary><p>Yes, for the Apex 3 TKL. Reactive lighting and macro keys need an optional udev rule that PeriHub offers to install, with a warning about what it allows.</p></details>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>More from PeriHub</h2>
+        <ul class="models">
+          <li><a href="%%ROOT%%g-hub-alternative.html">Logitech G HUB alternative</a></li>
+          <li><a href="%%ROOT%%logitech-mouse-linux.html">Logitech mouse on Linux</a></li>
+          <li><a href="%%ROOT%%razer-synapse-alternative.html">Razer Synapse alternative</a></li>
+          <li><a href="%%ROOT%%corsair-icue-alternative.html">Corsair iCUE alternative</a></li>
+          <li><a href="%%ROOT%%">PeriHub home</a></li>
+          <li><a href="%%ROOT%%help-test.html">Wanted: testers</a></li>
+          <li><a href="%%ROOT%%#devices">All devices</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <!--include footer-->
+</body>
+</html>

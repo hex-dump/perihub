@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--include head-->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is PeriHub a full replacement for G HUB?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. G HUB supports many more devices and features. PeriHub covers fewer Logitech models, says honestly which ones it has tested, and leaves out G HUB Lua scripts."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I keep G HUB running?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. G HUB takes control of the mouse when it starts and after every wake-up, so the mouse stops using its onboard profiles. Quit it and turn off its autostart."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it work on Linux?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. There are .deb, .rpm, Flatpak and AppImage files, and an Arch package built from the repository. The .deb and .rpm set up USB access by themselves; the AppImage and Flatpak need one udev rule installed by hand."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is it safe for my mouse?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "PeriHub does not touch firmware and writes only settings that the official apps write too. It backs up the mouse before every write and reads every write back. Experimental features carry no warranty."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-light" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/></symbol>
+    <symbol id="i-keys" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h1M10 10h1M14 10h1M18 10h0M7 14h10"/></symbol>
+    <symbol id="i-mouse" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="6"/><path d="M12 6.5v4"/></symbol>
+    <symbol id="i-macro" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5 3.5-5 3.5z"/></symbol>
+    <symbol id="i-apps" viewBox="0 0 24 24"><rect x="3" y="3" width="13" height="13" rx="2.5"/><path d="M8 21h10.5a2.5 2.5 0 0 0 2.5-2.5V8"/></symbol>
+  </svg>
+  <!--include header-->
+
+  <main id="main" tabindex="-1">
+    <section class="device-top">
+      <div class="wrap">
+        <p class="crumbs"><a href="%%ROOT%%">PeriHub</a> · <a href="%%ROOT%%#devices">All devices</a> · <a href="%%ROOT%%help-test.html">Wanted: testers</a></p>
+        <p class="eyebrow">Free and open source · Windows and Linux</p>
+        <h1>A Logitech G HUB alternative for Windows and Linux</h1>
+        <p class="lead">PeriHub changes DPI, buttons, lighting and macros on supported <b>Logitech G mice</b>, with no account and no telemetry. Settings are saved in the mouse, so they keep working with PeriHub closed.</p>
+        <!--include get-->
+        <div class="note warn">
+          <p><b>The Windows installer is not code-signed yet.</b> If SmartScreen blocks it, click <b>More info, then Run anyway</b>. Quit the maker's app and turn off its autostart before you open PeriHub: two apps talking to the same device get in each other's way.</p>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>The problem</h2>
+        <div class="device-cols">
+          <div><h3>G HUB does a lot</h3><p>G HUB covers many Logitech products. To change a DPI step, remap a button or pick a light colour, that is a big program for a small job. It also takes control of the mouse when it starts and after every wake-up, so the mouse stops using the profiles stored inside it. And there is no G HUB for Linux.</p></div>
+          <div><h3>What PeriHub does instead</h3><p>It writes your settings into the mouse itself, as onboard profiles. Close PeriHub and they still apply, on this PC or any other. The Windows installer is %%EXE_SIZE%%. On a real Windows 11 PC, PeriHub 0.8.2 used about 4 MB of memory while it waited in the tray. No background services, ads or account; MIT license.</p></div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>What works today</h2>
+        <div class="cards">
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-mouse"/></svg>
+            <h3>DPI and polling rate</h3>
+            <p>On the G502 HERO: up to 5 DPI levels from 100 to 25600, with a default and a sniper level, previewed live on the mouse. Polling rate of 125, 250, 500 or 1000 Hz.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-keys"/></svg>
+            <h3>Buttons and G-Shift</h3>
+            <p>11 buttons plus the G-Shift layer: clicks, keys with modifiers, media keys, DPI and profile functions.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-light"/></svg>
+            <h3>Lighting</h3>
+            <p>Logo and DPI indicator: off, fixed colour, breathing or colour cycle, with a live preview.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-macro"/></svg>
+            <h3>Macros</h3>
+            <p>Recorded into the mouse, so they work on any PC. Software macros can also repeat, type text or open a program or website; PeriHub has to be running for those.</p>
+          </article>
+          <article class="card">
+            <svg class="card-icon" aria-hidden="true"><use href="#i-apps"/></svg>
+            <h3>App profiles</h3>
+            <p>The mouse profile follows the game in focus. On Windows, and on Linux on Hyprland, KDE Plasma and GNOME.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Which Logitech devices</h2>
+        <p class="lead">Experimental means changes are at your own risk, with a warning on screen and a <b>No warranty</b> box before the first save. Each save is backed up and undone after 15 seconds unless you keep it.</p>
+        <p class="level-line"><span class="led ok" aria-hidden="true"></span><b>Supported</b>: tested on real hardware</p>
+        <ul class="models">
+          <li><a href="%%ROOT%%devices/logitech-g502-hero.html">G502 HERO</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g502-x-wireless.html">G502 X Wireless</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g300.html">G300</a></li>
+        </ul>
+        <p class="small">The G502 HERO is tested on Windows and on Linux. Users confirmed the G502 X Wireless (with its cable) and the G300 on their own mice, on Windows; nobody has saved to either on Linux yet.</p>
+        <p class="level-line"><span class="led dep" aria-hidden="true"></span><b>Depends on the mouse</b>: 28 more G mice</p>
+        <ul class="models">
+          <li><a href="%%ROOT%%devices/logitech-g-pro.html">G Pro</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g-pro-x-superlight.html">G Pro X Superlight</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g403.html">G403</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g703.html">G703</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g903-hero.html">G903 HERO</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g305.html">G305</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g502-x-plus.html">G502 X PLUS</a></li>
+        </ul>
+        <p class="small">PeriHub reads the memory format each mouse reports. A format already tested on another mouse counts as supported. A format PeriHub can write but nobody has tried is experimental, and the G502 X PLUS uses a newer one that stays read-only.</p>
+        <p class="level-line"><span class="led test" aria-hidden="true"></span><b>Experimental</b>: recognized, nobody has tried it yet</p>
+        <ul class="models">
+          <li><a href="%%ROOT%%devices/logitech-g600.html">G600</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g500s.html">G500s</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g700s.html">G700s</a></li>
+          <li><a href="%%ROOT%%devices/logitech-g213-prodigy.html">G213 Prodigy keyboard (Windows, lighting)</a></li>
+          <li><a href="%%ROOT%%devices/logitech-lightspeed-receiver.html">LIGHTSPEED receiver</a></li>
+          <li><a href="%%ROOT%%devices/logitech-logi-bolt-receiver.html">Logi Bolt receiver</a></li>
+          <li><a href="%%ROOT%%devices/logitech-unifying-receiver.html">Unifying receiver</a></li>
+        </ul>
+        <p class="small">Devices on a Logi Bolt or Unifying receiver (MX Master, MX Anywhere, MX Keys) get a page with battery and DPI; only the DPI of those without onboard memory can be changed. <b>Read-only</b>: <a href="%%ROOT%%devices/logitech-g9.html">G9</a>, <a href="%%ROOT%%devices/logitech-g500.html">G500</a>, <a href="%%ROOT%%devices/logitech-g700.html">G700</a>.</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Switching from G HUB</h2>
+        <ol class="steps">
+          <li><b>Download</b> PeriHub above and install it.</li>
+          <li><b>Quit G HUB</b> and turn off its autostart. PeriHub shows a warning while G HUB runs, and gives the mouse its profiles back once it is closed.</li>
+          <li>Open PeriHub: your mouse appears in the sidebar. Pick a profile, change DPI, buttons or lighting, then press <b>Save to mouse</b>.</li>
+        </ol>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Not there yet</h2>
+        <div class="limits-box">
+          <ul class="limits">
+            <li>G HUB supports many more devices and features. G HUB Lua scripts are out of scope for PeriHub.</li>
+            <li>Only three Logitech mice are tested. Saving through a LIGHTSPEED receiver is experimental, and one mouse has tried it so far.</li>
+            <li>PeriHub does not run on macOS.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>Questions</h2>
+        <div class="device-cols">
+          <div>
+            <details class="note"><summary>Is PeriHub a full replacement for G HUB?</summary><p>No. G HUB supports many more devices and features. PeriHub covers fewer Logitech models, says honestly which ones it has tested, and leaves out G HUB Lua scripts.</p></details>
+            <details class="note"><summary>Can I keep G HUB running?</summary><p>No. G HUB takes control of the mouse when it starts and after every wake-up, so the mouse stops using its onboard profiles. Quit it and turn off its autostart.</p></details>
+          </div>
+          <div>
+            <details class="note"><summary>Does it work on Linux?</summary><p>Yes. There are .deb, .rpm, Flatpak and AppImage files, and an Arch package built from the repository. The .deb and .rpm set up USB access by themselves; the AppImage and Flatpak need one udev rule installed by hand.</p></details>
+            <details class="note"><summary>Is it safe for my mouse?</summary><p>PeriHub does not touch firmware and writes only settings that the official apps write too. It backs up the mouse before every write and reads every write back. Experimental features carry no warranty.</p></details>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <h2>More from PeriHub</h2>
+        <ul class="models">
+          <li><a href="%%ROOT%%logitech-mouse-linux.html">Logitech mouse on Linux</a></li>
+          <li><a href="%%ROOT%%razer-synapse-alternative.html">Razer Synapse alternative</a></li>
+          <li><a href="%%ROOT%%corsair-icue-alternative.html">Corsair iCUE alternative</a></li>
+          <li><a href="%%ROOT%%steelseries-gg-alternative.html">SteelSeries GG alternative</a></li>
+          <li><a href="%%ROOT%%">PeriHub home</a></li>
+          <li><a href="%%ROOT%%help-test.html">Wanted: testers</a></li>
+          <li><a href="%%ROOT%%#devices">All devices</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <!--include footer-->
+</body>
+</html>

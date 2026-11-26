@@ -1,11 +1,12 @@
 // Screenshots of the interface for the README and the website (docs/screenshots) and the social
 // preview (docs/social-preview.png), from the preview build (vite.preview.config.ts, preview/fake.ts).
 // Output goes to SHOTS_DIR (default: docs/), created if missing: Chrome does not make folders.
-// Needs Chrome or Chromium: set CHROME to its path if it is not found.
+// Needs Chrome or Chromium: set CHROME to its path if it is not found. With ffmpeg, it also makes
+// screenshots/tour.gif, the pictures of the mouse and keyboard one after the other, for the top of the README.
 //   npm run screenshots
 import { execFile, spawnSync } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { build, preview } from "vite";
@@ -65,4 +66,23 @@ try {
 } finally {
   rmSync(profile, { recursive: true, force: true });
   await new Promise((done) => server.httpServer.close(done));
+}
+
+// [file in screenshots/, seconds on screen]
+const tour = [["mouse-dpi.png", 2.5], ["mouse-lighting.png", 2.5], ["mouse-buttons.png", 2.5], ["keyboard-lighting.png", 2.5], ["keyboard-keys.png", 2.5]];
+if (spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status === 0) {
+  const work = mkdtempSync(join(tmpdir(), "perihub-tour-"));
+  try {
+    // The concat demuxer needs the last picture twice for its duration to count.
+    const list = tour.map(([file, s]) => `file '${join(docs, "screenshots", file)}'\nduration ${s}`).join("\n") + `\nfile '${join(docs, "screenshots", tour.at(-1)[0])}'\n`;
+    writeFileSync(join(work, "tour.txt"), list);
+    const filter = "fps=2,scale=870:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=full[p];[b][p]paletteuse=dither=none";
+    const out = join(docs, "screenshots", "tour.gif");
+    await promisify(execFile)("ffmpeg", ["-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", join(work, "tour.txt"), "-vf", filter, "-loop", "0", out]);
+    console.log("screenshots/tour.gif");
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+} else {
+  console.log("ffmpeg not found: no screenshots/tour.gif");
 }

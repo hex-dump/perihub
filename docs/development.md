@@ -279,14 +279,15 @@ connected, and measures memory and CPU. Memory is the private working set, which
 Manager shows in the Memory column, of PeriHub and, with the window open, the WebView2 processes it
 starts. CPU is their processor time over 2 minutes.
 
-| Version | Date | Machine | Tray | Window open |
+| Version | Date | WebView2 | Tray | Window open |
 |---|---|---|---|---|
-| 0.8.2 | 13 November 2026 | AMD EPYC 7763, WebView2 156 | 3 MB, 0.08% of a core | 39 MB, 0.35% |
-| 0.5.5 | 8 November 2026 | AMD EPYC 9V45, WebView2 156 | 3 MB, 0.05% of a core | 39 MB, 0.2% |
-| 0.4.0 | 20 October 2026 | Intel Xeon Platinum 8573C, WebView2 154 | 2 MB | 42 MB |
-| 0.3.0 | 19 October 2026 | AMD EPYC 7763 | 49 MB, about 2% | |
+| 0.9.8 | 26 November 2026 | 157 | 3 MB, 0.04% of a core | 45 MB, 0.55% |
+| 0.8.2 | 13 November 2026 | 156 | 3 MB, 0.08% of a core | 39 MB, 0.35% |
+| 0.5.5 | 8 November 2026 | 156 | 3 MB, 0.05% of a core | 39 MB, 0.2% |
+| 0.4.0 | 20 October 2026 | 154 | 2 MB | 42 MB |
+| 0.3.0 | 19 October 2026 | | 49 MB, about 2% | |
 
-On a real PC (Windows 11, 16 logical processors) with both devices connected and the wave effect,
+On a real PC (Windows 11) with both devices connected and the wave effect,
 PeriHub 0.4.1 used 0.57–0.68% of one core in the tray, almost all of it to animate the wave.
 
 On a real PC (Windows 11) with both devices connected, PeriHub 0.8.2 had been in the tray for 30
