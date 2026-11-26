@@ -20,8 +20,8 @@ name: Auto-add a device
 #      (tools/notify.py) comments the link on the issue named by the commit's "Test: #N" line, as for a
 #      push: a dispatched run has no "before" commit, so every commit of the branch not on main counts.
 #   3. A pull request to main titled for the device is opened, a normal one, not a draft: the maintainer merges
-#      it after CI. A pull request opened with GITHUB_TOKEN does not start CI (main's ruleset needs it): the
-#      maintainer closes and reopens it, as for the Confirm workflow's. The test build is for trying
+#      it after CI. A pull request opened with GITHUB_TOKEN does not start CI, so step 2 also starts CI on the
+#      branch by hand (workflow_dispatch); its checks show on the pull request. The test build is for trying
 #      the device earlier, and nothing waits for it. The confirm workflow reuses this pull request when a
 #      tester's report from the test build is clean while the branch is not merged yet, and adds the
 #      confirmation to the branch. Main is never pushed to.
@@ -159,6 +159,10 @@ jobs:
           git push origin "HEAD:refs/heads/$BRANCH"
           # The push above, made with GITHUB_TOKEN, does not start the Test build workflow: this does, once.
           gh workflow run test-build.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
+          # Nor does it start CI, and neither does a pull request opened with GITHUB_TOKEN: CI is started here on the
+          # branch (ci.yml allows workflow_dispatch). Its checks run on the branch's head commit, so they show on
+          # the pull request; main's ruleset requires none, so nobody has to close and reopen it.
+          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
 
       - name: Open the pull request
         if: steps.build.outputs.made == 'true'
@@ -170,7 +174,7 @@ jobs:
           {
             echo "Adds **$NAME** (\`$USB\`) for #$ISSUE, written and built automatically by the Auto-add workflow (\`tools/auto_add.py\`): an OpenRazer mouse from its generator at the commit the table already names, or a sibling id of a family whose configuration collection and reports the request shows (\`tools/platforms.py\`), added read only. \`cargo xtask gen\` wrote the rest and the line under **New devices** in CHANGELOG.md is there. The format, clippy, the tests, the generated-file check, the tools tests and the CHANGELOG lint passed before the branch was pushed."
             echo
-            echo "**Not tried on hardware.** It goes into the next release (read-only, or experimental with its changes behind the No warranty box, the read-back and the undo) without waiting for a test: merge it after CI. CI does not start on a pull request opened by a workflow (and main's ruleset needs it): close and reopen this pull request to start it. A test build of this branch is being made and its link comes on #$ISSUE; a clean test report makes the device supported (the Confirm workflow opens that pull request)."
+            echo "**Not tried on hardware.** It goes into the next release (read-only, or experimental with its changes behind the No warranty box, the read-back and the undo) without waiting for a test: merge it after CI (started on the branch by the workflow, its checks show here; only the Changelog check, which runs on pull request events, is missing: the CHANGELOG lint already passed). A test build of this branch is being made and its link comes on #$ISSUE; a clean test report makes the device supported (the Confirm workflow opens that pull request)."
             echo
             # Not "Closes": the request stays open until the release, whose comment tells the requester it is out.
             echo "For #$ISSUE"
