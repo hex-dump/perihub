@@ -135,6 +135,7 @@
     <modalias>usb:v046DpC24Ad*</modalias>
     <modalias>usb:v046DpC24Ed*</modalias>
     <modalias>usb:v046DpC332d*</modalias>
+    <modalias>usb:v046DpC35Bd*</modalias>
     <modalias>usb:v046DpC539d*</modalias>
     <modalias>usb:v046DpC53Ad*</modalias>
     <modalias>usb:v046DpC53Dd*</modalias>
