@@ -6,7 +6,10 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
-The repository's triage bot recognizes device requests by their HID descriptors, and no longer tells a device that PeriHub, its main branch or another project knows that it is not in the list.
+The repository's triage bot recognizes device requests by their HID descriptors, and no longer tells a device that PeriHub, its main branch or another project knows that it is not in the list. The profiles of a G502 X PLUS with profile format 5 were checked byte by byte against what its tester saw; that format stays read-only.
+
+### Added
+- **G502 X PLUS with profile format 5: its profiles checked byte by byte** ([#149](https://github.com/hex-dump/perihub/issues/149)): the G502 X PLUS of the report keeps its profiles in format 5, 255-byte sectors, which PeriHub already read with the layout of formats 2 to 4. The profile 1 and factory profile 1 its report holds match, field by field, what the tester wrote (1000 Hz, 800 to 3200 DPI with 1600 the default and 800 the sniper level, the 11 buttons), with the CRC in the last two bytes; the replay test `logitech-g502-x-plus-receiver.json` and `tests/g502x_plus_format5.rs` keep it so (docs/protocols/logitech-onboard-profiles.md). Format 5 stays read-only: nobody has saved to it yet.
 
 ### Changed
 - **Device requests are recognized by their HID descriptors, and the automatic answer says what was checked** ([#123](https://github.com/hex-dump/perihub/issues/123)): when the descriptors of a request (**Send a report** → **Request support**) show the configuration collection and reports of a family PeriHub already reads (Artery W669 keyboards, EVision keyboards, YJX mice), the repository's triage labels it "ready to add" and the Auto-add workflow adds the id read only, with its line here, a test build and a pull request, as the X68HE was added by hand. Logitech HID++ and QMK collections are recognized too. A request nothing recognizes is now told what was checked (the catalogue, the projects PeriHub learns from, its vendor collections) and that a recording of the official software is the optional help, instead of a promise that a maintainer will look for documentation.
