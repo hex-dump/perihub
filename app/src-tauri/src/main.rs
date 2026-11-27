@@ -324,6 +324,7 @@ fn main() {
             commands::app_get_settings,
             commands::app_set_settings,
             commands::app_quit,
+            commands::app_log_interface_error,
             commands::app_read_only,
             commands::app_config_problem,
             commands::app_set_read_only,

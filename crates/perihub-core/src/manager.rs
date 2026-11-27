@@ -1179,8 +1179,29 @@ impl Manager {
         {
             let mut slots = self.slots.lock_recover();
             let before = slots.direct.len();
-            slots.direct.retain(|key, _| direct.iter().any(|d| d.key == *key));
+            slots.direct.retain(|key, _| {
+                let there = direct.iter().any(|d| d.key == *key);
+                if !there {
+                    log::info!("Logitech device on its own USB connection gone ({})", key.to_string_lossy());
+                }
+                there
+            });
             changed |= slots.direct.len() != before;
+        }
+        // Issue #40: a keyboard that showed up only after it was plugged in again. What the system lists
+        // of it, once, tells whether it was there to be found.
+        for paths in direct
+            .iter()
+            .filter(|p| !p.collections.is_empty() && !self.slots.lock_recover().direct.contains_key(&p.key))
+        {
+            log::info!(
+                "Logitech {} ({:04x}) on its {}: {}{}",
+                paths.model.name,
+                paths.model.product_id,
+                paths.model.connection,
+                paths.listed.join("; "),
+                paths.closed.as_deref().map(|why| format!(" ({why})")).unwrap_or_default()
+            );
         }
         for paths in direct.iter().filter(|p| !p.collections.is_empty()) {
             let (known, reached) = {

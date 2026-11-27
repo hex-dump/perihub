@@ -26,11 +26,13 @@ Older Logitech devices and the receivers have their HID++ reports in collections
 | PRO K/DA keyboard, on its cable | `046d:c339` | 0 | `0001/0006` (keyboard) |
 | | | 1 | `0001/0006` (keyboard), `000c/0001` (consumer keys), `ff43/0602`, `ff43/0604` |
 
-No public source says which `ff43` usage holds which report, so PeriHub does not rely on the usage numbers.
 On Windows each collection has a path of its own, and a write to a collection whose descriptor has no
-report with that id fails at once (hidapi gives an error). PeriHub tries the HID++ collections of the
-interface in turn, `ff43` before `ff00`, the higher usage first, and keeps the first where the device
-answers. Solaar does something similar on Windows: it asks each collection for an input report `10` of
+report with that id fails at once (hidapi gives an error), before anything reaches the device. On the
+PRO K/DA (issue #40, Windows) `ff43/0604` refused the long report with "WriteFile: Incorrect function" and
+`ff43/0602` answered "HID++ 4.2": as on the G213, whose descriptor gives `0602` the long report (id `11`,
+20 bytes) and `0604` the 64-byte one (id `12`, see logitech-g213.md). PeriHub tries the HID++ collections
+of the interface in turn, those known to carry the long report first (`ff43/0602`, `ff00/0002`), then
+`ff43` before `ff00`, the higher usage first, and keeps the first where the device answers. Solaar does something similar on Windows: it asks each collection for an input report `10` of
 7 bytes and `11` of 20 bytes, and takes those that have them as short and long HID++ collections.
 
 On Linux one hidraw node holds every collection of an interface, so the HID++ collections of interface 1
@@ -53,7 +55,7 @@ the index is the receiver's slot. Without a receiver:
 PeriHub asks at `ff`, with the root's "get protocol version" (feature index 0, function 1, a read
 that changes nothing, with `5a` as the ping byte the device sends back). A device that answers with
 version 2 or newer is read; anything else (an error, a HID++ 1.0 answer, no answer within a second) goes
-into the test report as it came, as "usage page ff43, usage 0604, index ff: HID++ 4.2", and the next
+into the test report as it came, as "usage page ff43, usage 0602, index ff: HID++ 4.2", and the next
 collection is tried. A device that has not answered is asked again every 30 seconds.
 
 ## What is sent

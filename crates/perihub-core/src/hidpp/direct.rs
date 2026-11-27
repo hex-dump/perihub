@@ -121,10 +121,19 @@ pub fn hidpp_collection(usage_page: u16) -> bool {
     matches!(usage_page, USAGE_PAGE_HIDPP | USAGE_PAGE_HIDPP_OLD | 0)
 }
 
-/// The order the collections are tried in: 0xFF43 first, then the higher usages, which on the
-/// devices seen so far are the long reports' collections.
-pub fn try_order(usage_page: u16, usage: u16) -> (bool, Reverse<u16>) {
-    (usage_page != USAGE_PAGE_HIDPP, Reverse(usage))
+/// The collections known to carry the long HID++ report (id 0x11, 20 bytes): 0xFF00/0x0002 on the
+/// older devices and the receivers, 0xFF43/0x0602 on the newer ones (the G213's descriptor,
+/// docs/protocols/logitech-g213.md, and the PRO K/DA's answers in issue #40). 0xFF43/0x0604 carries
+/// the 64-byte report (id 0x12) instead: Windows refuses a long report there before anything reaches
+/// the device ("Incorrect function").
+pub fn long_collection(usage_page: u16, usage: u16) -> bool {
+    matches!((usage_page, usage), (USAGE_PAGE_HIDPP, 0x0602) | (USAGE_PAGE_HIDPP_OLD, 0x0002))
+}
+
+/// The order the collections are tried in: those known to carry the long report first, then 0xFF43
+/// before 0xFF00, the higher usages first.
+pub fn try_order(usage_page: u16, usage: u16) -> (bool, bool, Reverse<u16>) {
+    (!long_collection(usage_page, usage), usage_page != USAGE_PAGE_HIDPP, Reverse(usage))
 }
 
 /// Asks the device for its HID++ version (a read: root function 1) at each of [`INDEXES`], on a
@@ -239,10 +248,12 @@ mod tests {
     }
 
     #[test]
-    fn the_newer_hidpp_collections_are_tried_first() {
-        let mut found = [(0xFF00, 0x0002), (0xFF43, 0x0602), (0xFF43, 0x0604), (0x000C, 0x0001)];
+    fn the_long_report_collections_are_tried_first() {
+        // Issue #40: on the PRO K/DA, 0604 refused the long report on Windows and 0602 answered.
+        let mut found = [(0xFF00, 0x0001), (0xFF00, 0x0002), (0xFF43, 0x0604), (0xFF43, 0x0602), (0x000C, 0x0001)];
         found.sort_by_key(|&(page, usage)| try_order(page, usage));
-        assert_eq!(&found[..3], [(0xFF43, 0x0604), (0xFF43, 0x0602), (0xFF00, 0x0002)]);
+        assert_eq!(&found[..4], [(0xFF43, 0x0602), (0xFF00, 0x0002), (0xFF43, 0x0604), (0xFF00, 0x0001)]);
+        assert!(!long_collection(0xFF43, 0x0604) && !long_collection(0xFF00, 0x0001));
         assert!(hidpp_collection(0xFF43) && hidpp_collection(0xFF00) && hidpp_collection(0));
         assert!(!hidpp_collection(0x0001) && !hidpp_collection(0x000C));
         assert_eq!(find(0xC339).unwrap().interface, 1);

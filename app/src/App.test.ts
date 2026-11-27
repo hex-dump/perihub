@@ -442,3 +442,90 @@ describe("Problems at start-up", () => {
     expect(screen.getByText(/Could not turn read-only mode off: file error: disk full/)).toBeTruthy();
   });
 });
+
+// Issue #40: a PRO K/DA on its USB cable (Windows), and Settings and Test my device that needed a reload.
+describe("Navigation", () => {
+  const kda = {
+    slot: 0xff,
+    name: "PRO K/DA",
+    kind: 0,
+    protocol: "4.2",
+    wireless_id: null,
+    device_info: null,
+    firmware: ["U1 13.04.0019"],
+    features: [0x0001, 0x0003, 0x8070].map((id) => ({ id, kind: 0, version: 0 })),
+    dpi: null,
+    report_rates_ms: [1, 2, 4, 8],
+    onboard: null,
+    lighting: null,
+    led_zones: [{ index: 0, location: 1, effects: [0, 1, 10, 3], feature: 0x8070, slot: null }],
+    battery: null,
+    battery_reply: null,
+    read_only: true,
+    read_errors: [],
+  };
+  const cable = {
+    product_id: 0xc339,
+    name: "USB cable",
+    collections: ["interface 1, usage page ff43, usage 0602", "interface 1, usage page ff43, usage 0604"],
+    bolt: false,
+    unifying: false,
+    direct: true,
+    reachable: true,
+    denied: false,
+    slots: ["usage page ff43, usage 0602, index ff: HID++ 4.2"],
+    open_slots: [0xff],
+    unsupported: [kda],
+  };
+  const settings = {
+    start_hidden: false,
+    autostart: false,
+    check_updates: false,
+    battery: { enabled: true, low_percent: 15, full: false },
+    updates_supported: false,
+    package_manager: null,
+    log_dir: "C:/logs",
+    config_dir: "C:/config",
+    system: "windows x86_64",
+    no_tray_reason: null,
+    build: null,
+  };
+  const heading = () => [...document.querySelectorAll("h1")].map((h) => h.textContent);
+  const click = (name: RegExp) => (screen.getByRole("button", { name }) as HTMLButtonElement).click();
+
+  it("opens Settings and Test my device from a keyboard on its USB cable, which the wizard lists", async () => {
+    calls.status = vi.fn(async () => ({ ...empty(), receivers: [cable] }));
+    calls.appSettings = vi.fn(async () => settings);
+    calls.logitechLive = vi.fn(async () => ({ battery: null, dpi: null, lighting: null, host: null }));
+    render(App);
+    await wait();
+    expect(heading()).toEqual(["Logitech PRO K/DA"]);
+    click(/^Settings/);
+    await wait();
+    expect(heading()).toEqual(["Settings"]);
+    click(/Test my device/);
+    await wait();
+    expect(heading()).toEqual(["Test my device"]);
+    expect(screen.getByRole("main").textContent).toContain("Logitech PRO K/DA");
+    click(/PRO K\/DA/);
+    await wait();
+    expect(heading()).toEqual(["Logitech PRO K/DA"]);
+  });
+
+  it("says a page hit an error, and the other pages still open", async () => {
+    calls.status = vi.fn(async () => ({ ...empty(), receivers: [cable] }));
+    // Settings without its battery alerts throws while it is drawn.
+    calls.appSettings = vi.fn(async () => ({ ...settings, battery: undefined }));
+    calls.logInterfaceError = vi.fn(async () => {});
+    render(App);
+    await wait();
+    click(/^Settings/);
+    await wait();
+    expect(screen.getByRole("alert").textContent).toContain("This page hit an error");
+    expect(calls.logInterfaceError).toHaveBeenCalledWith(expect.stringContaining("page settings: TypeError"));
+    click(/Mouse tester/);
+    await wait();
+    expect(heading()).toEqual(["Mouse tester"]);
+    expect(document.body.textContent).not.toContain("This page hit an error");
+  });
+});
