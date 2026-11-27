@@ -917,6 +917,7 @@ mod tests {
     /// does not apply in read-only mode, see `AppProfileEngine`).
     const OTHERS: &[&str] = &[
         "get_status",
+        "app_log_interface_error",
         "devices_for_report",
         "kb_get_config",
         "kb_read_brightness",
