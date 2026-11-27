@@ -26,6 +26,7 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { markPrompted, nextToPrompt, unconfirmedDevices } from "./lib/confirmPrompt";
   import logo from "../icon.svg";
+  import { logInterfaceError } from "./lib/interfaceErrors";
 
   type Page =
     | "keyboard"
@@ -503,6 +504,8 @@
           {/if}
         </div>
       {/each}
+      <!-- A page that throws says so here, and the others still open (issue #40). -->
+      {#key page}<svelte:boundary onerror={(e) => logInterfaceError(`page ${page}`, e)}>
       {#if page === "keyboard"}
         {#key tab}<Keyboard
             info={status.keyboard}
@@ -549,6 +552,13 @@
       {:else if page === "settings"}
         <Settings {status} />
       {/if}
+      {#snippet failed(error, reset)}
+        <div class="notice error row page-error" role="alert">
+          <span class="grow">This page hit an error: {errorText(error)}. The other pages still work, and the error is in PeriHub's log file.</span>
+          <button class="tiny" onclick={reset}>Try again</button>
+        </div>
+      {/snippet}
+      </svelte:boundary>{/key}
     </div>
   </main>
 </div>

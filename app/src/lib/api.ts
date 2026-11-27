@@ -1170,6 +1170,8 @@ export const api = {
   setAppSettings: (settings: AppSettings) =>
     invoke<AppSettings>("app_set_settings", { settings }),
   quit: () => invoke<void>("app_quit"),
+  /** Writes an error of the window's own code into PeriHub's log file. */
+  logInterfaceError: (message: string) => invoke<void>("app_log_interface_error", { message }),
   /** Why the settings file was not used at start-up (it could not be read), or null. */
   configProblem: () => invoke<string | null>("app_config_problem"),
   /** Read-only mode: nothing that changes a device is sent to it. */

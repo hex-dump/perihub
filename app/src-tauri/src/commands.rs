@@ -867,6 +867,14 @@ pub fn app_open_release_notes(version: String) -> CmdResult<()> {
     .map_err(|e| e.to_string())
 }
 
+/// An error in the window's own code, into the log file: a page that stops changing leaves nothing
+/// else behind to look at (issue #40). Cut short, on one line.
+#[tauri::command]
+pub fn app_log_interface_error(message: String) {
+    let line: String = message.chars().take(2000).map(|c| if c.is_control() { ' ' } else { c }).collect();
+    log::error!("interface: {line}");
+}
+
 #[tauri::command]
 pub fn app_quit(app: AppHandle) {
     crate::window::quit(&app);
@@ -909,6 +917,7 @@ mod tests {
     /// does not apply in read-only mode, see `AppProfileEngine`).
     const OTHERS: &[&str] = &[
         "get_status",
+        "app_log_interface_error",
         "devices_for_report",
         "kb_get_config",
         "kb_read_brightness",
