@@ -6,7 +6,10 @@ GitHub are made from them (python3 tools/release.py notes X.Y.Z); CI checks the 
 
 ## Unreleased
 
-The repository's triage bot recognizes device requests by their HID descriptors, and no longer tells a device that PeriHub, its main branch or another project knows that it is not in the list.
+The repository's triage bot recognizes device requests by their HID descriptors, and no longer tells a device that PeriHub, its main branch or another project knows that it is not in the list. The profiles of a G502 X PLUS with profile format 5 were checked byte by byte against what its tester saw; that format stays read-only.
+
+### Added
+- **G502 X PLUS with profile format 5: its profiles checked byte by byte** ([#149](https://github.com/hex-dump/perihub/issues/149)): the G502 X PLUS of the report keeps its profiles in format 5, 255-byte sectors, which PeriHub already read with the layout of formats 2 to 4. The profile 1 and factory profile 1 its report holds match, field by field, what the tester wrote (1000 Hz, 800 to 3200 DPI with 1600 the default and 800 the sniper level, the 11 buttons), with the CRC in the last two bytes; the replay test `logitech-g502-x-plus-receiver.json` and `tests/g502x_plus_format5.rs` keep it so (docs/protocols/logitech-onboard-profiles.md). Format 5 stays read-only: nobody has saved to it yet.
 
 ### New devices
 - **Logitech PRO X RAPID keyboard, on its USB cable (read-only)** ([issue #146](https://github.com/hex-dump/perihub/issues/146)): PeriHub finds the keyboard (`046d:c35b`) by its HID++ collections of usage page ff00 on USB interface 2, which carry no typing, and gives it the page of a device PeriHub knows by its features: name, firmware, the features it lists, battery and lighting. Only reads are sent. The analog features (actuation points, rapid trigger, key priority) are not documented anywhere and stay untouched until a recording of the official software shows them. No wireless or Bluetooth id came with the request.
