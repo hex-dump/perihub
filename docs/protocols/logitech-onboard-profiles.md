@@ -55,8 +55,8 @@ on a real mouse. In particular, PeriHub has never met a mouse without a profile 
   **(G502)**. With 256-byte sectors it sits in bytes 254–255, with 255-byte sectors in 253–254.
 - Sector sizes seen: 256 (G502 HERO, U1 27.03), 255 (G502 HERO, U1 74.00, #20; G502 X Wireless,
   #15). A 255-byte sector is written as 16 blocks, the last one carrying 15 bytes.
-- Profile formats seen: 2 (G502 HERO), 3 (G502 X Wireless), 4 (G903 HERO, issues #22 and #115). libratbag and
-  Solaar read and write formats 1 to 5 with one layout.
+- Profile formats seen: 2 (G502 HERO), 3 (G502 X Wireless), 4 (G903 HERO, issues #22 and #115), 5 (G502 X PLUS,
+  issue #149). libratbag and Solaar read and write formats 1 to 5 with one layout.
 
 ## The profile list
 
@@ -166,6 +166,33 @@ No source shows a format 4 field where PeriHub writes something else, so format 
   four as they are. Its profile list (sector 0) in issue #115 enables profile 1 only, with `FF` as the last byte of
   each entry, and its CRC (`40 37`) matches: PeriHub reads it like any other list
   (`crates/perihub-core/tests/fixtures/transcripts/logitech-g903-hero-receiver.json`).
+
+## Profile format 5 (the G502 X PLUS)
+
+The G502 X PLUS of issue [#149](https://github.com/hex-dump/perihub/issues/149) (`046d:c095`, `4099` through its
+receiver, firmware MPM 27.00.0016, PeriHub 0.9.8 on Linux) reports memory model 1, profile format 5, macro format 1,
+5 profiles of which 2 are factory profiles, 11 buttons and 16 sectors of 255 bytes. Its report holds the profile
+list, profile 1 and factory profile 1 byte for byte, and the tester wrote what profile 1 holds
+(`crates/perihub-core/tests/g502x_plus_format5.rs`, from
+`crates/perihub-core/tests/fixtures/transcripts/logitech-g502-x-plus-receiver.json`):
+
+- Every field PeriHub reads is where formats 2 to 4 have it, and matches the tester's values: polling interval 1 ms
+  (byte 0), default level 3 and shift level 1 (bytes 1, 2), 800, 1200, 1600, 2400 and 3200 DPI (3 to 12), the 11
+  buttons (left, right, middle, back, DPI shift, forward, tilt left and right, profile cycle, DPI up and down, from
+  32), the G-shift slots all disabled (96 to 159).
+- The CRC is in the last two bytes, 253 and 254 (`94 FB` for profile 1, `82 32` for the list); factory profile 1
+  is profile 1 without it. The list enables profiles 1 and 2, with `FF` as the last byte of each entry.
+- Past what PeriHub reads: power save and power off timeouts of 60 and 300 seconds (28 to 31, little-endian), a blank
+  name (160 to 207), effect `0x0F` in both LED blocks (208, 219) and `0x10` in both alternate blocks (230, 241),
+  each with `0x64` at its byte 8, and `03` in byte 252, the custom animation byte the sources place there for
+  format 5. No source names effects `0x0F` and `0x10`: PeriHub shows those blocks as raw bytes. The mouse's one
+  lighting zone (location 1) comes through `0x8071`, so no block is tied to it (see below).
+
+So format 5 is read like 2 to 4 (PeriHub did so already: the tester found the page right), and it stays
+**read-only**: nobody has saved to it yet, and through a receiver PeriHub saves only to a format first confirmed with
+the cable. Opening it would take a save test with the USB cable (one DPI level changed and saved, the sector read
+back, the mouse unplugged and plugged in again, the 15-second undo let run out), then
+`cargo xtask confirm --memory-format 5:255`.
 
 ## Lights through 0x8071 on a mouse
 
