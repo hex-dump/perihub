@@ -79,6 +79,7 @@ KERNEL=="hidraw*", KERNELS=="0005:046D:B024.*", TAG+="uaccess"
 # Logitech keyboards with HID++ on their own USB connection, without a receiver (read only,
 # untested): only the interface with their HID++ collections (usage page ff43). A keyboard whose HID++
 # collections share an interface with what is typed on it is left out: one hidraw node holds both.
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c35b", ENV{ID_USB_INTERFACE_NUM}=="02", TAG+="uaccess"
 
 # LIGHTSPEED receivers, for wireless Logitech mice (read-only until they are tested): only the
 # receiver's own HID++ interface (02). Movements and typing arrive on its other interfaces, which

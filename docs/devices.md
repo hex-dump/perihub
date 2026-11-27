@@ -237,6 +237,7 @@ offered, and the connection refuses anything but reads. The test report has ever
 | Keyboard | USB ID | Opened on Linux |
 |---|---|---|
 | PRO K/DA | `046d:c339` | — |
+| PRO X RAPID | `046d:c35b` | interface 2 |
 <!-- end generated -->
 
 ## Corsair

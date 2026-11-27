@@ -360,6 +360,11 @@
           "level": "read_only"
         },
         {
+          "name": "PRO X RAPID",
+          "kind": "keyboard",
+          "level": "read_only"
+        },
+        {
           "name": "G300",
           "kind": "mouse",
           "level": "supported"

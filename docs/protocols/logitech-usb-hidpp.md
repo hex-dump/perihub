@@ -25,6 +25,9 @@ Older Logitech devices and the receivers have their HID++ reports in collections
 |---|---|---|---|
 | PRO K/DA keyboard, on its cable | `046d:c339` | 0 | `0001/0006` (keyboard) |
 | | | 1 | `0001/0006` (keyboard), `000c/0001` (consumer keys), `ff43/0602`, `ff43/0604` |
+| PRO X RAPID keyboard, on its cable | `046d:c35b` | 0 | `0001/0006` (keyboard) |
+| | | 1 | `0001/0002`, `0001/0080`, `000c/0001` |
+| | | 2 | `ff00/0001`, `ff00/0002` (HID++, short and long report, no typing) |
 
 No public source says which `ff43` usage holds which report, so PeriHub does not rely on the usage numbers.
 On Windows each collection has a path of its own, and a write to a collection whose descriptor has no

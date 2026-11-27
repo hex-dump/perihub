@@ -52,6 +52,16 @@ pub const DIRECT: &[DirectModel] = &[
         connection: "USB cable",
         typing: true,
     },
+    // Issue #146: interface 0 keyboard; interface 1 mouse, system and consumer collections; interface 2
+    // only HID++ (FF00, usages 0001 and 0002), so no typing shares it.
+    DirectModel {
+        product_id: 0xC35B,
+        name: "PRO X RAPID",
+        kind: DirectKind::Keyboard,
+        interface: 2,
+        connection: "USB cable",
+        typing: false,
+    },
 ];
 
 /// Logitech's USB vendor id.
@@ -246,6 +256,9 @@ mod tests {
         assert!(hidpp_collection(0xFF43) && hidpp_collection(0xFF00) && hidpp_collection(0));
         assert!(!hidpp_collection(0x0001) && !hidpp_collection(0x000C));
         assert_eq!(find(0xC339).unwrap().interface, 1);
+        // Issue #146: its HID++ collections (ff00) are alone on interface 2, with no typing.
+        let rapid = find(0xC35B).unwrap();
+        assert_eq!((rapid.interface, rapid.typing), (2, false));
         assert!(find(0xC339).unwrap().typing, "its HID++ interface also carries the keyboard");
     }
 
