@@ -522,6 +522,21 @@
       }
     },
     {
+      "family": "logitech-direct",
+      "brand": "Logitech",
+      "name": "PRO X RAPID",
+      "kind": "keyboard",
+      "level": "read_only",
+      "page": "devices/logitech-pro-x-rapid.html",
+      "usb_ids": [
+        "046d:c35b"
+      ],
+      "linux": {
+        "kind": "interface",
+        "interface": 2
+      }
+    },
+    {
       "family": "lightspeed",
       "brand": "Logitech",
       "name": "LIGHTSPEED receiver",
