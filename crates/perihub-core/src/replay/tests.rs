@@ -287,10 +287,17 @@ fn differences(at: &str, expected: &Value, actual: &Value, out: &mut Vec<String>
 /// transcript was rebuilt from values, with no bytes, and has no answer for the battery read of
 /// the receiver page (the G303 does list 0x1004, so the read is right). The K580 transcript has no
 /// answer for the colours per key (command 10), which PeriHub 0.9.7 did not read; its other answers
-/// are still checked by `peripheral::evision`'s tests. No answer is invented.
+/// are still checked by `peripheral::evision`'s tests. The G502 Proteus Core transcript was recorded before PeriHub
+/// read the lights without colour (0x1300): its profile bytes are checked by
+/// `tests/g502_proteus_core_format1.rs`, and the 0x1300 answers of a real one come from libratbag's logs, in the
+/// tests of `mouse`. No answer is invented.
 const NEEDS_CAPTURE: &[(&str, &str)] = &[
     ("logitech-g303-receiver.json", "issue #34: needs a test report from a version with the battery read"),
     ("evision-k580.json", "issue #117: needs a test report from a version that reads the colours per key"),
+    (
+        "logitech-g502-proteus-core.json",
+        "issue #159: needs a test report from a version that reads the lights without colour (0x1300)",
+    ),
 ];
 
 #[test]

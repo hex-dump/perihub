@@ -41,6 +41,15 @@ Sources studied (read only, for the protocol facts):
   `research/drive-download.zip`) has `0x8070` and `0x8071` but no `0x8100`. See
   [Profile format 4](#profile-format-4-the-g903-hero) and [Lights through 0x8071](#lights-through-0x8071-on-a-mouse).
 
+- For profile format 1 and the lights without colour of the G502 Proteus Core (issue [#159](https://github.com/hex-dump/perihub/issues/159)):
+  libratbag's `src/hidpp20.c` and `src/hidpp20.h` (MIT: the name "G402" for memory model 1 and profile format 1, the
+  layout of a profile, the functions of `0x1300`), its issues [#280](https://github.com/libratbag/libratbag/issues/280)
+  (a G502 Proteus Core written to with libratbag, and what went wrong with a profile list that disabled every
+  profile) and [#975](https://github.com/libratbag/libratbag/issues/975) (the debug log of a G502 Proteus Core, every
+  request and answer, `0x1300` included); libhidpp's `profile_format.md`. Logitech's public HID++ folder has no
+  `0x1300` document. See [Profile format 1](#profile-format-1-the-g502-proteus-core) and
+  [Lights without colour through 0x1300](#lights-without-colour-through-0x1300).
+
 What is not marked **(G502)** comes from the two projects above and has not been seen by PeriHub
 on a real mouse. In particular, PeriHub has never met a mouse without a profile list.
 
@@ -55,8 +64,8 @@ on a real mouse. In particular, PeriHub has never met a mouse without a profile 
   **(G502)**. With 256-byte sectors it sits in bytes 254–255, with 255-byte sectors in 253–254.
 - Sector sizes seen: 256 (G502 HERO, U1 27.03), 255 (G502 HERO, U1 74.00, #20; G502 X Wireless,
   #15). A 255-byte sector is written as 16 blocks, the last one carrying 15 bytes.
-- Profile formats seen: 2 (G502 HERO), 3 (G502 X Wireless), 4 (G903 HERO, issues #22 and #115), 5 (G502 X PLUS,
-  issue #149). libratbag and Solaar read and write formats 1 to 5 with one layout.
+- Profile formats seen: 1 (G502 Proteus Core, issue #159), 2 (G502 HERO), 3 (G502 X Wireless), 4 (G903 HERO, issues
+  #22 and #115), 5 (G502 X PLUS, issue #149). libratbag and Solaar read and write formats 1 to 5 with one layout.
 
 ## The profile list
 
@@ -193,6 +202,76 @@ So format 5 is read like 2 to 4 (PeriHub did so already: the tester found the pa
 the cable. Opening it would take a save test with the USB cable (one DPI level changed and saved, the sector read
 back, the mouse unplugged and plugged in again, the 15-second undo let run out), then
 `cargo xtask confirm --memory-format 5:255`.
+
+## Profile format 1 (the G502 Proteus Core)
+
+The G502 Proteus Core of issue [#159](https://github.com/hex-dump/perihub/issues/159) (`046d:c07d` with its USB cable,
+firmware U 88.02.0017, PeriHub 0.9.8 on Linux) reports memory model 1, profile format 1, macro format 1, 3 profiles
+of which 3 are factory profiles, 11 buttons and 16 sectors of 256 bytes, and the same answer (`01 01 01 03 03 0b 10 01 00 0a`) as the debug log of libratbag's
+issue #975 holds for a G502 Proteus Core. PeriHub 0.9.8 did not write format 1, so it read the profile list, profile 1 and
+factory profile 1 for the report, byte for byte
+(`crates/perihub-core/tests/g502_proteus_core_format1.rs`, from
+`crates/perihub-core/tests/fixtures/transcripts/logitech-g502-proteus-core.json`). The tester ticked the DPI levels,
+the default level, the profiles and the buttons as right and sent no values, so what follows is what the bytes say.
+
+- **What the sources say.** libratbag names memory model 1, profile format 1 and macro format 1 after the G402, and
+  reads and writes every format from 1 to 5 with one 256-byte structure; libhidpp describes formats 1, 2 and 3
+  together. In libratbag's issue #280 a G502 without colour whose profiles had been set with Logitech's
+  software could be changed with libratbag (a button remapped); another one got "invalid argument" from every
+  commit, and a libratbag maintainer traced the same error on his own G502 to a profile list that disables every
+  profile, which the mouse refuses. That is a fact about the list, not about the format.
+- **Every field PeriHub reads is where formats 2 to 4 have it.** Polling interval 1 ms (byte 0), default level 1 and
+  shift level 0 (bytes 1, 2), four DPI levels 1200, 2400, 3200 and 6400 (3 to 10) and a 0 in the fifth slot, then the
+  eleven buttons from byte 32: left, right, middle, back, forward, DPI shift, DPI down, DPI up, profile cycle, tilt
+  right and tilt left, and five blank slots (`FF FF FF FF`). The G-shift slots (96 to 159) and the name (160 to 207)
+  are blank. The CRC is in bytes 254 and 255 (`28 9D` for profile 1, `DA 84` for the list), and factory profile 1
+  is profile 1 without it. The list enables the three profiles, with `00` as the last byte of each entry.
+- **Blank where the other formats hold lights.** Both LED blocks (208 to 229) and the alternate ones (230 to 251) are
+  `FF`, as are the colour and power mode of the sources (13 to 16) and the timeouts (28 to 31); only byte 17, which
+  libratbag calls the angle snapping, is 0. libratbag's own comment says the LED blocks are for the G303, G502 and
+  G900. The lights of this mouse are not in the profile: see the next section.
+- **A save leaves the blank parts alone.** Reading profile 1 and writing it back unchanged gives the same 256 bytes,
+  and changing one DPI level changes its two bytes and the CRC, nothing else (both are tests of the file above).
+
+So format 1 is written like 2 to 4: **experimental** with the USB cable (the **No warranty** box, a backup, every
+write read back, the 15-second undo), and **read-only** through a receiver until a tester confirms it with the cable
+(`cargo xtask confirm --memory-format 1:256`). The G502 Proteus Core has no receiver. No source shows a format 1 field
+where PeriHub writes something else, but nobody has saved to this mouse with PeriHub: the first save is the test.
+
+## Lights without colour through 0x1300
+
+The G502 Proteus Core has no `0x8070` and no `0x8071`: its lights have one colour (blue), and the mouse lists
+`0x1300` (LED software control, index 5 in its feature table). Logitech's public HID++ folder has no document on it.
+libratbag's header and `hidpp20.c` give the functions, and its issue #975 holds the answers of a real G502 Proteus
+Core to them (the same function list, index 5 there as well), which is what PeriHub's reading and its test use.
+
+| Function | Parameters | Answer | PeriHub |
+|---|---|---|---|
+| 0 | none | byte 0 the number of lights | reads |
+| 1 | the light | the light, its type, how many LEDs, the modes it can show (big-endian mask, 2 bytes), 1 byte of what it can keep | reads |
+| 2 | none | who drives the lights: libratbag says 0 means a program, its own code treats 0 as the firmware; the answer was 0 on a mouse nothing drove | never sent |
+| 3 | 0 or 1 | gives the lights to a program or back to the firmware | never sent |
+| 4 | the light | the light, its mode (1 byte, the same bits as the mask), a byte that was 0, then for a breathing light 2 bytes that changed between two reads (0x20, 0x1E) | reads |
+| 5 | the light, mode, 3 numbers | sets a light (in libratbag a mode and its times) | never sent |
+| 6 | | named in libratbag's header, never used there | never sent |
+
+The modes are bits, as libratbag names them: 0x01 off, 0x02 on, 0x04 blink, 0x08 travel, 0x10 ramp up, 0x20 ramp
+down, 0x40 heartbeat, 0x80 breathing; the types: 1 battery, 2 DPI, 3 profile, 4 logo, 5 cosmetic.
+
+What libratbag's log of a G502 Proteus Core (#975) answers: 3 lights. Light 0, type 2 (DPI indicators), 3 LEDs, modes
+`0003` (off, on), state 2 (on). Light 1, type 3 (profile indicators), 3 LEDs, modes `0003`, state 1 (off, by libratbag's names). Light 2,
+type 4 (the logo), 1 LED, modes `0080` (breathing), state `80` with a changing number after it, which fits a logo that
+breathes. The user of that issue says the logo pulses and does not obey libratbag's attempts to set it.
+
+- **Reading.** A mouse whose feature table lists `0x1300` and that has no `0x8070` or `0x8071` zone is asked functions
+  0, 1 and 4, once when it connects; the other mice are asked nothing new. A light whose state cannot be read is kept
+  without one, and an answer PeriHub cannot use leaves the list empty instead of the mouse unopened. The mouse page's
+  Lighting tab lists the lights (what each is, how many LEDs, what it shows, what it can show), and the test report
+  has a line "Lights without colour (0x1300)".
+- **What is not known.** Where the official software keeps a Proteus Core's logo settings (breathing or not, how
+  bright) is in none of the sources: the profile sectors of the report hold nothing there, and function 5 of libratbag
+  does not make the mouse keep a light. PeriHub therefore changes nothing, not even in RAM, and the test report asks
+  for a recording of Logitech's software changing one light setting at a time.
 
 ## Lights through 0x8071 on a mouse
 

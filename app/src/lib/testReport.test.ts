@@ -154,6 +154,22 @@ describe("testReport", () => {
     expect(ledZoneText({ ...rgb, index: 2, slot: null })).toBe("zone 2 at 1 (8071), effects 0 1 3 10, no profile slot");
   });
 
+  // Issue #159: a G502 Proteus Core has no coloured zone; its 0x1300 lights are listed on a line of their own.
+  it("lists the lights without colour of 0x1300, and nothing when the mouse has none", () => {
+    const leds = [
+      { index: 0, kind: 2, count: 3, modes: 0x03, mode: 0x02 },
+      { index: 2, kind: 4, count: 1, modes: 0x80, mode: null },
+    ];
+    const report = testReport({ ...cable, led_zones: [], sw_leds: leds }, "0.9.9", "linux x86_64");
+    expect(report).toContain("LEDs: none reported");
+    expect(report).toContain(
+      "Lights without colour (0x1300): light 0, type 2 (DPI indicators), 3 LEDs, can show off, on, shows on; " +
+        "light 2, type 4 (Logo), 1 LED, can show breathing, shows not read",
+    );
+    expect(testReport(cable, "0.9.9", "linux x86_64")).not.toContain("Lights without colour");
+    expect(testReport({ ...cable, sw_leds: [] }, "0.9.9", "linux x86_64")).not.toContain("Lights without colour");
+  });
+
   // Issue #22: "LEDs: none reported" on a G903 HERO; the feature list shows what it has instead.
   it("lists the mouse's HID++ features, or says they were not read", () => {
     expect(testReport(cable, "0.8.3", "linux x86_64")).toContain("Features: 0001 v1, 8071 v4 (flags 40)");

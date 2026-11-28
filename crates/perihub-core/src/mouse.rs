@@ -16,14 +16,15 @@ use crate::hidpp::models::MouseModel;
 use crate::hidpp::profile::{self, ButtonAction, ExtendedProfile, LedEffect, ProfileSettings};
 use crate::hidpp::{
     Access, Battery, BatteryState, DpiCapabilities, ExtendedDpiNow, FeatureEntry, FirmwareEntity, HidppDevice, LedZone,
-    OnboardInfo, ROM_SECTOR_BASE, feature,
+    OnboardInfo, ROM_SECTOR_BASE, SwLed, feature,
 };
 use crate::worker::DeviceTask;
 
-/// Profile formats PeriHub writes, with one layout for all three, as libratbag and Solaar do: format 4 (the
-/// G903 HERO's, issue #115) only adds fields after the ones PeriHub writes (docs/protocols/logitech-onboard-profiles.md).
+/// Profile formats PeriHub writes, with one layout for all four, as libratbag and Solaar do: format 4 (the
+/// G903 HERO's, issue #115) only adds fields after the ones PeriHub writes, and format 1 (the G502 Proteus Core's,
+/// issue #159) has them where the others do but leaves the LED blocks blank (docs/protocols/logitech-onboard-profiles.md).
 /// The others can be read but not written.
-pub const WRITABLE_PROFILE_FORMATS: &[u8] = &[2, 3, 4];
+pub const WRITABLE_PROFILE_FORMATS: &[u8] = &[1, 2, 3, 4];
 /// Sector sizes PeriHub writes: 256 bytes, or 255 with the CRC one byte earlier (other mice, and
 /// newer G502 HERO firmware: issue #20).
 pub const WRITABLE_SECTOR_SIZES: std::ops::RangeInclusive<usize> =
@@ -81,6 +82,8 @@ pub struct MouseInfo {
     /// which PeriHub only reads for now.
     pub extended: Option<ExtendedReads>,
     pub led_zones: Vec<LedZone>,
+    /// The lights without colour (0x1300) of a mouse that has no coloured zone: PeriHub only reads and shows them.
+    pub sw_leds: Vec<SwLed>,
     /// The HID++ features the mouse lists, for test reports: they show what a mouse has that
     /// PeriHub does not read yet.
     pub features: Vec<FeatureEntry>,
@@ -419,6 +422,24 @@ fn read_led_zones(
     }
 }
 
+/// The lights without colour of a mouse that lists 0x1300 and has no coloured zone (a G502 Proteus Core): asked only
+/// then, so that the other mice are asked nothing more than before. A 0x1300 answer PeriHub cannot use leaves the
+/// list empty instead of the mouse unopened.
+fn read_sw_leds(dev: &mut HidppDevice, zones: &[LedZone], features: &[FeatureEntry]) -> Result<Vec<SwLed>> {
+    if !zones.is_empty() || !features.iter().any(|f| f.id == feature::LED_SW_CONTROL) {
+        return Ok(Vec::new());
+    }
+    match dev.sw_leds() {
+        Ok(leds) => Ok(leds),
+        Err(Error::FeatureMissing(_)) => Ok(Vec::new()),
+        Err(Error::Hidpp(code)) => {
+            log::warn!("the lights without colour (0x1300) could not be read: {code:?}");
+            Ok(Vec::new())
+        }
+        Err(other) => Err(other),
+    }
+}
+
 /// Features that some mice lack (no LEDs, a different polling rate feature) leave an empty list.
 fn missing_as_empty<T>(result: Result<Vec<T>>) -> Result<Vec<T>> {
     match result {
@@ -462,6 +483,7 @@ impl MouseTask {
         for zone in led_zones.iter_mut().filter(|z| z.feature == feature::COLOR_LED_EFFECTS) {
             zone.slot = crate::hidpp::profile_led_slot(model.product_id, zone.index, zone.location);
         }
+        let sw_leds = read_sw_leds(&mut dev, &led_zones, &features)?;
         let info = MouseInfo {
             product_id: model.product_id,
             model: model.name.into(),
@@ -479,6 +501,7 @@ impl MouseTask {
             report_rates_ms,
             extended: None,
             led_zones,
+            sw_leds,
             features,
             writable: support.writable,
             writable_format: support.writable_format,
@@ -1664,8 +1687,16 @@ mod tests {
         assert_eq!(support(g403, &format_4, false, false), read_only, "the command line");
         assert_eq!(support(g403, &format_4, true, true), read_only, "through a receiver");
 
+        // Format 1 (the G502 Proteus Core of issue #159, 256-byte sectors): the same layout where PeriHub writes, the
+        // profile checked byte for byte (crates/perihub-core/tests/g502_proteus_core_format1.rs). Experimental with
+        // the cable, read-only through a receiver until a tester confirms it.
+        let format_1 = OnboardInfo { profile_format: 1, ..g502.clone() };
+        assert_eq!(support(g403, &format_1, false, true), experimental);
+        assert_eq!(support(g403, &format_1, false, false), read_only, "the command line");
+        assert_eq!(support(g403, &format_1, true, true), read_only, "through a receiver");
+
         // Memories PeriHub cannot write.
-        for format in [0, 1, 5, 6, 7, 10] {
+        for format in [0, 5, 6, 7, 10] {
             let other = OnboardInfo { profile_format: format, ..g502.clone() };
             assert_eq!(support(g403, &other, false, true), unknown, "profile format {format}");
         }
@@ -1798,6 +1829,18 @@ mod tests {
         feature::RGB_EFFECTS,
     ];
 
+    /// The features of a mouse with lights without colour (0x1300) and no coloured zone.
+    const SW_LED_SIM_FEATURES: &[u16] = &[
+        feature::ROOT,
+        feature::DEVICE_INFO,
+        feature::DEVICE_NAME,
+        feature::ADJUSTABLE_DPI,
+        feature::REPORT_RATE,
+        feature::ONBOARD_PROFILES,
+        feature::FEATURE_SET,
+        feature::LED_SW_CONTROL,
+    ];
+
     /// The features of a PRO X 2 style mouse: extended DPI and polling rate instead of 0x2201 and 0x8060.
     const PRO_FEATURES: &[u16] = &[
         feature::ROOT,
@@ -1863,6 +1906,9 @@ mod tests {
         rgb_effects: Vec<Vec<Vec<u8>>>,
         /// Bytes 0x8100 function 0 sends after the ones PeriHub reads.
         onboard_extra: Vec<u8>,
+        /// 0x1300 functions 1 and 4: what each light is, and what it shows (function 0 counts them).
+        sw_led_info: Vec<Vec<u8>>,
+        sw_led_state: Vec<Vec<u8>>,
     }
 
     impl Sim {
@@ -1920,6 +1966,8 @@ mod tests {
                 rgb_zones: Vec::new(),
                 rgb_effects: Vec::new(),
                 onboard_extra: Vec::new(),
+                sw_led_info: Vec::new(),
+                sw_led_state: Vec::new(),
             }
         }
 
@@ -2024,6 +2072,9 @@ mod tests {
                         .ok_or(INVALID_ARGUMENT)?
                         .clone(),
                 },
+                (feature::LED_SW_CONTROL, 0) => vec![self.sw_led_info.len() as u8],
+                (feature::LED_SW_CONTROL, 1) => self.sw_led_info.get(p[0] as usize).ok_or(INVALID_ARGUMENT)?.clone(),
+                (feature::LED_SW_CONTROL, 4) => self.sw_led_state.get(p[0] as usize).ok_or(INVALID_ARGUMENT)?.clone(),
                 (feature::ADJUSTABLE_DPI, 3) => vec![],
                 // 1, 2, 4 and 8 ms.
                 (feature::REPORT_RATE, 0) => vec![0x8B],
@@ -2614,6 +2665,62 @@ mod tests {
             !changed.is_empty() && changed.iter().all(|&i| (219..230).contains(&i) || i >= size - 2),
             "{changed:?}"
         );
+    }
+
+    /// A G502 Proteus Core's 0x1300 answers, as libratbag's issue #975 shows them from a real one (its debug log, with
+    /// every request and answer): three lights, the DPI indicators (type 2, 3 LEDs, off or on), the profile indicators
+    /// (type 3, 3 LEDs, off or on) and the logo (type 4, 1 LED, breathing), and what each showed at that moment.
+    fn proteus_core_lights() -> Sim {
+        let (memory, onboard) = g502_memory();
+        let mut sim = Sim::new(memory, onboard);
+        sim.features = SW_LED_SIM_FEATURES;
+        sim.sw_led_info = vec![
+            vec![0x00, 0x02, 0x03, 0x00, 0x03, 0x07],
+            vec![0x01, 0x03, 0x03, 0x00, 0x03, 0x00],
+            vec![0x02, 0x04, 0x01, 0x00, 0x80, 0x00],
+        ];
+        sim.sw_led_state =
+            vec![vec![0x00, 0x02, 0x00, 0x00], vec![0x01, 0x01, 0x00, 0x00], vec![0x02, 0x80, 0x00, 0x20, 0x00]];
+        sim
+    }
+
+    #[test]
+    fn the_lights_without_colour_of_a_mouse_with_no_coloured_zone_are_read_and_only_read() {
+        let (fake, _) = sim_transport(proteus_core_lights(), None);
+        let requests = fake.written.clone();
+        let dev = HidppDevice::new(fake, models::WIRED_INDEX, true).unwrap();
+        let task = MouseTask::open(dev, model_of(0xC07D), false).unwrap();
+        assert!(task.info.led_zones.is_empty());
+        let led = |index, kind, count, modes, mode| SwLed { index, kind, count, modes, mode: Some(mode) };
+        assert_eq!(task.info.sw_leds, [led(0, 2, 3, 0x03, 0x02), led(1, 3, 3, 0x03, 0x01), led(2, 4, 1, 0x80, 0x80)]);
+        // Functions 0, 1 and 4 only: nothing that sets a light or hands the lights to a program.
+        let index = SW_LED_SIM_FEATURES.iter().position(|&f| f == feature::LED_SW_CONTROL).unwrap() as u8;
+        let asked: Vec<u8> = requests.lock().unwrap().iter().filter(|r| r[2] == index).map(|r| r[3] >> 4).collect();
+        assert_eq!(asked, [0, 1, 4, 1, 4, 1, 4]);
+        forget_test_files();
+    }
+
+    #[test]
+    fn a_mouse_that_lists_0x1300_and_has_coloured_zones_is_not_asked_for_its_other_lights() {
+        let mut sim = proteus_core_lights();
+        sim.features = &[
+            feature::ROOT,
+            feature::DEVICE_INFO,
+            feature::DEVICE_NAME,
+            feature::ADJUSTABLE_DPI,
+            feature::REPORT_RATE,
+            feature::ONBOARD_PROFILES,
+            feature::FEATURE_SET,
+            feature::COLOR_LED_EFFECTS,
+            feature::LED_SW_CONTROL,
+        ];
+        sim.led_info = vec![1, 0, 3, 0, 4];
+        sim.led_zone = vec![0, 0, 1, 1];
+        sim.led_effects = vec![vec![0, 0, 0, 0, 0, 0, 0, 0]];
+        let (task, _) = open_sim(sim, G502_HERO, false);
+        assert_eq!(task.info.led_zones.len(), 1);
+        assert!(task.info.sw_leds.is_empty());
+        forget_test_files();
     }
 
     #[test]

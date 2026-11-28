@@ -48,9 +48,10 @@
   let tab = $state<Tab>(startTab === "buttons" || startTab === "lighting" ? startTab : "performance");
   /**
    * The Lighting tab needs LED zones. They come from the mouse's color LED effects feature (0x8070 or
-   * 0x8071), the only way PeriHub finds them, so a mouse that lists none has no lights PeriHub can drive.
+   * 0x8071), the only way PeriHub finds them, so a mouse that lists none has no lights PeriHub can drive. A mouse
+   * with only lights without colour (0x1300) has the tab too, to show them.
    */
-  const hasLights = $derived(!!info && info.led_zones.length > 0);
+  const hasLights = $derived(!!info && (info.led_zones.length > 0 || (info.sw_leds?.length ?? 0) > 0));
   /** The tab on show: Lighting falls back to the first tab on a mouse without lights. */
   const shownTab = $derived<Tab>(tab === "lighting" && !hasLights ? "performance" : tab);
   let busy = $state<string | null>(null);

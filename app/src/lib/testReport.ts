@@ -4,10 +4,10 @@ import type {
 } from "./api";
 import type {
   Battery, DescriptorCollection, DescriptorReports, HidppFeature, HidppLighting, InterfaceFeatures, LedZone, LightsLook, MouseInfo,
-  ReportDevice,
+  ReportDevice, SwLed,
 } from "./api";
 import { blindText } from "./blind";
-import { effectName, kindName, zoneName } from "./logitechFeatures";
+import { effectName, kindName, swLedKind, swLedMode, swLedModes, zoneName } from "./logitechFeatures";
 import { layoutReport } from "./keyboardLayout.svelte";
 
 const LOGITECH = "046d";
@@ -31,6 +31,12 @@ export function ledZoneText(z: LedZone): string {
   const via = z.feature === 0x8071 ? " (8071)" : "";
   const slot = z.slot === z.index ? "" : z.slot === null ? ", no profile slot" : `, profile slot ${z.slot}`;
   return `zone ${z.index} at ${z.location}${via}, effects ${z.effects.join(" ")}${slot}`;
+}
+
+/** One light without colour of a test report: "light 0, type 2 (DPI indicators), 3 LEDs, can show off, on, shows on". */
+export function swLedText(l: SwLed): string {
+  const leds = `${l.count} LED${l.count === 1 ? "" : "s"}`;
+  return `light ${l.index}, type ${l.kind} (${swLedKind(l.kind)}), ${leds}, can show ${swLedModes(l.modes)}, shows ${swLedMode(l.mode)}`;
 }
 
 /** What a device's lighting features told, in a few lines, with every reply as it came: the
@@ -187,6 +193,7 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
       : []),
     ...extendedLines(mouse),
     `LEDs: ${zones.join("; ") || "none reported"}`,
+    ...(mouse.sw_leds?.length ? [`Lights without colour (0x1300): ${mouse.sw_leds.map(swLedText).join("; ")}`] : []),
     `Features: ${featureList(mouse.features) || "not read"}`,
     ...transcriptLines(mouse.transcript),
   ].join("\n");

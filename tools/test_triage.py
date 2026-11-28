@@ -275,6 +275,11 @@ class Confirms(unittest.TestCase):
         report = MOUSE.replace("profile format 2", "profile format 4")
         self.assertEqual(run(mouse_issue(report))["confirm"], {"memory_format": [4, 255]})
 
+    def test_a_g502_proteus_core_saved_to_with_its_cable_confirms_format_1(self):
+        # Issue #159: format 1 is written like 2 to 4, and one clean report with the cable makes it tested.
+        report = MOUSE.replace("profile format 2", "profile format 1")
+        self.assertEqual(run(mouse_issue(report))["confirm"], {"memory_format": [1, 255]})
+
     def test_the_boxes_of_the_form_are_the_ones_the_script_asks_for(self):
         for form in (FORM, *LEGACY_FORMS):
             shows = options(form, "matches")
@@ -299,7 +304,7 @@ class Confirms(unittest.TestCase):
 
     def test_the_memory_rules_are_the_core_s(self):
         source = (ROOT / "crates/perihub-core/src/mouse.rs").read_text()
-        self.assertIn("WRITABLE_PROFILE_FORMATS: &[u8] = &[2, 3, 4];", source)
+        self.assertIn("WRITABLE_PROFILE_FORMATS: &[u8] = &[1, 2, 3, 4];", source)
         self.assertIn("profile::MIN_WRITE_SECTOR_SIZE..=profile::VERIFIED_SECTOR_SIZE", source)
         profile = (ROOT / "crates/perihub-core/src/hidpp/profile.rs").read_text()
         self.assertIn("VERIFIED_SECTOR_SIZE: usize = 256;", profile)
