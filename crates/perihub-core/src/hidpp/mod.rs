@@ -55,6 +55,9 @@ pub mod feature {
     pub const LOGI_MODIFIERS: u16 = 0x8051;
 }
 
+/// Opens the device's HID connection again (see [`HidppDevice::reopen_with`]).
+pub type Reopen = Box<dyn FnMut() -> Result<Box<dyn Transport>> + Send>;
+
 /// A HID connection, as [`HidppDevice`] uses it. Tests replace the device with a simulated one.
 pub trait Transport: Send {
     fn write(&self, data: &[u8]) -> Result<()>;
@@ -576,6 +579,10 @@ pub struct HidppDevice {
     label: String,
     /// Every request and answer, for the transcript of a test report (`crate::replay`).
     tape: crate::replay::Recording,
+    /// Opens the connection again after a write the system left pending (see [`Error::is_write_stall`]).
+    reopen: Option<Reopen>,
+    /// Requests sent that may have changed something (see [`Self::changes`]).
+    changes: u64,
 }
 
 impl HidppDevice {
@@ -629,6 +636,8 @@ impl HidppDevice {
             short,
             label,
             tape,
+            reopen: None,
+            changes: 0,
         };
         let (major, _) = device.protocol_version()?;
         if major < 2 {
@@ -679,8 +688,63 @@ impl HidppDevice {
         self.label = label;
     }
 
-    fn transact(&mut self, index: u8, function: u8, params: &[u8]) -> Result<[u8; 16]> {
-        match self.exchange(index, function, params) {
+    /// How to open the connection again when a write stays pending (on Windows, see [`Error::is_write_stall`]).
+    /// Without it such a write ends the connection, as any other HID error does.
+    pub fn reopen_with(&mut self, reopen: Reopen) {
+        self.reopen = Some(reopen);
+    }
+
+    /// How many requests that are not reads were sent (or tried) since the device was opened: what was read
+    /// before a change may be out of date.
+    pub fn changes(&self) -> u64 {
+        self.changes
+    }
+
+    /// Sends `packet`. A write the system left pending (Windows) closes the handle, which cancels it, and opens a
+    /// new one: the old handle's write slot stays taken otherwise. A read is sent once more on the new handle; a
+    /// change is not, since the first one may have reached the device after all. Then the device counts as busy
+    /// ([`Error::Timeout`]), not as gone: the connection stays.
+    fn send(&mut self, packet: &[u8], read: bool) -> Result<()> {
+        let error = match self.dev.write(packet) {
+            Err(error) if error.is_write_stall() && self.reopen.is_some() => error,
+            other => return other,
+        };
+        log::warn!("{}: {error}; opening its connection again", self.label);
+        self.reopen_connection()?;
+        if !read {
+            return Err(Error::Timeout);
+        }
+        match self.dev.write(packet) {
+            Err(error) if error.is_write_stall() => {
+                log::warn!("{}: {error} again; opening its connection again", self.label);
+                self.reopen_connection()?;
+                Err(Error::Timeout)
+            }
+            other => other,
+        }
+    }
+
+    /// Replaces the connection with a new one, recorded as the old one was. The old handle is closed once the new
+    /// one is open (hidapi cancels its pending I/O when it closes it); if no new one opens, the error is the
+    /// system's, which ends the connection as an unplugged device does.
+    fn reopen_connection(&mut self) -> Result<()> {
+        let reopen = self.reopen.as_mut().expect("checked by the caller");
+        let fresh = reopen()?;
+        self.dev = self.tape.transport(fresh, crate::replay::MAIN);
+        // Answers that came for the old handle are not read on the new one; anything already waiting is dropped
+        // all the same, so that no late answer is taken for the next one.
+        let mut buf = [0u8; 64];
+        for _ in 0..64 {
+            if self.dev.read_timeout(&mut buf, 0)? == 0 {
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    /// `read`: the request only reads (see [`is_read_call`]), so it may be sent twice.
+    fn transact(&mut self, index: u8, function: u8, params: &[u8], read: bool) -> Result<[u8; 16]> {
+        match self.exchange(index, function, params, read) {
             // A Bluetooth mouse that does not answer, or that the system cannot write to any more, is asleep or
             // out of range, as one behind a receiver that does not answer is: the manager asks again when it
             // is back, instead of giving up on it. (A refusal to open it comes earlier, and is shown.)
@@ -707,7 +771,7 @@ impl HidppDevice {
             || (self.is_over_bluetooth() && (self.device_index, reply_index) == (models::WIRED_INDEX, 0x00))
     }
 
-    fn exchange(&mut self, index: u8, function: u8, params: &[u8]) -> Result<[u8; 16]> {
+    fn exchange(&mut self, index: u8, function: u8, params: &[u8], read: bool) -> Result<[u8; 16]> {
         if params.len() > LONG_LEN - 4 {
             return Err(Error::Invalid("too many HID++ parameters".into()));
         }
@@ -718,7 +782,7 @@ impl HidppDevice {
         packet[2] = index;
         packet[3] = address;
         packet[4..4 + params.len()].copy_from_slice(params);
-        self.dev.write(&packet)?;
+        self.send(&packet, read)?;
 
         let deadline = Instant::now() + TIMEOUT;
         let mut buf = [0u8; 64];
@@ -820,7 +884,7 @@ impl HidppDevice {
         let index = match self.features.get(&id) {
             Some(&index) => index,
             None => {
-                let index = self.transact(0, 0, &id.to_be_bytes())?[0];
+                let index = self.transact(0, 0, &id.to_be_bytes(), true)?[0];
                 self.features.insert(id, index);
                 index
             }
@@ -848,7 +912,10 @@ impl HidppDevice {
             _ => {}
         }
         let index = self.feature_index(feature)?;
-        let result = self.transact(index, function, params);
+        if change.is_some() {
+            self.changes += 1;
+        }
+        let result = self.transact(index, function, params, change.is_none());
         if let Some(kind) = &change {
             crate::writes::sent(&self.label, kind, params, &result);
         }
@@ -860,7 +927,7 @@ impl HidppDevice {
     }
 
     pub fn protocol_version(&mut self) -> Result<(u8, u8)> {
-        let reply = self.transact(0, 1, &[0, 0, 0x5A])?;
+        let reply = self.transact(0, 1, &[0, 0, 0x5A], true)?;
         Ok((reply[0], reply[1]))
     }
 
@@ -1904,5 +1971,116 @@ pub(crate) mod tests {
         let events = dev.events(0).unwrap();
         let read: Vec<(u16, u8, u8)> = events.iter().map(|e| (e.feature, e.event, e.data[0])).collect();
         assert_eq!(read, [(feature::RGB_EFFECTS, 1, 1), (feature::RGB_EFFECTS, 1, 0)]);
+    }
+
+    /// The error hidapi gives on Windows for a write the system did not finish in time (issues #40 and #156).
+    fn write_stall() -> Error {
+        Error::Hid(hidapi::HidError::HidApiError {
+            message: "hid_write/WaitForSingleObject: (0x000003E5) Overlapped I/O operation is in progress.".into(),
+        })
+    }
+
+    /// A connection whose next `stalls` writes the system leaves pending. Every write tried is kept in `tried`.
+    struct Stalling {
+        inner: FakeDevice,
+        stalls: Arc<std::sync::atomic::AtomicUsize>,
+        tried: Arc<Mutex<Vec<Vec<u8>>>>,
+    }
+
+    impl Transport for Stalling {
+        fn write(&self, data: &[u8]) -> Result<()> {
+            use std::sync::atomic::Ordering;
+            self.tried.lock().unwrap().push(data.to_vec());
+            if self.stalls.load(Ordering::SeqCst) > 0 {
+                self.stalls.fetch_sub(1, Ordering::SeqCst);
+                return Err(write_stall());
+            }
+            self.inner.write(data)
+        }
+
+        fn read_timeout(&self, buf: &mut [u8], millis: i32) -> Result<usize> {
+            self.inner.read_timeout(buf, millis)
+        }
+    }
+
+    /// A mouse with 0x8100 at index 1 on a connection that may stall, and how many times it was opened again.
+    #[allow(clippy::type_complexity)]
+    fn stalling_mouse(
+        reopens: bool,
+    ) -> (HidppDevice, Arc<std::sync::atomic::AtomicUsize>, Arc<Mutex<Vec<Vec<u8>>>>, Arc<std::sync::atomic::AtomicUsize>)
+    {
+        const FEATURES: &[u16] = &[feature::ROOT, feature::ONBOARD_PROFILES];
+        let stalls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let tried = Arc::new(Mutex::new(Vec::new()));
+        let opened = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let connection = {
+            let (stalls, tried) = (stalls.clone(), tried.clone());
+            move || Stalling {
+                inner: fake_mouse(FEATURES, |_, _| vec![2]),
+                stalls: stalls.clone(),
+                tried: tried.clone(),
+            }
+        };
+        let mut dev = HidppDevice::new(connection(), models::WIRED_INDEX, false).unwrap();
+        if reopens {
+            let opened = opened.clone();
+            dev.reopen_with(Box::new(move || {
+                opened.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                Ok(Box::new(connection()) as Box<dyn Transport>)
+            }));
+        }
+        // The feature index is known before anything stalls.
+        assert_eq!(dev.active_dpi_index().unwrap(), 2);
+        tried.lock().unwrap().clear();
+        (dev, stalls, tried, opened)
+    }
+
+    #[test]
+    fn a_read_whose_write_stays_pending_is_sent_again_on_a_new_connection() {
+        use std::sync::atomic::Ordering;
+        let (mut dev, stalls, tried, opened) = stalling_mouse(true);
+        stalls.store(1, Ordering::SeqCst);
+        assert_eq!(dev.active_dpi_index().unwrap(), 2, "answered on the new connection");
+        assert_eq!(opened.load(Ordering::SeqCst), 1);
+        let tried = tried.lock().unwrap();
+        assert_eq!(tried.len(), 2, "the same read twice");
+        assert_eq!(tried[0], tried[1]);
+        assert_eq!(dev.changes(), 0, "a read changes nothing");
+    }
+
+    #[test]
+    fn a_change_whose_write_stays_pending_is_not_sent_twice() {
+        use std::sync::atomic::Ordering;
+        let (mut dev, stalls, tried, opened) = stalling_mouse(true);
+        dev.grant(Access::Ram);
+        stalls.store(1, Ordering::SeqCst);
+        // It may have reached the mouse after all: the mouse counts as busy, the connection stays.
+        assert!(matches!(dev.set_active_dpi_index(1), Err(Error::Timeout)));
+        assert_eq!(opened.load(Ordering::SeqCst), 1);
+        assert_eq!(tried.lock().unwrap().len(), 1);
+        assert_eq!(dev.changes(), 1, "counted, since it may have changed the mouse");
+        // The new connection works.
+        dev.set_active_dpi_index(1).unwrap();
+        assert_eq!(dev.active_dpi_index().unwrap(), 2);
+    }
+
+    #[test]
+    fn a_device_that_stays_stalled_is_busy_not_gone() {
+        use std::sync::atomic::Ordering;
+        let (mut dev, stalls, _, opened) = stalling_mouse(true);
+        stalls.store(2, Ordering::SeqCst);
+        assert!(matches!(dev.active_dpi_index(), Err(Error::Timeout)));
+        assert_eq!(opened.load(Ordering::SeqCst), 2, "each pending write is cancelled by closing its connection");
+        assert_eq!(dev.active_dpi_index().unwrap(), 2);
+    }
+
+    #[test]
+    fn without_a_way_to_open_it_again_a_stalled_write_is_a_hid_error() {
+        use std::sync::atomic::Ordering;
+        let (mut dev, stalls, tried, _) = stalling_mouse(false);
+        stalls.store(1, Ordering::SeqCst);
+        let error = dev.active_dpi_index().unwrap_err();
+        assert!(error.is_write_stall(), "{error}");
+        assert_eq!(tried.lock().unwrap().len(), 1);
     }
 }

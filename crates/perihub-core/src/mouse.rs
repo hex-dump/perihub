@@ -38,6 +38,10 @@ const ONBOARD_MODE: u8 = 1;
 const HOST_MODE: u8 = 2;
 /// How often the mouse is checked for another program having taken control of it.
 const MODE_CHECK: Duration = Duration::from_secs(5);
+/// How long the profiles [`MouseTask::state`] read are given again, while PeriHub sent nothing that may change
+/// them and no other program took the mouse: opening the mouse page again and again read the whole memory each
+/// time, well over a hundred requests (issue #156).
+const MEMORY_REUSE: Duration = Duration::from_secs(30);
 /// After an experimental save, the backup goes back by itself unless the change is kept
 /// (see [`MouseTask::keep_changes`]). The interface counts down 15 seconds and undoes it itself;
 /// this is the fallback if the window was closed or stopped answering.
@@ -263,6 +267,17 @@ pub struct MouseTask {
     undo_at: Option<Instant>,
     /// The mouse's profile list, as last read (see [`MouseTask::read_directory`]).
     list: ProfileList,
+    /// The profiles last read by [`MouseTask::state`] (see [`MEMORY_REUSE`]).
+    memory: Option<MemoryRead>,
+}
+
+/// The profiles and the free macro space read from the mouse's memory, when, and after how many changes
+/// ([`HidppDevice::changes`]).
+struct MemoryRead {
+    at: Instant,
+    changes: u64,
+    profiles: Vec<MouseProfile>,
+    macro_space: u32,
 }
 
 impl Drop for MouseTask {
@@ -502,6 +517,7 @@ impl MouseTask {
             last_backup: None,
             undo_at: None,
             list: ProfileList::Own,
+            memory: None,
         };
         let directory = task.read_directory()?;
         task.info.profile_list = task.list;
@@ -631,6 +647,8 @@ impl MouseTask {
         };
         if self.host_mode.swap(host_mode, Ordering::SeqCst) != host_mode {
             log::info!("mouse under the control of another program: {host_mode}");
+            // The other program may change the memory: it is read again.
+            self.memory = None;
         }
         Ok(())
     }
@@ -824,7 +842,37 @@ impl MouseTask {
         }
     }
 
+    /// The profiles, and the active profile and DPI. The profiles are read again only after a change PeriHub sent,
+    /// another program taking the mouse, or [`MEMORY_REUSE`]; the rest is read every time.
     pub fn state(&mut self) -> Result<MouseState> {
+        let now = Instant::now();
+        let changes = self.dev.changes();
+        let kept = self
+            .memory
+            .as_ref()
+            .filter(|m| m.changes == changes && now.duration_since(m.at) < MEMORY_REUSE)
+            .map(|m| (m.profiles.clone(), m.macro_space));
+        let (profiles, macro_space) = match kept {
+            Some(kept) => kept,
+            None => {
+                self.memory = None;
+                let (profiles, macro_space) = self.read_memory()?;
+                self.memory = Some(MemoryRead { at: now, changes, profiles: profiles.clone(), macro_space });
+                (profiles, macro_space)
+            }
+        };
+        Ok(MouseState {
+            active_profile: self.read_active_profile()?,
+            active_dpi_index: self.active_dpi_index()?,
+            current_dpi: self.dev.current_dpi()?,
+            profiles,
+            macro_space,
+            profile_list: self.list,
+        })
+    }
+
+    /// Every profile in the mouse's memory, and the macro space left, in bytes.
+    fn read_memory(&mut self) -> Result<(Vec<MouseProfile>, u32)> {
         let directory = self.read_directory()?;
         let enabled = self.enabled_profiles(directory.as_deref())?;
         self.sync_enabled_profiles(&enabled);
@@ -841,14 +889,7 @@ impl MouseTask {
             profiles.push(MouseProfile { number, enabled: enabled[number as usize - 1], settings });
         }
         let free = (self.profile_count() + 1..self.info.onboard.sector_count).filter(|s| !used.contains(s)).count();
-        Ok(MouseState {
-            active_profile: self.read_active_profile()?,
-            active_dpi_index: self.active_dpi_index()?,
-            current_dpi: self.dev.current_dpi()?,
-            profiles,
-            macro_space: free as u32 * (self.sector_size() as u32 - 2),
-            profile_list: self.list,
-        })
+        Ok((profiles, free as u32 * (self.sector_size() as u32 - 2)))
     }
 
     /// The directory and the profile sectors, by number and as the directory lists them:
@@ -2208,6 +2249,76 @@ mod tests {
 
     fn forget_test_files() {
         let _ = std::fs::remove_dir_all(config::config_dir());
+    }
+
+    /// Opening the mouse page again reads the profiles once, not every time (issue #156): until PeriHub sends a
+    /// change, only the active profile and DPI are asked again.
+    #[test]
+    fn the_profiles_are_read_again_only_after_a_change() {
+        let (fake, _sim) = sim_transport(Sim::g502(), None);
+        let written = fake.written.clone();
+        let dev = HidppDevice::new(fake, models::WIRED_INDEX, true).unwrap();
+        let mut task = MouseTask::open(dev, model_of(G502_HERO), false).unwrap();
+        let sent = || written.lock().unwrap().len();
+
+        let before = sent();
+        let first = task.state().unwrap();
+        let whole = sent() - before;
+        assert!(whole > 50, "the whole memory: {whole} requests");
+
+        let before = sent();
+        let again = task.state().unwrap();
+        assert_eq!(sent() - before, 3, "active profile, DPI level and DPI only");
+        assert_eq!(serde_json::to_string(&again.profiles).unwrap(), serde_json::to_string(&first.profiles).unwrap());
+
+        task.set_active_dpi_index(1).unwrap();
+        let before = sent();
+        task.state().unwrap();
+        assert_eq!(sent() - before, whole, "a change sent: everything is read again");
+    }
+
+    /// A mode check whose write Windows leaves pending opens the mouse again instead of ending its thread
+    /// (issue #156).
+    #[test]
+    fn a_stalled_mode_check_keeps_the_mouse() {
+        struct Stalls(FakeDevice, Arc<std::sync::atomic::AtomicBool>);
+        impl crate::hidpp::Transport for Stalls {
+            fn write(&self, data: &[u8]) -> Result<()> {
+                if self.1.swap(false, Ordering::SeqCst) {
+                    return Err(Error::Hid(hidapi::HidError::HidApiError {
+                        message: "hid_write/WaitForSingleObject: (0x000003E5) Overlapped I/O operation is in progress."
+                            .into(),
+                    }));
+                }
+                self.0.write(data)
+            }
+            fn read_timeout(&self, buf: &mut [u8], millis: i32) -> Result<usize> {
+                self.0.read_timeout(buf, millis)
+            }
+        }
+        let stall = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let (fake, sim) = sim_transport(Sim::g502(), None);
+        let mut dev = HidppDevice::new(Stalls(fake, stall.clone()), models::WIRED_INDEX, true).unwrap();
+        let reopened = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let flag = reopened.clone();
+        dev.reopen_with(Box::new(move || {
+            flag.store(true, Ordering::SeqCst);
+            // The same simulated mouse behind a new connection.
+            let mouse = sim.clone();
+            let features = mouse.lock().unwrap().features;
+            Ok(Box::new(FakeDevice::new(move |request| {
+                let (index, function) = (request[2] as usize, request[3] >> 4);
+                match mouse.lock().unwrap().answer(features[index], function, &request[4..]) {
+                    Ok(payload) => vec![reply(request, &payload)],
+                    Err(_) => Vec::new(),
+                }
+            })) as Box<dyn crate::hidpp::Transport>)
+        }));
+        let mut task = MouseTask::open(dev, model_of(G502_HERO), false).unwrap();
+        stall.store(true, Ordering::SeqCst);
+        task.last_mode_check = Instant::now() - MODE_CHECK;
+        task.tick().expect("the thread goes on");
+        assert!(reopened.load(Ordering::SeqCst));
     }
 
     #[test]
