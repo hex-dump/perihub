@@ -4,6 +4,7 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type ReportDevice, type UsbRecorderInfo } from "../lib/api";
   import { deviceDetails, deviceKind, deviceRequestLink, reportDeviceName, reportVersion, reportUsbId as usbId } from "../lib/testReport";
+  import { uniqueBy } from "../lib/unique";
   import UsbRecorder from "../components/UsbRecorder.svelte";
 
   interface Props {
@@ -35,7 +36,12 @@
   /** Said after a request whose recording did not fit in the link. */
   let pasteHint = $state<string | null>(null);
 
-  const listed = $derived((devices ?? []).filter((d) => !shown.includes(usbId(d)) && deviceKind(d) !== "Headset"));
+  const listed = $derived(
+    uniqueBy(
+      (devices ?? []).filter((d) => !shown.includes(usbId(d)) && deviceKind(d) !== "Headset"),
+      usbId,
+    ),
+  );
 
   /** The list as last shown: the same list again changes nothing on screen, so it is not set again. */
   let shownJson = "";

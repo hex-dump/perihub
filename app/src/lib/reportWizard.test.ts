@@ -7,7 +7,7 @@ import type {
   UnsupportedReceiverDevice,
 } from "./api";
 import {
-  candidates, checklist, checklistText, formAddress, formUrl, MAX_URL_LENGTH, needsPaste, PASTE_NOTE, prepareForm,
+  candidates, checklist, checklistText, formAddress, formUrl, MAX_URL_LENGTH, needsPaste, prepareForm,
   readDevice, redactDetails, reportText, type ReadOnlyApi,
 } from "./reportWizard";
 
@@ -290,7 +290,8 @@ describe("the form", () => {
     expect(needsPaste(form)).toBe(true);
     const short = formUrl(form, false);
     expect(short.length).toBeLessThan(MAX_URL_LENGTH);
-    expect(new URL(short).searchParams.get("report")).toBe(PASTE_NOTE);
+    // Not even a note in the field: GitHub gives it back as it was, and the tester could not paste over it.
+    expect(new URL(short).searchParams.has("report")).toBe(false);
     expect(new URL(short).searchParams.get("model")).toBe("ASUS ROG Keris");
     expect(short.startsWith(form.base)).toBe(true);
   });

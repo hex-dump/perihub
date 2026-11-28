@@ -107,6 +107,14 @@ describe("the test wizard", () => {
     expect(screen.getByRole("radio", { name: /ASUS ROG Keris/ })).toBeTruthy();
   });
 
+  it("lists a device once when it is listed twice (each_key_duplicate)", async () => {
+    const twin = { product_id: 0xc339, name: "USB cable", collections: [], bolt: false, unifying: false, reachable: false, denied: false, slots: [], open_slots: [], direct: true,
+    unsupported: [{ slot: 255, name: "PRO K/DA", kind: 0, protocol: "4.2", wireless_id: null, device_info: null, firmware: [], features: [], dpi: null, report_rates_ms: [], onboard: null, lighting: null, led_zones: [], battery: null }] } as unknown as DeviceStatus["receivers"][number];
+    render(TestWizard, { props: { status: status({ peripherals: [], receivers: [twin, { ...twin }] }) } });
+    await settle();
+    expect(screen.getAllByRole("radio", { name: /PRO K\/DA/ })).toHaveLength(1);
+  });
+
   it("says so when no device is found", async () => {
     render(TestWizard, { props: { status: status({ peripherals: [] }) } });
     await settle();
@@ -158,7 +166,10 @@ describe("the test wizard", () => {
     expect(clipboard.writeText.mock.calls[0][0]).toContain("12 04 00 99");
     const url = readings.openTestForm.mock.calls[0][0] as string;
     expect(url.length).toBeLessThan(7000);
-    expect(new URL(url).searchParams.get("report")).toContain("Paste the report here");
+    // The field stays out of the address: a field filled in through it could not be pasted over.
+    expect(new URL(url).searchParams.has("report")).toBe(false);
+    expect(new URL(url).searchParams.get("model")).toBe("ASUS ROG Keris");
+    expect(document.body.textContent).toContain("Paste the report into its Test report box");
   });
 
   it("does not open the form when the report cannot be copied", async () => {

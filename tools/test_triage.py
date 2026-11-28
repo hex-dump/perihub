@@ -1237,6 +1237,15 @@ class ReportInAnotherField(unittest.TestCase):
         lines = triage.app_report(triage.fields(issue["body"]))
         self.assertEqual(lines[-1], "Writes this session: 0 sent, 0 refused")
 
+    def test_an_empty_report_field_is_no_report_and_the_one_in_another_field_is_found(self):
+        # PeriHub no longer fills the field in when the report is too long for a link: it is left empty.
+        for empty in ("", None, "_No response_"):
+            body = answer("Test report", empty) + answer("Messages and errors", self.REPORT)
+            lines = triage.app_report(triage.fields(body))
+            self.assertEqual(lines[0], "PeriHub 0.9.7 on windows x86_64", empty)
+        body = answer("Test report", None) + answer("Messages and errors", "nothing to add")
+        self.assertIsNone(triage.app_report(triage.fields(body)))
+
     def test_the_placeholder_alone_is_no_report(self):
         self.assertIsNone(triage.app_report(triage.fields(self.issue("nothing to add")["body"])))
 

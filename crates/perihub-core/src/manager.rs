@@ -263,6 +263,8 @@ fn collection_text(d: &DeviceInfo) -> String {
 fn direct_devices(devices: &[DeviceInfo]) -> Vec<DirectPaths> {
     let mut found: Vec<DirectPaths> = Vec::new();
     let mut seen: Vec<(u16, Option<String>)> = Vec::new();
+    // Whether each device found has no HID++ collection of its model's interface (see below).
+    let mut no_hidpp: Vec<bool> = Vec::new();
     for d in devices {
         let Some(model) = (d.vendor_id() == LOGITECH).then(|| direct::find(d.product_id())).flatten() else { continue };
         let id = (d.product_id(), d.serial_number().map(str::to_owned));
@@ -302,7 +304,16 @@ fn direct_devices(devices: &[DeviceInfo]) -> Vec<DirectPaths> {
         };
         let key = collections.first().map_or_else(|| d.path().to_owned(), |c| c.path().to_owned());
         found.push(DirectPaths { model, key, collections, listed, closed });
+        no_hidpp.push(hidpp.is_empty());
     }
+    // One device can list a collection under another serial number (Windows lists the PRO K/DA's typing and
+    // media collections apart from its HID++ ones): the same model then showed twice, "USB cable" with no HID++
+    // collection beside the keyboard that answered, and the app drew two pages with one key (issue #40). A
+    // listing with no HID++ collection at all is left out when another of the same model has one.
+    let reached: Vec<u16> =
+        found.iter().zip(&no_hidpp).filter(|(_, none)| !**none).map(|(p, _)| p.model.product_id).collect();
+    let mut no_hidpp = no_hidpp.into_iter();
+    found.retain(|p| !no_hidpp.next().unwrap_or(false) || !reached.contains(&p.model.product_id));
     found
 }
 

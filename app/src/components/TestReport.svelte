@@ -3,7 +3,6 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { api, errorText, type MouseInfo, type WriteEntry } from "../lib/api";
   import { reportVersion, testFormUrl, testReport } from "../lib/testReport";
-  import { PASTE_NOTE } from "../lib/reportWizard";
   import { fitsGithubLink } from "../lib/githubLink";
   import { readOnly, withWriteLog } from "../lib/readOnly.svelte";
 
@@ -66,7 +65,7 @@
         error = errorText(e);
         return;
       }
-      url = testFormUrl(mouse, version, system, PASTE_NOTE);
+      url = testFormUrl(mouse, version, system, "");
       pasted = true;
     }
     api.openTestForm(url).catch((e) => (error = errorText(e)));
@@ -82,6 +81,6 @@
   </button>
 </div>
 {#if pasted}
-  <div class="notice info">The report is too long for a link: PeriHub copied it. Paste it into the Test report box of the form.</div>
+  <div class="notice info">The report is too long for a link: PeriHub copied it. Paste it into the empty Test report box of the form.</div>
 {/if}
 {#if error}<div class="notice error" role="alert">{error}</div>{/if}

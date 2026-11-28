@@ -9,3 +9,4 @@ docs/social-preview.png
 .perihub-build
 .aider*
 .claude/worktrees/
+/node_modules/
