@@ -271,34 +271,34 @@ impl AppProfileEngine {
         if !self.manager.status().mouse.is_some_and(|m| m.verified && m.bluetooth.is_none()) {
             return Ok(());
         }
+        // Each switch over the radio is kept to what it needs (issue #124): the active profile, then,
+        // only when it has to change, one reading of the profile list and one write.
         let back = self.manager.mouse()?.call(move |m| {
             let active = m.active_profile()?;
+            // Back to the profile in use before the first rule, if it is still enabled.
+            let go_back = |m: &mut crate::mouse::MouseTask| -> Result<()> {
+                if let Some(prev) = before.filter(|&prev| prev != active)
+                    && !m.switch_profile_if_enabled(prev)?
+                {
+                    log::warn!("app profiles: profile {prev} is disabled on the mouse; staying on {active}");
+                }
+                Ok(())
+            };
             match target {
+                // Already the active one: nothing to send, not even a reading of the profile list.
+                // Remember the profile in use before the first rule, to go back to it later.
+                Some(number) if number == active => Ok(before.or(Some(active))),
                 Some(number) => {
-                    if m.is_profile_enabled(number)? {
-                        if number != active {
-                            m.set_active_profile(number)?;
-                        }
-                        // Remember the profile in use before the first rule, to go back to it later.
+                    if m.switch_profile_if_enabled(number)? {
                         Ok(before.or(Some(active)))
                     } else {
                         log::warn!("app profiles: profile {number} is disabled on the mouse; skipping");
-                        if let Some(prev) = before
-                            && prev != active
-                            && m.is_profile_enabled(prev)?
-                        {
-                            m.set_active_profile(prev)?;
-                        }
+                        go_back(m)?;
                         Ok(None)
                     }
                 }
                 None => {
-                    if let Some(prev) = before
-                        && prev != active
-                        && m.is_profile_enabled(prev)?
-                    {
-                        m.set_active_profile(prev)?;
-                    }
+                    go_back(m)?;
                     Ok(None)
                 }
             }
@@ -328,6 +328,8 @@ mod tests {
         user: Vec<Vec<u8>>,
         active: [u8; 2],
         selected: Vec<[u8; 2]>,
+        /// How many times the profile list (sector 0) was read from its start.
+        list_reads: usize,
     }
 
     fn sim_mouse(enabled: &[bool]) -> (MouseTask, Arc<StdMutex<TestMouse>>) {
@@ -362,6 +364,7 @@ mod tests {
             user,
             active: [0, 1],
             selected: Vec::new(),
+            list_reads: 0,
         }));
         let mouse = state.clone();
         let fake = FakeDevice::new(move |request| {
@@ -414,6 +417,9 @@ mod tests {
                     (feature::ONBOARD_PROFILES, 5) => {
                         let sector = u16::from_be_bytes([p[0], p[1]]) as usize;
                         let offset = u16::from_be_bytes([p[2], p[3]]) as usize;
+                        if (sector, offset) == (0, 0) {
+                            m.list_reads += 1;
+                        }
                         m.user[sector][offset..offset + 16].to_vec()
                     }
                     _ => return vec![],
@@ -448,6 +454,41 @@ mod tests {
         // Switching to an enabled rule switches to profile 2, and disabled rule restores profile 1.
         assert!(engine.focus_changed(Some("editor.exe".into())));
         assert!(engine.focus_changed(Some("game.exe".into())));
+        assert_eq!(sim.lock().unwrap().selected, [[0, 2], [0, 1]]);
+    }
+
+    /// Issue #124: over the radio, a switch reads the profile list once, and a rule whose profile
+    /// is already the active one sends nothing but the reading of the active profile.
+    #[test]
+    fn a_switch_reads_the_profile_list_once_and_none_when_the_profile_is_already_active() {
+        let (task, sim) = sim_mouse(&[true, true, true, false, false]);
+        let manager = Manager::with_mouse_for_test(task);
+        let status = manager.status();
+        let profiles = AppProfiles {
+            enabled: true,
+            rules: vec![
+                AppRule { app: "editor.exe".into(), lighting: None, mouse_profile: Some(1) },
+                AppRule { app: "game.exe".into(), lighting: None, mouse_profile: Some(2) },
+            ],
+        };
+        let engine = AppProfileEngine::with_debounce(manager, profiles, Vec::new(), Duration::ZERO);
+        engine.devices_changed(&status);
+        let start = sim.lock().unwrap().list_reads;
+        let reads = || sim.lock().unwrap().list_reads - start;
+
+        // Profile 1 is already active: no reading of the list, no switch.
+        assert!(engine.focus_changed(Some("editor.exe".into())));
+        assert_eq!(reads(), 0);
+        assert!(sim.lock().unwrap().selected.is_empty());
+
+        // 1 -> 2: one reading of the list, one switch.
+        assert!(engine.focus_changed(Some("game.exe".into())));
+        assert_eq!(reads(), 1);
+        assert_eq!(sim.lock().unwrap().selected, [[0, 2]]);
+
+        // No rule: back to profile 1, with one more reading.
+        assert!(engine.focus_changed(Some("notes.exe".into())));
+        assert_eq!(reads(), 2);
         assert_eq!(sim.lock().unwrap().selected, [[0, 2], [0, 1]]);
     }
 
