@@ -182,7 +182,7 @@
         {
           "name": "Apex Pro",
           "kind": "keyboard",
-          "level": "experimental"
+          "level": "supported"
         },
         {
           "name": "Apex 7",
