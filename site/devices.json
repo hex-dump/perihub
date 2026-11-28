@@ -2664,7 +2664,7 @@
       "brand": "SteelSeries",
       "name": "Apex Pro",
       "kind": "keyboard",
-      "level": "experimental",
+      "level": "supported",
       "page": "devices/steelseries-apex-pro.html",
       "usb_ids": [
         "1038:1610"

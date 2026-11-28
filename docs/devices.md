@@ -129,7 +129,7 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
     on-board memory mode off. Everything but the brightness stays in the keyboard's RAM; PeriHub dims and
     turns the lights off when the keyboard is idle, and gives them back on request, from the tray, when
     G HUB or Solaar starts and when it quits. Once asked, it takes them again at every start and when
-    G HUB or Solaar quit, until you give them back. Tried on a G915 X LS ([issue #30](https://github.com/hex-dump/perihub/issues/30));
+    G HUB or Solaar quit, until you give them back. Tried on a G915 X LS ([issue #30](https://github.com/hex-dump/perihub/issues/30)) and, for a fixed colour, breathing and the brightness, on a G915 X LS TKL ([issue #152](https://github.com/hex-dump/perihub/issues/152));
     **No warranty** box first.
   - **Solaar and logiops** set their own DPI and may undo PeriHub's: the device page says so when
     one of them runs.
@@ -403,12 +403,12 @@ interface 1 (usage page `ffc0`), the only interface PeriHub opens: the others ca
   other commands, or commands that depend on the firmware (see the protocol page).
 
 <!-- generated: table steelseries-apex -->
-| Keyboard | USB ID | Opened on Linux |
-|---|---|---|
-| Apex Pro | `1038:1610` | interface 1 |
-| Apex 7 | `1038:1612` | interface 1 |
-| Apex 7 TKL | `1038:1618` | interface 1 |
-| Apex 5 | `1038:161c` | interface 1 |
+| Keyboard | USB ID | Opened on Linux | Level |
+|---|---|---|---|
+| Apex Pro | `1038:1610` | interface 1 | ✅ Supported |
+| Apex 7 | `1038:1612` | interface 1 | 🧪 Experimental |
+| Apex 7 TKL | `1038:1618` | interface 1 | 🧪 Experimental |
+| Apex 5 | `1038:161c` | interface 1 | 🧪 Experimental |
 <!-- end generated -->
 
 ## Razer mice

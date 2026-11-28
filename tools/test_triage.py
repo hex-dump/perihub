@@ -1252,6 +1252,41 @@ class ReportInAnotherField(unittest.TestCase):
         self.assertNotIn("confirm", result)
 
 
+class LogitechKeyboardThroughReceiver(unittest.TestCase):
+    """Issues #152 and #157: the report of a Logitech keyboard behind a LIGHTSPEED receiver. Its lines are the receiver's
+    ("Receiver: ..."), not a device's ("Device: ..., USB ID ..."), and the catalogue lists the receiver, which carries
+    mice too: the script confirms nothing for it, clean or not, whatever field holds the report."""
+
+    REPORT = (
+        "PeriHub 0.9.8 on windows x86_64\n"
+        "Receiver: LIGHTSPEED receiver, USB ID 046d:c541\n"
+        "Slot 1: G915 WIRELESS RGB MECHANICAL GAMING KEYBOARD, HID++ 4.2\n"
+        "Could not read: 8071 function 3 (00 00 01): the mouse rejected the command: invalid argument (0x02)\n"
+        "Writes this session: 0 sent, 0 refused"
+    )
+
+    def issue(self, report_field, notices):
+        body = (
+            answer("Device type", "Keyboard") + answer("Brand", "Logitech") + answer("USB ID (vendor:product)", "046d:c541")
+            + answer("PeriHub version", "0.9.8") + answer("Test report", report_field)
+            + answer("Messages and errors", notices) + answer("What is wrong or missing", None)
+        )
+        return {"number": 157, "labels": [{"name": "test report"}], "body": body}
+
+    def test_a_report_in_messages_and_errors_is_found_but_confirms_nothing(self):
+        issue = self.issue("Paste the report here (PeriHub copied it to the clipboard).", "Hi! The form is broken.\n" + self.REPORT)
+        lines = triage.app_report(triage.fields(issue["body"]))
+        self.assertEqual(lines[1], "Receiver: LIGHTSPEED receiver, USB ID 046d:c541")
+        result = run(issue, latest="0.9.8")
+        self.assertNotIn("confirm", result)
+        self.assertEqual(result["labels"], ["brand: Logitech", "keyboard"])
+
+    def test_a_clean_report_of_a_keyboard_behind_a_receiver_confirms_nothing(self):
+        clean = self.REPORT.replace("Could not read: 8071 function 3 (00 00 01): the mouse rejected the command: invalid argument (0x02)", "Could not read: nothing")
+        result = run(self.issue("```text\n" + clean + "\n```", None), latest="0.9.8")
+        self.assertNotIn("confirm", result)
+
+
 class HeadsetRequests(unittest.TestCase):
     """PeriHub only supports mice, keyboards, and receivers: headset and audio requests close as not planned."""
 

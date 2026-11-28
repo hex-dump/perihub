@@ -1892,6 +1892,24 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn notifications_with_software_id_f_on_the_feature_asked_are_no_reply_and_no_event() {
+        // A G915 (issue #157) sends reports "11 01 0b 6f ..." of feature index 0x0b (0x8081, the one PeriHub asks
+        // about at that moment) with software id 0xf, between its replies: they are neither the reply (software id
+        // 0xb) nor an event (software id 0), and the reply behind them is still found.
+        let note = |function: u8, data: &[u8]| {
+            let mut report = event_report(1, function, data);
+            report[3] |= 0x0F;
+            report
+        };
+        let (fake, _) =
+            host_keyboard(vec![note(6, &[0xa1, 0x26, 0x46, 0x29]), note(1, &[0xb8, 0xd2, 0x99, 0xff]), note(7, &[])]);
+        let mut dev = HidppDevice::behind_receiver(fake, None, 1, true).unwrap();
+        let reply = dev.call(feature::RGB_EFFECTS, 5, &[0]).unwrap();
+        assert_eq!(reply[0], 0, "the reply, not a notification");
+        assert!(dev.events(0).unwrap().is_empty(), "software id f is no event");
+    }
+
+    #[test]
     fn events_waiting_on_the_connection_are_read() {
         let (fake, _) = host_keyboard(Vec::new());
         let pending = fake.pending.clone();

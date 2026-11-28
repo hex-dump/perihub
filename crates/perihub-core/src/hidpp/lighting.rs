@@ -8,7 +8,7 @@
 use serde::Serialize;
 
 use super::{HidppDevice, feature};
-use crate::error::{Error, Result};
+use crate::error::{Error, HidppErrorCode, Result};
 
 /// At most this many zones and effects per zone are read: the device says how many it has.
 const MAX_ZONES: u8 = 16;
@@ -177,7 +177,9 @@ impl Lighting {
         for (cap, slot) in [(STARTUP, &mut effects.startup), (SHUTDOWN, &mut effects.shutdown)] {
             let [high, low] = cap.to_be_bytes();
             // Bytes 0 to 2 repeat the request; then on (1) or off (2), and two colours.
-            if let Some(r) = self.call(dev, feature::RGB_EFFECTS, 3, &[0, high, low])? {
+            // A keyboard that has no such effect answers "invalid argument" (a G915 with 0x8071 version 0 does, to both,
+            // issue #157): that is its way of saying "not here", kept in the replies but not among what could not be read.
+            if let Some(r) = self.call_asking(dev, feature::RGB_EFFECTS, 3, &[0, high, low], false)? {
                 *slot = Some(PowerEffect { enabled: r[3] == 1, colors: [color(&r[4..7]), color(&r[7..10])] });
             }
         }
@@ -190,6 +192,19 @@ impl Lighting {
 
     /// One read, kept in `raw`. A device error is kept in `errors` and gives `None`.
     fn call(&mut self, dev: &mut HidppDevice, feature: u16, function: u8, params: &[u8]) -> Result<Option<[u8; 16]>> {
+        self.call_asking(dev, feature, function, params, true)
+    }
+
+    /// The same, for a read the device may answer with "invalid argument" (0x02) when it has nothing of that kind:
+    /// with `refusal_is_error` false that answer is kept in `raw` only; any other error is still in `errors`.
+    fn call_asking(
+        &mut self,
+        dev: &mut HidppDevice,
+        feature: u16,
+        function: u8,
+        params: &[u8],
+        refusal_is_error: bool,
+    ) -> Result<Option<[u8; 16]>> {
         let asked = if params.is_empty() { String::new() } else { format!(" ({})", crate::peripheral::hex(params)) };
         match dev.call(feature, function, params) {
             Ok(reply) => {
@@ -201,7 +216,10 @@ impl Lighting {
             Err(Error::Unreachable) => Err(Error::Unreachable),
             Err(error) => {
                 self.raw.push(format!("{feature:04x} {function}{asked}: {error}"));
-                self.errors.push(format!("{feature:04x} function {function}{asked}: {error}"));
+                let refused = matches!(error, Error::Hidpp(HidppErrorCode(0x02)));
+                if refusal_is_error || !refused {
+                    self.errors.push(format!("{feature:04x} function {function}{asked}: {error}"));
+                }
                 Ok(None)
             }
         }
@@ -315,9 +333,15 @@ mod tests {
             effects.zones[0].effects.iter().map(|e| (e.index, e.id, e.caps, e.period_ms)).collect();
         assert_eq!(ids, [(0, 1, 1, 0), (1, 3, 4, 10000)]);
         assert_eq!(effects.startup, Some(PowerEffect { enabled: true, colors: ["#ff0081".into(), "#80aaff".into()] }));
-        // The shutdown effect is not there: the error is kept, the rest is read.
+        // The shutdown effect is not there: the keyboard says "invalid argument" (as the G915 of issue #157 does to
+        // both), which is kept in the replies but is not an error; the rest is read.
         assert_eq!(effects.shutdown, None);
-        assert!(lighting.errors.iter().any(|e| e.contains("8071 function 3 (00 00 40)")), "{:?}", lighting.errors);
+        assert!(
+            lighting.raw.iter().any(|r| r.starts_with("8071 3 (00 00 40): ") && r.contains("invalid argument")),
+            "{:?}",
+            lighting.raw
+        );
+        assert!(lighting.errors.is_empty(), "{:?}", lighting.errors);
         assert_eq!((effects.idle_s, effects.sleep_s), (Some(60), Some(300)));
         assert_eq!(lighting.keys, [4, 5, 6, 7, 9, 112]);
         assert_eq!(lighting.layout, Some(1));
