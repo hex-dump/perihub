@@ -1461,8 +1461,19 @@ impl MouseTask {
                 "profile {number} is not in use yet: the mouse has only its factory profiles until one is saved to it"
             )));
         }
-        if !self.is_profile_enabled(number)? {
+        if !self.switch_profile_if_enabled(number)? {
             return Err(Error::Invalid(format!("profile {number} is disabled on the mouse")));
+        }
+        Ok(())
+    }
+
+    /// Selects profile `number` if the mouse's list has it enabled; `false` (and nothing sent but
+    /// the reading of the list) if it is disabled. The list is read once: App profiles switch with
+    /// this, so that a switch over the radio is one reading of the list and one write (issue #124).
+    pub fn switch_profile_if_enabled(&mut self, number: u8) -> Result<bool> {
+        self.check_controllable()?;
+        if !self.is_profile_enabled(number)? {
+            return Ok(false);
         }
         match self.select_profile(number) {
             // The mouse refuses while another program controls it: check, then try once more.
@@ -1476,7 +1487,7 @@ impl MouseTask {
             other => other?,
         }
         self.last_profile = number;
-        Ok(())
+        Ok(true)
     }
 
     pub fn set_active_dpi_index(&mut self, index: u8) -> Result<()> {
