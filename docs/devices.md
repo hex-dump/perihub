@@ -63,8 +63,8 @@ These mice speak Logitech's HID++ 2.0 protocol. The list comes from
   same model can change format with a firmware update, so the level is not fixed per model:
   - ✅ **a tested format**: profile format 2 in 256-byte sectors (the G502 HERO's) or format 3 in
     255-byte sectors (the G502 X Wireless's). The mouse is supported, whatever the model.
-  - 🧪 **a format PeriHub can write but nobody has tried yet** (format 2, 3 or 4, in 255- or 256-byte
-    sectors; format 4 is the G903 HERO's, with the layout of 2 and 3 where PeriHub writes, see
+  - 🧪 **a format PeriHub can write but nobody has tried yet** (format 1, 2, 3 or 4, in 255- or 256-byte
+    sectors; format 4 is the G903 HERO's and format 1 the G502 Proteus Core's, with the layout of 2 and 3 where PeriHub writes, see
     [protocols/logitech-onboard-profiles.md](protocols/logitech-onboard-profiles.md)): you can save at your own risk with the USB cable. Before the first save to that
     mouse PeriHub asks you to tick a **No warranty** box, and each save is undone after 15 seconds
     unless you keep it. Enabling or disabling profiles stays off.

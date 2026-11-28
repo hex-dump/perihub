@@ -35,6 +35,8 @@ pub mod feature {
     pub const DEVICE_INFO: u16 = 0x0003;
     pub const DEVICE_NAME: u16 = 0x0005;
     pub const BATTERY_STATUS: u16 = 0x1000;
+    /// LED software control: the lights without colour (DPI and profile indicators, a logo that breathes).
+    pub const LED_SW_CONTROL: u16 = 0x1300;
     pub const BATTERY_VOLTAGE: u16 = 0x1001;
     pub const UNIFIED_BATTERY: u16 = 0x1004;
     /// Keyboard international layouts: a keyboard's layout code.
@@ -81,6 +83,7 @@ const ALLOWED_FEATURES: &[u16] = &[
     feature::DEVICE_INFO,
     feature::DEVICE_NAME,
     feature::BATTERY_STATUS,
+    feature::LED_SW_CONTROL,
     feature::BATTERY_VOLTAGE,
     feature::UNIFIED_BATTERY,
     feature::KEYBOARD_LAYOUT,
@@ -111,6 +114,11 @@ const READ_ONLY_CALLS: &[(u16, u8)] = &[
     (feature::DEVICE_NAME, 1),
     (feature::DEVICE_NAME, 2),
     (feature::BATTERY_STATUS, 0),
+    // The lights without colour: how many (0), what each one is and can show (1), what it shows now (4). Not 2 (who
+    // drives them: no source says which answer is which) nor the functions that set or save (3, 5).
+    (feature::LED_SW_CONTROL, 0),
+    (feature::LED_SW_CONTROL, 1),
+    (feature::LED_SW_CONTROL, 4),
     (feature::BATTERY_VOLTAGE, 0),
     (feature::UNIFIED_BATTERY, 1),
     (feature::KEYBOARD_LAYOUT, 0),
@@ -335,6 +343,25 @@ pub fn profile_led_slot(product_id: u16, index: u8, location: u16) -> Option<u8>
     ((slot as usize) < profile::LED_SLOTS).then_some(slot)
 }
 
+/// A light without colour that a mouse reports through 0x1300, read only: a group of LEDs of one kind, such as the
+/// three DPI indicators or the logo of a G502 Proteus Core. The layout of the answers is in
+/// docs/protocols/logitech-onboard-profiles.md.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct SwLed {
+    pub index: u8,
+    /// What the light is, as libratbag names the numbers: 1 battery, 2 DPI, 3 profile, 4 logo, 5 cosmetic.
+    pub kind: u8,
+    /// How many LEDs the group has.
+    pub count: u8,
+    /// The modes it can show, a mask with the bits of [`SwLed::mode`]: 0x01 off, 0x02 on, 0x04 blink, 0x08 travel,
+    /// 0x10 ramp up, 0x20 ramp down, 0x40 heartbeat, 0x80 breathing.
+    pub modes: u16,
+    /// The mode it showed when PeriHub asked (one of the bits above), `None` if the mouse refused to say.
+    pub mode: Option<u8>,
+}
+
+/// At most this many 0x1300 lights are read: the device says how many it has.
+const MAX_SW_LEDS: u8 = 16;
 /// At most this many 0x8071 zones and effects per zone are read: the device says how many it has.
 const MAX_RGB_ZONES: u8 = 16;
 const MAX_RGB_EFFECTS: u8 = 32;
@@ -1130,6 +1157,30 @@ impl HidppDevice {
             });
         }
         Ok(zones)
+    }
+
+    /// The lights of 0x1300 (LED software control), for a mouse that has it: functions 0 (the count), 1 (one light's
+    /// type, number of LEDs and modes) and 4 (what it shows), which read. A light whose state cannot be read is listed
+    /// without one. Nothing is set, not even in RAM.
+    pub fn sw_leds(&mut self) -> Result<Vec<SwLed>> {
+        let count = self.call(feature::LED_SW_CONTROL, 0, &[])?[0];
+        let mut leds = Vec::new();
+        for index in 0..count.min(MAX_SW_LEDS) {
+            let info = self.call(feature::LED_SW_CONTROL, 1, &[index])?;
+            let mode = match self.call(feature::LED_SW_CONTROL, 4, &[index]) {
+                Ok(state) => Some(state[1]),
+                Err(Error::Hidpp(_)) => None,
+                Err(other) => return Err(other),
+            };
+            leds.push(SwLed {
+                index,
+                kind: info[1],
+                count: info[2],
+                modes: u16::from_be_bytes([info[3], info[4]]),
+                mode,
+            });
+        }
+        Ok(leds)
     }
 
     /// Applies a LED effect immediately, in RAM only (preview): saved profiles are not touched.

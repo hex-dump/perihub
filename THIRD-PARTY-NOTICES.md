@@ -40,7 +40,11 @@ goes with every PeriHub package.
 - that Logitech profile format 4 has the layout of formats 2 and 3 (its issue #774 and pull request #777), the
   0x8071 zones of a G903 HERO (pull request #778), and how it ties the LED blocks of a profile to the lighting zones,
   with its `G502X_PLUS` quirk (`src/driver-hidpp20.c`, `data/devices/logitech-g502-x-plus.device`,
-  `logitech-g705.device`), see `docs/protocols/logitech-onboard-profiles.md`.
+  `logitech-g705.device`), see `docs/protocols/logitech-onboard-profiles.md`;
+- that Logitech profile format 1 has the layout of the others (`src/hidpp20.c`), and the functions of the HID++ 2.0
+  LED software control feature 0x1300 and the layout of its light and state answers (`src/hidpp20.c`,
+  `src/hidpp20.h`, Copyright © 2015-2017 Red Hat, Inc.), with the answers of a real G502 Proteus Core in its issue
+  #975, read in `crates/perihub-core/src/hidpp/mod.rs` (see `docs/protocols/logitech-onboard-profiles.md`).
 
 ```
 Copyright © 2015-2017 Red Hat, Inc.

@@ -61,6 +61,42 @@ export function effectName(id: number): string {
   return EFFECTS[id] ?? `Effect 0x${id.toString(16).padStart(4, "0")}`;
 }
 
+const SW_LED_KINDS: Record<number, string> = {
+  1: "Battery light",
+  2: "DPI indicators",
+  3: "Profile indicators",
+  4: "Logo",
+  5: "Decoration",
+};
+
+/** The modes of a light of 0x1300, by bit (the names are libratbag's). */
+const SW_LED_MODES: [number, string][] = [
+  [0x01, "off"],
+  [0x02, "on"],
+  [0x04, "blinking"],
+  [0x08, "travelling"],
+  [0x10, "ramping up"],
+  [0x20, "ramping down"],
+  [0x40, "heartbeat"],
+  [0x80, "breathing"],
+];
+
+/** What a light of 0x1300 is, from the type the mouse reports. */
+export function swLedKind(kind: number): string {
+  return SW_LED_KINDS[kind] ?? `Light of type ${kind}`;
+}
+
+/** The modes of a mask, in words: "off, on". */
+export function swLedModes(mask: number): string {
+  return SW_LED_MODES.filter(([bit]) => (mask & bit) !== 0).map(([, name]) => name).join(", ") || "none";
+}
+
+/** The mode a light showed, in words. */
+export function swLedMode(mode: number | null): string {
+  if (mode === null) return "not read";
+  return SW_LED_MODES.find(([bit]) => bit === mode)?.[1] ?? `mode 0x${mode.toString(16).padStart(2, "0")}`;
+}
+
 /** Where a 0x8071 lighting zone is, from the location the device reports. */
 export function zoneName(location: number, kind: number | null): string {
   const main = kind === 0 || kind === 2 ? "Keys" : "Main lighting";

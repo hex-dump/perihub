@@ -754,6 +754,21 @@ describe("Lighting", () => {
 
   beforeEach(() => api.previewLed.mockResolvedValue(undefined));
 
+  it("shows the lights without colour of a mouse with no coloured zone, read only (issue #159)", async () => {
+    const sw_leds = [
+      { index: 0, kind: 2, count: 3, modes: 0x03, mode: 0x02 },
+      { index: 2, kind: 4, count: 1, modes: 0x80, mode: 0x80 },
+    ];
+    api.mouseState.mockImplementation(async () => state());
+    render(Mouse, { props: { info: { ...info, led_zones: [], sw_leds }, error: null, asleep: null, initialTab: "lighting" } });
+    await wait(0);
+    expect(screen.getByRole("heading", { name: "Lights without colour" })).toBeTruthy();
+    expect(screen.getByText(/DPI indicators/).closest("li")?.textContent).toContain("shows on, can show off, on");
+    expect(screen.getByText(/Logo/).closest("li")?.textContent).toContain("shows breathing, can show breathing");
+    expect(screen.queryByRole("checkbox", { name: /Same effect on all zones/ })).toBeNull();
+    expect(api.previewLed).not.toHaveBeenCalled();
+  });
+
   it("opens in sync when every zone shows the same effect, and out of sync otherwise", async () => {
     await openLighting([RED, RED]);
     expect(syncBox().checked).toBe(true);

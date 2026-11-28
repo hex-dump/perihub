@@ -276,6 +276,19 @@ export interface LedZone {
   slot: number | null;
 }
 
+/** A light without colour that a mouse reports through 0x1300 (LED software control): PeriHub only reads it. */
+export interface SwLed {
+  index: number;
+  /** 1 battery, 2 DPI, 3 profile, 4 logo, 5 cosmetic (the numbers libratbag names). */
+  kind: number;
+  /** How many LEDs the group has. */
+  count: number;
+  /** The modes it can show: 0x01 off, 0x02 on, 0x04 blink, 0x08 travel, 0x10 ramp up, 0x20 ramp down, 0x40 heartbeat, 0x80 breathing. */
+  modes: number;
+  /** The mode it showed when PeriHub asked (one bit of `modes`), or null. */
+  mode: number | null;
+}
+
 /** The feature whose zones PeriHub previews in the mouse's RAM. */
 export const COLOR_LED_EFFECTS = 0x8070;
 
@@ -343,6 +356,8 @@ export interface MouseInfo {
    * (docs/replay.md), for test reports. Nothing in it tells the unit apart. */
   transcript?: string;
   led_zones: LedZone[];
+  /** The lights without colour (0x1300) of a mouse with no coloured zone, read only. */
+  sw_leds?: SwLed[];
   /** The HID++ features the mouse lists, for test reports. */
   features: HidppFeature[];
   onboard: {

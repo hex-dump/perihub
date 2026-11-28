@@ -11,7 +11,7 @@
     type ProfileSettings,
   } from "../lib/api";
   import { ledZoneName } from "../lib/keys";
-  import { effectName } from "../lib/logitechFeatures";
+  import { effectName, swLedKind, swLedMode, swLedModes } from "../lib/logitechFeatures";
 
   interface Props {
     info: MouseInfo;
@@ -254,6 +254,22 @@
   {:else}
     <div class="notice info">PeriHub cannot control the lighting of this mouse.</div>
   {/each}
+  {#if info.sw_leds?.length}
+    <div class="card col">
+      <h2>Lights without colour</h2>
+      <ul class="small zones">
+        {#each info.sw_leds as light (light.index)}
+          <li>
+            <b>{swLedKind(light.kind)}</b> ({light.count} LED{light.count === 1 ? "" : "s"}): shows {swLedMode(light.mode)}, can show {swLedModes(light.modes)}
+          </li>
+        {/each}
+      </ul>
+      <p class="muted small">
+        PeriHub only reads these lights: how the mouse's own software sets them is not known yet, so it changes
+        nothing. A recording of that software would show how.
+      </p>
+    </div>
+  {/if}
   {#if others.length}
     <div class="card col">
       <h2>Lighting zones the mouse reports</h2>
