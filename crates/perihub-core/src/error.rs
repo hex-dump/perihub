@@ -34,6 +34,16 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+impl Error {
+    /// A write that Windows did not finish within hidapi's time limit (1 second in hidapi 0.15, the version the
+    /// `hidapi` crate 2.6 builds): hidapi gives up waiting with this message but does not cancel the write, which
+    /// stays pending on the handle and keeps the handle's only write slot (issues #40 and #156). Only closing the
+    /// handle cancels it.
+    pub fn is_write_stall(&self) -> bool {
+        matches!(self, Error::Hid(hidapi::HidError::HidApiError { message }) if message.contains("hid_write/WaitForSingleObject"))
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HidppErrorCode(pub u8);
 

@@ -35,6 +35,8 @@ use crate::sync::LockExt;
 use crate::worker::Worker;
 
 const POLL_INTERVAL: Duration = Duration::from_secs(2);
+/// How long a mouse that did not answer in time while it was opened waits before it is opened again.
+const MOUSE_RETRY: Duration = Duration::from_secs(10);
 /// The Send a report page counts as open this long after it last asked for the devices (it asks every
 /// two seconds).
 const REPORT_PAGE_OPEN: Duration = Duration::from_secs(6);
@@ -344,6 +346,24 @@ struct Probe {
     answers: Vec<String>,
 }
 
+/// Opens `path` again for [`HidppDevice::reopen_with`], with a hidapi context of its own, made the first time.
+fn reopener(path: &CStr) -> crate::hidpp::Reopen {
+    let path = path.to_owned();
+    let mut api: Option<HidApi> = None;
+    Box::new(move || {
+        if api.is_none() {
+            api = Some(HidApi::new()?);
+        }
+        let api = api.as_ref().expect("made above");
+        Ok(Box::new(api.open_path(&path)?) as Box<dyn Transport>)
+    })
+}
+
+/// An error that says the mouse was busy, not that it cannot be opened: it is asked again later.
+fn is_transient_open_error(error: &Error) -> bool {
+    matches!(error, Error::Timeout) || error.is_write_stall()
+}
+
 fn open_channel(api: &HidApi, info: &DeviceInfo) -> Result<hidapi::HidDevice> {
     info.open_device(api).map_err(Error::from)
 }
@@ -551,6 +571,8 @@ struct Slots {
     mouse_path: Option<CString>,
     /// Unverified mouse that failed to open: not retried until it is plugged in again.
     mouse_failed: Option<CString>,
+    /// Mouse that did not answer in time while it was opened, and when: asked again after [`MOUSE_RETRY`].
+    mouse_waiting: Option<(CString, Instant)>,
     mouse_asleep: Option<String>,
     /// What the receivers have that PeriHub cannot open, shown while no mouse is open.
     receiver_note: Option<String>,
@@ -587,6 +609,13 @@ struct Slots {
     report_page_seen: Option<std::time::Instant>,
     /// Keys of the connected keyboard's map that start software macros, kept by its thread.
     keyboard_macro_keys: Option<Arc<Mutex<Vec<u8>>>>,
+}
+
+impl Slots {
+    /// The mouse that did not answer while it was opened, while it still waits to be asked again.
+    fn waiting_mouse(&self) -> Option<CString> {
+        self.mouse_waiting.as_ref().filter(|(_, at)| at.elapsed() < MOUSE_RETRY).map(|(path, _)| path.clone())
+    }
 }
 
 pub type Listener = Box<dyn Fn(&DeviceStatus) + Send + Sync>;
@@ -819,7 +848,12 @@ impl Manager {
             } else {
                 // A tested model wins if more than one supported mouse is connected.
                 let failed = slots.mouse_failed.clone();
-                Some(mice.iter().filter(|(d, _)| Some(d.path()) != failed.as_deref()).max_by_key(|(_, m)| m.verified))
+                let waiting = slots.waiting_mouse();
+                Some(
+                    mice.iter()
+                        .filter(|(d, _)| Some(d.path()) != failed.as_deref() && Some(d.path()) != waiting.as_deref())
+                        .max_by_key(|(_, m)| m.verified),
+                )
             }
         };
         match candidate {
@@ -834,7 +868,11 @@ impl Manager {
                         if bluetooth {
                             HidppDevice::over_bluetooth(dev, true)
                         } else {
-                            HidppDevice::new(dev, model.device_index, true)
+                            // A write that Windows leaves pending is cancelled by opening the mouse again
+                            // (issue #156).
+                            let mut dev = HidppDevice::new(dev, model.device_index, true)?;
+                            dev.reopen_with(reopener(info.path()));
+                            Ok(dev)
                         }
                     })
                     .and_then(|dev| MouseTask::open(dev, model, self.untested_saves));
@@ -933,6 +971,7 @@ impl Manager {
                     slots.receiver_models.insert(path.to_owned(), model.name);
                 }
                 slots.receiver_note = None;
+                slots.mouse_waiting = None;
                 slots.mouse = Some((Worker::spawn("perihub-mouse", task), mouse));
                 slots.mouse_path = Some(path.to_owned());
                 None
@@ -944,7 +983,11 @@ impl Manager {
             // It fell asleep while it was being opened: tried again at the next pass.
             Err(Error::Unreachable) => None,
             Err(error) => {
-                if !model.verified && !is_permission_error(&error) {
+                // A mouse that did not answer in time is busy (issue #156): it is asked again a little later, not
+                // given up on until it is plugged in again.
+                if is_transient_open_error(&error) {
+                    slots.mouse_waiting = Some((path.to_owned(), Instant::now()));
+                } else if !model.verified && !is_permission_error(&error) {
                     slots.mouse_failed = Some(path.to_owned());
                 }
                 Some(format!("{}: {}", model.name, open_error_message(error)))
@@ -1006,10 +1049,16 @@ impl Manager {
     /// Looks for a mouse behind the receivers and opens the first one that answers,
     /// read-only until its model has been tested. Returns `true` if the status changed.
     fn watch_receivers(&self, api: &HidApi, receivers: &[ReceiverPaths]) -> bool {
-        let failed = self.slots.lock_recover().mouse_failed.clone();
+        let (failed, waiting) = {
+            let slots = self.slots.lock_recover();
+            (slots.mouse_failed.clone(), slots.waiting_mouse())
+        };
         let mut asleep = None;
         let mut note = None;
-        for paths in receivers.iter().filter(|(long, _)| Some(long.path()) != failed.as_deref()) {
+        for paths in receivers
+            .iter()
+            .filter(|(long, _)| Some(long.path()) != failed.as_deref() && Some(long.path()) != waiting.as_deref())
+        {
             let path = paths.0.path().to_owned();
             let found = probe(api, paths);
             let answers = match &found {
@@ -2004,6 +2053,24 @@ fn open_error_message(error: Error) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A mouse that did not answer in time while it was opened is asked again a little later (issue #156), while
+    /// one that failed otherwise waits until it is plugged in again.
+    #[test]
+    fn a_mouse_that_did_not_answer_in_time_is_opened_again_later() {
+        let stall = Error::Hid(hidapi::HidError::HidApiError {
+            message: "hid_write/WaitForSingleObject: (0x000003E5) Overlapped I/O operation is in progress.".into(),
+        });
+        assert!(is_transient_open_error(&Error::Timeout));
+        assert!(is_transient_open_error(&stall));
+        assert!(!is_transient_open_error(&Error::Protocol("unknown memory format".into())));
+
+        let path = CString::new("mouse").unwrap();
+        let mut slots = Slots { mouse_waiting: Some((path.clone(), Instant::now())), ..Slots::default() };
+        assert_eq!(slots.waiting_mouse(), Some(path.clone()));
+        slots.mouse_waiting = Some((path, Instant::now() - MOUSE_RETRY));
+        assert_eq!(slots.waiting_mouse(), None, "its turn again");
+    }
 
     #[test]
     fn a_bluetooth_mouse_is_opened_by_its_hidpp_collection_on_windows_and_by_its_one_node_on_linux() {
