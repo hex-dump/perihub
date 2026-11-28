@@ -74,6 +74,13 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Settings", () => {
+  it("shows two devices that give the same line, as the PRO K/DA did on Windows (each_key_duplicate)", async () => {
+    const twin = { product_id: 0xc339, name: "USB cable", collections: [], bolt: false, unifying: false, reachable: false, denied: false, slots: [], open_slots: [], direct: true,
+    unsupported: [{ slot: 255, name: "PRO K/DA", kind: 0, protocol: "4.2", wireless_id: null, device_info: null, firmware: [], features: [], dpi: null, report_rates_ms: [], onboard: null, lighting: null, led_zones: [], battery: null }] } as unknown as DeviceStatus["receivers"][number];
+    render(Settings, { props: { status: { ...status, receivers: [twin, { ...twin }] } } });
+    await waitFor(() => expect(screen.getAllByText("USB cable: connected")).toHaveLength(2));
+  });
+
   it("turns read-only mode on and shows the writes of this session", async () => {
     readOnly.on = false;
     api.setReadOnly.mockResolvedValue(true);

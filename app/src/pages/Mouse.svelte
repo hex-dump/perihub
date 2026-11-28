@@ -345,8 +345,8 @@
 {/if}
 {#if connectError && !info && !unsupported}<div class="notice error" role="alert">{connectError}</div>{/if}
 {#if !info}
-  {#each receivers as receiver (receiver.product_id)}
-    {#each receiver.unsupported as device (device.slot)}
+  {#each receivers as receiver, r (r)}
+    {#each receiver.unsupported as device, d (d)}
       <div class="notice info">
         <b>{device.name ?? "A device"} is paired with your {receiver.name}.</b> PeriHub does not support it yet, so it
         only reads it and changes nothing. Its page in the sidebar shows what it can do, with a test report that helps

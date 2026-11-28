@@ -8,6 +8,7 @@ import type {
 } from "./api";
 import { MAX_LINK, fitsGithubLink } from "./githubLink";
 import { errorText } from "./api";
+import { uniqueBy } from "./unique";
 import { describe } from "./g300";
 import { kindName } from "./logitechFeatures";
 import { type Hidden, mergeHidden, redact } from "./redact";
@@ -115,7 +116,8 @@ export function candidates(status: DeviceStatus, unknown: ReportDevice[]): Candi
       target: { type: "unknown", device },
     });
   }
-  return list;
+  // One id per device: a device with several collections or reports must not be listed twice (the list is keyed by it).
+  return uniqueBy(list, (c) => c.id);
 }
 
 // ---- Readings ----
@@ -241,9 +243,6 @@ export async function readDevice(
 /** The longest address GitHub takes as it is; [fitsGithubLink] also checks it fits through the login page. */
 export const MAX_URL_LENGTH = MAX_LINK;
 
-/** In the long field when the report is too long for the address: the user pastes it. */
-export const PASTE_NOTE = "Paste the report here (PeriHub copied it to the clipboard).";
-
 /** The form for a device PeriHub does not know: a request, not a test report, so no write log. */
 const DEVICE_REQUEST = "template=device_request.yml";
 
@@ -326,11 +325,13 @@ export function prepareForm(address: string, checklist: string, names: string[],
 
 export const reportText = (form: Form): string => form.fields.find(([name]) => name === form.textField)?.[1] ?? "";
 
-/** The address to open. `withReport` false: the report left out, to be pasted. */
+/** The address to open. `withReport` false: the report field left out of the address altogether, to be pasted. Not
+ * even a note in it: GitHub gives a field filled in through the address back as it was, and a tester could not
+ * paste over it (issues #124, #152, #156, #157). */
 export function formUrl(form: Form, withReport = true): string {
-  const query = form.fields.map(
-    ([name, value]) => `${name}=${encodeURIComponent(name === form.textField && !withReport ? PASTE_NOTE : value)}`,
-  );
+  const query = form.fields
+    .filter(([name]) => withReport || name !== form.textField)
+    .map(([name, value]) => `${name}=${encodeURIComponent(value)}`);
   return `${form.base}${query.join("&")}`;
 }
 

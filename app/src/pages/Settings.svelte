@@ -301,7 +301,7 @@
   <div class="card col">
     <h2>Devices</h2>
     <div class="small">
-      {#each lines as line (line)}
+      {#each lines as line, i (i)}
         <div>{line}</div>
       {/each}
     </div>

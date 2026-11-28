@@ -74,7 +74,7 @@ body:
     id: report
     attributes:
       label: Test report
-      description: "**Open test form** in PeriHub fills this in, and **Copy test report** copies it (Settings → Problems, or the notice on the device page). It has no key presses, apps or log lines. Through a receiver it names the receiver, the slot and the device's wireless ID."
+      description: "**Open test form** in PeriHub fills this in, and **Copy test report** copies it (Settings → Problems, or the notice on the device page). If the report is too long for a link, PeriHub copies it and leaves this box empty: click here and paste it (Ctrl+V). It has no key presses, apps or log lines. Through a receiver it names the receiver, the slot and the device's wireless ID."
       render: text
   - type: checkboxes
     id: matches

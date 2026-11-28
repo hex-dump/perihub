@@ -404,7 +404,7 @@
   </div>
   {#if opened}
     <div class="notice ok">
-      The form is open in your browser.{paste ? " Paste the report into it." : ""} Press Submit new issue there to
+      The form is open in your browser.{paste ? " Paste the report into its Test report box (it is empty on purpose)." : ""} Press Submit new issue there to
       send it, or close the page to send nothing.
     </div>
   {/if}

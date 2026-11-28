@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { api, errorText, type DeviceStatus } from "./lib/api";
+  import { uniqueBy } from "./lib/unique";
   import { updates } from "./lib/updates.svelte";
   import { followReadOnly, readOnly, setReadOnly } from "./lib/readOnly.svelte";
   import Keyboard from "./pages/Keyboard.svelte";
@@ -139,11 +140,14 @@
   const hex = (id: number) => id.toString(16).padStart(4, "0");
   /** Logitech devices behind a receiver that PeriHub only reads, each with a page of its own, and those
    * on their own USB connection (`direct`). */
-  const logitechDevices = $derived(
-    status.receivers.flatMap((receiver) => receiver.unsupported.map((device) => ({ receiver, device }))),
-  );
   const logitechKey = (receiver: ReceiverReport, device: UnsupportedReceiverDevice) =>
     `${hex(receiver.product_id)}-${device.slot}`;
+  const logitechDevices = $derived(
+    uniqueBy(
+      status.receivers.flatMap((receiver) => receiver.unsupported.map((device) => ({ receiver, device }))),
+      (d) => logitechKey(d.receiver, d.device),
+    ),
+  );
   /** The one on screen: the one in the address, or the first one. */
   const logitechShown = $derived(
     logitechDevices.find((d) => logitechKey(d.receiver, d.device) === tab) ??

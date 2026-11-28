@@ -192,6 +192,16 @@ export function testReport(mouse: MouseInfo, version: string, system: string): s
   ].join("\n");
 }
 
+/** The fields as an address query. An empty report is left out: a Test report field filled in through the address
+ * cannot be pasted over (issues #124, #152, #156, #157), so a report that does not fit is copied and pasted into an
+ * empty field. */
+function query(fields: Record<string, string>): string {
+  return Object.entries(fields)
+    .filter(([name, value]) => name !== "report" || value !== "")
+    .map(([name, value]) => `${name}=${encodeURIComponent(value)}`)
+    .join("&");
+}
+
 /** The test form on GitHub with the fields filled in that PeriHub knows. */
 export function testFormUrl(
   mouse: MouseInfo,
@@ -210,8 +220,7 @@ export function testFormUrl(
     os: system.toLowerCase().startsWith("windows") ? "Windows" : "Linux",
     report,
   };
-  const query = Object.entries(fields).map(([name, value]) => `${name}=${encodeURIComponent(value)}`);
-  return `${TEST_FORM}&${query.join("&")}`;
+  return `${TEST_FORM}&${query(fields)}`;
 }
 
 const DEVICE_TEST_FORM = "https://github.com/hex-dump/perihub/issues/new?template=01_test_report.yml";
@@ -234,8 +243,7 @@ export function deviceTestFormUrl(fields: DeviceTestFields, version: string, sys
     os: system.toLowerCase().startsWith("windows") ? "Windows" : "Linux",
     report: fields.report,
   };
-  const query = Object.entries(values).map(([name, value]) => `${name}=${encodeURIComponent(value)}`);
-  return `${DEVICE_TEST_FORM}&${query.join("&")}`;
+  return `${DEVICE_TEST_FORM}&${query(values)}`;
 }
 
 function batteryText(battery: Battery | null): string {
